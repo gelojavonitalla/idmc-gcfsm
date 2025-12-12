@@ -355,6 +355,91 @@
   background: var(--color-secondary);
 }
 
+/* Schedule Section */
+.scheduleSection {
+  padding: var(--spacing-20) 0;
+  background-color: var(--color-background-secondary);
+  text-align: center;
+}
+
+.scheduleList {
+  max-width: 700px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.scheduleItem {
+  display: flex;
+  gap: var(--spacing-6);
+  padding: var(--spacing-4) 0;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.scheduleItem:last-child {
+  border-bottom: none;
+}
+
+.scheduleTime {
+  min-width: 90px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-primary);
+  padding-top: var(--spacing-1);
+}
+
+.scheduleContent {
+  flex: 1;
+}
+
+.scheduleTitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-1);
+}
+
+.scheduleSubtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin-bottom: var(--spacing-2);
+}
+
+.scheduleTracks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+}
+
+.scheduleTrack {
+  font-size: var(--font-size-xs);
+  background: var(--color-primary);
+  color: white;
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+}
+
+/* Schedule type styling */
+.scheduleTypePlenary .scheduleTitle {
+  color: var(--color-primary);
+}
+
+.scheduleTypeWorship .scheduleTitle {
+  color: var(--color-secondary);
+}
+
+.scheduleTypeBreak {
+  background: var(--color-gray-100);
+  margin: 0 calc(-1 * var(--spacing-4));
+  padding-left: var(--spacing-4);
+  padding-right: var(--spacing-4);
+  border-radius: var(--radius-md);
+}
+
+.scheduleTypeBreak .scheduleTitle {
+  color: var(--color-text-secondary);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .heroPlaceholder {
@@ -380,5 +465,14 @@
 
   .coreValues ul {
     grid-template-columns: 1fr;
+  }
+
+  .scheduleItem {
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  .scheduleTime {
+    min-width: auto;
   }
 }

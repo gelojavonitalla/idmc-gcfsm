@@ -6,6 +6,7 @@ import {
   SESSION_TYPES,
   VENUE,
   PRICING_TIERS,
+  SCHEDULE,
 } from '../constants';
 import styles from './HomePage.module.css';
 
@@ -110,11 +111,38 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Schedule Highlights Section */}
-      <section className={styles.placeholderSection}>
+      {/* Schedule Section */}
+      <section className={styles.scheduleSection}>
         <div className="container">
-          <h2 className={styles.sectionTitle}>Schedule Highlights</h2>
-          <p className={styles.sectionSubtitle}>Full schedule coming soon</p>
+          <h2 className={styles.sectionTitle}>Conference Schedule</h2>
+          <p className={styles.sectionSubtitle}>
+            March 28, {CONFERENCE.YEAR} | {VENUE.NAME}
+          </p>
+          <div className={styles.scheduleList}>
+            {SCHEDULE.map((item) => (
+              <div
+                key={item.id}
+                className={`${styles.scheduleItem} ${styles[`scheduleType${item.type.charAt(0).toUpperCase() + item.type.slice(1)}`] || ''}`}
+              >
+                <div className={styles.scheduleTime}>{item.time}</div>
+                <div className={styles.scheduleContent}>
+                  <h3 className={styles.scheduleTitle}>{item.title}</h3>
+                  {item.subtitle && (
+                    <p className={styles.scheduleSubtitle}>{item.subtitle}</p>
+                  )}
+                  {item.tracks && (
+                    <div className={styles.scheduleTracks}>
+                      {item.tracks.map((track, index) => (
+                        <span key={index} className={styles.scheduleTrack}>
+                          {track}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

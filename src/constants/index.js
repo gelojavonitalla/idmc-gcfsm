@@ -159,6 +159,82 @@ export const SESSION_TYPES = {
 };
 
 /**
+ * Workshop tracks for the conference
+ */
+export const WORKSHOP_TRACKS = [
+  'Next Generation',
+  'Women',
+  'Men',
+  'Couples',
+  'Senior Citizens',
+];
+
+/**
+ * Conference schedule data
+ * Based on IDMC 2025 schedule format
+ */
+export const SCHEDULE = [
+  {
+    id: 'registration',
+    time: '7:00 AM',
+    title: 'Registration',
+    type: 'general',
+    description: 'Check-in and receive conference materials',
+  },
+  {
+    id: 'worship-opening',
+    time: '9:00 AM',
+    title: 'Worship & Opening Prayer',
+    type: 'worship',
+    description: 'Corporate worship and opening prayer',
+  },
+  {
+    id: 'plenary-1',
+    time: '9:25 AM',
+    title: 'Plenary Session 1',
+    type: SESSION_TYPES.PLENARY,
+    description: 'First plenary session',
+  },
+  {
+    id: 'plenary-2',
+    time: '10:50 AM',
+    title: 'Plenary Session 2',
+    type: SESSION_TYPES.PLENARY,
+    description: 'Second plenary session',
+  },
+  {
+    id: 'lunch',
+    time: '12:00 PM',
+    title: 'Lunch Break',
+    type: 'break',
+    description: 'Fellowship and meal time',
+  },
+  {
+    id: 'workshops',
+    time: '1:15 PM',
+    title: 'Workshops',
+    type: SESSION_TYPES.WORKSHOP,
+    subtitle: 'Overcoming Discipleship Pitfalls in Every Generation',
+    tracks: WORKSHOP_TRACKS,
+    description: 'Breakout sessions by demographic focus',
+  },
+  {
+    id: 'plenary-3',
+    time: '3:15 PM',
+    title: 'Plenary Session 3',
+    type: SESSION_TYPES.PLENARY,
+    description: 'Third plenary session',
+  },
+  {
+    id: 'worship-closing',
+    time: '4:35 PM',
+    title: 'Worship & Closing Prayer',
+    type: 'worship',
+    description: 'Corporate worship and closing prayer',
+  },
+];
+
+/**
  * Placeholder speaker data for Phase 3
  * These are temporary placeholders based on GCFSM leadership
  */
