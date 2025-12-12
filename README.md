@@ -1,70 +1,140 @@
-# Getting Started with Create React App
+# IDMC Event Management Platform
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+> **Intentional Disciplemaking Church (IDMC) Conference Event Management Platform**
+
+A comprehensive event management system for the annual IDMC Conference in Singapore. Built with React and Firebase, this platform enables conference organizers to manage registrations, speakers, schedules, workshops, and attendee check-in.
+
+## Overview
+
+The IDMC Conference is an annual disciplemaking conference held at Singapore EXPO, featuring plenary sessions, workshops, and ministry showcases. This platform provides:
+
+- **Public Website**: Landing page, speakers, schedule, registration, FAQ
+- **Admin Dashboard**: Content management, attendee management, analytics
+- **Check-in System**: QR code scanning for event-day operations
+
+## Tech Stack
+
+- **Frontend**: React 19, TypeScript
+- **Backend**: Firebase Cloud Functions (Node.js 22)
+- **Database**: Firestore
+- **Storage**: Firebase Storage
+- **Hosting**: Firebase Hosting
+- **CI/CD**: GitHub Actions
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js v20+
+- pnpm (recommended) or npm
+- Firebase CLI (`npm install -g firebase-tools`)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/gelojavonitalla/idmc-gcfsm.git
+cd idmc-gcfsm
+
+# Install dependencies
+pnpm install
+
+# Install functions dependencies
+cd functions && pnpm install && cd ..
+
+# Start development server
+pnpm start
+```
+
+### Firebase Setup
+
+```bash
+# Login to Firebase
+firebase login
+
+# Select project
+firebase use idmc-gcfsm-dev
+```
+
+## Project Structure
+
+```
+idmc-gcfsm/
+├── docs/                    # Documentation
+│   ├── epics/              # Product epics and requirements
+│   ├── coding_standard.md  # Coding standards
+│   └── UNIT_TESTING.md     # Unit testing guide
+├── functions/              # Firebase Cloud Functions
+│   └── src/
+├── public/                 # Static assets
+├── src/                    # React application
+├── CLAUDE.md              # AI assistant guidelines
+├── firebase.json          # Firebase configuration
+└── README.md
+```
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [CLAUDE.md](./CLAUDE.md) | Development guidelines for AI assistants |
+| [Coding Standards](./docs/coding_standard.md) | Code style, patterns, and best practices |
+| [Unit Testing Guide](./docs/UNIT_TESTING.md) | Testing patterns, mocking strategies, and best practices |
+| [IDMC Event Epic](./docs/epics/IDMC-EVT-Event-Management-v1.md) | Product requirements and specifications |
+
+## Epic Milestones
+
+The platform is organized into the following milestones:
+
+| ID | Milestone | Description |
+|----|-----------|-------------|
+| IDMC-EVT-01 | Public Website & Landing Page | Conference homepage with theme, dates, CTA |
+| IDMC-EVT-02 | Registration & Ticketing | Multi-tier registration with payment flow |
+| IDMC-EVT-03 | Speaker Management | Speaker profiles, bios, session assignments |
+| IDMC-EVT-04 | Schedule & Sessions | Day-by-day program with plenary sessions |
+| IDMC-EVT-05 | Workshops & Tracks | Workshop tracks with capacity management |
+| IDMC-EVT-06 | FAQ & Information Pages | FAQ, about, contact, venue information |
+| IDMC-EVT-07 | Admin Dashboard | Analytics, content management, settings |
+| IDMC-EVT-08 | Past Conferences Archive | Historical conference data and galleries |
+| IDMC-EVT-09 | Attendee Management | Registration list, search, export, comms |
+| IDMC-EVT-10 | Check-in & Access Control | QR scanning, manual lookup, real-time stats |
 
 ## Available Scripts
 
-In the project directory, you can run:
+```bash
+# Development
+pnpm start              # Run development server
+pnpm run build          # Build for production
 
-### `npm start`
+# Testing
+pnpm test               # Run tests
+pnpm run lint           # Run ESLint
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+# Firebase
+pnpm run deploy         # Deploy to Firebase
+firebase emulators:start # Run local emulators
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Deployment
 
-### `npm test`
+The project uses GitHub Actions for CI/CD:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- **Pull Requests**: Preview deployments
+- **Merge to main**: Production deployment
 
-### `npm run build`
+## Contributing
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. Create a feature branch: `git checkout -b feature/description`
+2. Make changes following [Coding Standards](./docs/coding_standard.md)
+3. Run lint and tests: `pnpm run lint && pnpm test`
+4. Commit with descriptive message
+5. Push and create Pull Request
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## License
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Private - IDMC Singapore / Covenant Evangelical Free Church
 
-### `npm run eject`
+## Links
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- [IDMC Conference Website](https://www.idmc.org.sg/)
+- [Firebase Console](https://console.firebase.google.com/project/idmc-gcfsm-dev)
