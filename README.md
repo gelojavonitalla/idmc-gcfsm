@@ -62,7 +62,8 @@ firebase use idmc-gcfsm-dev
 idmc-gcfsm/
 ├── docs/                    # Documentation
 │   ├── epics/              # Product epics and requirements
-│   └── coding_standard.md  # Coding standards
+│   ├── coding_standard.md  # Coding standards
+│   └── UNIT_TESTING.md     # Unit testing guide
 ├── functions/              # Firebase Cloud Functions
 │   └── src/
 ├── public/                 # Static assets
@@ -78,6 +79,7 @@ idmc-gcfsm/
 |----------|-------------|
 | [CLAUDE.md](./CLAUDE.md) | Development guidelines for AI assistants |
 | [Coding Standards](./docs/coding_standard.md) | Code style, patterns, and best practices |
+| [Unit Testing Guide](./docs/UNIT_TESTING.md) | Testing patterns, mocking strategies, and best practices |
 | [IDMC Event Epic](./docs/epics/IDMC-EVT-Event-Management-v1.md) | Product requirements and specifications |
 
 ## Epic Milestones
