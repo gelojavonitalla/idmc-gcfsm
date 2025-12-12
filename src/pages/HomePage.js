@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { CountdownTimer, YouTubeEmbed } from '../components/ui';
 import {
   CONFERENCE,
@@ -7,6 +8,7 @@ import {
   VENUE,
   PRICING_TIERS,
   SCHEDULE,
+  ROUTES,
 } from '../constants';
 import styles from './HomePage.module.css';
 
@@ -25,14 +27,17 @@ const PROMO_VIDEO_ID = 'emGTZDXOaZY';
 function HomePage() {
   return (
     <div className={styles.page}>
-      {/* Hero Section Placeholder */}
-      <section className={styles.heroPlaceholder}>
+      {/* Hero Section */}
+      <section className={styles.heroSection}>
         <div className={styles.heroContent}>
           <h1>IDMC {CONFERENCE.YEAR}</h1>
-          <p>{CONFERENCE.THEME}</p>
+          <p className={styles.heroTheme}>{CONFERENCE.THEME}</p>
           <p className={styles.heroSubtext}>
-            March 28, {CONFERENCE.YEAR} | GCF South Metro
+            March 28, {CONFERENCE.YEAR} | {VENUE.NAME}
           </p>
+          <Link to={ROUTES.REGISTER} className={styles.heroButton}>
+            Register Now
+          </Link>
         </div>
       </section>
 
