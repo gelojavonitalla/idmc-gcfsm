@@ -127,9 +127,16 @@ Copy `.env.example` to `.env.local` and configure required variables.
 1. Branch from `develop` (or `main`): `git checkout -b feature/description`
 2. Make changes, ensuring lint and typecheck pass
 3. Run relevant tests
-4. Push and create PR
+4. Push and create PR using the [PR Template](./docs/PR_TEMPLATE.md)
 5. Wait for CI checks to pass
 6. Address review feedback
+
+## Related Documentation
+
+- [Coding Standards](./docs/coding_standard.md) - Code style and patterns
+- [Unit Testing Guide](./docs/UNIT_TESTING.md) - Testing patterns and best practices
+- [PR Template](./docs/PR_TEMPLATE.md) - Pull request checklist
+- [IDMC Event Epic](./docs/epics/IDMC-EVT-Event-Management-v1.md) - Product requirements
 
 ## Troubleshooting
 
