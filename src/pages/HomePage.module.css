@@ -8,8 +8,8 @@
   flex-direction: column;
 }
 
-/* Hero Section Placeholder */
-.heroPlaceholder {
+/* Hero Section */
+.heroSection {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -26,14 +26,33 @@
   margin-bottom: var(--spacing-4);
 }
 
-.heroContent p {
+.heroTheme {
   font-size: var(--font-size-2xl);
   margin-bottom: var(--spacing-2);
 }
 
 .heroSubtext {
-  font-size: var(--font-size-lg) !important;
+  font-size: var(--font-size-lg);
   opacity: 0.9;
+  margin-bottom: var(--spacing-8);
+}
+
+.heroButton {
+  display: inline-block;
+  padding: var(--spacing-4) var(--spacing-8);
+  background: white;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.heroButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
 /* Video Section */
@@ -90,6 +109,7 @@
   padding: var(--spacing-20) 0;
   background-color: var(--color-background);
   text-align: center;
+  scroll-margin-top: var(--header-height);
 }
 
 .speakerCategory {
@@ -320,12 +340,19 @@
 .venueSection {
   padding: var(--spacing-20) 0;
   background-color: var(--color-background-secondary);
-  text-align: center;
 }
 
 .venueContent {
-  max-width: 600px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-8);
+  align-items: center;
+  max-width: 1000px;
   margin: 0 auto;
+}
+
+.venueInfo {
+  text-align: left;
 }
 
 .venueName {
@@ -338,6 +365,7 @@
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
   margin-bottom: var(--spacing-4);
+  line-height: 1.6;
 }
 
 .venueLink {
@@ -355,11 +383,24 @@
   background: var(--color-secondary);
 }
 
+.venueMap {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.mapIframe {
+  width: 100%;
+  height: 300px;
+  border: 0;
+}
+
 /* Schedule Section */
 .scheduleSection {
   padding: var(--spacing-20) 0;
   background-color: var(--color-background-secondary);
   text-align: center;
+  scroll-margin-top: var(--header-height);
 }
 
 .scheduleList {
@@ -442,7 +483,7 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .heroPlaceholder {
+  .heroSection {
     min-height: 80vh;
     padding: var(--spacing-6);
   }
@@ -451,8 +492,13 @@
     font-size: var(--font-size-4xl);
   }
 
-  .heroContent p {
+  .heroTheme {
     font-size: var(--font-size-xl);
+  }
+
+  .heroButton {
+    padding: var(--spacing-3) var(--spacing-6);
+    font-size: var(--font-size-base);
   }
 
   .speakersGrid {
@@ -467,6 +513,23 @@
     grid-template-columns: 1fr;
   }
 
+  .venueContent {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .venueInfo {
+    text-align: center;
+  }
+
+  .venueMap {
+    order: -1;
+  }
+
+  .mapIframe {
+    height: 250px;
+  }
+
   .scheduleItem {
     flex-direction: column;
     gap: var(--spacing-2);
@@ -474,5 +537,55 @@
 
   .scheduleTime {
     min-width: auto;
+  }
+}
+
+/* Small Mobile Styles */
+@media (max-width: 480px) {
+  .heroSection {
+    min-height: 70vh;
+    padding: var(--spacing-4);
+  }
+
+  .heroContent h1 {
+    font-size: var(--font-size-3xl);
+  }
+
+  .heroTheme {
+    font-size: var(--font-size-lg);
+  }
+
+  .heroSubtext {
+    font-size: var(--font-size-base);
+    margin-bottom: var(--spacing-6);
+  }
+
+  .sectionTitle {
+    font-size: var(--font-size-2xl);
+  }
+
+  .sectionSubtitle {
+    font-size: var(--font-size-base);
+  }
+
+  .speakerCard {
+    padding: var(--spacing-4);
+  }
+
+  .speakerImagePlaceholder {
+    width: 80px;
+    height: 80px;
+  }
+
+  .pricingCard {
+    padding: var(--spacing-6);
+  }
+
+  .venueSection,
+  .aboutSection,
+  .pricingSection,
+  .speakersSection,
+  .scheduleSection {
+    padding: var(--spacing-12) 0;
   }
 }

@@ -36,7 +36,7 @@ export const COLLECTIONS = {
  */
 export const CONFERENCE = {
   YEAR: 2026,
-  THEME: 'All In For Jesus And His Kingdom',
+  THEME: 'All In for Jesus and His Kingdom',
   TAGLINE: 'Intentional Disciple-Making Churches Conference',
   START_DATE: '2026-03-28T09:00:00+08:00',
   END_DATE: '2026-03-28T17:00:00+08:00',
@@ -50,6 +50,8 @@ export const VENUE = {
   NAME: 'GCF South Metro',
   ADDRESS: 'Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines',
   MAP_URL: 'https://maps.google.com/?q=GCF+South+Metro+Las+Pinas',
+  MAP_EMBED_URL:
+    'https://www.google.com/maps?q=GCF+South+Metro,+Daang+Hari+Road,+Las+Piñas,+Philippines&output=embed',
 };
 
 /**
@@ -90,8 +92,8 @@ export const PRICING_TIERS = [
  */
 export const NAV_ITEMS = [
   { label: 'Home', path: ROUTES.HOME, isAnchor: false },
-  { label: 'Speakers', path: ROUTES.SPEAKERS, isAnchor: false },
-  { label: 'Schedule', path: ROUTES.SCHEDULE, isAnchor: false },
+  { label: 'Speakers', path: '/#speakers', isAnchor: true },
+  { label: 'Schedule', path: '/#schedule', isAnchor: true },
   { label: 'FAQ', path: ROUTES.FAQ, isAnchor: false },
   { label: 'Register', path: ROUTES.REGISTER, isAnchor: false, isPrimary: true },
 ];

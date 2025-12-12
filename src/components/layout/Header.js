@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { NAV_ITEMS, CONFERENCE } from '../../constants';
 import styles from './Header.module.css';
 
@@ -14,6 +14,7 @@ function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     /**
@@ -55,6 +56,31 @@ function Header() {
     return location.pathname === path;
   };
 
+  /**
+   * Handles anchor link navigation with smooth scrolling
+   * @param {Event} e - The click event
+   * @param {string} path - The anchor path (e.g., '/#speakers')
+   */
+  const handleAnchorClick = (e, path) => {
+    e.preventDefault();
+    closeMenu();
+
+    const hash = path.split('#')[1];
+    const element = document.getElementById(hash);
+
+    if (location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        const el = document.getElementById(hash);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    } else if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <header className={`${styles.header} ${isScrolled ? styles.scrolled : ''}`}>
       <div className={styles.container}>
@@ -81,15 +107,27 @@ function Header() {
           <ul className={styles.navList}>
             {NAV_ITEMS.map((item) => (
               <li key={item.path} className={styles.navItem}>
-                <Link
-                  to={item.path}
-                  className={`${styles.navLink} ${
-                    item.isPrimary ? styles.navLinkPrimary : ''
-                  } ${isActive(item.path) ? styles.navLinkActive : ''}`}
-                  onClick={closeMenu}
-                >
-                  {item.label}
-                </Link>
+                {item.isAnchor ? (
+                  <a
+                    href={item.path}
+                    className={`${styles.navLink} ${
+                      item.isPrimary ? styles.navLinkPrimary : ''
+                    }`}
+                    onClick={(e) => handleAnchorClick(e, item.path)}
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link
+                    to={item.path}
+                    className={`${styles.navLink} ${
+                      item.isPrimary ? styles.navLinkPrimary : ''
+                    } ${isActive(item.path) ? styles.navLinkActive : ''}`}
+                    onClick={closeMenu}
+                  >
+                    {item.label}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

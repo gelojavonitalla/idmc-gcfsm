@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { CountdownTimer, YouTubeEmbed } from '../components/ui';
 import {
   CONFERENCE,
@@ -7,6 +8,7 @@ import {
   VENUE,
   PRICING_TIERS,
   SCHEDULE,
+  ROUTES,
 } from '../constants';
 import styles from './HomePage.module.css';
 
@@ -25,14 +27,17 @@ const PROMO_VIDEO_ID = 'emGTZDXOaZY';
 function HomePage() {
   return (
     <div className={styles.page}>
-      {/* Hero Section Placeholder */}
-      <section className={styles.heroPlaceholder}>
+      {/* Hero Section */}
+      <section className={styles.heroSection}>
         <div className={styles.heroContent}>
           <h1>IDMC {CONFERENCE.YEAR}</h1>
-          <p>{CONFERENCE.THEME}</p>
+          <p className={styles.heroTheme}>{CONFERENCE.THEME}</p>
           <p className={styles.heroSubtext}>
-            March 28, {CONFERENCE.YEAR} | GCF South Metro
+            March 28, {CONFERENCE.YEAR} | {VENUE.NAME}
           </p>
+          <Link to={ROUTES.REGISTER} className={styles.heroButton}>
+            Register Now
+          </Link>
         </div>
       </section>
 
@@ -63,7 +68,7 @@ function HomePage() {
       </section>
 
       {/* Featured Speakers Section */}
-      <section className={styles.speakersSection}>
+      <section id="speakers" className={styles.speakersSection}>
         <div className="container">
           <h2 className={styles.sectionTitle}>Our Speakers</h2>
           <p className={styles.sectionSubtitle}>
@@ -112,7 +117,7 @@ function HomePage() {
       </section>
 
       {/* Schedule Section */}
-      <section className={styles.scheduleSection}>
+      <section id="schedule" className={styles.scheduleSection}>
         <div className="container">
           <h2 className={styles.sectionTitle}>Conference Schedule</h2>
           <p className={styles.sectionSubtitle}>
@@ -216,16 +221,28 @@ function HomePage() {
         <div className="container">
           <h2 className={styles.sectionTitle}>Venue</h2>
           <div className={styles.venueContent}>
-            <h3 className={styles.venueName}>{VENUE.NAME}</h3>
-            <p className={styles.venueAddress}>{VENUE.ADDRESS}</p>
-            <a
-              href={VENUE.MAP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.venueLink}
-            >
-              View on Google Maps
-            </a>
+            <div className={styles.venueInfo}>
+              <h3 className={styles.venueName}>{VENUE.NAME}</h3>
+              <p className={styles.venueAddress}>{VENUE.ADDRESS}</p>
+              <a
+                href={VENUE.MAP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.venueLink}
+              >
+                Get Directions
+              </a>
+            </div>
+            <div className={styles.venueMap}>
+              <iframe
+                src={VENUE.MAP_EMBED_URL}
+                title={`Map of ${VENUE.NAME}`}
+                className={styles.mapIframe}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
           </div>
         </div>
       </section>
