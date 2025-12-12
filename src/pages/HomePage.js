@@ -221,16 +221,28 @@ function HomePage() {
         <div className="container">
           <h2 className={styles.sectionTitle}>Venue</h2>
           <div className={styles.venueContent}>
-            <h3 className={styles.venueName}>{VENUE.NAME}</h3>
-            <p className={styles.venueAddress}>{VENUE.ADDRESS}</p>
-            <a
-              href={VENUE.MAP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.venueLink}
-            >
-              View on Google Maps
-            </a>
+            <div className={styles.venueInfo}>
+              <h3 className={styles.venueName}>{VENUE.NAME}</h3>
+              <p className={styles.venueAddress}>{VENUE.ADDRESS}</p>
+              <a
+                href={VENUE.MAP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.venueLink}
+              >
+                Get Directions
+              </a>
+            </div>
+            <div className={styles.venueMap}>
+              <iframe
+                src={VENUE.MAP_EMBED_URL}
+                title={`Map of ${VENUE.NAME}`}
+                className={styles.mapIframe}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
           </div>
         </div>
       </section>

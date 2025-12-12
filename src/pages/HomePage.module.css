@@ -339,12 +339,19 @@
 .venueSection {
   padding: var(--spacing-20) 0;
   background-color: var(--color-background-secondary);
-  text-align: center;
 }
 
 .venueContent {
-  max-width: 600px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-8);
+  align-items: center;
+  max-width: 1000px;
   margin: 0 auto;
+}
+
+.venueInfo {
+  text-align: left;
 }
 
 .venueName {
@@ -357,6 +364,7 @@
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
   margin-bottom: var(--spacing-4);
+  line-height: 1.6;
 }
 
 .venueLink {
@@ -372,6 +380,18 @@
 
 .venueLink:hover {
   background: var(--color-secondary);
+}
+
+.venueMap {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.mapIframe {
+  width: 100%;
+  height: 300px;
+  border: 0;
 }
 
 /* Schedule Section */
@@ -489,6 +509,23 @@
 
   .coreValues ul {
     grid-template-columns: 1fr;
+  }
+
+  .venueContent {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .venueInfo {
+    text-align: center;
+  }
+
+  .venueMap {
+    order: -1;
+  }
+
+  .mapIframe {
+    height: 250px;
   }
 
   .scheduleItem {
