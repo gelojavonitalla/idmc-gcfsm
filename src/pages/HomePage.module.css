@@ -85,6 +85,361 @@
   color: var(--color-text-secondary);
 }
 
+/* Speakers Section */
+.speakersSection {
+  padding: var(--spacing-20) 0;
+  background-color: var(--color-background);
+  text-align: center;
+}
+
+.speakerCategory {
+  margin-bottom: var(--spacing-12);
+}
+
+.categoryTitle {
+  font-size: var(--font-size-xl);
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.speakersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--spacing-6);
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.speakerCard {
+  background: var(--color-background);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.speakerCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.speakerImagePlaceholder {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--spacing-4);
+}
+
+.speakerImagePlaceholder span {
+  font-size: var(--font-size-3xl);
+  color: white;
+  font-weight: bold;
+}
+
+.speakerName {
+  font-size: var(--font-size-lg);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-2);
+}
+
+.speakerTitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-1);
+  font-weight: 500;
+}
+
+.speakerOrg {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-2);
+}
+
+.speakerSession {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin-top: var(--spacing-2);
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--color-gray-200);
+}
+
+/* Pricing Section */
+.pricingSection {
+  padding: var(--spacing-20) 0;
+  background-color: var(--color-background-secondary);
+  text-align: center;
+}
+
+.pricingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-6);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.pricingCard {
+  background: var(--color-background);
+  border: 2px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-8);
+  position: relative;
+}
+
+.pricingCardActive {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.pricingBadge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-primary);
+  color: white;
+  padding: var(--spacing-1) var(--spacing-4);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.pricingName {
+  font-size: var(--font-size-xl);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-4);
+}
+
+.pricingPrices {
+  margin-bottom: var(--spacing-4);
+}
+
+.priceItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-2) 0;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.priceItem:last-child {
+  border-bottom: none;
+}
+
+.priceLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.priceAmount {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.pricingDates {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-4);
+}
+
+/* About Section */
+.aboutSection {
+  padding: var(--spacing-20) 0;
+  background-color: var(--color-background);
+}
+
+.aboutContent {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.aboutOrg h3 {
+  font-size: var(--font-size-2xl);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-4);
+  text-align: center;
+}
+
+.aboutMission {
+  font-size: var(--font-size-lg);
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-4);
+  text-align: center;
+  font-style: italic;
+}
+
+.aboutDescription {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: 1.8;
+  margin-bottom: var(--spacing-6);
+  text-align: center;
+}
+
+.coreValues {
+  background: var(--color-background-secondary);
+  padding: var(--spacing-6);
+  border-radius: var(--radius-lg);
+}
+
+.coreValues h4 {
+  font-size: var(--font-size-lg);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-4);
+  text-align: center;
+}
+
+.coreValues ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-3);
+}
+
+.coreValues li {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-background);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-primary);
+}
+
+/* Venue Section */
+.venueSection {
+  padding: var(--spacing-20) 0;
+  background-color: var(--color-background-secondary);
+  text-align: center;
+}
+
+.venueContent {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.venueName {
+  font-size: var(--font-size-2xl);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-2);
+}
+
+.venueAddress {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-4);
+}
+
+.venueLink {
+  display: inline-block;
+  padding: var(--spacing-3) var(--spacing-6);
+  background: var(--color-primary);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.venueLink:hover {
+  background: var(--color-secondary);
+}
+
+/* Schedule Section */
+.scheduleSection {
+  padding: var(--spacing-20) 0;
+  background-color: var(--color-background-secondary);
+  text-align: center;
+}
+
+.scheduleList {
+  max-width: 700px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.scheduleItem {
+  display: flex;
+  gap: var(--spacing-6);
+  padding: var(--spacing-4) 0;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.scheduleItem:last-child {
+  border-bottom: none;
+}
+
+.scheduleTime {
+  min-width: 90px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-primary);
+  padding-top: var(--spacing-1);
+}
+
+.scheduleContent {
+  flex: 1;
+}
+
+.scheduleTitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-1);
+}
+
+.scheduleSubtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin-bottom: var(--spacing-2);
+}
+
+.scheduleTracks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+}
+
+.scheduleTrack {
+  font-size: var(--font-size-xs);
+  background: var(--color-primary);
+  color: white;
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+}
+
+/* Schedule type styling */
+.scheduleTypePlenary .scheduleTitle {
+  color: var(--color-primary);
+}
+
+.scheduleTypeWorship .scheduleTitle {
+  color: var(--color-secondary);
+}
+
+.scheduleTypeBreak {
+  background: var(--color-gray-100);
+  margin: 0 calc(-1 * var(--spacing-4));
+  padding-left: var(--spacing-4);
+  padding-right: var(--spacing-4);
+  border-radius: var(--radius-md);
+}
+
+.scheduleTypeBreak .scheduleTitle {
+  color: var(--color-text-secondary);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .heroPlaceholder {
@@ -98,5 +453,26 @@
 
   .heroContent p {
     font-size: var(--font-size-xl);
+  }
+
+  .speakersGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pricingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .coreValues ul {
+    grid-template-columns: 1fr;
+  }
+
+  .scheduleItem {
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  .scheduleTime {
+    min-width: auto;
   }
 }
