@@ -1,0 +1,185 @@
+/**
+ * CountdownTimer Component Styles
+ * Responsive countdown timer with time unit boxes
+ */
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-8) var(--spacing-4);
+}
+
+.grid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-6) var(--spacing-4);
+  min-width: 90px;
+  box-shadow: var(--shadow-lg);
+  transition: transform var(--transition-fast);
+}
+
+.unit:hover {
+  transform: translateY(-2px);
+}
+
+.value {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-white);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-100);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: var(--spacing-2);
+}
+
+.separator {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  padding: 0 var(--spacing-1);
+  align-self: flex-start;
+  margin-top: var(--spacing-4);
+}
+
+/* Skeleton loading state */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-gray-200) 25%,
+    var(--color-gray-100) 50%,
+    var(--color-gray-200) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Status messages */
+.statusMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-8);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-lg);
+}
+
+.statusIcon {
+  font-size: var(--font-size-2xl);
+  color: var(--color-secondary);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.statusText {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-white);
+}
+
+.thankYou {
+  font-size: var(--font-size-lg);
+  color: var(--color-primary-100);
+  margin-top: var(--spacing-2);
+}
+
+/* Tablet and below */
+@media (max-width: 768px) {
+  .grid {
+    gap: var(--spacing-1);
+  }
+
+  .unit {
+    min-width: 70px;
+    padding: var(--spacing-4) var(--spacing-3);
+  }
+
+  .value {
+    font-size: var(--font-size-3xl);
+  }
+
+  .label {
+    font-size: var(--font-size-xs);
+  }
+
+  .separator {
+    font-size: var(--font-size-2xl);
+    padding: 0;
+    margin-top: var(--spacing-3);
+  }
+
+  .statusText {
+    font-size: var(--font-size-xl);
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .container {
+    padding: var(--spacing-4) var(--spacing-2);
+  }
+
+  .grid {
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+  }
+
+  .unit {
+    min-width: 60px;
+    padding: var(--spacing-3) var(--spacing-2);
+  }
+
+  .value {
+    font-size: var(--font-size-2xl);
+  }
+
+  .separator {
+    display: none;
+  }
+
+  .statusMessage {
+    padding: var(--spacing-6);
+  }
+
+  .statusText {
+    font-size: var(--font-size-lg);
+  }
+}

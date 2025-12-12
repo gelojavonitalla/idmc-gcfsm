@@ -5,21 +5,21 @@
 
 /* CSS Variables - Design Tokens */
 :root {
-  /* Primary Colors */
-  --color-primary: #2563eb;
-  --color-primary-dark: #1d4ed8;
-  --color-primary-light: #60a5fa;
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
+  /* Primary Colors - GCFSM Green */
+  --color-primary: #06b84b;
+  --color-primary-dark: #059c3f;
+  --color-primary-light: #3cc96f;
+  --color-primary-50: #ecfdf5;
+  --color-primary-100: #d1fae5;
 
-  /* Secondary Colors */
-  --color-secondary: #7c3aed;
-  --color-secondary-dark: #6d28d9;
-  --color-secondary-light: #a78bfa;
+  /* Secondary Colors - GCFSM Golden */
+  --color-secondary: #f4a41c;
+  --color-secondary-dark: #d9901a;
+  --color-secondary-light: #f7b94a;
 
   /* Accent Colors */
-  --color-accent: #f59e0b;
-  --color-accent-dark: #d97706;
+  --color-accent: #f4a41c;
+  --color-accent-dark: #d9901a;
 
   /* Neutral Colors */
   --color-white: #ffffff;
