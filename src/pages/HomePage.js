@@ -68,7 +68,7 @@ function HomePage() {
       </section>
 
       {/* Featured Speakers Section */}
-      <section className={styles.speakersSection}>
+      <section id="speakers" className={styles.speakersSection}>
         <div className="container">
           <h2 className={styles.sectionTitle}>Our Speakers</h2>
           <p className={styles.sectionSubtitle}>
@@ -117,7 +117,7 @@ function HomePage() {
       </section>
 
       {/* Schedule Section */}
-      <section className={styles.scheduleSection}>
+      <section id="schedule" className={styles.scheduleSection}>
         <div className="container">
           <h2 className={styles.sectionTitle}>Conference Schedule</h2>
           <p className={styles.sectionSubtitle}>

@@ -92,8 +92,8 @@ export const PRICING_TIERS = [
  */
 export const NAV_ITEMS = [
   { label: 'Home', path: ROUTES.HOME, isAnchor: false },
-  { label: 'Speakers', path: ROUTES.SPEAKERS, isAnchor: false },
-  { label: 'Schedule', path: ROUTES.SCHEDULE, isAnchor: false },
+  { label: 'Speakers', path: '/#speakers', isAnchor: true },
+  { label: 'Schedule', path: '/#schedule', isAnchor: true },
   { label: 'FAQ', path: ROUTES.FAQ, isAnchor: false },
   { label: 'Register', path: ROUTES.REGISTER, isAnchor: false, isPrimary: true },
 ];

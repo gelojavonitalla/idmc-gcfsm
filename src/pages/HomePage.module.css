@@ -109,6 +109,7 @@
   padding: var(--spacing-20) 0;
   background-color: var(--color-background);
   text-align: center;
+  scroll-margin-top: var(--header-height);
 }
 
 .speakerCategory {
@@ -399,6 +400,7 @@
   padding: var(--spacing-20) 0;
   background-color: var(--color-background-secondary);
   text-align: center;
+  scroll-margin-top: var(--header-height);
 }
 
 .scheduleList {
