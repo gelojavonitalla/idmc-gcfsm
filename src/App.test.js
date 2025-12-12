@@ -20,6 +20,6 @@ test('renders navigation with Register link', () => {
 
 test('renders footer with organizer info', () => {
   render(<App />);
-  const organizerElements = screen.getAllByText(/covenant evangelical free church/i);
+  const organizerElements = screen.getAllByText(/gcf south metro/i);
   expect(organizerElements.length).toBeGreaterThan(0);
 });

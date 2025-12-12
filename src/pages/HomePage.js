@@ -22,7 +22,7 @@ function HomePage() {
           <h1>IDMC 2025</h1>
           <p>All In For Jesus And His Kingdom</p>
           <p className={styles.heroSubtext}>
-            September 5-6, 2025 | Singapore EXPO Hall 1
+            September 5-6, 2025 | GCF South Metro
           </p>
         </div>
       </section>
@@ -30,13 +30,13 @@ function HomePage() {
       {/* Video Highlight Section */}
       <section className={styles.videoSection}>
         <div className="container">
-          <h2 className={styles.sectionTitle}>Watch IDMC 2025</h2>
+          <h2 className={styles.sectionTitle}>Watch Previous IDMC</h2>
           <p className={styles.sectionSubtitle}>
-            Get a glimpse of what awaits you at this year's conference
+            See the highlights from our past conference
           </p>
           <YouTubeEmbed
             videoId={PROMO_VIDEO_ID}
-            title="IDMC 2025 Conference Video"
+            title="IDMC Previous Conference Video"
           />
         </div>
       </section>

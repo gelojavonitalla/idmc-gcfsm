@@ -91,6 +91,13 @@
   color: white;
 }
 
+.phone,
+.mobile {
+  font-size: 0.9375rem;
+  margin: 0.5rem 0 0;
+  color: var(--color-gray-300);
+}
+
 /* Social Links */
 .social {
   display: flex;

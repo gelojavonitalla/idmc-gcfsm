@@ -40,21 +40,16 @@ export const CONFERENCE = {
   TAGLINE: 'Intentional Disciple-Making Churches Conference',
   START_DATE: '2025-09-05T09:00:00+08:00',
   END_DATE: '2025-09-06T17:00:00+08:00',
-  TIMEZONE: 'Asia/Singapore',
+  TIMEZONE: 'Asia/Manila',
 };
 
 /**
  * Venue information
  */
 export const VENUE = {
-  NAME: 'Singapore EXPO Hall 1',
-  ADDRESS: '1 Expo Drive, Singapore 486150',
-  MAP_URL: 'https://maps.google.com/?q=Singapore+EXPO+Hall+1',
-  DIRECTIONS: {
-    MRT: 'Expo MRT Station (Downtown Line / East-West Line)',
-    BUS: 'Bus services 12, 24, 38',
-    PARKING: 'Carpark available at $1.20/hour',
-  },
+  NAME: 'GCF South Metro',
+  ADDRESS: 'Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines',
+  MAP_URL: 'https://maps.google.com/?q=GCF+South+Metro+Las+Pinas',
 };
 
 /**
@@ -105,18 +100,21 @@ export const NAV_ITEMS = [
  * Social media links
  */
 export const SOCIAL_LINKS = {
-  FACEBOOK: 'https://facebook.com/idmcsingapore',
-  INSTAGRAM: 'https://instagram.com/idmcsingapore',
-  YOUTUBE: 'https://youtube.com/@idmcsingapore',
+  FACEBOOK: 'https://facebook.com/gcfsouthmetro',
+  INSTAGRAM: 'https://instagram.com/gcfsouthmetro',
+  YOUTUBE: 'https://youtube.com/channel/UCJ36YX23P_yCjMzetI1s6Ag',
+  VIBER: '0917 650 0011',
 };
 
 /**
  * Contact information
  */
 export const CONTACT = {
-  EMAIL: 'info@idmc.sg',
-  ORGANIZER: 'Covenant Evangelical Free Church',
-  WEBSITE: 'https://cefc.org.sg',
+  EMAIL: 'email@gcfsouthmetro.org',
+  ORGANIZER: 'GCF South Metro',
+  WEBSITE: 'https://gcfsouthmetro.org',
+  PHONE: '(02) 8478 1271 / (02) 8478 1273',
+  MOBILE: '0917-6500011',
 };
 
 /**
