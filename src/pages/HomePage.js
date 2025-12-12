@@ -1,4 +1,5 @@
-import { YouTubeEmbed } from '../components/ui';
+import { CountdownTimer, YouTubeEmbed } from '../components/ui';
+import { CONFERENCE } from '../constants';
 import styles from './HomePage.module.css';
 
 /**
@@ -19,10 +20,10 @@ function HomePage() {
       {/* Hero Section Placeholder */}
       <section className={styles.heroPlaceholder}>
         <div className={styles.heroContent}>
-          <h1>IDMC 2025</h1>
-          <p>All In For Jesus And His Kingdom</p>
+          <h1>IDMC {CONFERENCE.YEAR}</h1>
+          <p>{CONFERENCE.THEME}</p>
           <p className={styles.heroSubtext}>
-            September 5-6, 2025 | GCF South Metro
+            March 28, {CONFERENCE.YEAR} | GCF South Metro
           </p>
         </div>
       </section>
@@ -41,11 +42,15 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Placeholder sections - to be implemented in Phase 2-3 */}
-      <section className={styles.placeholderSection}>
+      {/* Countdown Timer Section */}
+      <section className={styles.countdownSection}>
         <div className="container">
-          <h2>Countdown Timer</h2>
-          <p>Coming in Phase 2</p>
+          <h2 className={styles.sectionTitle}>Conference Starts In</h2>
+          <CountdownTimer
+            targetDate={CONFERENCE.START_DATE}
+            endDate={CONFERENCE.END_DATE}
+            timezone={CONFERENCE.TIMEZONE}
+          />
         </div>
       </section>
 

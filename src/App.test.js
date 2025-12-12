@@ -8,7 +8,7 @@ import App from './App';
 
 test('renders IDMC conference title on homepage', () => {
   render(<App />);
-  const titleElements = screen.getAllByRole('heading', { name: /idmc 2025/i });
+  const titleElements = screen.getAllByRole('heading', { name: /idmc 2026/i });
   expect(titleElements.length).toBeGreaterThan(0);
 });
 

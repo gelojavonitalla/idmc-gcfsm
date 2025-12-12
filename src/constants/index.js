@@ -35,11 +35,11 @@ export const COLLECTIONS = {
  * Conference configuration
  */
 export const CONFERENCE = {
-  YEAR: 2025,
+  YEAR: 2026,
   THEME: 'All In For Jesus And His Kingdom',
   TAGLINE: 'Intentional Disciple-Making Churches Conference',
-  START_DATE: '2025-09-05T09:00:00+08:00',
-  END_DATE: '2025-09-06T17:00:00+08:00',
+  START_DATE: '2026-03-28T09:00:00+08:00',
+  END_DATE: '2026-03-28T17:00:00+08:00',
   TIMEZONE: 'Asia/Manila',
 };
 

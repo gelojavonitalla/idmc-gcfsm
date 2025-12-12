@@ -58,6 +58,13 @@
   margin-right: auto;
 }
 
+/* Countdown Section */
+.countdownSection {
+  padding: var(--spacing-16) 0;
+  text-align: center;
+  background-color: var(--color-background-secondary);
+}
+
 /* Placeholder Sections */
 .placeholderSection {
   padding: var(--spacing-16) 0;
