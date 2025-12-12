@@ -1,0 +1,199 @@
+/**
+ * Footer Component Styles
+ * Responsive footer with multi-column layout
+ */
+
+.footer {
+  background-color: var(--color-gray-900);
+  color: var(--color-gray-300);
+  padding: 4rem 0 2rem;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 3rem;
+  margin-bottom: 3rem;
+}
+
+/* Brand Section */
+.brand {
+  max-width: 320px;
+}
+
+.brandTitle {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.brandTagline {
+  font-size: 0.9375rem;
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+.organizer {
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Links Section */
+.links {
+  display: flex;
+  flex-direction: column;
+}
+
+.linksTitle {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+}
+
+.linksList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Contact Section */
+.contact {
+  display: flex;
+  flex-direction: column;
+}
+
+.contactTitle {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+}
+
+.email {
+  color: var(--color-primary-light);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  transition: color 0.2s ease;
+}
+
+.email:hover {
+  color: white;
+}
+
+/* Social Links */
+.social {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.socialLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: var(--color-gray-800);
+  border-radius: 50%;
+  color: var(--color-gray-300);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.socialLink:hover {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.socialIcon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Links */
+.link {
+  color: var(--color-gray-300);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  transition: color 0.2s ease;
+}
+
+.link:hover {
+  color: white;
+}
+
+/* Bottom Bar */
+.bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 2rem;
+  border-top: 1px solid var(--color-gray-800);
+}
+
+.copyright {
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.legal {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.legalLink {
+  color: var(--color-gray-400);
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: color 0.2s ease;
+}
+
+.legalLink:hover {
+  color: white;
+}
+
+/* Tablet Styles */
+@media (max-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .brand {
+    grid-column: 1 / -1;
+    max-width: none;
+  }
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .footer {
+    padding: 3rem 0 1.5rem;
+  }
+
+  .content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .bottom {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+    padding-top: 1.5rem;
+  }
+
+  .legal {
+    gap: 1rem;
+  }
+}
