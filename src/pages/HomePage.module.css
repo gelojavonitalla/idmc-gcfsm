@@ -500,3 +500,53 @@
     min-width: auto;
   }
 }
+
+/* Small Mobile Styles */
+@media (max-width: 480px) {
+  .heroSection {
+    min-height: 70vh;
+    padding: var(--spacing-4);
+  }
+
+  .heroContent h1 {
+    font-size: var(--font-size-3xl);
+  }
+
+  .heroTheme {
+    font-size: var(--font-size-lg);
+  }
+
+  .heroSubtext {
+    font-size: var(--font-size-base);
+    margin-bottom: var(--spacing-6);
+  }
+
+  .sectionTitle {
+    font-size: var(--font-size-2xl);
+  }
+
+  .sectionSubtitle {
+    font-size: var(--font-size-base);
+  }
+
+  .speakerCard {
+    padding: var(--spacing-4);
+  }
+
+  .speakerImagePlaceholder {
+    width: 80px;
+    height: 80px;
+  }
+
+  .pricingCard {
+    padding: var(--spacing-6);
+  }
+
+  .venueSection,
+  .aboutSection,
+  .pricingSection,
+  .speakersSection,
+  .scheduleSection {
+    padding: var(--spacing-12) 0;
+  }
+}
