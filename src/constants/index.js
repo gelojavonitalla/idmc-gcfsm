@@ -103,7 +103,7 @@ export const SOCIAL_LINKS = {
   FACEBOOK: 'https://facebook.com/gcfsouthmetro',
   INSTAGRAM: 'https://instagram.com/gcfsouthmetro',
   YOUTUBE: 'https://youtube.com/channel/UCJ36YX23P_yCjMzetI1s6Ag',
-  VIBER: '0917 650 0011',
+  VIBER_NUMBER: '0917 650 0011',
 };
 
 /**
@@ -114,7 +114,7 @@ export const CONTACT = {
   ORGANIZER: 'GCF South Metro',
   WEBSITE: 'https://gcfsouthmetro.org',
   PHONE: '(02) 8478 1271 / (02) 8478 1273',
-  MOBILE: '0917-6500011',
+  MOBILE: '0917 650 0011',
 };
 
 /**
