@@ -36,7 +36,7 @@ export const COLLECTIONS = {
  */
 export const CONFERENCE = {
   YEAR: 2026,
-  THEME: 'All In For Jesus And His Kingdom',
+  THEME: 'All In for Jesus and His Kingdom',
   TAGLINE: 'Intentional Disciple-Making Churches Conference',
   START_DATE: '2026-03-28T09:00:00+08:00',
   END_DATE: '2026-03-28T17:00:00+08:00',
