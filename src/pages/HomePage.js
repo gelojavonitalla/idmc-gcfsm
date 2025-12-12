@@ -1,5 +1,12 @@
 import { CountdownTimer, YouTubeEmbed } from '../components/ui';
-import { CONFERENCE } from '../constants';
+import {
+  CONFERENCE,
+  ORGANIZATION,
+  SPEAKERS,
+  SESSION_TYPES,
+  VENUE,
+  PRICING_TIERS,
+} from '../constants';
 import styles from './HomePage.module.css';
 
 /**
@@ -54,38 +61,144 @@ function HomePage() {
         </div>
       </section>
 
-      <section className={styles.placeholderSection}>
+      {/* Featured Speakers Section */}
+      <section className={styles.speakersSection}>
         <div className="container">
-          <h2>Featured Speakers</h2>
-          <p>Coming in Phase 3</p>
+          <h2 className={styles.sectionTitle}>Our Speakers</h2>
+          <p className={styles.sectionSubtitle}>
+            Learn from experienced leaders in discipleship
+          </p>
+
+          {/* Plenary Speaker */}
+          <div className={styles.speakerCategory}>
+            <h3 className={styles.categoryTitle}>Plenary Session</h3>
+            <div className={styles.speakersGrid}>
+              {SPEAKERS.filter(
+                (speaker) => speaker.sessionType === SESSION_TYPES.PLENARY
+              ).map((speaker) => (
+                <div key={speaker.id} className={styles.speakerCard}>
+                  <div className={styles.speakerImagePlaceholder}>
+                    <span>{speaker.name.charAt(0)}</span>
+                  </div>
+                  <h4 className={styles.speakerName}>{speaker.name}</h4>
+                  <p className={styles.speakerTitle}>{speaker.title}</p>
+                  <p className={styles.speakerOrg}>{speaker.organization}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Workshop Speakers */}
+          <div className={styles.speakerCategory}>
+            <h3 className={styles.categoryTitle}>Workshops</h3>
+            <div className={styles.speakersGrid}>
+              {SPEAKERS.filter(
+                (speaker) => speaker.sessionType === SESSION_TYPES.WORKSHOP
+              ).map((speaker) => (
+                <div key={speaker.id} className={styles.speakerCard}>
+                  <div className={styles.speakerImagePlaceholder}>
+                    <span>{speaker.name.charAt(0)}</span>
+                  </div>
+                  <h4 className={styles.speakerName}>{speaker.name}</h4>
+                  <p className={styles.speakerTitle}>{speaker.title}</p>
+                  <p className={styles.speakerOrg}>{speaker.organization}</p>
+                  <p className={styles.speakerSession}>{speaker.sessionTitle}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
+      {/* Schedule Highlights Section */}
       <section className={styles.placeholderSection}>
         <div className="container">
-          <h2>Schedule Highlights</h2>
-          <p>Coming in Phase 3</p>
+          <h2 className={styles.sectionTitle}>Schedule Highlights</h2>
+          <p className={styles.sectionSubtitle}>Full schedule coming soon</p>
         </div>
       </section>
 
-      <section className={styles.placeholderSection}>
+      {/* Pricing Section */}
+      <section className={styles.pricingSection}>
         <div className="container">
-          <h2>Pricing</h2>
-          <p>Coming in Phase 3</p>
+          <h2 className={styles.sectionTitle}>Registration</h2>
+          <p className={styles.sectionSubtitle}>
+            Choose the registration tier that works for you
+          </p>
+          <div className={styles.pricingGrid}>
+            {PRICING_TIERS.map((tier) => (
+              <div
+                key={tier.id}
+                className={`${styles.pricingCard} ${tier.isActive ? styles.pricingCardActive : ''}`}
+              >
+                {tier.isActive && (
+                  <span className={styles.pricingBadge}>Current</span>
+                )}
+                <h3 className={styles.pricingName}>{tier.name}</h3>
+                <div className={styles.pricingPrices}>
+                  <div className={styles.priceItem}>
+                    <span className={styles.priceLabel}>Regular</span>
+                    <span className={styles.priceAmount}>
+                      PHP {tier.regularPrice}
+                    </span>
+                  </div>
+                  <div className={styles.priceItem}>
+                    <span className={styles.priceLabel}>Student</span>
+                    <span className={styles.priceAmount}>
+                      PHP {tier.studentPrice}
+                    </span>
+                  </div>
+                </div>
+                <p className={styles.pricingDates}>
+                  {tier.startDate} to {tier.endDate}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className={styles.placeholderSection}>
+      {/* About IDMC Section */}
+      <section className={styles.aboutSection}>
         <div className="container">
-          <h2>About IDMC</h2>
-          <p>Coming in Phase 3</p>
+          <h2 className={styles.sectionTitle}>About IDMC</h2>
+          <p className={styles.sectionSubtitle}>{CONFERENCE.TAGLINE}</p>
+          <div className={styles.aboutContent}>
+            <div className={styles.aboutOrg}>
+              <h3>Hosted by {ORGANIZATION.NAME}</h3>
+              <p className={styles.aboutMission}>
+                <strong>Mission:</strong> {ORGANIZATION.MISSION}
+              </p>
+              <p className={styles.aboutDescription}>{ORGANIZATION.DESCRIPTION}</p>
+              <div className={styles.coreValues}>
+                <h4>Core Values</h4>
+                <ul>
+                  {ORGANIZATION.CORE_VALUES.map((value, index) => (
+                    <li key={index}>{value}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className={styles.placeholderSection}>
+      {/* Venue Section */}
+      <section className={styles.venueSection}>
         <div className="container">
-          <h2>Venue</h2>
-          <p>Coming in Phase 3</p>
+          <h2 className={styles.sectionTitle}>Venue</h2>
+          <div className={styles.venueContent}>
+            <h3 className={styles.venueName}>{VENUE.NAME}</h3>
+            <p className={styles.venueAddress}>{VENUE.ADDRESS}</p>
+            <a
+              href={VENUE.MAP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.venueLink}
+            >
+              View on Google Maps
+            </a>
+          </div>
         </div>
       </section>
     </div>

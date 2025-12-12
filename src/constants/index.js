@@ -131,3 +131,91 @@ export const BREAKPOINTS = {
  * CSS class name prefixes
  */
 export const CSS_PREFIX = 'idmc';
+
+/**
+ * Organization information for GCF South Metro
+ */
+export const ORGANIZATION = {
+  NAME: 'GCF South Metro',
+  MISSION: 'To love God, to love people and to make multiplying disciples.',
+  VISION:
+    'To be a disciple-making congregation that reaches local communities while impacting the broader region and world.',
+  DESCRIPTION:
+    'GCF South Metro is a disciple-making church focused on three interconnected activities: drawing individuals toward Christ, developing their faith, and deploying them for ministry purposes.',
+  CORE_VALUES: [
+    'Truth grounded in Scripture',
+    'Love demonstrated in relationships',
+    'Empowerment through the Holy Spirit',
+    'Excellence through dedicated effort',
+  ],
+};
+
+/**
+ * Speaker session types
+ */
+export const SESSION_TYPES = {
+  PLENARY: 'plenary',
+  WORKSHOP: 'workshop',
+};
+
+/**
+ * Placeholder speaker data for Phase 3
+ * These are temporary placeholders based on GCFSM leadership
+ */
+export const SPEAKERS = [
+  {
+    id: 'lito-villoria',
+    name: 'Rev. Dr. Lito Villoria',
+    title: 'Senior Pastor',
+    organization: 'GCF South Metro',
+    sessionType: SESSION_TYPES.PLENARY,
+    sessionTitle: 'Plenary Session',
+    bio: 'Rev. Dr. Lito Villoria is the Senior Pastor of GCF South Metro (GCFSM). He also serves as the Executive Chairman of the National Disciplemaking Campaign Committee under the Philippine Council of Evangelical Churches. This ten-year campaign (2023-2033) seeks to transform the nation by leading churches back to their disciplemaking roots. He is also the President of the Conservative Baptist Association of the Philippines, a task force member of the World Evangelical Alliance\'s Galilean Movement, and the Country Director of the Asia Biblical Theological Seminary. Pastor Lito is deeply passionate about intentional disciplemaking, particularly investing in the Next Generation.',
+    featured: true,
+    order: 1,
+  },
+  {
+    id: 'karen-monroy',
+    name: 'Teacher Karen Monroy',
+    title: 'NextGen Ministry Director',
+    organization: 'GCF South Metro',
+    sessionType: SESSION_TYPES.WORKSHOP,
+    sessionTitle: 'Overcoming Pitfalls in the Discipleship of the Next Generation',
+    bio: 'Teacher Karen Monroy is passionate about the NextGen of the church—the children, youth, and young adults. Her desire is to bring them to Jesus so that, even at an early age, they will choose to obey Him until the end. She serves as the NextGen Ministry Director at GCF South Metro, where her main responsibility is to provide discipleship venues for the children, youth, and young adults of the church. T. Karen is a registered nurse who answered the Lord\'s call to serve Him full-time in the church. She is soon completing her Master of Divinity at Grace School of Theology.',
+    featured: true,
+    order: 2,
+  },
+  {
+    id: 'carol-felipe',
+    name: 'Teacher Carol Felipe',
+    title: 'School Discipleship Ministry Director',
+    organization: 'GCFSM Christian School',
+    sessionType: SESSION_TYPES.WORKSHOP,
+    sessionTitle: 'Overcoming Pitfalls in the Discipleship of Women',
+    bio: 'Teacher Carol Felipe has been part of the GCF South Metro staff for the past 13 years. Her passion in life after Jesus is to teach and mentor women so that they may experience the fullness of joy that only comes from the Lord. Teacher Carol is the Cluster Mentor of the Bacoor Growth Groups and also serves as the School Discipleship Ministry Director for GCFSM Christian School. She is a graduate of Asian Theological Seminary, where she earned her Master of Divinity, Major in Biblical Studies.',
+    featured: true,
+    order: 3,
+  },
+  {
+    id: 'gilbert-bayang',
+    name: 'Elder Capt. Gilbert Bayang',
+    title: 'Airline Captain & Elder',
+    organization: 'Philippine Airlines / GCF South Metro',
+    sessionType: SESSION_TYPES.WORKSHOP,
+    sessionTitle: 'Overcoming Pitfalls in the Discipleship of Men',
+    bio: 'Captain Gilbert Bayang is a pilot by profession. He flies the Airbus A321, works in the Philippine Airline\'s (PAL) Safety Department, and deals with Human Factors in Aviation. E. Kap, as he is fondly called in church, is a passionate student of God\'s Word and is nearing the completion of his theological degree at Grace School of Theology. He mentors fellow pilots, cabin crew, and their spouses, helping them share Jesus with their peers both at home and at work. E. Gilbert is married to Gina Pacis and is blessed with two adult children: Benjo, a licensed pilot, and Dorothy, a licensed occupational therapist.',
+    featured: true,
+    order: 4,
+  },
+  {
+    id: 'jun-marivic-parcon',
+    name: 'Capt. Jun & Marivic Parcon',
+    title: 'Seasoned Citizens Ministry Leaders',
+    organization: 'GCF South Metro',
+    sessionType: SESSION_TYPES.WORKSHOP,
+    sessionTitle: 'Overcoming Pitfalls in the Discipleship of Senior Citizens',
+    bio: 'Captain Jun and Marivic Parcon are mentors of mentors, with three children: Summer, Leo, and Len. Known as Kuya Jun and Ate Marivic in church, they are dedicated choir members and they serve as leaders of the Seasoned Citizens\' ministry at GCF South Metro Church. As leaders, they are passionate about ensuring that every senior enjoys God\'s presence, love, and blessings, guiding them in their faith and life journey.',
+    featured: true,
+    order: 5,
+  },
+];
