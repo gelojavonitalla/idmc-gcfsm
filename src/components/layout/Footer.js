@@ -64,6 +64,8 @@ function Footer() {
             <a href={`mailto:${CONTACT.EMAIL}`} className={styles.email}>
               {CONTACT.EMAIL}
             </a>
+            <p className={styles.phone}>{CONTACT.PHONE}</p>
+            <p className={styles.mobile}>Mobile: {CONTACT.MOBILE}</p>
             <div className={styles.social}>
               <a
                 href={SOCIAL_LINKS.FACEBOOK}
