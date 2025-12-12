@@ -1,23 +1,63 @@
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Layout } from './components/layout';
+import { HomePage } from './pages';
+import { ROUTES } from './constants';
+import './index.css';
 
+/**
+ * App Component
+ * Root component that sets up routing and layout for the IDMC Event Site.
+ *
+ * @returns {JSX.Element} The application root component
+ */
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          <Route path={ROUTES.HOME} element={<HomePage />} />
+          {/* Additional routes will be added as pages are implemented */}
+          <Route path={ROUTES.SPEAKERS} element={<PlaceholderPage title="Speakers" />} />
+          <Route path={ROUTES.SCHEDULE} element={<PlaceholderPage title="Schedule" />} />
+          <Route path={ROUTES.REGISTER} element={<PlaceholderPage title="Register" />} />
+          <Route path={ROUTES.FAQ} element={<PlaceholderPage title="FAQ" />} />
+          <Route path={ROUTES.ABOUT} element={<PlaceholderPage title="About" />} />
+          <Route path={ROUTES.VENUE} element={<PlaceholderPage title="Venue" />} />
+          <Route path={ROUTES.PRIVACY} element={<PlaceholderPage title="Privacy Policy" />} />
+          <Route path={ROUTES.TERMS} element={<PlaceholderPage title="Terms of Service" />} />
+          <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
+        </Routes>
+      </Layout>
+    </BrowserRouter>
+  );
+}
+
+/**
+ * PlaceholderPage Component
+ * Temporary placeholder for pages not yet implemented.
+ *
+ * @param {Object} props - Component props
+ * @param {string} props.title - The page title to display
+ * @returns {JSX.Element} A placeholder page component
+ */
+function PlaceholderPage({ title }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '60vh',
+        padding: '2rem',
+        textAlign: 'center',
+        paddingTop: 'calc(var(--header-height) + 2rem)',
+      }}
+    >
+      <h1>{title}</h1>
+      <p style={{ color: 'var(--color-text-secondary)', marginTop: '1rem' }}>
+        This page is coming soon.
+      </p>
     </div>
   );
 }
