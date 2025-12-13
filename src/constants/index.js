@@ -55,34 +55,17 @@ export const VENUE = {
 };
 
 /**
- * Pricing tiers configuration
+ * Pricing configuration
+ * Single pricing tier with Regular and Student/Senior rates
  */
 export const PRICING_TIERS = [
   {
-    id: 'super-early-bird',
-    name: 'Super Early Bird',
-    regularPrice: 170,
-    studentPrice: 120,
+    id: 'standard',
+    name: 'Standard',
+    regularPrice: 500,
+    studentPrice: 300,
     startDate: '2025-01-01',
-    endDate: '2025-03-31',
-    isActive: false,
-  },
-  {
-    id: 'early-bird',
-    name: 'Early Bird',
-    regularPrice: 210,
-    studentPrice: 150,
-    startDate: '2025-04-01',
-    endDate: '2025-06-30',
-    isActive: false,
-  },
-  {
-    id: 'regular',
-    name: 'Regular',
-    regularPrice: 290,
-    studentPrice: 200,
-    startDate: '2025-07-01',
-    endDate: '2025-09-04',
+    endDate: '2026-03-28',
     isActive: true,
   },
 ];
