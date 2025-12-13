@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout';
-import { HomePage } from './pages';
+import { HomePage, RegisterPage } from './pages';
 import { ROUTES } from './constants';
 import './index.css';
 
@@ -19,7 +19,7 @@ function App() {
           {/* Additional routes will be added as pages are implemented */}
           <Route path={ROUTES.SPEAKERS} element={<PlaceholderPage title="Speakers" />} />
           <Route path={ROUTES.SCHEDULE} element={<PlaceholderPage title="Schedule" />} />
-          <Route path={ROUTES.REGISTER} element={<PlaceholderPage title="Register" />} />
+          <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
           <Route path={ROUTES.FAQ} element={<PlaceholderPage title="FAQ" />} />
           <Route path={ROUTES.ABOUT} element={<PlaceholderPage title="About" />} />
           <Route path={ROUTES.VENUE} element={<PlaceholderPage title="Venue" />} />

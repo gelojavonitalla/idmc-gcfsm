@@ -172,6 +172,110 @@ export const WORKSHOP_TRACKS = [
 ];
 
 /**
+ * Registration categories for attendee pricing
+ */
+export const REGISTRATION_CATEGORIES = {
+  REGULAR: 'regular',
+  STUDENT: 'student',
+  NSF: 'nsf',
+};
+
+/**
+ * Registration category labels for display
+ */
+export const REGISTRATION_CATEGORY_LABELS = {
+  [REGISTRATION_CATEGORIES.REGULAR]: 'Regular',
+  [REGISTRATION_CATEGORIES.STUDENT]: 'Student',
+  [REGISTRATION_CATEGORIES.NSF]: 'NSF (National Service Full-time)',
+};
+
+/**
+ * Registration status values
+ */
+export const REGISTRATION_STATUS = {
+  PENDING_PAYMENT: 'pending_payment',
+  PENDING_VERIFICATION: 'pending_verification',
+  CONFIRMED: 'confirmed',
+  CANCELLED: 'cancelled',
+  REFUNDED: 'refunded',
+};
+
+/**
+ * Payment methods
+ */
+export const PAYMENT_METHODS = {
+  GCASH: 'gcash',
+  BANK_TRANSFER: 'bank_transfer',
+  CASH: 'cash',
+};
+
+/**
+ * Payment information for registration
+ */
+export const PAYMENT_INFO = {
+  GCASH: {
+    NAME: 'GCF South Metro',
+    NUMBER: '0917 650 0011',
+  },
+  BANK: {
+    NAME: 'GCF South Metro',
+    BANK_NAME: 'BDO (Banco de Oro)',
+    ACCOUNT_NUMBER: '0012-3456-7890',
+    BRANCH: 'Las Piñas Branch',
+  },
+  CURRENCY: 'PHP',
+  PAYMENT_DEADLINE_DAYS: 7,
+};
+
+/**
+ * Registration form step identifiers
+ */
+export const REGISTRATION_STEPS = {
+  PERSONAL_INFO: 1,
+  TICKET_SELECTION: 2,
+  WORKSHOP_PREFERENCES: 3,
+  SPECIAL_REQUIREMENTS: 4,
+  CONFIRMATION: 5,
+};
+
+/**
+ * Registration form step labels
+ */
+export const REGISTRATION_STEP_LABELS = {
+  [REGISTRATION_STEPS.PERSONAL_INFO]: 'Personal Info',
+  [REGISTRATION_STEPS.TICKET_SELECTION]: 'Ticket',
+  [REGISTRATION_STEPS.WORKSHOP_PREFERENCES]: 'Workshop',
+  [REGISTRATION_STEPS.SPECIAL_REQUIREMENTS]: 'Requirements',
+  [REGISTRATION_STEPS.CONFIRMATION]: 'Confirm',
+};
+
+/**
+ * Dietary preference options
+ */
+export const DIETARY_OPTIONS = [
+  'None',
+  'Vegetarian',
+  'Vegan',
+  'Halal',
+  'No Pork',
+  'No Seafood',
+  'Gluten-Free',
+  'Other',
+];
+
+/**
+ * Accessibility requirement options
+ */
+export const ACCESSIBILITY_OPTIONS = [
+  'None',
+  'Wheelchair Access',
+  'Hearing Assistance',
+  'Visual Assistance',
+  'Reserved Seating',
+  'Other',
+];
+
+/**
  * Conference schedule data
  * Based on IDMC 2025 schedule format
  */
