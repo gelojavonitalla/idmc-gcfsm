@@ -1,0 +1,61 @@
+name: Seed Firestore Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      clear_existing:
+        description: 'Clear existing data before seeding'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      seed_type:
+        description: 'What data to seed'
+        required: true
+        default: 'speakers'
+        type: choice
+        options:
+          - 'speakers'
+          - 'all'
+
+jobs:
+  seed_data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_IDMC_GCFSM_DEV }}
+
+      - name: Seed Speakers Data
+        if: ${{ inputs.seed_type == 'speakers' || inputs.seed_type == 'all' }}
+        run: |
+          if [ "${{ inputs.clear_existing }}" == "true" ]; then
+            echo "Clearing and re-seeding speakers..."
+            node scripts/seed-speakers.js --clear
+          else
+            echo "Seeding speakers (preserving existing)..."
+            node scripts/seed-speakers.js
+          fi
+        env:
+          GCLOUD_PROJECT: idmc-gcfsm-dev
+
+      - name: Seed Complete
+        run: |
+          echo "✅ Firestore seeding complete!"
+          echo "Data seeded: ${{ inputs.seed_type }}"
+          echo "Cleared existing: ${{ inputs.clear_existing }}"
