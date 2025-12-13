@@ -55,34 +55,17 @@ export const VENUE = {
 };
 
 /**
- * Pricing tiers configuration
+ * Pricing configuration
+ * Single pricing tier with Regular and Student/Senior rates
  */
 export const PRICING_TIERS = [
   {
-    id: 'super-early-bird',
-    name: 'Super Early Bird',
-    regularPrice: 170,
-    studentPrice: 120,
+    id: 'standard',
+    name: 'Standard',
+    regularPrice: 500,
+    studentPrice: 300,
     startDate: '2025-01-01',
-    endDate: '2025-03-31',
-    isActive: false,
-  },
-  {
-    id: 'early-bird',
-    name: 'Early Bird',
-    regularPrice: 210,
-    studentPrice: 150,
-    startDate: '2025-04-01',
-    endDate: '2025-06-30',
-    isActive: false,
-  },
-  {
-    id: 'regular',
-    name: 'Regular',
-    regularPrice: 290,
-    studentPrice: 200,
-    startDate: '2025-07-01',
-    endDate: '2025-09-04',
+    endDate: '2026-03-28',
     isActive: true,
   },
 ];
@@ -169,6 +152,105 @@ export const WORKSHOP_TRACKS = [
   'Men',
   'Couples',
   'Senior Citizens',
+];
+
+/**
+ * Registration categories for attendee pricing
+ */
+export const REGISTRATION_CATEGORIES = {
+  REGULAR: 'regular',
+  STUDENT_SENIOR: 'student_senior',
+};
+
+/**
+ * Registration category labels for display
+ */
+export const REGISTRATION_CATEGORY_LABELS = {
+  [REGISTRATION_CATEGORIES.REGULAR]: 'Regular',
+  [REGISTRATION_CATEGORIES.STUDENT_SENIOR]: 'Student / Senior Citizen',
+};
+
+/**
+ * Registration category descriptions
+ */
+export const REGISTRATION_CATEGORY_DESCRIPTIONS = {
+  [REGISTRATION_CATEGORIES.REGULAR]: 'For working professionals and general attendees',
+  [REGISTRATION_CATEGORIES.STUDENT_SENIOR]: 'For students with valid ID and senior citizens (60+)',
+};
+
+/**
+ * Registration status values
+ */
+export const REGISTRATION_STATUS = {
+  PENDING_PAYMENT: 'pending_payment',
+  PENDING_VERIFICATION: 'pending_verification',
+  CONFIRMED: 'confirmed',
+  CANCELLED: 'cancelled',
+  REFUNDED: 'refunded',
+};
+
+/**
+ * Payment methods
+ */
+export const PAYMENT_METHODS = {
+  GCASH: 'gcash',
+  BANK_TRANSFER: 'bank_transfer',
+  CASH: 'cash',
+};
+
+/**
+ * Payment information for registration
+ */
+export const PAYMENT_INFO = {
+  GCASH: {
+    NAME: 'GCF South Metro',
+    NUMBER: '0917 650 0011',
+  },
+  BANK: {
+    NAME: 'GCF South Metro',
+    BANK_NAME: 'BDO (Banco de Oro)',
+    ACCOUNT_NUMBER: '0012-3456-7890',
+    BRANCH: 'Las Piñas Branch',
+  },
+  CURRENCY: 'PHP',
+  PAYMENT_DEADLINE_DAYS: 7,
+};
+
+/**
+ * Registration form step identifiers
+ */
+export const REGISTRATION_STEPS = {
+  PERSONAL_INFO: 1,
+  TICKET_SELECTION: 2,
+  PAYMENT_UPLOAD: 3,
+  CONFIRMATION: 4,
+};
+
+/**
+ * Registration form step labels
+ */
+export const REGISTRATION_STEP_LABELS = {
+  [REGISTRATION_STEPS.PERSONAL_INFO]: 'Personal Info',
+  [REGISTRATION_STEPS.TICKET_SELECTION]: 'Ticket',
+  [REGISTRATION_STEPS.PAYMENT_UPLOAD]: 'Payment',
+  [REGISTRATION_STEPS.CONFIRMATION]: 'Confirm',
+};
+
+/**
+ * Ministry role options for registration
+ */
+export const MINISTRY_ROLES = [
+  'Pastor',
+  'Elder',
+  'Deacon/Deaconess',
+  'Ministry Leader',
+  'Small Group Leader',
+  'Worship Team',
+  'Youth Leader',
+  'Children\'s Ministry',
+  'Member',
+  'Visitor',
+  'Other',
 ];
 
 /**
