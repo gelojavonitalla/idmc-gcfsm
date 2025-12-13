@@ -41,11 +41,13 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_IDMC_GCFSM_DEV }}
 
-      - name: Setup Firebase CLI
-        run: npm install -g firebase-tools
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Deploy Firestore Indexes
-        run: firebase deploy --only firestore:indexes --project idmc-gcfsm-dev
+        run: |
+          chmod +x ./scripts/deploy-firestore-indexes.sh
+          ./scripts/deploy-firestore-indexes.sh idmc-gcfsm-dev idmc-2026
 
       - name: Index Deployment Complete
         run: |
