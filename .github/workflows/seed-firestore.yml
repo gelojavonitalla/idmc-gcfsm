@@ -1,8 +1,16 @@
-name: Seed Firestore Data
+name: Firestore Setup (Indexes & Seed Data)
 
 on:
   workflow_dispatch:
     inputs:
+      deploy_indexes:
+        description: 'Deploy Firestore indexes'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
       seed_speakers:
         description: 'Enable speaker seeding (requires Firestore permissions)'
         required: true
@@ -21,6 +29,28 @@ on:
           - 'true'
 
 jobs:
+  deploy_indexes:
+    if: ${{ inputs.deploy_indexes == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_IDMC_GCFSM_DEV }}
+
+      - name: Setup Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Deploy Firestore Indexes
+        run: firebase deploy --only firestore:indexes --project idmc-gcfsm-dev
+
+      - name: Index Deployment Complete
+        run: |
+          echo "✅ Firestore indexes deployed successfully!"
+
   seed_data:
     runs-on: ubuntu-latest
     steps:
