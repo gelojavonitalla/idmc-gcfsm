@@ -54,6 +54,7 @@ jobs:
           echo "✅ Firestore indexes deployed successfully!"
 
   seed_data:
+    if: ${{ inputs.seed_speakers == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -74,7 +75,6 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_IDMC_GCFSM_DEV }}
 
       - name: Seed Speakers Data
-        if: ${{ inputs.seed_speakers == 'true' }}
         run: |
           if [ "${{ inputs.clear_existing }}" == "true" ]; then
             echo "Clearing and re-seeding speakers..."
@@ -86,19 +86,7 @@ jobs:
         env:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
-      - name: Seeding Skipped
-        if: ${{ inputs.seed_speakers != 'true' }}
-        run: |
-          echo "⏭️ Speaker seeding skipped (seed_speakers=${{ inputs.seed_speakers }})"
-          echo ""
-          echo "To enable seeding, re-run this workflow with seed_speakers=true"
-          echo ""
-          echo "Note: Seeding requires a service account with Firestore permissions:"
-          echo "  - roles/datastore.user (or roles/datastore.owner)"
-          echo "  - Access to named database 'idmc-2026'"
-
       - name: Seed Complete
-        if: ${{ inputs.seed_speakers == 'true' }}
         run: |
           echo "✅ Firestore seeding complete!"
           echo "Cleared existing: ${{ inputs.clear_existing }}"
