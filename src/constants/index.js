@@ -55,37 +55,83 @@ export const VENUE = {
 };
 
 /**
- * Pricing tiers configuration
+ * Pricing categories configuration
  */
-export const PRICING_TIERS = [
+export const PRICING_CATEGORIES = [
   {
-    id: 'super-early-bird',
-    name: 'Super Early Bird',
-    regularPrice: 170,
-    studentPrice: 120,
-    startDate: '2025-01-01',
-    endDate: '2025-03-31',
-    isActive: false,
-  },
-  {
-    id: 'early-bird',
-    name: 'Early Bird',
-    regularPrice: 210,
-    studentPrice: 150,
-    startDate: '2025-04-01',
-    endDate: '2025-06-30',
-    isActive: false,
+    id: 'student-senior',
+    name: 'Student / Senior Citizen',
+    price: 200,
+    description: 'Valid student ID or Senior Citizen ID required',
   },
   {
     id: 'regular',
     name: 'Regular',
-    regularPrice: 290,
-    studentPrice: 200,
-    startDate: '2025-07-01',
-    endDate: '2025-09-04',
-    isActive: true,
+    price: 290,
+    description: 'General admission',
   },
 ];
+
+/**
+ * Registration form field configuration
+ */
+export const REGISTRATION_FIELDS = {
+  personalInfo: [
+    { id: 'lastName', label: 'Last Name', type: 'text', required: true },
+    { id: 'firstName', label: 'First Name', type: 'text', required: true },
+    { id: 'middleName', label: 'Middle Name', type: 'text', required: false },
+    { id: 'cellphone', label: 'Cellphone Number', type: 'tel', required: true },
+    { id: 'email', label: 'Email Address', type: 'email', required: true },
+  ],
+  churchInfo: [
+    { id: 'churchName', label: 'Church Name', type: 'text', required: true },
+    { id: 'ministryRole', label: 'Ministry Role', type: 'text', required: true },
+    {
+      id: 'churchLocation',
+      label: 'Church Location (City and Province/Region)',
+      type: 'text',
+      required: true,
+    },
+  ],
+  payment: [
+    {
+      id: 'paymentUpload',
+      label: 'Upload Payment Proof',
+      type: 'file',
+      required: true,
+      accept: 'image/*,.pdf',
+    },
+  ],
+  invoice: [
+    {
+      id: 'invoiceRequest',
+      label: 'Request Invoice',
+      type: 'checkbox',
+      required: false,
+    },
+    {
+      id: 'invoiceName',
+      label: 'Name in Invoice',
+      type: 'text',
+      required: false,
+      conditionalOn: 'invoiceRequest',
+    },
+    {
+      id: 'invoiceTin',
+      label: 'TIN (Tax Identification Number)',
+      type: 'text',
+      required: false,
+      conditionalOn: 'invoiceRequest',
+    },
+    {
+      id: 'invoiceAddress',
+      label: 'Billing Address',
+      type: 'textarea',
+      required: false,
+      conditionalOn: 'invoiceRequest',
+    },
+  ],
+};
 
 /**
  * Navigation menu items

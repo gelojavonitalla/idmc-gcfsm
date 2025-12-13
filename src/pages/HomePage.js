@@ -6,7 +6,7 @@ import {
   SPEAKERS,
   SESSION_TYPES,
   VENUE,
-  PRICING_TIERS,
+  PRICING_CATEGORIES,
   SCHEDULE,
   ROUTES,
 } from '../constants';
@@ -156,35 +156,19 @@ function HomePage() {
         <div className="container">
           <h2 className={styles.sectionTitle}>Registration</h2>
           <p className={styles.sectionSubtitle}>
-            Choose the registration tier that works for you
+            Choose the registration category that applies to you
           </p>
           <div className={styles.pricingGrid}>
-            {PRICING_TIERS.map((tier) => (
-              <div
-                key={tier.id}
-                className={`${styles.pricingCard} ${tier.isActive ? styles.pricingCardActive : ''}`}
-              >
-                {tier.isActive && (
-                  <span className={styles.pricingBadge}>Current</span>
-                )}
-                <h3 className={styles.pricingName}>{tier.name}</h3>
-                <div className={styles.pricingPrices}>
-                  <div className={styles.priceItem}>
-                    <span className={styles.priceLabel}>Regular</span>
-                    <span className={styles.priceAmount}>
-                      PHP {tier.regularPrice}
-                    </span>
-                  </div>
-                  <div className={styles.priceItem}>
-                    <span className={styles.priceLabel}>Student</span>
-                    <span className={styles.priceAmount}>
-                      PHP {tier.studentPrice}
-                    </span>
-                  </div>
+            {PRICING_CATEGORIES.map((category) => (
+              <div key={category.id} className={styles.pricingCard}>
+                <h3 className={styles.pricingName}>{category.name}</h3>
+                <div className={styles.pricingPrice}>
+                  <span className={styles.priceAmount}>PHP {category.price}</span>
                 </div>
-                <p className={styles.pricingDates}>
-                  {tier.startDate} to {tier.endDate}
-                </p>
+                <p className={styles.pricingDescription}>{category.description}</p>
+                <Link to={ROUTES.REGISTER} className={styles.pricingButton}>
+                  Register Now
+                </Link>
               </div>
             ))}
           </div>
