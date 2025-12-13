@@ -1,0 +1,12 @@
+/**
+ * Workshops Components Export
+ * Re-exports all workshop-related components for cleaner imports
+ */
+
+export { default as CapacityBadge } from './CapacityBadge';
+export { default as CategoryFilter } from './CategoryFilter';
+export { default as TrackFilter } from './TrackFilter';
+export { default as WorkshopCard } from './WorkshopCard';
+export { default as WorkshopDetailModal } from './WorkshopDetailModal';
+export { default as WorkshopGrid } from './WorkshopGrid';
+export { default as WorkshopSelector } from './WorkshopSelector';

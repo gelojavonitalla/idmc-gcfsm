@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout';
-import { HomePage, RegisterPage, SpeakersPage, SchedulePage } from './pages';
+import { HomePage, RegisterPage, SpeakersPage, SchedulePage, WorkshopsPage } from './pages';
 import { ROUTES } from './constants';
 import './index.css';
 
@@ -18,6 +18,7 @@ function App() {
           <Route path={ROUTES.HOME} element={<HomePage />} />
           <Route path={ROUTES.SPEAKERS} element={<SpeakersPage />} />
           <Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
+          <Route path={ROUTES.WORKSHOPS} element={<WorkshopsPage />} />
           <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
           <Route path={ROUTES.FAQ} element={<PlaceholderPage title="FAQ" />} />
           <Route path={ROUTES.ABOUT} element={<PlaceholderPage title="About" />} />
