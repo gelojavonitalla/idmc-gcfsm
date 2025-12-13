@@ -146,7 +146,7 @@ function initializeFirebase() {
 
   // Initialize with default credentials (will use emulator if env var is set)
   admin.initializeApp({
-    projectId: process.env.GCLOUD_PROJECT || 'idmc-gcfsm',
+    projectId: process.env.GCLOUD_PROJECT || 'idmc-gcfsm-dev',
   });
 
   return admin.app();
