@@ -10,3 +10,9 @@ export {
   getSpeakerById,
   getFeaturedSpeakers,
 } from './speakers';
+
+export {
+  getPublishedSessions,
+  getSessionById,
+  getSessionsByType,
+} from './sessions';

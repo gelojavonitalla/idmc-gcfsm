@@ -201,7 +201,7 @@ function HomePage() {
             {SCHEDULE.map((item) => (
               <div
                 key={item.id}
-                className={`${styles.scheduleItem} ${styles[`scheduleType${item.type.charAt(0).toUpperCase() + item.type.slice(1)}`] || ''}`}
+                className={`${styles.scheduleItem} ${styles[`scheduleType${item.sessionType.charAt(0).toUpperCase() + item.sessionType.slice(1)}`] || ''}`}
               >
                 <div className={styles.scheduleTime}>{item.time}</div>
                 <div className={styles.scheduleContent}>
