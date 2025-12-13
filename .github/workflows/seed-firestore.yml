@@ -39,7 +39,7 @@ jobs:
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.FIRESTORE_SERVICE_ACCOUNT_IDMC_GCFSM_DEV }}
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_IDMC_GCFSM_DEV }}
 
       - name: Seed Speakers Data
         if: ${{ inputs.seed_speakers == 'true' }}
