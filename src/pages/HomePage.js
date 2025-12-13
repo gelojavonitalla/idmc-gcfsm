@@ -116,6 +116,13 @@ function HomePage() {
               ))}
             </div>
           </div>
+
+          {/* View All Speakers Link */}
+          <div className={styles.viewAllSpeakers}>
+            <Link to={ROUTES.SPEAKERS} className={styles.viewAllButton}>
+              View All Speakers
+            </Link>
+          </div>
         </div>
       </section>
 

@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout';
-import { HomePage, RegisterPage } from './pages';
+import { HomePage, RegisterPage, SpeakersPage } from './pages';
 import { ROUTES } from './constants';
 import './index.css';
 
@@ -16,8 +16,7 @@ function App() {
       <Layout>
         <Routes>
           <Route path={ROUTES.HOME} element={<HomePage />} />
-          {/* Additional routes will be added as pages are implemented */}
-          <Route path={ROUTES.SPEAKERS} element={<PlaceholderPage title="Speakers" />} />
+          <Route path={ROUTES.SPEAKERS} element={<SpeakersPage />} />
           <Route path={ROUTES.SCHEDULE} element={<PlaceholderPage title="Schedule" />} />
           <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
           <Route path={ROUTES.FAQ} element={<PlaceholderPage title="FAQ" />} />
