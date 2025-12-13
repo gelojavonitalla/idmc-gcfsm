@@ -3,6 +3,14 @@ name: Seed Firestore Data
 on:
   workflow_dispatch:
     inputs:
+      seed_speakers:
+        description: 'Enable speaker seeding (requires Firestore permissions)'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
       clear_existing:
         description: 'Clear existing data before seeding'
         required: false
@@ -11,14 +19,6 @@ on:
         options:
           - 'false'
           - 'true'
-      seed_type:
-        description: 'What data to seed'
-        required: true
-        default: 'speakers'
-        type: choice
-        options:
-          - 'speakers'
-          - 'all'
 
 jobs:
   seed_data:
@@ -39,10 +39,10 @@ jobs:
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_IDMC_GCFSM_DEV }}
+          credentials_json: ${{ secrets.FIRESTORE_SERVICE_ACCOUNT_IDMC_GCFSM_DEV }}
 
       - name: Seed Speakers Data
-        if: ${{ inputs.seed_type == 'speakers' || inputs.seed_type == 'all' }}
+        if: ${{ inputs.seed_speakers == 'true' }}
         run: |
           if [ "${{ inputs.clear_existing }}" == "true" ]; then
             echo "Clearing and re-seeding speakers..."
@@ -54,8 +54,19 @@ jobs:
         env:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
+      - name: Seeding Skipped
+        if: ${{ inputs.seed_speakers != 'true' }}
+        run: |
+          echo "⏭️ Speaker seeding skipped (seed_speakers=${{ inputs.seed_speakers }})"
+          echo ""
+          echo "To enable seeding, re-run this workflow with seed_speakers=true"
+          echo ""
+          echo "Note: Seeding requires a service account with Firestore permissions:"
+          echo "  - roles/datastore.user (or roles/datastore.owner)"
+          echo "  - Access to named database 'idmc-2026'"
+
       - name: Seed Complete
+        if: ${{ inputs.seed_speakers == 'true' }}
         run: |
           echo "✅ Firestore seeding complete!"
-          echo "Data seeded: ${{ inputs.seed_type }}"
           echo "Cleared existing: ${{ inputs.clear_existing }}"
