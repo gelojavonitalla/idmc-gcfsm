@@ -37,9 +37,8 @@ function SpeakersPage() {
         const fetchedSpeakers = await getPublishedSpeakers();
         setSpeakers(fetchedSpeakers);
       } catch (fetchError) {
-        console.error('Failed to fetch speakers:', fetchError);
-        setError('Failed to load speakers. Please try again later.');
-        // Fallback to mock data on error
+        console.error('Failed to fetch speakers from database:', fetchError);
+        // Silently fallback to static data - no need to show error to users
         setSpeakers(SPEAKERS);
       } finally {
         setIsLoading(false);
