@@ -152,11 +152,6 @@ export const SPEAKER_STATUS = {
 };
 
 /**
- * Maximum number of featured speakers allowed on landing page
- */
-export const MAX_FEATURED_SPEAKERS = 6;
-
-/**
  * Workshop tracks for the conference
  */
 export const WORKSHOP_TRACKS = [

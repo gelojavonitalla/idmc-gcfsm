@@ -82,8 +82,7 @@ function SpeakersPage() {
         <div className="container">
           <h1 className={styles.heroTitle}>Our Speakers</h1>
           <p className={styles.heroSubtitle}>
-            Meet the experienced leaders and mentors sharing at IDMC{' '}
-            {CONFERENCE.YEAR}
+            Meet the experienced leaders and mentors sharing at IDMC {CONFERENCE.YEAR}
           </p>
         </div>
       </section>
