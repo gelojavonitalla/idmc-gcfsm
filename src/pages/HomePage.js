@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { CountdownTimer, YouTubeEmbed } from '../components/ui';
+import { getFeaturedSpeakers } from '../services/speakers';
 import {
   CONFERENCE,
   ORGANIZATION,
@@ -24,10 +26,46 @@ const PROMO_VIDEO_ID = 'emGTZDXOaZY';
  * HomePage Component
  * Landing page for the IDMC Conference website.
  * Displays hero, video, countdown, speakers, schedule highlights, pricing, about, and venue sections.
+ * Fetches featured speaker data from Firestore with fallback to mock data.
  *
  * @returns {JSX.Element} The home page component
  */
 function HomePage() {
+  const [speakers, setSpeakers] = useState([]);
+  const [isLoadingSpeakers, setIsLoadingSpeakers] = useState(true);
+  const [speakersError, setSpeakersError] = useState(null);
+
+  /**
+   * Fetches featured speakers from Firestore on component mount
+   */
+  useEffect(() => {
+    async function fetchSpeakers() {
+      try {
+        setIsLoadingSpeakers(true);
+        setSpeakersError(null);
+        const fetchedSpeakers = await getFeaturedSpeakers();
+        setSpeakers(fetchedSpeakers);
+      } catch (error) {
+        console.error('Failed to fetch featured speakers:', error);
+        setSpeakersError('Failed to load speakers.');
+        // Fallback to mock data on error
+        setSpeakers(SPEAKERS);
+      } finally {
+        setIsLoadingSpeakers(false);
+      }
+    }
+
+    fetchSpeakers();
+  }, []);
+
+  const plenarySpeakers = speakers.filter(
+    (speaker) => speaker.sessionType === SESSION_TYPES.PLENARY
+  );
+
+  const workshopSpeakers = speakers.filter(
+    (speaker) => speaker.sessionType === SESSION_TYPES.WORKSHOP
+  );
+
   return (
     <div className={styles.page}>
       {/* Hero Section */}
@@ -78,44 +116,70 @@ function HomePage() {
             Learn from experienced leaders in discipleship
           </p>
 
-          {/* Plenary Speaker */}
-          <div className={styles.speakerCategory}>
-            <h3 className={styles.categoryTitle}>Plenary Session</h3>
-            <div className={styles.speakersGrid}>
-              {SPEAKERS.filter(
-                (speaker) => speaker.sessionType === SESSION_TYPES.PLENARY
-              ).map((speaker) => (
-                <div key={speaker.id} className={styles.speakerCard}>
-                  <div className={styles.speakerImagePlaceholder}>
-                    <span>{speaker.name.charAt(0)}</span>
-                  </div>
-                  <h4 className={styles.speakerName}>{speaker.name}</h4>
-                  <p className={styles.speakerTitle}>{speaker.title}</p>
-                  <p className={styles.speakerOrg}>{speaker.organization}</p>
-                </div>
-              ))}
+          {/* Loading State */}
+          {isLoadingSpeakers && (
+            <div className={styles.speakersLoading}>
+              <p>Loading speakers...</p>
             </div>
-          </div>
+          )}
 
-          {/* Workshop Speakers */}
-          <div className={styles.speakerCategory}>
-            <h3 className={styles.categoryTitle}>Workshops</h3>
-            <div className={styles.speakersGrid}>
-              {SPEAKERS.filter(
-                (speaker) => speaker.sessionType === SESSION_TYPES.WORKSHOP
-              ).map((speaker) => (
-                <div key={speaker.id} className={styles.speakerCard}>
-                  <div className={styles.speakerImagePlaceholder}>
-                    <span>{speaker.name.charAt(0)}</span>
-                  </div>
-                  <h4 className={styles.speakerName}>{speaker.name}</h4>
-                  <p className={styles.speakerTitle}>{speaker.title}</p>
-                  <p className={styles.speakerOrg}>{speaker.organization}</p>
-                  <p className={styles.speakerSession}>{speaker.sessionTitle}</p>
-                </div>
-              ))}
+          {/* Error State */}
+          {speakersError && !isLoadingSpeakers && (
+            <div className={styles.speakersError}>
+              <p>{speakersError}</p>
             </div>
-          </div>
+          )}
+
+          {/* Speaker Content */}
+          {!isLoadingSpeakers && (
+            <>
+              {/* Plenary Speaker */}
+              {plenarySpeakers.length > 0 && (
+                <div className={styles.speakerCategory}>
+                  <h3 className={styles.categoryTitle}>Plenary Session</h3>
+                  <div className={styles.speakersGrid}>
+                    {plenarySpeakers.map((speaker) => (
+                      <div key={speaker.id} className={styles.speakerCard}>
+                        <div className={styles.speakerImagePlaceholder}>
+                          <span>{speaker.name.charAt(0)}</span>
+                        </div>
+                        <h4 className={styles.speakerName}>{speaker.name}</h4>
+                        <p className={styles.speakerTitle}>{speaker.title}</p>
+                        <p className={styles.speakerOrg}>{speaker.organization}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Workshop Speakers */}
+              {workshopSpeakers.length > 0 && (
+                <div className={styles.speakerCategory}>
+                  <h3 className={styles.categoryTitle}>Workshops</h3>
+                  <div className={styles.speakersGrid}>
+                    {workshopSpeakers.map((speaker) => (
+                      <div key={speaker.id} className={styles.speakerCard}>
+                        <div className={styles.speakerImagePlaceholder}>
+                          <span>{speaker.name.charAt(0)}</span>
+                        </div>
+                        <h4 className={styles.speakerName}>{speaker.name}</h4>
+                        <p className={styles.speakerTitle}>{speaker.title}</p>
+                        <p className={styles.speakerOrg}>{speaker.organization}</p>
+                        <p className={styles.speakerSession}>{speaker.sessionTitle}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {speakers.length === 0 && (
+                <div className={styles.speakersEmpty}>
+                  <p>Speaker information coming soon!</p>
+                </div>
+              )}
+            </>
+          )}
 
           {/* View All Speakers Link */}
           <div className={styles.viewAllSpeakers}>

@@ -72,6 +72,25 @@
   margin: 0 auto;
 }
 
+/* Loading State */
+.loadingState {
+  text-align: center;
+  padding: var(--spacing-16);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-lg);
+}
+
+/* Error State */
+.errorState {
+  text-align: center;
+  padding: var(--spacing-16);
+  color: var(--color-error, #dc3545);
+  font-size: var(--font-size-lg);
+  background-color: rgba(220, 53, 69, 0.1);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-8);
+}
+
 /* Empty State */
 .emptyState {
   text-align: center;
