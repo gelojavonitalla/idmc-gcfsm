@@ -6,9 +6,8 @@ import {
   REGISTRATION_STEP_LABELS,
   REGISTRATION_CATEGORIES,
   REGISTRATION_CATEGORY_LABELS,
-  WORKSHOP_TRACKS,
-  DIETARY_OPTIONS,
-  ACCESSIBILITY_OPTIONS,
+  REGISTRATION_CATEGORY_DESCRIPTIONS,
+  MINISTRY_ROLES,
   PAYMENT_INFO,
 } from '../constants';
 import {
@@ -19,8 +18,6 @@ import {
   formatPrice,
   isValidEmail,
   isValidPhoneNumber,
-  getPaymentDeadline,
-  formatDate,
   requiresProof,
 } from '../utils';
 import styles from './RegisterPage.module.css';
@@ -30,26 +27,30 @@ import styles from './RegisterPage.module.css';
  */
 const INITIAL_FORM_DATA = {
   // Personal Information
-  firstName: '',
   lastName: '',
+  firstName: '',
+  middleName: '',
+  cellphone: '',
   email: '',
-  phone: '',
-  church: '',
-  organization: '',
+
+  // Church Information
+  churchName: '',
+  ministryRole: '',
+  churchCity: '',
+  churchProvince: '',
 
   // Ticket Selection
   category: REGISTRATION_CATEGORIES.REGULAR,
-  proofDeclaration: false,
 
-  // Workshop Preferences
-  workshopTrack: WORKSHOP_TRACKS[0],
+  // Payment
+  paymentFile: null,
+  paymentFileName: '',
 
-  // Special Requirements
-  dietary: 'None',
-  dietaryOther: '',
-  accessibility: 'None',
-  accessibilityOther: '',
-  otherRequirements: '',
+  // Invoice Request
+  invoiceRequest: false,
+  invoiceName: '',
+  tin: '',
+  invoiceAddress: '',
 
   // Terms
   termsAccepted: false,
@@ -59,7 +60,7 @@ const INITIAL_FORM_DATA = {
  * RegisterPage Component
  * Multi-step registration form for the IDMC Conference.
  * Handles attendee information collection, ticket selection,
- * workshop preferences, and displays payment instructions.
+ * payment upload, and invoice request.
  *
  * @returns {JSX.Element} The registration page component
  */
@@ -85,6 +86,40 @@ function RegisterPage() {
   }, []);
 
   /**
+   * Handles file selection for payment upload
+   *
+   * @param {Event} e - The file input change event
+   */
+  const handleFileChange = useCallback((e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        setErrors((prev) => ({
+          ...prev,
+          paymentFile: 'Please upload an image (JPG, PNG, GIF) or PDF file',
+        }));
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors((prev) => ({
+          ...prev,
+          paymentFile: 'File size must be less than 5MB',
+        }));
+        return;
+      }
+      setFormData((prev) => ({
+        ...prev,
+        paymentFile: file,
+        paymentFileName: file.name,
+      }));
+      setErrors((prev) => ({ ...prev, paymentFile: null }));
+    }
+  }, []);
+
+  /**
    * Validates the personal information step
    *
    * @returns {boolean} True if valid
@@ -92,21 +127,33 @@ function RegisterPage() {
   const validatePersonalInfo = useCallback(() => {
     const newErrors = {};
 
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    }
     if (!formData.firstName.trim()) {
       newErrors.firstName = 'First name is required';
     }
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
+    if (!formData.cellphone.trim()) {
+      newErrors.cellphone = 'Cellphone number is required';
+    } else if (!isValidPhoneNumber(formData.cellphone)) {
+      newErrors.cellphone = 'Please enter a valid Philippine cellphone number';
     }
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!isValidEmail(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!isValidPhoneNumber(formData.phone)) {
-      newErrors.phone = 'Please enter a valid Philippine phone number';
+    if (!formData.churchName.trim()) {
+      newErrors.churchName = 'Church name is required';
+    }
+    if (!formData.ministryRole) {
+      newErrors.ministryRole = 'Ministry role is required';
+    }
+    if (!formData.churchCity.trim()) {
+      newErrors.churchCity = 'City is required';
+    }
+    if (!formData.churchProvince.trim()) {
+      newErrors.churchProvince = 'Province/Region is required';
     }
 
     setErrors(newErrors);
@@ -121,9 +168,8 @@ function RegisterPage() {
   const validateTicketSelection = useCallback(() => {
     const newErrors = {};
 
-    if (requiresProof(formData.category) && !formData.proofDeclaration) {
-      newErrors.proofDeclaration =
-        'Please confirm you can provide proof of status upon request';
+    if (!formData.termsAccepted) {
+      newErrors.termsAccepted = 'You must accept the terms and conditions';
     }
 
     setErrors(newErrors);
@@ -131,23 +177,27 @@ function RegisterPage() {
   }, [formData]);
 
   /**
-   * Validates the special requirements step
+   * Validates the payment upload step
    *
    * @returns {boolean} True if valid
    */
-  const validateSpecialRequirements = useCallback(() => {
+  const validatePaymentUpload = useCallback(() => {
     const newErrors = {};
 
-    if (!formData.termsAccepted) {
-      newErrors.termsAccepted = 'You must accept the terms and conditions';
+    if (!formData.paymentFile) {
+      newErrors.paymentFile = 'Please upload your payment screenshot or receipt';
     }
 
-    if (formData.dietary === 'Other' && !formData.dietaryOther.trim()) {
-      newErrors.dietaryOther = 'Please specify your dietary requirement';
-    }
-
-    if (formData.accessibility === 'Other' && !formData.accessibilityOther.trim()) {
-      newErrors.accessibilityOther = 'Please specify your accessibility need';
+    if (formData.invoiceRequest) {
+      if (!formData.invoiceName.trim()) {
+        newErrors.invoiceName = 'Name for invoice is required';
+      }
+      if (!formData.tin.trim()) {
+        newErrors.tin = 'TIN is required for invoice';
+      }
+      if (!formData.invoiceAddress.trim()) {
+        newErrors.invoiceAddress = 'Address is required for invoice';
+      }
     }
 
     setErrors(newErrors);
@@ -167,8 +217,8 @@ function RegisterPage() {
       case REGISTRATION_STEPS.TICKET_SELECTION:
         isValid = validateTicketSelection();
         break;
-      case REGISTRATION_STEPS.SPECIAL_REQUIREMENTS:
-        isValid = validateSpecialRequirements();
+      case REGISTRATION_STEPS.PAYMENT_UPLOAD:
+        isValid = validatePaymentUpload();
         break;
       default:
         break;
@@ -178,7 +228,7 @@ function RegisterPage() {
       setCurrentStep((prev) => prev + 1);
       window.scrollTo(0, 0);
     }
-  }, [currentStep, validatePersonalInfo, validateTicketSelection, validateSpecialRequirements]);
+  }, [currentStep, validatePersonalInfo, validateTicketSelection, validatePaymentUpload]);
 
   /**
    * Handles moving to the previous step
@@ -224,7 +274,6 @@ function RegisterPage() {
   // Submitted/Confirmation state
   if (isSubmitted) {
     const amount = calculatePrice(formData.category, currentTier);
-    const deadline = getPaymentDeadline(PAYMENT_INFO.PAYMENT_DEADLINE_DAYS);
 
     return (
       <div className={styles.page}>
@@ -244,7 +293,7 @@ function RegisterPage() {
                 <div className={styles.summaryItem}>
                   <span className={styles.summaryLabel}>Name</span>
                   <span className={styles.summaryValue}>
-                    {formData.firstName} {formData.lastName}
+                    {formData.lastName}, {formData.firstName} {formData.middleName}
                   </span>
                 </div>
                 <div className={styles.summaryItem}>
@@ -252,8 +301,22 @@ function RegisterPage() {
                   <span className={styles.summaryValue}>{formData.email}</span>
                 </div>
                 <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Phone</span>
-                  <span className={styles.summaryValue}>{formData.phone}</span>
+                  <span className={styles.summaryLabel}>Cellphone</span>
+                  <span className={styles.summaryValue}>{formData.cellphone}</span>
+                </div>
+                <div className={styles.summaryItem}>
+                  <span className={styles.summaryLabel}>Church</span>
+                  <span className={styles.summaryValue}>{formData.churchName}</span>
+                </div>
+                <div className={styles.summaryItem}>
+                  <span className={styles.summaryLabel}>Ministry Role</span>
+                  <span className={styles.summaryValue}>{formData.ministryRole}</span>
+                </div>
+                <div className={styles.summaryItem}>
+                  <span className={styles.summaryLabel}>Location</span>
+                  <span className={styles.summaryValue}>
+                    {formData.churchCity}, {formData.churchProvince}
+                  </span>
                 </div>
                 <div className={styles.summaryItem}>
                   <span className={styles.summaryLabel}>Category</span>
@@ -262,65 +325,31 @@ function RegisterPage() {
                   </span>
                 </div>
                 <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Pricing Tier</span>
-                  <span className={styles.summaryValue}>{currentTier.name}</span>
+                  <span className={styles.summaryLabel}>Payment Uploaded</span>
+                  <span className={styles.summaryValue}>{formData.paymentFileName}</span>
                 </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Workshop Track</span>
-                  <span className={styles.summaryValue}>{formData.workshopTrack}</span>
-                </div>
+                {formData.invoiceRequest && (
+                  <div className={styles.summaryItem}>
+                    <span className={styles.summaryLabel}>Invoice Requested</span>
+                    <span className={styles.summaryValue}>Yes - {formData.invoiceName}</span>
+                  </div>
+                )}
               </div>
 
               <div className={styles.amountDue}>
-                <span>Amount Due</span>
+                <span>Amount Paid</span>
                 <span className={styles.amountValue}>{formatPrice(amount)}</span>
               </div>
             </div>
 
-            <div className={styles.paymentInstructions}>
-              <h2>Payment Instructions</h2>
-              <p className={styles.paymentDeadline}>
-                Please complete payment by <strong>{formatDate(deadline)}</strong>
-              </p>
-
-              <div className={styles.paymentMethods}>
-                <div className={styles.paymentMethod}>
-                  <h3>GCash</h3>
-                  <p>
-                    <strong>Account Name:</strong> {PAYMENT_INFO.GCASH.NAME}
-                  </p>
-                  <p>
-                    <strong>Number:</strong> {PAYMENT_INFO.GCASH.NUMBER}
-                  </p>
-                </div>
-
-                <div className={styles.paymentMethod}>
-                  <h3>Bank Transfer</h3>
-                  <p>
-                    <strong>Account Name:</strong> {PAYMENT_INFO.BANK.NAME}
-                  </p>
-                  <p>
-                    <strong>Bank:</strong> {PAYMENT_INFO.BANK.BANK_NAME}
-                  </p>
-                  <p>
-                    <strong>Account No:</strong> {PAYMENT_INFO.BANK.ACCOUNT_NUMBER}
-                  </p>
-                  <p>
-                    <strong>Branch:</strong> {PAYMENT_INFO.BANK.BRANCH}
-                  </p>
-                </div>
-              </div>
-
-              <div className={styles.paymentNote}>
-                <p>
-                  <strong>Important:</strong> Please include your registration ID (
-                  <strong>{registrationId}</strong>) as the payment reference/note.
-                </p>
-                <p>
-                  A confirmation email will be sent to <strong>{formData.email}</strong>{' '}
-                  once your payment has been verified.
-                </p>
-              </div>
+            <div className={styles.nextSteps}>
+              <h2>What&apos;s Next?</h2>
+              <ol>
+                <li>Your payment will be verified within 24-48 hours.</li>
+                <li>A confirmation email will be sent to <strong>{formData.email}</strong>.</li>
+                <li>Please save your Registration ID: <strong>{registrationId}</strong></li>
+                <li>Present your confirmation email or Registration ID at the event.</li>
+              </ol>
             </div>
 
             <div className={styles.eventDetails}>
@@ -376,27 +405,10 @@ function RegisterPage() {
             <div className={styles.formStep}>
               <h2>Personal Information</h2>
               <p className={styles.stepDescription}>
-                Please provide your contact details for registration.
+                Please provide your contact and church details for registration.
               </p>
 
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="firstName" className={styles.label}>
-                    First Name <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    id="firstName"
-                    type="text"
-                    className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`}
-                    value={formData.firstName}
-                    onChange={(e) => updateField('firstName', e.target.value)}
-                    placeholder="Enter your first name"
-                  />
-                  {errors.firstName && (
-                    <span className={styles.errorMessage}>{errors.firstName}</span>
-                  )}
-                </div>
-
+              <div className={styles.formRow3}>
                 <div className={styles.formGroup}>
                   <label htmlFor="lastName" className={styles.label}>
                     Last Name <span className={styles.required}>*</span>
@@ -407,75 +419,159 @@ function RegisterPage() {
                     className={`${styles.input} ${errors.lastName ? styles.inputError : ''}`}
                     value={formData.lastName}
                     onChange={(e) => updateField('lastName', e.target.value)}
-                    placeholder="Enter your last name"
+                    placeholder="Dela Cruz"
                   />
                   {errors.lastName && (
                     <span className={styles.errorMessage}>{errors.lastName}</span>
                   )}
                 </div>
-              </div>
 
-              <div className={styles.formGroup}>
-                <label htmlFor="email" className={styles.label}>
-                  Email Address <span className={styles.required}>*</span>
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
-                  value={formData.email}
-                  onChange={(e) => updateField('email', e.target.value)}
-                  placeholder="your.email@example.com"
-                />
-                {errors.email && (
-                  <span className={styles.errorMessage}>{errors.email}</span>
-                )}
-              </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="firstName" className={styles.label}>
+                    First Name <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    id="firstName"
+                    type="text"
+                    className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`}
+                    value={formData.firstName}
+                    onChange={(e) => updateField('firstName', e.target.value)}
+                    placeholder="Juan"
+                  />
+                  {errors.firstName && (
+                    <span className={styles.errorMessage}>{errors.firstName}</span>
+                  )}
+                </div>
 
-              <div className={styles.formGroup}>
-                <label htmlFor="phone" className={styles.label}>
-                  Phone Number <span className={styles.required}>*</span>
-                </label>
-                <input
-                  id="phone"
-                  type="tel"
-                  className={`${styles.input} ${errors.phone ? styles.inputError : ''}`}
-                  value={formData.phone}
-                  onChange={(e) => updateField('phone', e.target.value)}
-                  placeholder="09XX-XXX-XXXX"
-                />
-                {errors.phone && (
-                  <span className={styles.errorMessage}>{errors.phone}</span>
-                )}
+                <div className={styles.formGroup}>
+                  <label htmlFor="middleName" className={styles.label}>
+                    Middle Name
+                  </label>
+                  <input
+                    id="middleName"
+                    type="text"
+                    className={styles.input}
+                    value={formData.middleName}
+                    onChange={(e) => updateField('middleName', e.target.value)}
+                    placeholder="Santos"
+                  />
+                </div>
               </div>
 
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label htmlFor="church" className={styles.label}>
-                    Church
+                  <label htmlFor="cellphone" className={styles.label}>
+                    Cellphone Number <span className={styles.required}>*</span>
                   </label>
                   <input
-                    id="church"
-                    type="text"
-                    className={styles.input}
-                    value={formData.church}
-                    onChange={(e) => updateField('church', e.target.value)}
-                    placeholder="Your church name"
+                    id="cellphone"
+                    type="tel"
+                    className={`${styles.input} ${errors.cellphone ? styles.inputError : ''}`}
+                    value={formData.cellphone}
+                    onChange={(e) => updateField('cellphone', e.target.value)}
+                    placeholder="09XX-XXX-XXXX"
                   />
+                  {errors.cellphone && (
+                    <span className={styles.errorMessage}>{errors.cellphone}</span>
+                  )}
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label htmlFor="organization" className={styles.label}>
-                    Organization
+                  <label htmlFor="email" className={styles.label}>
+                    Email Address <span className={styles.required}>*</span>
                   </label>
                   <input
-                    id="organization"
-                    type="text"
-                    className={styles.input}
-                    value={formData.organization}
-                    onChange={(e) => updateField('organization', e.target.value)}
-                    placeholder="Your organization (if applicable)"
+                    id="email"
+                    type="email"
+                    className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
+                    value={formData.email}
+                    onChange={(e) => updateField('email', e.target.value)}
+                    placeholder="your.email@example.com"
                   />
+                  {errors.email && (
+                    <span className={styles.errorMessage}>{errors.email}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.sectionDivider}>
+                <span>Church Information</span>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="churchName" className={styles.label}>
+                    Church Name <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    id="churchName"
+                    type="text"
+                    className={`${styles.input} ${errors.churchName ? styles.inputError : ''}`}
+                    value={formData.churchName}
+                    onChange={(e) => updateField('churchName', e.target.value)}
+                    placeholder="GCF South Metro"
+                  />
+                  {errors.churchName && (
+                    <span className={styles.errorMessage}>{errors.churchName}</span>
+                  )}
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label htmlFor="ministryRole" className={styles.label}>
+                    Ministry Role <span className={styles.required}>*</span>
+                  </label>
+                  <select
+                    id="ministryRole"
+                    className={`${styles.select} ${errors.ministryRole ? styles.inputError : ''}`}
+                    value={formData.ministryRole}
+                    onChange={(e) => updateField('ministryRole', e.target.value)}
+                  >
+                    <option value="">Select your role</option>
+                    {MINISTRY_ROLES.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.ministryRole && (
+                    <span className={styles.errorMessage}>{errors.ministryRole}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="churchCity" className={styles.label}>
+                    City <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    id="churchCity"
+                    type="text"
+                    className={`${styles.input} ${errors.churchCity ? styles.inputError : ''}`}
+                    value={formData.churchCity}
+                    onChange={(e) => updateField('churchCity', e.target.value)}
+                    placeholder="Las Piñas City"
+                  />
+                  {errors.churchCity && (
+                    <span className={styles.errorMessage}>{errors.churchCity}</span>
+                  )}
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label htmlFor="churchProvince" className={styles.label}>
+                    Province / Region <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    id="churchProvince"
+                    type="text"
+                    className={`${styles.input} ${errors.churchProvince ? styles.inputError : ''}`}
+                    value={formData.churchProvince}
+                    onChange={(e) => updateField('churchProvince', e.target.value)}
+                    placeholder="Metro Manila / NCR"
+                  />
+                  {errors.churchProvince && (
+                    <span className={styles.errorMessage}>{errors.churchProvince}</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -520,8 +616,13 @@ function RegisterPage() {
                           id={`category-${value}`}
                         />
                       </div>
-                      <div className={styles.categoryInfo}>
-                        <h3>{REGISTRATION_CATEGORY_LABELS[value]}</h3>
+                      <div className={styles.categoryContent}>
+                        <div className={styles.categoryInfo}>
+                          <h3>{REGISTRATION_CATEGORY_LABELS[value]}</h3>
+                          <p className={styles.categoryDescription}>
+                            {REGISTRATION_CATEGORY_DESCRIPTIONS[value]}
+                          </p>
+                        </div>
                         <span className={styles.categoryPrice}>{formatPrice(price)}</span>
                       </div>
                     </div>
@@ -530,212 +631,11 @@ function RegisterPage() {
               </div>
 
               {requiresProof(formData.category) && (
-                <div className={styles.proofSection}>
-                  <div className={styles.proofNote}>
-                    <strong>Note:</strong> {REGISTRATION_CATEGORY_LABELS[formData.category]}{' '}
-                    registration requires proof of status. You may be asked to provide a
-                    valid ID or certificate upon check-in.
-                  </div>
-
-                  <div className={styles.checkboxGroup}>
-                    <label className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={formData.proofDeclaration}
-                        onChange={(e) => updateField('proofDeclaration', e.target.checked)}
-                        className={styles.checkbox}
-                      />
-                      <span>
-                        I understand and confirm that I can provide proof of my{' '}
-                        {formData.category === REGISTRATION_CATEGORIES.STUDENT
-                          ? 'student'
-                          : 'NSF'}{' '}
-                        status upon request.
-                      </span>
-                    </label>
-                    {errors.proofDeclaration && (
-                      <span className={styles.errorMessage}>{errors.proofDeclaration}</span>
-                    )}
-                  </div>
+                <div className={styles.proofNote}>
+                  <strong>Note:</strong> Student/Senior Citizen registration requires a valid ID.
+                  Please bring your Student ID or Senior Citizen ID for verification at check-in.
                 </div>
               )}
-
-              <div className={styles.pricingInfo}>
-                <h3>Pricing Tiers</h3>
-                <div className={styles.tierList}>
-                  {/* Show all pricing tiers for reference - using index as key for static list */}
-                  {[
-                    { name: 'Super Early Bird', regularPrice: 170, studentPrice: 120, id: 'super-early-bird' },
-                    { name: 'Early Bird', regularPrice: 210, studentPrice: 150, id: 'early-bird' },
-                    { name: 'Regular', regularPrice: 290, studentPrice: 200, id: 'regular' },
-                  ].map((tier) => (
-                    <div
-                      key={tier.id}
-                      className={`${styles.tierItem} ${
-                        tier.name === currentTier.name ? styles.tierItemActive : ''
-                      }`}
-                    >
-                      <span className={styles.tierName}>
-                        {tier.name}
-                        {tier.name === currentTier.name && (
-                          <span className={styles.currentBadge}>Current</span>
-                        )}
-                      </span>
-                      <span className={styles.tierPrices}>
-                        Regular: {formatPrice(tier.regularPrice)} | Student/NSF:{' '}
-                        {formatPrice(tier.studentPrice)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Workshop Preferences */}
-          {currentStep === REGISTRATION_STEPS.WORKSHOP_PREFERENCES && (
-            <div className={styles.formStep}>
-              <h2>Workshop Preferences</h2>
-              <p className={styles.stepDescription}>
-                Select your preferred workshop track. All tracks address the theme:
-                &quot;Overcoming Discipleship Pitfalls in Every Generation&quot;
-              </p>
-
-              <div className={styles.workshopCards}>
-                {WORKSHOP_TRACKS.map((track) => {
-                  const isSelected = formData.workshopTrack === track;
-
-                  return (
-                    <div
-                      key={track}
-                      className={`${styles.workshopCard} ${
-                        isSelected ? styles.workshopCardSelected : ''
-                      }`}
-                      onClick={() => updateField('workshopTrack', track)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          updateField('workshopTrack', track);
-                        }
-                      }}
-                    >
-                      <div className={styles.workshopRadio}>
-                        <input
-                          type="radio"
-                          name="workshopTrack"
-                          value={track}
-                          checked={isSelected}
-                          onChange={() => updateField('workshopTrack', track)}
-                          id={`workshop-${track}`}
-                        />
-                      </div>
-                      <div className={styles.workshopInfo}>
-                        <h3>{track}</h3>
-                        <p>Overcoming Pitfalls in the Discipleship of {track}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Special Requirements */}
-          {currentStep === REGISTRATION_STEPS.SPECIAL_REQUIREMENTS && (
-            <div className={styles.formStep}>
-              <h2>Special Requirements</h2>
-              <p className={styles.stepDescription}>
-                Let us know if you have any dietary or accessibility requirements.
-              </p>
-
-              <div className={styles.formGroup}>
-                <label htmlFor="dietary" className={styles.label}>
-                  Dietary Requirements
-                </label>
-                <select
-                  id="dietary"
-                  className={styles.select}
-                  value={formData.dietary}
-                  onChange={(e) => updateField('dietary', e.target.value)}
-                >
-                  {DIETARY_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {formData.dietary === 'Other' && (
-                <div className={styles.formGroup}>
-                  <label htmlFor="dietaryOther" className={styles.label}>
-                    Please specify <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    id="dietaryOther"
-                    type="text"
-                    className={`${styles.input} ${errors.dietaryOther ? styles.inputError : ''}`}
-                    value={formData.dietaryOther}
-                    onChange={(e) => updateField('dietaryOther', e.target.value)}
-                    placeholder="Specify your dietary requirement"
-                  />
-                  {errors.dietaryOther && (
-                    <span className={styles.errorMessage}>{errors.dietaryOther}</span>
-                  )}
-                </div>
-              )}
-
-              <div className={styles.formGroup}>
-                <label htmlFor="accessibility" className={styles.label}>
-                  Accessibility Needs
-                </label>
-                <select
-                  id="accessibility"
-                  className={styles.select}
-                  value={formData.accessibility}
-                  onChange={(e) => updateField('accessibility', e.target.value)}
-                >
-                  {ACCESSIBILITY_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {formData.accessibility === 'Other' && (
-                <div className={styles.formGroup}>
-                  <label htmlFor="accessibilityOther" className={styles.label}>
-                    Please specify <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    id="accessibilityOther"
-                    type="text"
-                    className={`${styles.input} ${errors.accessibilityOther ? styles.inputError : ''}`}
-                    value={formData.accessibilityOther}
-                    onChange={(e) => updateField('accessibilityOther', e.target.value)}
-                    placeholder="Specify your accessibility need"
-                  />
-                  {errors.accessibilityOther && (
-                    <span className={styles.errorMessage}>{errors.accessibilityOther}</span>
-                  )}
-                </div>
-              )}
-
-              <div className={styles.formGroup}>
-                <label htmlFor="otherRequirements" className={styles.label}>
-                  Other Requirements
-                </label>
-                <textarea
-                  id="otherRequirements"
-                  className={styles.textarea}
-                  value={formData.otherRequirements}
-                  onChange={(e) => updateField('otherRequirements', e.target.value)}
-                  placeholder="Any other special requirements or notes"
-                  rows={3}
-                />
-              </div>
 
               <div className={styles.termsSection}>
                 <div className={styles.checkboxGroup}>
@@ -766,7 +666,149 @@ function RegisterPage() {
             </div>
           )}
 
-          {/* Step 5: Confirmation */}
+          {/* Step 3: Payment Upload */}
+          {currentStep === REGISTRATION_STEPS.PAYMENT_UPLOAD && (
+            <div className={styles.formStep}>
+              <h2>Payment Upload</h2>
+              <p className={styles.stepDescription}>
+                Please make your payment and upload the screenshot or receipt.
+              </p>
+
+              <div className={styles.paymentInstructions}>
+                <h3>Payment Options</h3>
+                <div className={styles.paymentMethods}>
+                  <div className={styles.paymentMethod}>
+                    <h4>GCash</h4>
+                    <p>
+                      <strong>Account Name:</strong> {PAYMENT_INFO.GCASH.NAME}
+                    </p>
+                    <p>
+                      <strong>Number:</strong> {PAYMENT_INFO.GCASH.NUMBER}
+                    </p>
+                  </div>
+
+                  <div className={styles.paymentMethod}>
+                    <h4>Bank Transfer</h4>
+                    <p>
+                      <strong>Account Name:</strong> {PAYMENT_INFO.BANK.NAME}
+                    </p>
+                    <p>
+                      <strong>Bank:</strong> {PAYMENT_INFO.BANK.BANK_NAME}
+                    </p>
+                    <p>
+                      <strong>Account No:</strong> {PAYMENT_INFO.BANK.ACCOUNT_NUMBER}
+                    </p>
+                  </div>
+                </div>
+
+                <div className={styles.amountBox}>
+                  <span>Amount to Pay:</span>
+                  <strong>{formatPrice(calculatePrice(formData.category, currentTier))}</strong>
+                </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="paymentFile" className={styles.label}>
+                  Upload Payment Screenshot/Receipt <span className={styles.required}>*</span>
+                </label>
+                <div className={styles.fileUpload}>
+                  <input
+                    id="paymentFile"
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={handleFileChange}
+                    className={styles.fileInput}
+                  />
+                  <div className={styles.fileUploadButton}>
+                    {formData.paymentFileName ? (
+                      <span className={styles.fileName}>{formData.paymentFileName}</span>
+                    ) : (
+                      <span>Click to select file (JPG, PNG, GIF, or PDF)</span>
+                    )}
+                  </div>
+                </div>
+                {errors.paymentFile && (
+                  <span className={styles.errorMessage}>{errors.paymentFile}</span>
+                )}
+                <p className={styles.fileHint}>Maximum file size: 5MB</p>
+              </div>
+
+              <div className={styles.sectionDivider}>
+                <span>Invoice Request (Optional)</span>
+              </div>
+
+              <div className={styles.formGroup}>
+                <div className={styles.checkboxGroup}>
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={formData.invoiceRequest}
+                      onChange={(e) => updateField('invoiceRequest', e.target.checked)}
+                      className={styles.checkbox}
+                    />
+                    <span>I need an official invoice/receipt</span>
+                  </label>
+                </div>
+              </div>
+
+              {formData.invoiceRequest && (
+                <div className={styles.invoiceFields}>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="invoiceName" className={styles.label}>
+                      Name in Invoice <span className={styles.required}>*</span>
+                    </label>
+                    <input
+                      id="invoiceName"
+                      type="text"
+                      className={`${styles.input} ${errors.invoiceName ? styles.inputError : ''}`}
+                      value={formData.invoiceName}
+                      onChange={(e) => updateField('invoiceName', e.target.value)}
+                      placeholder="Full name or company name"
+                    />
+                    {errors.invoiceName && (
+                      <span className={styles.errorMessage}>{errors.invoiceName}</span>
+                    )}
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label htmlFor="tin" className={styles.label}>
+                      TIN (Tax Identification Number) <span className={styles.required}>*</span>
+                    </label>
+                    <input
+                      id="tin"
+                      type="text"
+                      className={`${styles.input} ${errors.tin ? styles.inputError : ''}`}
+                      value={formData.tin}
+                      onChange={(e) => updateField('tin', e.target.value)}
+                      placeholder="XXX-XXX-XXX-XXX"
+                    />
+                    {errors.tin && (
+                      <span className={styles.errorMessage}>{errors.tin}</span>
+                    )}
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label htmlFor="invoiceAddress" className={styles.label}>
+                      Address <span className={styles.required}>*</span>
+                    </label>
+                    <textarea
+                      id="invoiceAddress"
+                      className={`${styles.textarea} ${errors.invoiceAddress ? styles.inputError : ''}`}
+                      value={formData.invoiceAddress}
+                      onChange={(e) => updateField('invoiceAddress', e.target.value)}
+                      placeholder="Complete billing address"
+                      rows={3}
+                    />
+                    {errors.invoiceAddress && (
+                      <span className={styles.errorMessage}>{errors.invoiceAddress}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 4: Confirmation */}
           {currentStep === REGISTRATION_STEPS.CONFIRMATION && (
             <div className={styles.formStep}>
               <h2>Review Your Registration</h2>
@@ -780,34 +822,42 @@ function RegisterPage() {
                   <div className={styles.reviewItem}>
                     <span className={styles.reviewLabel}>Name</span>
                     <span className={styles.reviewValue}>
-                      {formData.firstName} {formData.lastName}
+                      {formData.lastName}, {formData.firstName} {formData.middleName}
                     </span>
+                  </div>
+                  <div className={styles.reviewItem}>
+                    <span className={styles.reviewLabel}>Cellphone</span>
+                    <span className={styles.reviewValue}>{formData.cellphone}</span>
                   </div>
                   <div className={styles.reviewItem}>
                     <span className={styles.reviewLabel}>Email</span>
                     <span className={styles.reviewValue}>{formData.email}</span>
                   </div>
-                  <div className={styles.reviewItem}>
-                    <span className={styles.reviewLabel}>Phone</span>
-                    <span className={styles.reviewValue}>{formData.phone}</span>
-                  </div>
-                  {formData.church && (
-                    <div className={styles.reviewItem}>
-                      <span className={styles.reviewLabel}>Church</span>
-                      <span className={styles.reviewValue}>{formData.church}</span>
-                    </div>
-                  )}
-                  {formData.organization && (
-                    <div className={styles.reviewItem}>
-                      <span className={styles.reviewLabel}>Organization</span>
-                      <span className={styles.reviewValue}>{formData.organization}</span>
-                    </div>
-                  )}
                 </div>
               </div>
 
               <div className={styles.reviewSection}>
-                <h3>Ticket Details</h3>
+                <h3>Church Information</h3>
+                <div className={styles.reviewGrid}>
+                  <div className={styles.reviewItem}>
+                    <span className={styles.reviewLabel}>Church</span>
+                    <span className={styles.reviewValue}>{formData.churchName}</span>
+                  </div>
+                  <div className={styles.reviewItem}>
+                    <span className={styles.reviewLabel}>Ministry Role</span>
+                    <span className={styles.reviewValue}>{formData.ministryRole}</span>
+                  </div>
+                  <div className={styles.reviewItem}>
+                    <span className={styles.reviewLabel}>Location</span>
+                    <span className={styles.reviewValue}>
+                      {formData.churchCity}, {formData.churchProvince}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.reviewSection}>
+                <h3>Registration Details</h3>
                 <div className={styles.reviewGrid}>
                   <div className={styles.reviewItem}>
                     <span className={styles.reviewLabel}>Category</span>
@@ -820,52 +870,34 @@ function RegisterPage() {
                     <span className={styles.reviewValue}>{currentTier.name}</span>
                   </div>
                   <div className={styles.reviewItem}>
-                    <span className={styles.reviewLabel}>Workshop Track</span>
-                    <span className={styles.reviewValue}>{formData.workshopTrack}</span>
+                    <span className={styles.reviewLabel}>Payment Uploaded</span>
+                    <span className={styles.reviewValue}>{formData.paymentFileName}</span>
                   </div>
                 </div>
               </div>
 
-              {(formData.dietary !== 'None' ||
-                formData.accessibility !== 'None' ||
-                formData.otherRequirements) && (
+              {formData.invoiceRequest && (
                 <div className={styles.reviewSection}>
-                  <h3>Special Requirements</h3>
+                  <h3>Invoice Details</h3>
                   <div className={styles.reviewGrid}>
-                    {formData.dietary !== 'None' && (
-                      <div className={styles.reviewItem}>
-                        <span className={styles.reviewLabel}>Dietary</span>
-                        <span className={styles.reviewValue}>
-                          {formData.dietary === 'Other'
-                            ? formData.dietaryOther
-                            : formData.dietary}
-                        </span>
-                      </div>
-                    )}
-                    {formData.accessibility !== 'None' && (
-                      <div className={styles.reviewItem}>
-                        <span className={styles.reviewLabel}>Accessibility</span>
-                        <span className={styles.reviewValue}>
-                          {formData.accessibility === 'Other'
-                            ? formData.accessibilityOther
-                            : formData.accessibility}
-                        </span>
-                      </div>
-                    )}
-                    {formData.otherRequirements && (
-                      <div className={styles.reviewItem}>
-                        <span className={styles.reviewLabel}>Other</span>
-                        <span className={styles.reviewValue}>
-                          {formData.otherRequirements}
-                        </span>
-                      </div>
-                    )}
+                    <div className={styles.reviewItem}>
+                      <span className={styles.reviewLabel}>Name</span>
+                      <span className={styles.reviewValue}>{formData.invoiceName}</span>
+                    </div>
+                    <div className={styles.reviewItem}>
+                      <span className={styles.reviewLabel}>TIN</span>
+                      <span className={styles.reviewValue}>{formData.tin}</span>
+                    </div>
+                    <div className={styles.reviewItem}>
+                      <span className={styles.reviewLabel}>Address</span>
+                      <span className={styles.reviewValue}>{formData.invoiceAddress}</span>
+                    </div>
                   </div>
                 </div>
               )}
 
               <div className={styles.totalSection}>
-                <span>Total Amount Due</span>
+                <span>Total Amount</span>
                 <span className={styles.totalAmount}>
                   {formatPrice(calculatePrice(formData.category, currentTier))}
                 </span>

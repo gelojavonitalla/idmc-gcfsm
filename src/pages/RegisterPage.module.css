@@ -133,6 +133,35 @@
   gap: var(--spacing-4);
 }
 
+.formRow3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--spacing-4);
+}
+
+.sectionDivider {
+  display: flex;
+  align-items: center;
+  margin: var(--spacing-6) 0;
+}
+
+.sectionDivider::before,
+.sectionDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-gray-200);
+}
+
+.sectionDivider span {
+  padding: 0 var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .label {
   display: block;
   font-size: var(--font-size-sm);
@@ -231,37 +260,150 @@
   accent-color: var(--color-primary);
 }
 
-.categoryInfo {
+.categoryContent {
   flex: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--spacing-4);
+}
+
+.categoryInfo {
+  flex: 1;
 }
 
 .categoryInfo h3 {
   font-size: var(--font-size-lg);
   color: var(--color-text);
+  margin: 0 0 var(--spacing-1);
+}
+
+.categoryDescription {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
 .categoryPrice {
-  font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+/* Proof Note */
+.proofNote {
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-4);
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 4px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+/* File Upload */
+.fileUpload {
+  position: relative;
+}
+
+.fileInput {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.fileUploadButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-6);
+  border: 2px dashed var(--color-gray-300);
+  border-radius: var(--radius-lg);
+  background: var(--color-gray-50);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.fileUpload:hover .fileUploadButton {
+  border-color: var(--color-primary);
+  background: var(--color-primary-50);
+}
+
+.fileName {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.fileHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--spacing-2);
+}
+
+/* Amount Box */
+.amountBox {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-4);
+  background: var(--color-primary-50);
+  border-radius: var(--radius-md);
+  margin-top: var(--spacing-4);
+}
+
+.amountBox span {
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+
+.amountBox strong {
+  font-size: var(--font-size-xl);
   color: var(--color-primary);
 }
 
-/* Proof Section */
-.proofSection {
+/* Invoice Fields */
+.invoiceFields {
   margin-top: var(--spacing-4);
   padding: var(--spacing-4);
-  background: var(--color-background-secondary);
+  background: var(--color-gray-50);
   border-radius: var(--radius-md);
 }
 
-.proofNote {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+/* Next Steps */
+.nextSteps {
+  background: var(--color-background-secondary);
+  padding: var(--spacing-6);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-8);
+}
+
+.nextSteps h2 {
+  font-size: var(--font-size-xl);
+  color: var(--color-text);
   margin-bottom: var(--spacing-4);
+}
+
+.nextSteps ol {
+  margin: 0;
+  padding-left: var(--spacing-6);
+}
+
+.nextSteps li {
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-2);
+  line-height: 1.6;
+}
+
+.nextSteps li:last-child {
+  margin-bottom: 0;
 }
 
 /* Checkbox Group */
@@ -732,6 +874,20 @@
     grid-template-columns: 1fr;
   }
 
+  .formRow3 {
+    grid-template-columns: 1fr;
+  }
+
+  .categoryContent {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+  }
+
+  .categoryPrice {
+    font-size: var(--font-size-lg);
+  }
+
   .progressBar {
     gap: var(--spacing-1);
   }
@@ -747,12 +903,6 @@
 
   .progressStepLabel {
     display: none;
-  }
-
-  .categoryInfo {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-2);
   }
 
   .reviewGrid {

@@ -176,8 +176,7 @@ export const WORKSHOP_TRACKS = [
  */
 export const REGISTRATION_CATEGORIES = {
   REGULAR: 'regular',
-  STUDENT: 'student',
-  NSF: 'nsf',
+  STUDENT_SENIOR: 'student_senior',
 };
 
 /**
@@ -185,8 +184,15 @@ export const REGISTRATION_CATEGORIES = {
  */
 export const REGISTRATION_CATEGORY_LABELS = {
   [REGISTRATION_CATEGORIES.REGULAR]: 'Regular',
-  [REGISTRATION_CATEGORIES.STUDENT]: 'Student',
-  [REGISTRATION_CATEGORIES.NSF]: 'NSF (National Service Full-time)',
+  [REGISTRATION_CATEGORIES.STUDENT_SENIOR]: 'Student / Senior Citizen',
+};
+
+/**
+ * Registration category descriptions
+ */
+export const REGISTRATION_CATEGORY_DESCRIPTIONS = {
+  [REGISTRATION_CATEGORIES.REGULAR]: 'For working professionals and general attendees',
+  [REGISTRATION_CATEGORIES.STUDENT_SENIOR]: 'For students with valid ID and senior citizens (60+)',
 };
 
 /**
@@ -233,9 +239,8 @@ export const PAYMENT_INFO = {
 export const REGISTRATION_STEPS = {
   PERSONAL_INFO: 1,
   TICKET_SELECTION: 2,
-  WORKSHOP_PREFERENCES: 3,
-  SPECIAL_REQUIREMENTS: 4,
-  CONFIRMATION: 5,
+  PAYMENT_UPLOAD: 3,
+  CONFIRMATION: 4,
 };
 
 /**
@@ -244,34 +249,24 @@ export const REGISTRATION_STEPS = {
 export const REGISTRATION_STEP_LABELS = {
   [REGISTRATION_STEPS.PERSONAL_INFO]: 'Personal Info',
   [REGISTRATION_STEPS.TICKET_SELECTION]: 'Ticket',
-  [REGISTRATION_STEPS.WORKSHOP_PREFERENCES]: 'Workshop',
-  [REGISTRATION_STEPS.SPECIAL_REQUIREMENTS]: 'Requirements',
+  [REGISTRATION_STEPS.PAYMENT_UPLOAD]: 'Payment',
   [REGISTRATION_STEPS.CONFIRMATION]: 'Confirm',
 };
 
 /**
- * Dietary preference options
+ * Ministry role options for registration
  */
-export const DIETARY_OPTIONS = [
-  'None',
-  'Vegetarian',
-  'Vegan',
-  'Halal',
-  'No Pork',
-  'No Seafood',
-  'Gluten-Free',
-  'Other',
-];
-
-/**
- * Accessibility requirement options
- */
-export const ACCESSIBILITY_OPTIONS = [
-  'None',
-  'Wheelchair Access',
-  'Hearing Assistance',
-  'Visual Assistance',
-  'Reserved Seating',
+export const MINISTRY_ROLES = [
+  'Pastor',
+  'Elder',
+  'Deacon/Deaconess',
+  'Ministry Leader',
+  'Small Group Leader',
+  'Worship Team',
+  'Youth Leader',
+  'Children\'s Ministry',
+  'Member',
+  'Visitor',
   'Other',
 ];
 

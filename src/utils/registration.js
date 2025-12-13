@@ -42,7 +42,7 @@ export function getCurrentPricingTier() {
 /**
  * Calculates the registration price based on category and pricing tier.
  *
- * @param {string} category - The registration category (regular, student, nsf)
+ * @param {string} category - The registration category (regular, student_senior)
  * @param {Object} tier - The pricing tier object (optional, defaults to current tier)
  * @returns {number} The calculated price
  */
@@ -50,8 +50,7 @@ export function calculatePrice(category, tier = null) {
   const pricingTier = tier || getCurrentPricingTier();
 
   switch (category) {
-    case REGISTRATION_CATEGORIES.STUDENT:
-    case REGISTRATION_CATEGORIES.NSF:
+    case REGISTRATION_CATEGORIES.STUDENT_SENIOR:
       return pricingTier.studentPrice;
     case REGISTRATION_CATEGORIES.REGULAR:
     default:
@@ -172,8 +171,5 @@ export function formatDate(date) {
  * @returns {boolean} True if proof is required
  */
 export function requiresProof(category) {
-  return (
-    category === REGISTRATION_CATEGORIES.STUDENT ||
-    category === REGISTRATION_CATEGORIES.NSF
-  );
+  return category === REGISTRATION_CATEGORIES.STUDENT_SENIOR;
 }
