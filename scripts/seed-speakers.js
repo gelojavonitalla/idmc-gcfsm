@@ -206,6 +206,18 @@ async function clearSpeakers(db) {
 }
 
 /**
+ * Check if speakers already exist in Firestore
+ *
+ * @param {FirebaseFirestore.Firestore} db - Firestore instance
+ * @returns {Promise<number>} Number of existing speakers
+ */
+async function countExistingSpeakers(db) {
+  const speakersRef = db.collection(COLLECTIONS.SPEAKERS);
+  const snapshot = await speakersRef.get();
+  return snapshot.size;
+}
+
+/**
  * Main function to run the seed script
  */
 async function main() {
@@ -213,13 +225,15 @@ async function main() {
   console.log('IDMC Speakers Seed Script');
   console.log('='.repeat(50));
 
-  // Check for emulator
+  // Check for emulator and CI environment
   const isEmulator = !!process.env.FIRESTORE_EMULATOR_HOST;
+  const isCI = !!process.env.CI || !!process.env.GITHUB_ACTIONS;
   console.log(`\nMode: ${isEmulator ? 'EMULATOR' : 'PRODUCTION'}`);
+  console.log(`Environment: ${isCI ? 'CI/CD' : 'Local'}`);
 
   if (isEmulator) {
     console.log(`Emulator host: ${process.env.FIRESTORE_EMULATOR_HOST}`);
-  } else {
+  } else if (!isCI) {
     console.log('\n⚠️  WARNING: Running against PRODUCTION database!');
     console.log('Press Ctrl+C within 5 seconds to cancel...\n');
     await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -229,8 +243,22 @@ async function main() {
     initializeFirebase();
     const db = admin.firestore();
 
-    // Clear existing speakers (comment out if you want to preserve existing data)
     const shouldClear = process.argv.includes('--clear');
+    const forceReseed = process.argv.includes('--force');
+
+    // Check for existing data
+    const existingCount = await countExistingSpeakers(db);
+
+    if (existingCount > 0 && !shouldClear && !forceReseed) {
+      console.log(`\n📋 Found ${existingCount} existing speakers in database.`);
+      console.log('Skipping seed to preserve existing data.');
+      console.log('Use --clear to replace or --force to add anyway.');
+      console.log('\n✅ No changes made.');
+      console.log('='.repeat(50));
+      process.exit(0);
+    }
+
+    // Clear existing speakers if requested
     if (shouldClear) {
       await clearSpeakers(db);
     }
