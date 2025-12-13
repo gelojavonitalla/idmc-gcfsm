@@ -16,6 +16,7 @@
  */
 
 const admin = require('firebase-admin');
+const { getFirestore } = require('firebase-admin/firestore');
 
 // Collection name constant
 const COLLECTIONS = {
@@ -25,6 +26,9 @@ const COLLECTIONS = {
 
 // Conference ID for IDMC 2026
 const CONFERENCE_ID = 'idmc-2026';
+
+// Firestore database ID (named database)
+const DATABASE_ID = 'idmc-2026';
 
 // Speaker status values
 const SPEAKER_STATUS = {
@@ -240,8 +244,10 @@ async function main() {
   }
 
   try {
-    initializeFirebase();
-    const db = admin.firestore();
+    const app = initializeFirebase();
+    // Use named database 'idmc-2026'
+    const db = getFirestore(app, DATABASE_ID);
+    console.log(`Database: ${DATABASE_ID}`);
 
     const shouldClear = process.argv.includes('--clear');
     const forceReseed = process.argv.includes('--force');

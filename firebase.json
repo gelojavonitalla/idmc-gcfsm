@@ -1,6 +1,6 @@
 {
   "firestore": {
-    "database": "(default)",
+    "database": "idmc-2026",
     "location": "asia-southeast1",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
