@@ -1,0 +1,80 @@
+/**
+ * WorkshopGrid Component Styles
+ * Grid layout for displaying workshops organized by track
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-12);
+}
+
+.trackSection {
+  padding: var(--spacing-6);
+  background: var(--color-background);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-gray-200);
+}
+
+.trackTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-2);
+}
+
+.trackDescription {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-6);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-4);
+}
+
+.emptyState {
+  text-align: center;
+  padding: var(--spacing-16);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-lg);
+}
+
+/* Responsive - Tablet */
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+/* Responsive - Small Tablet */
+@media (max-width: 768px) {
+  .container {
+    gap: var(--spacing-8);
+  }
+
+  .trackSection {
+    padding: var(--spacing-4);
+  }
+
+  .trackTitle {
+    font-size: var(--font-size-lg);
+  }
+
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 480px) {
+  .trackSection {
+    padding: var(--spacing-3);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -16,3 +16,16 @@ export {
   getSessionById,
   getSessionsByType,
 } from './sessions';
+
+export {
+  getPublishedWorkshops,
+  getWorkshopById,
+  getWorkshopsByTrack,
+  getWorkshopsByCategory,
+  getWorkshopsByTimeSlot,
+  hasAvailableCapacity,
+  getRemainingCapacity,
+  requiresPreRegistration,
+  groupWorkshopsByTrack,
+  groupWorkshopsByTimeSlot,
+} from './workshops';
