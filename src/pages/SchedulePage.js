@@ -92,8 +92,8 @@ function SchedulePage() {
    */
   function convertTo24Hour(time12h) {
     const [time, modifier] = time12h.split(' ');
-    // eslint-disable-next-line prefer-const
-    let [hours, minutes] = time.split(':');
+    const [hoursStr, minutes] = time.split(':');
+    let hours = hoursStr;
 
     if (hours === '12') {
       hours = '00';

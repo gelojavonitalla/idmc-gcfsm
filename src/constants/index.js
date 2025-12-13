@@ -138,7 +138,7 @@ export const ORGANIZATION = {
 /**
  * Session types for conference schedule
  */
-export const SESSION_TYPES = {
+export const SESSION_TYPES = Object.freeze({
   PLENARY: 'plenary',
   WORKSHOP: 'workshop',
   BREAK: 'break',
@@ -146,7 +146,7 @@ export const SESSION_TYPES = {
   WORSHIP: 'worship',
   LUNCH: 'lunch',
   OTHER: 'other',
-};
+});
 
 /**
  * Session type labels for display
