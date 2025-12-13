@@ -6,7 +6,6 @@ import {
   REGISTRATION_STEP_LABELS,
   REGISTRATION_CATEGORIES,
   REGISTRATION_CATEGORY_LABELS,
-  REGISTRATION_CATEGORY_DESCRIPTIONS,
   MINISTRY_ROLES,
   PAYMENT_INFO,
 } from '../constants';
@@ -23,24 +22,32 @@ import {
 import styles from './RegisterPage.module.css';
 
 /**
- * Initial form data structure for registration
+ * Creates a new empty attendee object
+ *
+ * @returns {Object} Empty attendee data
  */
-const INITIAL_FORM_DATA = {
-  // Personal Information
+const createEmptyAttendee = () => ({
+  id: Date.now() + Math.random(),
   lastName: '',
   firstName: '',
   middleName: '',
   cellphone: '',
   email: '',
-
-  // Church Information
-  churchName: '',
   ministryRole: '',
+  category: REGISTRATION_CATEGORIES.REGULAR,
+});
+
+/**
+ * Initial form data structure for registration
+ */
+const INITIAL_FORM_DATA = {
+  // Church Information (shared)
+  churchName: '',
   churchCity: '',
   churchProvince: '',
 
-  // Ticket Selection
-  category: REGISTRATION_CATEGORIES.REGULAR,
+  // Attendees list
+  attendees: [createEmptyAttendee()],
 
   // Payment
   paymentFile: null,
@@ -59,8 +66,7 @@ const INITIAL_FORM_DATA = {
 /**
  * RegisterPage Component
  * Multi-step registration form for the IDMC Conference.
- * Handles attendee information collection, ticket selection,
- * payment upload, and invoice request.
+ * Supports multiple attendees with shared church information.
  *
  * @returns {JSX.Element} The registration page component
  */
@@ -68,6 +74,7 @@ function RegisterPage() {
   const [currentStep, setCurrentStep] = useState(REGISTRATION_STEPS.PERSONAL_INFO);
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [errors, setErrors] = useState({});
+  const [attendeeErrors, setAttendeeErrors] = useState({});
   const [registrationId, setRegistrationId] = useState(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -86,6 +93,55 @@ function RegisterPage() {
   }, []);
 
   /**
+   * Updates an attendee field value
+   *
+   * @param {number} index - The attendee index
+   * @param {string} field - The field name to update
+   * @param {*} value - The new value
+   */
+  const updateAttendee = useCallback((index, field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      attendees: prev.attendees.map((attendee, i) =>
+        i === index ? { ...attendee, [field]: value } : attendee
+      ),
+    }));
+    setAttendeeErrors((prev) => ({
+      ...prev,
+      [index]: { ...prev[index], [field]: null },
+    }));
+  }, []);
+
+  /**
+   * Adds a new attendee
+   */
+  const addAttendee = useCallback(() => {
+    setFormData((prev) => ({
+      ...prev,
+      attendees: [...prev.attendees, createEmptyAttendee()],
+    }));
+  }, []);
+
+  /**
+   * Removes an attendee
+   *
+   * @param {number} index - The attendee index to remove
+   */
+  const removeAttendee = useCallback((index) => {
+    if (formData.attendees.length > 1) {
+      setFormData((prev) => ({
+        ...prev,
+        attendees: prev.attendees.filter((_, i) => i !== index),
+      }));
+      setAttendeeErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[index];
+        return newErrors;
+      });
+    }
+  }, [formData.attendees.length]);
+
+  /**
    * Handles file selection for payment upload
    *
    * @param {Event} e - The file input change event
@@ -93,7 +149,6 @@ function RegisterPage() {
   const handleFileChange = useCallback((e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
       if (!allowedTypes.includes(file.type)) {
         setErrors((prev) => ({
@@ -102,7 +157,6 @@ function RegisterPage() {
         }));
         return;
       }
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setErrors((prev) => ({
           ...prev,
@@ -120,34 +174,28 @@ function RegisterPage() {
   }, []);
 
   /**
-   * Validates the personal information step
+   * Calculates total price for all attendees
+   *
+   * @returns {number} Total price
+   */
+  const calculateTotalPrice = useCallback(() => {
+    return formData.attendees.reduce((total, attendee) => {
+      return total + calculatePrice(attendee.category, currentTier);
+    }, 0);
+  }, [formData.attendees, currentTier]);
+
+  /**
+   * Validates the personal information step (church info + attendees)
    *
    * @returns {boolean} True if valid
    */
   const validatePersonalInfo = useCallback(() => {
     const newErrors = {};
+    const newAttendeeErrors = {};
 
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
-    }
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
-    }
-    if (!formData.cellphone.trim()) {
-      newErrors.cellphone = 'Cellphone number is required';
-    } else if (!isValidPhoneNumber(formData.cellphone)) {
-      newErrors.cellphone = 'Please enter a valid Philippine cellphone number';
-    }
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!isValidEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
+    // Validate church info
     if (!formData.churchName.trim()) {
       newErrors.churchName = 'Church name is required';
-    }
-    if (!formData.ministryRole) {
-      newErrors.ministryRole = 'Ministry role is required';
     }
     if (!formData.churchCity.trim()) {
       newErrors.churchCity = 'City is required';
@@ -156,8 +204,39 @@ function RegisterPage() {
       newErrors.churchProvince = 'Province/Region is required';
     }
 
+    // Validate each attendee
+    formData.attendees.forEach((attendee, index) => {
+      const attendeeErr = {};
+
+      if (!attendee.lastName.trim()) {
+        attendeeErr.lastName = 'Last name is required';
+      }
+      if (!attendee.firstName.trim()) {
+        attendeeErr.firstName = 'First name is required';
+      }
+      if (!attendee.cellphone.trim()) {
+        attendeeErr.cellphone = 'Cellphone number is required';
+      } else if (!isValidPhoneNumber(attendee.cellphone)) {
+        attendeeErr.cellphone = 'Please enter a valid Philippine cellphone number';
+      }
+      if (!attendee.email.trim()) {
+        attendeeErr.email = 'Email is required';
+      } else if (!isValidEmail(attendee.email)) {
+        attendeeErr.email = 'Please enter a valid email address';
+      }
+      if (!attendee.ministryRole) {
+        attendeeErr.ministryRole = 'Ministry role is required';
+      }
+
+      if (Object.keys(attendeeErr).length > 0) {
+        newAttendeeErrors[index] = attendeeErr;
+      }
+    });
+
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setAttendeeErrors(newAttendeeErrors);
+
+    return Object.keys(newErrors).length === 0 && Object.keys(newAttendeeErrors).length === 0;
   }, [formData]);
 
   /**
@@ -273,7 +352,7 @@ function RegisterPage() {
 
   // Submitted/Confirmation state
   if (isSubmitted) {
-    const amount = calculatePrice(formData.category, currentTier);
+    const totalAmount = calculateTotalPrice();
 
     return (
       <div className={styles.page}>
@@ -289,56 +368,33 @@ function RegisterPage() {
 
             <div className={styles.confirmationDetails}>
               <h2>Registration Summary</h2>
-              <div className={styles.summaryGrid}>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Name</span>
-                  <span className={styles.summaryValue}>
-                    {formData.lastName}, {formData.firstName} {formData.middleName}
-                  </span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Email</span>
-                  <span className={styles.summaryValue}>{formData.email}</span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Cellphone</span>
-                  <span className={styles.summaryValue}>{formData.cellphone}</span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Church</span>
-                  <span className={styles.summaryValue}>{formData.churchName}</span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Ministry Role</span>
-                  <span className={styles.summaryValue}>{formData.ministryRole}</span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Location</span>
-                  <span className={styles.summaryValue}>
-                    {formData.churchCity}, {formData.churchProvince}
-                  </span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Category</span>
-                  <span className={styles.summaryValue}>
-                    {REGISTRATION_CATEGORY_LABELS[formData.category]}
-                  </span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Payment Uploaded</span>
-                  <span className={styles.summaryValue}>{formData.paymentFileName}</span>
-                </div>
-                {formData.invoiceRequest && (
-                  <div className={styles.summaryItem}>
-                    <span className={styles.summaryLabel}>Invoice Requested</span>
-                    <span className={styles.summaryValue}>Yes - {formData.invoiceName}</span>
-                  </div>
-                )}
+
+              <div className={styles.churchSummary}>
+                <h3>Church Information</h3>
+                <p><strong>{formData.churchName}</strong></p>
+                <p>{formData.churchCity}, {formData.churchProvince}</p>
               </div>
 
+              <h3>Attendees ({formData.attendees.length})</h3>
+              {formData.attendees.map((attendee, index) => (
+                <div key={attendee.id} className={styles.attendeeSummary}>
+                  <div className={styles.attendeeNumber}>#{index + 1}</div>
+                  <div className={styles.attendeeDetails}>
+                    <p className={styles.attendeeName}>
+                      {attendee.lastName}, {attendee.firstName} {attendee.middleName}
+                    </p>
+                    <p>{attendee.email} | {attendee.cellphone}</p>
+                    <p>{attendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[attendee.category]}</p>
+                    <p className={styles.attendeePrice}>
+                      {formatPrice(calculatePrice(attendee.category, currentTier))}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
               <div className={styles.amountDue}>
-                <span>Amount Paid</span>
-                <span className={styles.amountValue}>{formatPrice(amount)}</span>
+                <span>Total Amount Paid</span>
+                <span className={styles.amountValue}>{formatPrice(totalAmount)}</span>
               </div>
             </div>
 
@@ -346,7 +402,7 @@ function RegisterPage() {
               <h2>What&apos;s Next?</h2>
               <ol>
                 <li>Your payment will be verified within 24-48 hours.</li>
-                <li>A confirmation email will be sent to <strong>{formData.email}</strong>.</li>
+                <li>Confirmation emails will be sent to all registered attendees.</li>
                 <li>Please save your Registration ID: <strong>{registrationId}</strong></li>
                 <li>Present your confirmation email or Registration ID at the event.</li>
               </ol>
@@ -354,15 +410,9 @@ function RegisterPage() {
 
             <div className={styles.eventDetails}>
               <h2>Event Details</h2>
-              <p>
-                <strong>Date:</strong> March 28, {CONFERENCE.YEAR}
-              </p>
-              <p>
-                <strong>Venue:</strong> {VENUE.NAME}
-              </p>
-              <p>
-                <strong>Address:</strong> {VENUE.ADDRESS}
-              </p>
+              <p><strong>Date:</strong> March 28, {CONFERENCE.YEAR}</p>
+              <p><strong>Venue:</strong> {VENUE.NAME}</p>
+              <p><strong>Address:</strong> {VENUE.ADDRESS}</p>
             </div>
           </div>
         </div>
@@ -403,140 +453,30 @@ function RegisterPage() {
           {/* Step 1: Personal Information */}
           {currentStep === REGISTRATION_STEPS.PERSONAL_INFO && (
             <div className={styles.formStep}>
-              <h2>Personal Information</h2>
+              <h2>Church & Attendee Information</h2>
               <p className={styles.stepDescription}>
-                Please provide your contact and church details for registration.
+                Enter your church details and add all attendees from your group.
               </p>
-
-              <div className={styles.formRow3}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="lastName" className={styles.label}>
-                    Last Name <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    id="lastName"
-                    type="text"
-                    className={`${styles.input} ${errors.lastName ? styles.inputError : ''}`}
-                    value={formData.lastName}
-                    onChange={(e) => updateField('lastName', e.target.value)}
-                    placeholder="Dela Cruz"
-                  />
-                  {errors.lastName && (
-                    <span className={styles.errorMessage}>{errors.lastName}</span>
-                  )}
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor="firstName" className={styles.label}>
-                    First Name <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    id="firstName"
-                    type="text"
-                    className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`}
-                    value={formData.firstName}
-                    onChange={(e) => updateField('firstName', e.target.value)}
-                    placeholder="Juan"
-                  />
-                  {errors.firstName && (
-                    <span className={styles.errorMessage}>{errors.firstName}</span>
-                  )}
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor="middleName" className={styles.label}>
-                    Middle Name
-                  </label>
-                  <input
-                    id="middleName"
-                    type="text"
-                    className={styles.input}
-                    value={formData.middleName}
-                    onChange={(e) => updateField('middleName', e.target.value)}
-                    placeholder="Santos"
-                  />
-                </div>
-              </div>
-
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="cellphone" className={styles.label}>
-                    Cellphone Number <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    id="cellphone"
-                    type="tel"
-                    className={`${styles.input} ${errors.cellphone ? styles.inputError : ''}`}
-                    value={formData.cellphone}
-                    onChange={(e) => updateField('cellphone', e.target.value)}
-                    placeholder="09XX-XXX-XXXX"
-                  />
-                  {errors.cellphone && (
-                    <span className={styles.errorMessage}>{errors.cellphone}</span>
-                  )}
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor="email" className={styles.label}>
-                    Email Address <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
-                    value={formData.email}
-                    onChange={(e) => updateField('email', e.target.value)}
-                    placeholder="your.email@example.com"
-                  />
-                  {errors.email && (
-                    <span className={styles.errorMessage}>{errors.email}</span>
-                  )}
-                </div>
-              </div>
 
               <div className={styles.sectionDivider}>
                 <span>Church Information</span>
               </div>
 
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="churchName" className={styles.label}>
-                    Church Name <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    id="churchName"
-                    type="text"
-                    className={`${styles.input} ${errors.churchName ? styles.inputError : ''}`}
-                    value={formData.churchName}
-                    onChange={(e) => updateField('churchName', e.target.value)}
-                    placeholder="GCF South Metro"
-                  />
-                  {errors.churchName && (
-                    <span className={styles.errorMessage}>{errors.churchName}</span>
-                  )}
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor="ministryRole" className={styles.label}>
-                    Ministry Role <span className={styles.required}>*</span>
-                  </label>
-                  <select
-                    id="ministryRole"
-                    className={`${styles.select} ${errors.ministryRole ? styles.inputError : ''}`}
-                    value={formData.ministryRole}
-                    onChange={(e) => updateField('ministryRole', e.target.value)}
-                  >
-                    <option value="">Select your role</option>
-                    {MINISTRY_ROLES.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.ministryRole && (
-                    <span className={styles.errorMessage}>{errors.ministryRole}</span>
-                  )}
-                </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="churchName" className={styles.label}>
+                  Church Name <span className={styles.required}>*</span>
+                </label>
+                <input
+                  id="churchName"
+                  type="text"
+                  className={`${styles.input} ${errors.churchName ? styles.inputError : ''}`}
+                  value={formData.churchName}
+                  onChange={(e) => updateField('churchName', e.target.value)}
+                  placeholder="GCF South Metro"
+                />
+                {errors.churchName && (
+                  <span className={styles.errorMessage}>{errors.churchName}</span>
+                )}
               </div>
 
               <div className={styles.formRow}>
@@ -574,66 +514,206 @@ function RegisterPage() {
                   )}
                 </div>
               </div>
+
+              <div className={styles.sectionDivider}>
+                <span>Attendees ({formData.attendees.length})</span>
+              </div>
+
+              {formData.attendees.map((attendee, index) => (
+                <div key={attendee.id} className={styles.attendeeCard}>
+                  <div className={styles.attendeeHeader}>
+                    <h3>Attendee #{index + 1}</h3>
+                    {formData.attendees.length > 1 && (
+                      <button
+                        type="button"
+                        className={styles.removeButton}
+                        onClick={() => removeAttendee(index)}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div className={styles.formRow3}>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>
+                        Last Name <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className={`${styles.input} ${attendeeErrors[index]?.lastName ? styles.inputError : ''}`}
+                        value={attendee.lastName}
+                        onChange={(e) => updateAttendee(index, 'lastName', e.target.value)}
+                        placeholder="Dela Cruz"
+                      />
+                      {attendeeErrors[index]?.lastName && (
+                        <span className={styles.errorMessage}>{attendeeErrors[index].lastName}</span>
+                      )}
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>
+                        First Name <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className={`${styles.input} ${attendeeErrors[index]?.firstName ? styles.inputError : ''}`}
+                        value={attendee.firstName}
+                        onChange={(e) => updateAttendee(index, 'firstName', e.target.value)}
+                        placeholder="Juan"
+                      />
+                      {attendeeErrors[index]?.firstName && (
+                        <span className={styles.errorMessage}>{attendeeErrors[index].firstName}</span>
+                      )}
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Middle Name</label>
+                      <input
+                        type="text"
+                        className={styles.input}
+                        value={attendee.middleName}
+                        onChange={(e) => updateAttendee(index, 'middleName', e.target.value)}
+                        placeholder="Santos"
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.formRow}>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>
+                        Cellphone Number <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        className={`${styles.input} ${attendeeErrors[index]?.cellphone ? styles.inputError : ''}`}
+                        value={attendee.cellphone}
+                        onChange={(e) => updateAttendee(index, 'cellphone', e.target.value)}
+                        placeholder="09XX-XXX-XXXX"
+                      />
+                      {attendeeErrors[index]?.cellphone && (
+                        <span className={styles.errorMessage}>{attendeeErrors[index].cellphone}</span>
+                      )}
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>
+                        Email Address <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        type="email"
+                        className={`${styles.input} ${attendeeErrors[index]?.email ? styles.inputError : ''}`}
+                        value={attendee.email}
+                        onChange={(e) => updateAttendee(index, 'email', e.target.value)}
+                        placeholder="email@example.com"
+                      />
+                      {attendeeErrors[index]?.email && (
+                        <span className={styles.errorMessage}>{attendeeErrors[index].email}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={styles.formRow}>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>
+                        Ministry Role <span className={styles.required}>*</span>
+                      </label>
+                      <select
+                        className={`${styles.select} ${attendeeErrors[index]?.ministryRole ? styles.inputError : ''}`}
+                        value={attendee.ministryRole}
+                        onChange={(e) => updateAttendee(index, 'ministryRole', e.target.value)}
+                      >
+                        <option value="">Select role</option>
+                        {MINISTRY_ROLES.map((role) => (
+                          <option key={role} value={role}>{role}</option>
+                        ))}
+                      </select>
+                      {attendeeErrors[index]?.ministryRole && (
+                        <span className={styles.errorMessage}>{attendeeErrors[index].ministryRole}</span>
+                      )}
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>
+                        Category <span className={styles.required}>*</span>
+                      </label>
+                      <select
+                        className={styles.select}
+                        value={attendee.category}
+                        onChange={(e) => updateAttendee(index, 'category', e.target.value)}
+                      >
+                        {Object.entries(REGISTRATION_CATEGORIES).map(([key, value]) => (
+                          <option key={key} value={value}>
+                            {REGISTRATION_CATEGORY_LABELS[value]} - {formatPrice(calculatePrice(value, currentTier))}
+                          </option>
+                        ))}
+                      </select>
+                      {requiresProof(attendee.category) && (
+                        <span className={styles.proofHint}>
+                          Valid ID required at check-in
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                className={styles.addButton}
+                onClick={addAttendee}
+              >
+                + Add Another Attendee
+              </button>
+
+              <div className={styles.subtotalBox}>
+                <span>Subtotal ({formData.attendees.length} attendee{formData.attendees.length > 1 ? 's' : ''})</span>
+                <strong>{formatPrice(calculateTotalPrice())}</strong>
+              </div>
             </div>
           )}
 
-          {/* Step 2: Ticket Selection */}
+          {/* Step 2: Ticket Selection / Terms */}
           {currentStep === REGISTRATION_STEPS.TICKET_SELECTION && (
             <div className={styles.formStep}>
-              <h2>Ticket Selection</h2>
+              <h2>Review & Accept Terms</h2>
               <p className={styles.stepDescription}>
-                Select your registration category. Current pricing tier:{' '}
-                <strong>{currentTier.name}</strong>
+                Review your registration details and accept the terms.
               </p>
 
-              <div className={styles.categoryCards}>
-                {Object.entries(REGISTRATION_CATEGORIES).map(([key, value]) => {
-                  const price = calculatePrice(value, currentTier);
-                  const isSelected = formData.category === value;
-
-                  return (
-                    <div
-                      key={key}
-                      className={`${styles.categoryCard} ${
-                        isSelected ? styles.categoryCardSelected : ''
-                      }`}
-                      onClick={() => updateField('category', value)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          updateField('category', value);
-                        }
-                      }}
-                    >
-                      <div className={styles.categoryRadio}>
-                        <input
-                          type="radio"
-                          name="category"
-                          value={value}
-                          checked={isSelected}
-                          onChange={() => updateField('category', value)}
-                          id={`category-${value}`}
-                        />
-                      </div>
-                      <div className={styles.categoryContent}>
-                        <div className={styles.categoryInfo}>
-                          <h3>{REGISTRATION_CATEGORY_LABELS[value]}</h3>
-                          <p className={styles.categoryDescription}>
-                            {REGISTRATION_CATEGORY_DESCRIPTIONS[value]}
-                          </p>
-                        </div>
-                        <span className={styles.categoryPrice}>{formatPrice(price)}</span>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className={styles.reviewSection}>
+                <h3>Church</h3>
+                <p className={styles.reviewValue}>{formData.churchName}</p>
+                <p className={styles.reviewValueSmall}>{formData.churchCity}, {formData.churchProvince}</p>
               </div>
 
-              {requiresProof(formData.category) && (
+              <div className={styles.reviewSection}>
+                <h3>Attendees ({formData.attendees.length})</h3>
+                <div className={styles.attendeeList}>
+                  {formData.attendees.map((attendee, index) => (
+                    <div key={attendee.id} className={styles.attendeeListItem}>
+                      <span className={styles.attendeeListName}>
+                        {index + 1}. {attendee.firstName} {attendee.lastName}
+                      </span>
+                      <span className={styles.attendeeListCategory}>
+                        {REGISTRATION_CATEGORY_LABELS[attendee.category]}
+                      </span>
+                      <span className={styles.attendeeListPrice}>
+                        {formatPrice(calculatePrice(attendee.category, currentTier))}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.totalSection}>
+                <span>Total Amount</span>
+                <span className={styles.totalAmount}>{formatPrice(calculateTotalPrice())}</span>
+              </div>
+
+              {formData.attendees.some((a) => requiresProof(a.category)) && (
                 <div className={styles.proofNote}>
-                  <strong>Note:</strong> Student/Senior Citizen registration requires a valid ID.
-                  Please bring your Student ID or Senior Citizen ID for verification at check-in.
+                  <strong>Note:</strong> Attendees registered as Student/Senior Citizen must bring a valid ID for verification at check-in.
                 </div>
               )}
 
@@ -679,31 +759,21 @@ function RegisterPage() {
                 <div className={styles.paymentMethods}>
                   <div className={styles.paymentMethod}>
                     <h4>GCash</h4>
-                    <p>
-                      <strong>Account Name:</strong> {PAYMENT_INFO.GCASH.NAME}
-                    </p>
-                    <p>
-                      <strong>Number:</strong> {PAYMENT_INFO.GCASH.NUMBER}
-                    </p>
+                    <p><strong>Account Name:</strong> {PAYMENT_INFO.GCASH.NAME}</p>
+                    <p><strong>Number:</strong> {PAYMENT_INFO.GCASH.NUMBER}</p>
                   </div>
 
                   <div className={styles.paymentMethod}>
                     <h4>Bank Transfer</h4>
-                    <p>
-                      <strong>Account Name:</strong> {PAYMENT_INFO.BANK.NAME}
-                    </p>
-                    <p>
-                      <strong>Bank:</strong> {PAYMENT_INFO.BANK.BANK_NAME}
-                    </p>
-                    <p>
-                      <strong>Account No:</strong> {PAYMENT_INFO.BANK.ACCOUNT_NUMBER}
-                    </p>
+                    <p><strong>Account Name:</strong> {PAYMENT_INFO.BANK.NAME}</p>
+                    <p><strong>Bank:</strong> {PAYMENT_INFO.BANK.BANK_NAME}</p>
+                    <p><strong>Account No:</strong> {PAYMENT_INFO.BANK.ACCOUNT_NUMBER}</p>
                   </div>
                 </div>
 
                 <div className={styles.amountBox}>
-                  <span>Amount to Pay:</span>
-                  <strong>{formatPrice(calculatePrice(formData.category, currentTier))}</strong>
+                  <span>Total Amount to Pay ({formData.attendees.length} attendee{formData.attendees.length > 1 ? 's' : ''}):</span>
+                  <strong>{formatPrice(calculateTotalPrice())}</strong>
                 </div>
               </div>
 
@@ -811,30 +881,10 @@ function RegisterPage() {
           {/* Step 4: Confirmation */}
           {currentStep === REGISTRATION_STEPS.CONFIRMATION && (
             <div className={styles.formStep}>
-              <h2>Review Your Registration</h2>
+              <h2>Confirm Your Registration</h2>
               <p className={styles.stepDescription}>
-                Please review your information before submitting.
+                Please review all information before submitting.
               </p>
-
-              <div className={styles.reviewSection}>
-                <h3>Personal Information</h3>
-                <div className={styles.reviewGrid}>
-                  <div className={styles.reviewItem}>
-                    <span className={styles.reviewLabel}>Name</span>
-                    <span className={styles.reviewValue}>
-                      {formData.lastName}, {formData.firstName} {formData.middleName}
-                    </span>
-                  </div>
-                  <div className={styles.reviewItem}>
-                    <span className={styles.reviewLabel}>Cellphone</span>
-                    <span className={styles.reviewValue}>{formData.cellphone}</span>
-                  </div>
-                  <div className={styles.reviewItem}>
-                    <span className={styles.reviewLabel}>Email</span>
-                    <span className={styles.reviewValue}>{formData.email}</span>
-                  </div>
-                </div>
-              </div>
 
               <div className={styles.reviewSection}>
                 <h3>Church Information</h3>
@@ -842,10 +892,6 @@ function RegisterPage() {
                   <div className={styles.reviewItem}>
                     <span className={styles.reviewLabel}>Church</span>
                     <span className={styles.reviewValue}>{formData.churchName}</span>
-                  </div>
-                  <div className={styles.reviewItem}>
-                    <span className={styles.reviewLabel}>Ministry Role</span>
-                    <span className={styles.reviewValue}>{formData.ministryRole}</span>
                   </div>
                   <div className={styles.reviewItem}>
                     <span className={styles.reviewLabel}>Location</span>
@@ -857,50 +903,43 @@ function RegisterPage() {
               </div>
 
               <div className={styles.reviewSection}>
-                <h3>Registration Details</h3>
+                <h3>Attendees ({formData.attendees.length})</h3>
+                {formData.attendees.map((attendee, index) => (
+                  <div key={attendee.id} className={styles.attendeeSummary}>
+                    <div className={styles.attendeeNumber}>#{index + 1}</div>
+                    <div className={styles.attendeeDetails}>
+                      <p className={styles.attendeeName}>
+                        {attendee.lastName}, {attendee.firstName} {attendee.middleName}
+                      </p>
+                      <p>{attendee.email} | {attendee.cellphone}</p>
+                      <p>{attendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[attendee.category]}</p>
+                    </div>
+                    <div className={styles.attendeePrice}>
+                      {formatPrice(calculatePrice(attendee.category, currentTier))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className={styles.reviewSection}>
+                <h3>Payment</h3>
                 <div className={styles.reviewGrid}>
-                  <div className={styles.reviewItem}>
-                    <span className={styles.reviewLabel}>Category</span>
-                    <span className={styles.reviewValue}>
-                      {REGISTRATION_CATEGORY_LABELS[formData.category]}
-                    </span>
-                  </div>
-                  <div className={styles.reviewItem}>
-                    <span className={styles.reviewLabel}>Pricing Tier</span>
-                    <span className={styles.reviewValue}>{currentTier.name}</span>
-                  </div>
                   <div className={styles.reviewItem}>
                     <span className={styles.reviewLabel}>Payment Uploaded</span>
                     <span className={styles.reviewValue}>{formData.paymentFileName}</span>
                   </div>
+                  {formData.invoiceRequest && (
+                    <div className={styles.reviewItem}>
+                      <span className={styles.reviewLabel}>Invoice Requested</span>
+                      <span className={styles.reviewValue}>Yes - {formData.invoiceName}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {formData.invoiceRequest && (
-                <div className={styles.reviewSection}>
-                  <h3>Invoice Details</h3>
-                  <div className={styles.reviewGrid}>
-                    <div className={styles.reviewItem}>
-                      <span className={styles.reviewLabel}>Name</span>
-                      <span className={styles.reviewValue}>{formData.invoiceName}</span>
-                    </div>
-                    <div className={styles.reviewItem}>
-                      <span className={styles.reviewLabel}>TIN</span>
-                      <span className={styles.reviewValue}>{formData.tin}</span>
-                    </div>
-                    <div className={styles.reviewItem}>
-                      <span className={styles.reviewLabel}>Address</span>
-                      <span className={styles.reviewValue}>{formData.invoiceAddress}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               <div className={styles.totalSection}>
                 <span>Total Amount</span>
-                <span className={styles.totalAmount}>
-                  {formatPrice(calculatePrice(formData.category, currentTier))}
-                </span>
+                <span className={styles.totalAmount}>{formatPrice(calculateTotalPrice())}</span>
               </div>
             </div>
           )}

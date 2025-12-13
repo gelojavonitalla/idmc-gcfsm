@@ -376,6 +376,185 @@
   border-radius: var(--radius-md);
 }
 
+/* Attendee Card */
+.attendeeCard {
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-5);
+  margin-bottom: var(--spacing-4);
+}
+
+.attendeeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+}
+
+.attendeeHeader h3 {
+  font-size: var(--font-size-lg);
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.removeButton {
+  background: transparent;
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.removeButton:hover {
+  background: var(--color-error);
+  color: white;
+}
+
+.addButton {
+  width: 100%;
+  padding: var(--spacing-4);
+  background: transparent;
+  border: 2px dashed var(--color-primary);
+  color: var(--color-primary);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: var(--spacing-4);
+}
+
+.addButton:hover {
+  background: var(--color-primary-50);
+}
+
+.subtotalBox {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-4);
+  background: var(--color-primary-50);
+  border-radius: var(--radius-md);
+}
+
+.subtotalBox span {
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+
+.subtotalBox strong {
+  font-size: var(--font-size-xl);
+  color: var(--color-primary);
+}
+
+.proofHint {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-warning);
+  margin-top: var(--spacing-1);
+}
+
+/* Attendee List (Step 2) */
+.attendeeList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.attendeeListItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-3);
+  background: var(--color-gray-50);
+  border-radius: var(--radius-md);
+}
+
+.attendeeListName {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.attendeeListCategory {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.attendeeListPrice {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* Review Value Styles */
+.reviewValueSmall {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-1);
+}
+
+/* Church Summary */
+.churchSummary {
+  background: var(--color-gray-50);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-6);
+}
+
+.churchSummary h3 {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-2);
+}
+
+.churchSummary p {
+  margin: 0;
+  color: var(--color-text);
+}
+
+/* Attendee Summary */
+.attendeeSummary {
+  display: flex;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  background: var(--color-gray-50);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-3);
+}
+
+.attendeeNumber {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-primary);
+  min-width: 40px;
+}
+
+.attendeeDetails {
+  flex: 1;
+}
+
+.attendeeDetails p {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.attendeeName {
+  font-size: var(--font-size-base) !important;
+  font-weight: 600;
+  color: var(--color-text) !important;
+}
+
+.attendeePrice {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
 /* Next Steps */
 .nextSteps {
   background: var(--color-background-secondary);
