@@ -24,8 +24,11 @@
     "eject": "react-scripts eject",
     "seed:speakers": "node scripts/seed-speakers.js",
     "seed:speakers:clear": "node scripts/seed-speakers.js --clear",
+    "seed:sessions": "node scripts/seed-sessions.js",
+    "seed:sessions:clear": "node scripts/seed-sessions.js --clear",
     "emulators": "firebase emulators:start",
-    "seed:emulator": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-speakers.js --clear"
+    "seed:emulator": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-speakers.js --clear",
+    "seed:emulator:sessions": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-sessions.js --clear"
   },
   "eslintConfig": {
     "extends": [

@@ -75,8 +75,8 @@ export const PRICING_TIERS = [
  */
 export const NAV_ITEMS = [
   { label: 'Home', path: ROUTES.HOME, isAnchor: false },
-  { label: 'Speakers', path: '/#speakers', isAnchor: true },
-  { label: 'Schedule', path: '/#schedule', isAnchor: true },
+  { label: 'Speakers', path: ROUTES.SPEAKERS, isAnchor: false },
+  { label: 'Schedule', path: ROUTES.SCHEDULE, isAnchor: false },
   { label: 'FAQ', path: ROUTES.FAQ, isAnchor: false },
   { label: 'Register', path: ROUTES.REGISTER, isAnchor: false, isPrimary: true },
 ];
@@ -136,11 +136,79 @@ export const ORGANIZATION = {
 };
 
 /**
- * Speaker session types
+ * Session types for conference schedule
  */
 export const SESSION_TYPES = {
   PLENARY: 'plenary',
   WORKSHOP: 'workshop',
+  BREAK: 'break',
+  REGISTRATION: 'registration',
+  WORSHIP: 'worship',
+  LUNCH: 'lunch',
+  OTHER: 'other',
+};
+
+/**
+ * Session type labels for display
+ */
+export const SESSION_TYPE_LABELS = {
+  [SESSION_TYPES.PLENARY]: 'Plenary',
+  [SESSION_TYPES.WORKSHOP]: 'Workshop',
+  [SESSION_TYPES.BREAK]: 'Break',
+  [SESSION_TYPES.REGISTRATION]: 'Registration',
+  [SESSION_TYPES.WORSHIP]: 'Worship',
+  [SESSION_TYPES.LUNCH]: 'Lunch',
+  [SESSION_TYPES.OTHER]: 'Other',
+};
+
+/**
+ * Session type colors for styling
+ * Maps session types to color values
+ */
+export const SESSION_TYPE_COLORS = {
+  [SESSION_TYPES.PLENARY]: {
+    background: '#dbeafe',
+    border: '#3b82f6',
+    text: '#1e40af',
+  },
+  [SESSION_TYPES.WORKSHOP]: {
+    background: '#dcfce7',
+    border: '#22c55e',
+    text: '#166534',
+  },
+  [SESSION_TYPES.BREAK]: {
+    background: '#f3f4f6',
+    border: '#9ca3af',
+    text: '#4b5563',
+  },
+  [SESSION_TYPES.REGISTRATION]: {
+    background: '#e0f2fe',
+    border: '#0ea5e9',
+    text: '#0369a1',
+  },
+  [SESSION_TYPES.WORSHIP]: {
+    background: '#f3e8ff',
+    border: '#a855f7',
+    text: '#7c3aed',
+  },
+  [SESSION_TYPES.LUNCH]: {
+    background: '#ffedd5',
+    border: '#f97316',
+    text: '#c2410c',
+  },
+  [SESSION_TYPES.OTHER]: {
+    background: '#f3f4f6',
+    border: '#6b7280',
+    text: '#374151',
+  },
+};
+
+/**
+ * Session status values
+ */
+export const SESSION_STATUS = {
+  PUBLISHED: 'published',
+  DRAFT: 'draft',
 };
 
 /**
@@ -262,67 +330,145 @@ export const MINISTRY_ROLES = [
 ];
 
 /**
- * Conference schedule data
- * Based on IDMC 2025 schedule format
+ * Conference schedule data (static fallback)
+ * Based on IDMC 2026 schedule format - single day conference
  */
 export const SCHEDULE = [
   {
     id: 'registration',
     time: '7:00 AM',
+    endTime: '9:00 AM',
     title: 'Registration',
-    type: 'general',
+    sessionType: SESSION_TYPES.REGISTRATION,
+    venue: 'Main Lobby',
     description: 'Check-in and receive conference materials',
+    speakerIds: [],
+    speakerNames: [],
+    order: 1,
   },
   {
     id: 'worship-opening',
     time: '9:00 AM',
+    endTime: '9:25 AM',
     title: 'Worship & Opening Prayer',
-    type: 'worship',
+    sessionType: SESSION_TYPES.WORSHIP,
+    venue: 'Main Hall',
     description: 'Corporate worship and opening prayer',
+    speakerIds: [],
+    speakerNames: [],
+    order: 2,
   },
   {
     id: 'plenary-1',
     time: '9:25 AM',
+    endTime: '10:50 AM',
     title: 'Plenary Session 1',
-    type: SESSION_TYPES.PLENARY,
+    sessionType: SESSION_TYPES.PLENARY,
+    venue: 'Main Hall',
     description: 'First plenary session',
+    speakerIds: ['lito-villoria'],
+    speakerNames: ['Rev. Dr. Lito Villoria'],
+    order: 3,
   },
   {
     id: 'plenary-2',
     time: '10:50 AM',
+    endTime: '12:00 PM',
     title: 'Plenary Session 2',
-    type: SESSION_TYPES.PLENARY,
+    sessionType: SESSION_TYPES.PLENARY,
+    venue: 'Main Hall',
     description: 'Second plenary session',
+    speakerIds: ['lito-villoria'],
+    speakerNames: ['Rev. Dr. Lito Villoria'],
+    order: 4,
   },
   {
     id: 'lunch',
     time: '12:00 PM',
+    endTime: '1:15 PM',
     title: 'Lunch Break',
-    type: 'break',
+    sessionType: SESSION_TYPES.LUNCH,
+    venue: 'Fellowship Hall',
     description: 'Fellowship and meal time',
+    speakerIds: [],
+    speakerNames: [],
+    order: 5,
   },
   {
-    id: 'workshops',
+    id: 'workshop-nextgen',
     time: '1:15 PM',
-    title: 'Workshops',
-    type: SESSION_TYPES.WORKSHOP,
-    subtitle: 'Overcoming Discipleship Pitfalls in Every Generation',
-    tracks: WORKSHOP_TRACKS,
-    description: 'Breakout sessions by demographic focus',
+    endTime: '3:00 PM',
+    title: 'Workshop: Next Generation',
+    sessionType: SESSION_TYPES.WORKSHOP,
+    venue: 'Room A',
+    description: 'Overcoming Pitfalls in the Discipleship of the Next Generation',
+    track: 'Next Generation',
+    speakerIds: ['karen-monroy'],
+    speakerNames: ['Teacher Karen Monroy'],
+    order: 6,
+  },
+  {
+    id: 'workshop-women',
+    time: '1:15 PM',
+    endTime: '3:00 PM',
+    title: 'Workshop: Women',
+    sessionType: SESSION_TYPES.WORKSHOP,
+    venue: 'Room B',
+    description: 'Overcoming Pitfalls in the Discipleship of Women',
+    track: 'Women',
+    speakerIds: ['carol-felipe'],
+    speakerNames: ['Teacher Carol Felipe'],
+    order: 7,
+  },
+  {
+    id: 'workshop-men',
+    time: '1:15 PM',
+    endTime: '3:00 PM',
+    title: 'Workshop: Men',
+    sessionType: SESSION_TYPES.WORKSHOP,
+    venue: 'Room C',
+    description: 'Overcoming Pitfalls in the Discipleship of Men',
+    track: 'Men',
+    speakerIds: ['gilbert-bayang'],
+    speakerNames: ['Elder Capt. Gilbert Bayang'],
+    order: 8,
+  },
+  {
+    id: 'workshop-seniors',
+    time: '1:15 PM',
+    endTime: '3:00 PM',
+    title: 'Workshop: Senior Citizens',
+    sessionType: SESSION_TYPES.WORKSHOP,
+    venue: 'Room D',
+    description: 'Overcoming Pitfalls in the Discipleship of Senior Citizens',
+    track: 'Senior Citizens',
+    speakerIds: ['jun-marivic-parcon'],
+    speakerNames: ['Capt. Jun & Marivic Parcon'],
+    order: 9,
   },
   {
     id: 'plenary-3',
     time: '3:15 PM',
+    endTime: '4:35 PM',
     title: 'Plenary Session 3',
-    type: SESSION_TYPES.PLENARY,
+    sessionType: SESSION_TYPES.PLENARY,
+    venue: 'Main Hall',
     description: 'Third plenary session',
+    speakerIds: ['lito-villoria'],
+    speakerNames: ['Rev. Dr. Lito Villoria'],
+    order: 10,
   },
   {
     id: 'worship-closing',
     time: '4:35 PM',
+    endTime: '5:30 PM',
     title: 'Worship & Closing Prayer',
-    type: 'worship',
+    sessionType: SESSION_TYPES.WORSHIP,
+    venue: 'Main Hall',
     description: 'Corporate worship and closing prayer',
+    speakerIds: [],
+    speakerNames: [],
+    order: 11,
   },
 ];
 

@@ -1,0 +1,258 @@
+/**
+ * SchedulePage Component Styles
+ * Styles for the public schedule page with timeline layout
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Hero Section */
+.heroSection {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: white;
+  text-align: center;
+  padding: calc(var(--header-height) + var(--spacing-16)) var(--spacing-4) var(--spacing-16);
+}
+
+.heroTitle {
+  font-size: var(--font-size-5xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--spacing-4);
+  color: white;
+}
+
+.heroSubtitle {
+  font-size: var(--font-size-xl);
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* Content Section */
+.contentSection {
+  padding: var(--spacing-16) 0;
+  background-color: var(--color-background);
+  flex: 1;
+}
+
+/* Filter Bar */
+.filterBar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--spacing-8);
+  padding-bottom: var(--spacing-4);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+/* Loading State */
+.loadingState {
+  text-align: center;
+  padding: var(--spacing-16);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-lg);
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: var(--spacing-16);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-lg);
+}
+
+.clearFilterButton {
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.clearFilterButton:hover {
+  background: var(--color-primary-dark);
+}
+
+.clearFilterButton:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Timeline */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.timeSlot {
+  display: flex;
+  gap: var(--spacing-6);
+}
+
+.timeLabel {
+  width: 100px;
+  flex-shrink: 0;
+  padding-top: var(--spacing-4);
+}
+
+.timeBadge {
+  display: inline-block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  background: var(--color-primary-light, rgba(59, 130, 246, 0.1));
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+}
+
+.sessionsGrid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-4);
+}
+
+/* CTA Section */
+.ctaSection {
+  background: var(--color-background-secondary);
+  padding: var(--spacing-16) var(--spacing-4);
+  text-align: center;
+}
+
+.ctaTitle {
+  font-size: var(--font-size-2xl);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-3);
+}
+
+.ctaText {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-6);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ctaButton {
+  display: inline-block;
+  padding: var(--spacing-4) var(--spacing-8);
+  background: var(--color-primary);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.ctaButton:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-2px);
+}
+
+.ctaButton:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Responsive - Tablet */
+@media (max-width: 1024px) {
+  .sessionsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+
+/* Responsive - Small Tablet */
+@media (max-width: 768px) {
+  .heroSection {
+    padding: calc(var(--header-height) + var(--spacing-12)) var(--spacing-4) var(--spacing-12);
+  }
+
+  .heroTitle {
+    font-size: var(--font-size-4xl);
+  }
+
+  .heroSubtitle {
+    font-size: var(--font-size-lg);
+  }
+
+  .contentSection {
+    padding: var(--spacing-12) 0;
+  }
+
+  .filterBar {
+    justify-content: center;
+  }
+
+  .timeSlot {
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+
+  .timeLabel {
+    width: auto;
+    padding-top: 0;
+  }
+
+  .sessionsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .ctaSection {
+    padding: var(--spacing-12) var(--spacing-4);
+  }
+
+  .ctaTitle {
+    font-size: var(--font-size-xl);
+  }
+
+  .ctaText {
+    font-size: var(--font-size-base);
+  }
+
+  .ctaButton {
+    padding: var(--spacing-3) var(--spacing-6);
+    font-size: var(--font-size-base);
+  }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 480px) {
+  .heroSection {
+    padding: calc(var(--header-height) + var(--spacing-8)) var(--spacing-4) var(--spacing-8);
+  }
+
+  .heroTitle {
+    font-size: var(--font-size-3xl);
+  }
+
+  .heroSubtitle {
+    font-size: var(--font-size-base);
+  }
+
+  .contentSection {
+    padding: var(--spacing-8) 0;
+  }
+
+  .filterBar {
+    margin-bottom: var(--spacing-6);
+  }
+
+  .timeline {
+    gap: var(--spacing-4);
+  }
+
+  .ctaSection {
+    padding: var(--spacing-8) var(--spacing-4);
+  }
+}
