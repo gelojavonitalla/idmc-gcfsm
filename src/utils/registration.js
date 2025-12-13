@@ -59,18 +59,17 @@ export function calculatePrice(category, tier = null) {
 }
 
 /**
- * Generates a unique registration ID in the format REG-YYYY-NNNNN.
- * Uses timestamp and random number for uniqueness.
+ * Generates a unique registration ID in the format REG-YYYY-XXXXXXXX.
+ * Uses full timestamp base36 encoding combined with random characters
+ * to minimize collision risk.
  *
  * @returns {string} The generated registration ID
  */
 export function generateRegistrationId() {
   const year = CONFERENCE.YEAR;
-  const timestamp = Date.now().toString().slice(-5);
-  const random = Math.floor(Math.random() * 100)
-    .toString()
-    .padStart(2, '0');
-  const sequence = `${timestamp}${random}`.slice(-5);
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const sequence = `${timestamp}${randomPart}`.slice(-8);
 
   return `REG-${year}-${sequence}`;
 }
@@ -115,12 +114,13 @@ export function formatPrice(amount, currency = 'PHP') {
 
 /**
  * Validates an email address format.
+ * Ensures proper domain structure with at least 2-character TLD.
  *
  * @param {string} email - The email to validate
  * @returns {boolean} True if valid email format
  */
 export function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return emailRegex.test(email);
 }
 

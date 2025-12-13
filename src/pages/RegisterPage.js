@@ -22,20 +22,30 @@ import {
 import styles from './RegisterPage.module.css';
 
 /**
- * Creates a new empty attendee object
+ * Counter for generating unique attendee IDs within a session
+ */
+let attendeeIdCounter = 0;
+
+/**
+ * Creates a new empty attendee object with a unique ID.
+ * Uses a combination of timestamp, counter, and random string for uniqueness.
  *
  * @returns {Object} Empty attendee data
  */
-const createEmptyAttendee = () => ({
-  id: Date.now() + Math.random(),
-  lastName: '',
-  firstName: '',
-  middleName: '',
-  cellphone: '',
-  email: '',
-  ministryRole: '',
-  category: REGISTRATION_CATEGORIES.REGULAR,
-});
+const createEmptyAttendee = () => {
+  attendeeIdCounter += 1;
+  const uniqueId = `${Date.now()}-${attendeeIdCounter}-${Math.random().toString(36).substring(2, 8)}`;
+  return {
+    id: uniqueId,
+    lastName: '',
+    firstName: '',
+    middleName: '',
+    cellphone: '',
+    email: '',
+    ministryRole: '',
+    category: REGISTRATION_CATEGORIES.REGULAR,
+  };
+};
 
 /**
  * Initial form data structure for registration
@@ -142,18 +152,27 @@ function RegisterPage() {
   }, [formData.attendees.length]);
 
   /**
-   * Handles file selection for payment upload
+   * Handles file selection for payment upload.
+   * Note: Server-side validation should also verify actual file content,
+   * as client-side MIME type checking can be bypassed.
    *
    * @param {Event} e - The file input change event
    */
   const handleFileChange = useCallback((e) => {
     const file = e.target.files[0];
     if (file) {
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+      const allowedTypes = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'application/pdf',
+      ];
       if (!allowedTypes.includes(file.type)) {
         setErrors((prev) => ({
           ...prev,
-          paymentFile: 'Please upload an image (JPG, PNG, GIF) or PDF file',
+          paymentFile: 'Please upload an image (JPG, PNG, GIF, WebP) or PDF file',
         }));
         return;
       }
