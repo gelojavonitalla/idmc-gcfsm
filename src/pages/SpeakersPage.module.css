@@ -147,12 +147,12 @@
   display: inline-block;
   margin-top: var(--spacing-3);
   padding: var(--spacing-2) var(--spacing-4);
-  background: var(--color-primary-50, #ecfdf5);
+  background: var(--color-primary-50);
   color: var(--color-primary-dark);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-primary-100, #d1fae5);
+  border: 1px solid var(--color-primary-100);
   line-height: 1.4;
 }
 
