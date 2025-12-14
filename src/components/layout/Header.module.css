@@ -156,12 +156,12 @@
 }
 
 .navLinkPrimary {
-  background-color: white;
-  color: var(--color-primary) !important;
+  background-color: var(--color-primary);
+  color: white !important;
   padding: 0.625rem 1.25rem;
   border-radius: 0.375rem;
   font-weight: var(--font-weight-semibold);
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
 }
 
 .navLinkPrimary::after {
@@ -169,8 +169,17 @@
 }
 
 .navLinkPrimary:hover {
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--color-primary-dark);
   transform: translateY(-1px);
+}
+
+.header:not(.scrolled) .navLinkPrimary {
+  background-color: white;
+  color: var(--color-primary) !important;
+}
+
+.header:not(.scrolled) .navLinkPrimary:hover {
+  background-color: rgba(255, 255, 255, 0.9);
 }
 
 /* Mobile Styles */
