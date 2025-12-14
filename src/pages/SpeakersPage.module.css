@@ -1,6 +1,6 @@
 /**
  * SpeakersPage Component Styles
- * Styles for the public speakers page with responsive grid layout
+ * Styles for the public speakers page with detailed speaker cards
  */
 
 .page {
@@ -63,13 +63,107 @@
   margin: 0 0 var(--spacing-8);
 }
 
-/* Speakers Grid - 4 columns on desktop, 2 on tablet, 1 on mobile */
-.speakersGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+/* Speakers List - Vertical stack for detailed cards */
+.speakersList {
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-6);
-  max-width: 1200px;
+  max-width: 800px;
   margin: 0 auto;
+}
+
+/* Speaker Card - Detailed view */
+.speakerCard {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: var(--spacing-6);
+  text-align: left;
+  transition: box-shadow 0.2s ease;
+}
+
+.speakerCard:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.speakerHeader {
+  display: flex;
+  gap: var(--spacing-5);
+  align-items: flex-start;
+}
+
+.imageContainer {
+  flex-shrink: 0;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.speakerInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.speakerName {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-1);
+}
+
+.speakerTitle {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-1);
+}
+
+.speakerOrg {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.speakerSession {
+  display: inline-block;
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-3);
+  background: var(--color-primary-light, rgba(34, 139, 34, 0.1));
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-md);
+}
+
+.speakerBio {
+  margin-top: var(--spacing-4);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-gray-200);
+}
+
+.speakerBio p {
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  line-height: 1.7;
+  margin: 0;
 }
 
 /* Loading State */
@@ -144,13 +238,6 @@
 }
 
 /* Responsive - Tablet */
-@media (max-width: 1024px) {
-  .speakersGrid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-/* Responsive - Small Tablet */
 @media (max-width: 768px) {
   .heroSection {
     padding: calc(var(--header-height) + var(--spacing-12)) var(--spacing-4) var(--spacing-12);
@@ -168,17 +255,25 @@
     padding: var(--spacing-12) 0;
   }
 
-  .speakersGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-4);
-  }
-
   .speakerCategory {
     margin-bottom: var(--spacing-12);
   }
 
   .categoryTitle {
     font-size: var(--font-size-xl);
+  }
+
+  .speakerCard {
+    padding: var(--spacing-5);
+  }
+
+  .imageContainer {
+    width: 80px;
+    height: 80px;
+  }
+
+  .speakerName {
+    font-size: var(--font-size-lg);
   }
 
   .ctaSection {
@@ -217,11 +312,6 @@
     padding: var(--spacing-8) 0;
   }
 
-  .speakersGrid {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-4);
-  }
-
   .speakerCategory {
     margin-bottom: var(--spacing-8);
   }
@@ -233,6 +323,30 @@
   .categoryDescription {
     font-size: var(--font-size-sm);
     margin-bottom: var(--spacing-6);
+  }
+
+  .speakerCard {
+    padding: var(--spacing-4);
+  }
+
+  .speakerHeader {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .imageContainer {
+    width: 100px;
+    height: 100px;
+    margin-bottom: var(--spacing-3);
+  }
+
+  .speakerInfo {
+    text-align: center;
+  }
+
+  .speakerBio {
+    text-align: left;
   }
 
   .ctaSection {
