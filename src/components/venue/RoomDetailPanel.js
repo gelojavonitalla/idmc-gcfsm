@@ -178,23 +178,6 @@ function RoomDetailPanel({ room, sessions, isOpen, onClose }) {
             </div>
           )}
 
-          {/* Features */}
-          {room.features && room.features.length > 0 && (
-            <div className={styles.featuresSection}>
-              <h3 className={styles.sectionTitle}>Room Features</h3>
-              <ul className={styles.featuresList}>
-                {room.features.map((feature, index) => (
-                  <li key={index} className={styles.featureItem}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
           {/* Sessions */}
           {sessions && sessions.length > 0 && (
             <div className={styles.sessionsSection}>
