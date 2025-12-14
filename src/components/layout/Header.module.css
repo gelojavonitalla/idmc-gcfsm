@@ -127,6 +127,10 @@
   color: white;
 }
 
+.navLink:hover {
+  text-decoration: none;
+}
+
 .navLink::after {
   content: '';
   position: absolute;
