@@ -193,6 +193,11 @@
 
   .navLink {
     font-size: 1.25rem;
+  }
+
+  /* Override white text color when mobile menu is open (fixes visibility on white background) */
+  /* Needs .nav.navOpen for specificity 0-3-0 to override .header:not(.scrolled) .navLink */
+  .nav.navOpen .navLink {
     color: var(--color-text);
   }
 
