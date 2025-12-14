@@ -207,7 +207,7 @@ async function seedWorkshops(db) {
     const workshopData = {
       ...workshop,
       time: formatTimeDisplay(workshop.startTime),
-      endTime: formatTimeDisplay(workshop.endTime),
+      endTimeDisplay: formatTimeDisplay(workshop.endTime),
       createdAt: now,
       updatedAt: now,
     };
