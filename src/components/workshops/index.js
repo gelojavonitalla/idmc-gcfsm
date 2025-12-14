@@ -4,7 +4,6 @@
  */
 
 export { default as CapacityBadge } from './CapacityBadge';
-export { default as CategoryFilter } from './CategoryFilter';
 export { default as WorkshopCard } from './WorkshopCard';
 export { default as WorkshopDetailModal } from './WorkshopDetailModal';
 export { default as WorkshopGrid } from './WorkshopGrid';

@@ -1,9 +1,8 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   WorkshopGrid,
   WorkshopDetailModal,
-  CategoryFilter,
 } from '../components/workshops';
 import { getPublishedWorkshops } from '../services/workshops';
 import { getPublishedSpeakers } from '../services/speakers';
@@ -29,7 +28,6 @@ function WorkshopsPage() {
   const [workshops, setWorkshops] = useState([]);
   const [speakers, setSpeakers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('');
 
   /**
    * Fetches published workshops and speakers from Firestore on component mount
@@ -58,16 +56,6 @@ function WorkshopsPage() {
   }, []);
 
   /**
-   * Filters workshops by the selected category
-   */
-  const filteredWorkshops = useMemo(() => {
-    if (!selectedCategory) {
-      return workshops;
-    }
-    return workshops.filter((workshop) => workshop.category === selectedCategory);
-  }, [workshops, selectedCategory]);
-
-  /**
    * Opens the workshop detail modal
    *
    * @param {Object} workshop - Workshop data to display
@@ -85,24 +73,6 @@ function WorkshopsPage() {
     setSelectedWorkshop(null);
   }, []);
 
-  /**
-   * Handles category filter change
-   *
-   * @param {string} category - Selected category
-   */
-  const handleCategoryChange = useCallback((category) => {
-    setSelectedCategory(category);
-  }, []);
-
-  /**
-   * Clears the category filter
-   */
-  const handleClearFilters = useCallback(() => {
-    setSelectedCategory('');
-  }, []);
-
-  const hasActiveFilters = !!selectedCategory;
-
   return (
     <div className={styles.page}>
       {/* Hero Section */}
@@ -118,24 +88,6 @@ function WorkshopsPage() {
       {/* Main Content */}
       <section className={styles.contentSection}>
         <div className="container">
-          {/* Filter Controls */}
-          <div className={styles.filterBar}>
-            <div className={styles.filters}>
-              <CategoryFilter
-                selectedCategory={selectedCategory}
-                onChange={handleCategoryChange}
-              />
-            </div>
-            {hasActiveFilters && (
-              <button
-                className={styles.clearFiltersButton}
-                onClick={handleClearFilters}
-              >
-                Clear Filter
-              </button>
-            )}
-          </div>
-
           {/* Loading State */}
           {isLoading && (
             <div className={styles.loadingState}>
@@ -146,22 +98,14 @@ function WorkshopsPage() {
           {/* Content - Only show when not loading */}
           {!isLoading && (
             <>
-              {filteredWorkshops.length > 0 ? (
+              {workshops.length > 0 ? (
                 <WorkshopGrid
-                  workshops={filteredWorkshops}
+                  workshops={workshops}
                   onWorkshopClick={handleWorkshopClick}
                 />
               ) : (
                 <div className={styles.emptyState}>
-                  <p>No workshops found for the selected filters.</p>
-                  {hasActiveFilters && (
-                    <button
-                      className={styles.clearFilterButton}
-                      onClick={handleClearFilters}
-                    >
-                      Show all workshops
-                    </button>
-                  )}
+                  <p>No workshops available.</p>
                 </div>
               )}
             </>

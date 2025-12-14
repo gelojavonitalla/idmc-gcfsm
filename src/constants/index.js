@@ -478,68 +478,55 @@ export const SCHEDULE = [
 
 /**
  * Workshop category identifiers
+ * Categories for GCF IDMC workshops
  */
 export const WORKSHOP_CATEGORIES = Object.freeze({
-  MISSIONS: 'missions',
-  MARKETPLACE: 'marketplace',
-  SOCIAL_JUSTICE: 'social_justice',
-  MEDIA_INFLUENCE: 'media_influence',
-  MENTAL_WELLNESS: 'mental_wellness',
-  SEXUAL_WHOLENESS: 'sexual_wholeness',
-  OTHER: 'other',
+  NEXT_GENERATION: 'next_generation',
+  WOMEN: 'women',
+  MEN: 'men',
+  COUPLES: 'couples',
+  SENIOR_CITIZENS: 'senior_citizens',
 });
 
 /**
  * Workshop category labels for display
  */
 export const WORKSHOP_CATEGORY_LABELS = {
-  [WORKSHOP_CATEGORIES.MISSIONS]: 'Missions',
-  [WORKSHOP_CATEGORIES.MARKETPLACE]: 'Marketplace',
-  [WORKSHOP_CATEGORIES.SOCIAL_JUSTICE]: 'Social Justice',
-  [WORKSHOP_CATEGORIES.MEDIA_INFLUENCE]: 'Media Influence',
-  [WORKSHOP_CATEGORIES.MENTAL_WELLNESS]: 'Mental Wellness',
-  [WORKSHOP_CATEGORIES.SEXUAL_WHOLENESS]: 'Sexual Wholeness',
-  [WORKSHOP_CATEGORIES.OTHER]: 'Other',
+  [WORKSHOP_CATEGORIES.NEXT_GENERATION]: 'Next Generation',
+  [WORKSHOP_CATEGORIES.WOMEN]: 'Women',
+  [WORKSHOP_CATEGORIES.MEN]: 'Men',
+  [WORKSHOP_CATEGORIES.COUPLES]: 'Couples',
+  [WORKSHOP_CATEGORIES.SENIOR_CITIZENS]: 'Senior Citizens',
 };
 
 /**
  * Workshop category colors for styling
  */
 export const WORKSHOP_CATEGORY_COLORS = {
-  [WORKSHOP_CATEGORIES.MISSIONS]: {
+  [WORKSHOP_CATEGORIES.NEXT_GENERATION]: {
     background: '#dbeafe',
     border: '#3b82f6',
     text: '#1e40af',
   },
-  [WORKSHOP_CATEGORIES.MARKETPLACE]: {
-    background: '#dcfce7',
-    border: '#22c55e',
-    text: '#166534',
+  [WORKSHOP_CATEGORIES.WOMEN]: {
+    background: '#fce7f3',
+    border: '#ec4899',
+    text: '#9d174d',
   },
-  [WORKSHOP_CATEGORIES.SOCIAL_JUSTICE]: {
-    background: '#fef3c7',
-    border: '#f59e0b',
-    text: '#92400e',
-  },
-  [WORKSHOP_CATEGORIES.MEDIA_INFLUENCE]: {
-    background: '#f3e8ff',
-    border: '#a855f7',
-    text: '#7c3aed',
-  },
-  [WORKSHOP_CATEGORIES.MENTAL_WELLNESS]: {
+  [WORKSHOP_CATEGORIES.MEN]: {
     background: '#e0f2fe',
     border: '#0ea5e9',
     text: '#0369a1',
   },
-  [WORKSHOP_CATEGORIES.SEXUAL_WHOLENESS]: {
-    background: '#ffe4e6',
-    border: '#f43f5e',
-    text: '#be123c',
+  [WORKSHOP_CATEGORIES.COUPLES]: {
+    background: '#fef3c7',
+    border: '#f59e0b',
+    text: '#92400e',
   },
-  [WORKSHOP_CATEGORIES.OTHER]: {
-    background: '#f3f4f6',
-    border: '#6b7280',
-    text: '#374151',
+  [WORKSHOP_CATEGORIES.SENIOR_CITIZENS]: {
+    background: '#dcfce7',
+    border: '#22c55e',
+    text: '#166534',
   },
 };
 
@@ -636,92 +623,75 @@ export const SPEAKERS = [
 
 /**
  * Workshop data for IDMC Conference (static fallback)
- * Based on epic test data specifications
+ * Based on GCF South Metro workshop structure
  */
 export const WORKSHOPS = [
   {
-    id: 'workshop-mental-wellness',
-    title: 'Mental Wellness Workshop',
-    description: 'A comprehensive workshop on mental health and wellness from a biblical perspective. Learn practical strategies for maintaining mental health while growing spiritually.',
+    id: 'workshop-next-generation',
+    title: 'Overcoming Pitfalls in the Discipleship of the Next Generation',
+    description: 'A workshop focused on effectively discipling children, youth, and young adults. Learn how to navigate common challenges and help the next generation choose to follow Jesus.',
     sessionType: SESSION_TYPES.WORKSHOP,
-    category: WORKSHOP_CATEGORIES.MENTAL_WELLNESS,
+    category: WORKSHOP_CATEGORIES.NEXT_GENERATION,
     time: '1:15 PM',
     endTime: '3:00 PM',
     timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
-    venue: 'Hall 1',
-    capacity: 500,
+    venue: 'Worship Hall',
+    capacity: 100,
     registeredCount: 0,
-    speakerIds: [],
-    speakerNames: [],
+    speakerIds: ['karen-monroy'],
+    speakerNames: ['Teacher Karen Monroy'],
     order: 1,
     status: SESSION_STATUS.PUBLISHED,
   },
   {
-    id: 'workshop-social-justice',
-    title: 'Social Justice Workshop',
-    description: 'Exploring how Christians can engage with social justice issues while remaining grounded in biblical truth. Understanding our role in creating positive change.',
+    id: 'workshop-women',
+    title: 'Overcoming Pitfalls in the Discipleship of Women',
+    description: 'A workshop designed to equip leaders in mentoring and discipling women. Discover how to help women experience the fullness of joy that comes from the Lord.',
     sessionType: SESSION_TYPES.WORKSHOP,
-    category: WORKSHOP_CATEGORIES.SOCIAL_JUSTICE,
+    category: WORKSHOP_CATEGORIES.WOMEN,
     time: '1:15 PM',
     endTime: '3:00 PM',
     timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
-    venue: 'Hall 1',
-    capacity: null,
+    venue: '2nd Floor Lobby',
+    capacity: 80,
     registeredCount: 0,
-    speakerIds: [],
-    speakerNames: [],
+    speakerIds: ['carol-felipe'],
+    speakerNames: ['Teacher Carol Felipe'],
     order: 2,
     status: SESSION_STATUS.PUBLISHED,
   },
   {
-    id: 'workshop-sexual-wholeness',
-    title: 'Sexual Wholeness Workshop',
-    description: 'A biblical approach to understanding sexuality and wholeness. This workshop provides a safe space to discuss important topics with grace and truth.',
+    id: 'workshop-men',
+    title: 'Overcoming Pitfalls in the Discipleship of Men',
+    description: 'A workshop for those who are passionate about discipling men. Learn practical strategies for mentoring men in their faith journey.',
     sessionType: SESSION_TYPES.WORKSHOP,
-    category: WORKSHOP_CATEGORIES.SEXUAL_WHOLENESS,
+    category: WORKSHOP_CATEGORIES.MEN,
     time: '1:15 PM',
     endTime: '3:00 PM',
     timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
-    venue: 'Garnet Room',
-    capacity: 100,
+    venue: 'CDC',
+    capacity: 60,
     registeredCount: 0,
-    speakerIds: [],
-    speakerNames: [],
+    speakerIds: ['gilbert-bayang'],
+    speakerNames: ['Elder Capt. Gilbert Bayang'],
     order: 3,
     status: SESSION_STATUS.PUBLISHED,
   },
   {
-    id: 'workshop-marketplace',
-    title: 'God in the Marketplace',
-    description: 'Discover how to live out your faith in your workplace. Learn practical ways to be salt and light in your professional environment.',
+    id: 'workshop-senior-citizens',
+    title: 'Overcoming Pitfalls in the Discipleship of Senior Citizens',
+    description: 'A workshop dedicated to ministering to seasoned citizens. Learn how to guide seniors in their faith and life journey while ensuring they enjoy God\'s presence, love, and blessings.',
     sessionType: SESSION_TYPES.WORKSHOP,
-    category: WORKSHOP_CATEGORIES.MARKETPLACE,
+    category: WORKSHOP_CATEGORIES.SENIOR_CITIZENS,
     time: '1:15 PM',
     endTime: '3:00 PM',
     timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
-    venue: 'Peridot Room',
-    capacity: 150,
-    registeredCount: 45,
-    speakerIds: [],
-    speakerNames: [],
+    venue: 'YDT',
+    capacity: 50,
+    registeredCount: 0,
+    speakerIds: ['jun-marivic-parcon'],
+    speakerNames: ['Capt. Jun & Marivic Parcon'],
     order: 4,
-    status: SESSION_STATUS.PUBLISHED,
-  },
-  {
-    id: 'workshop-missions',
-    title: 'Missions Workshop',
-    description: 'An introduction to global missions and how you can participate. Learn about different mission opportunities and how to discern your calling.',
-    sessionType: SESSION_TYPES.WORKSHOP,
-    category: WORKSHOP_CATEGORIES.MISSIONS,
-    time: '1:15 PM',
-    endTime: '3:00 PM',
-    timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
-    venue: 'Tourmaline Room',
-    capacity: 100,
-    registeredCount: 98,
-    speakerIds: [],
-    speakerNames: [],
-    order: 5,
     status: SESSION_STATUS.PUBLISHED,
   },
 ];
