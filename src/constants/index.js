@@ -16,6 +16,7 @@ export const ROUTES = {
   ABOUT: '/about',
   VENUE: '/venue',
   CONTACT: '/contact',
+  DOWNLOADS: '/downloads',
   PRIVACY: '/privacy',
   TERMS: '/terms',
 };
@@ -734,6 +735,45 @@ export const CONTACT_INQUIRY_STATUS = Object.freeze({
   READ: 'read',
   REPLIED: 'replied',
 });
+
+/**
+ * Downloads data for attendees
+ * Materials that can be downloaded during or after the conference
+ */
+export const DOWNLOADS = [
+  {
+    id: 'idmc-2026-booklet',
+    title: 'IDMC 2026 Conference Booklet',
+    description: 'Complete conference program, schedule, speaker information, and session outlines.',
+    fileName: 'IDMC-2026-Booklet.pdf',
+    fileSize: '2.5 MB',
+    fileType: 'PDF',
+    category: 'booklet',
+    downloadUrl: '/downloads/IDMC-2026-Booklet.pdf',
+    order: 1,
+    isAvailable: true,
+  },
+];
+
+/**
+ * Download category identifiers
+ */
+export const DOWNLOAD_CATEGORIES = Object.freeze({
+  BOOKLET: 'booklet',
+  PRESENTATION: 'presentation',
+  HANDOUT: 'handout',
+  RESOURCE: 'resource',
+});
+
+/**
+ * Download category labels for display
+ */
+export const DOWNLOAD_CATEGORY_LABELS = {
+  [DOWNLOAD_CATEGORIES.BOOKLET]: 'Conference Booklet',
+  [DOWNLOAD_CATEGORIES.PRESENTATION]: 'Presentations',
+  [DOWNLOAD_CATEGORIES.HANDOUT]: 'Handouts',
+  [DOWNLOAD_CATEGORIES.RESOURCE]: 'Resources',
+};
 
 /**
  * FAQ seed data for testing and initial content
