@@ -35,15 +35,20 @@ function SchedulePage() {
       try {
         setIsLoading(true);
 
+        console.log('[SchedulePage] Fetching sessions from Firestore...');
         const [fetchedSessions, fetchedSpeakers] = await Promise.all([
           getPublishedSessions(),
           getPublishedSpeakers(),
         ]);
 
+        console.log('[SchedulePage] Firestore sessions:', fetchedSessions);
+        console.log('[SchedulePage] Sessions count:', fetchedSessions.length);
+
         setSessions(fetchedSessions);
         setSpeakers(fetchedSpeakers);
       } catch (fetchError) {
-        console.error('Failed to fetch schedule data:', fetchError);
+        console.error('[SchedulePage] Failed to fetch schedule data:', fetchError);
+        console.log('[SchedulePage] Falling back to static SCHEDULE data');
         // Only fall back to static data on actual fetch errors
         setSessions(SCHEDULE);
       } finally {
