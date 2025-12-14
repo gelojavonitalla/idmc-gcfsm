@@ -331,7 +331,7 @@ async function seedSchedule(db) {
     const sessionData = {
       ...session,
       time: formatTimeDisplay(session.startTime),
-      endTimeDisplay: formatTimeDisplay(session.endTime),
+      endTime: formatTimeDisplay(session.endTime),
       createdAt: now,
       updatedAt: now,
     };
