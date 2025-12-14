@@ -123,8 +123,8 @@ function HomePage() {
             </div>
           )}
 
-          {/* Error State */}
-          {speakersError && !isLoadingSpeakers && (
+          {/* Error State - only show if no fallback data available */}
+          {speakersError && !isLoadingSpeakers && speakers.length === 0 && (
             <div className={styles.speakersError}>
               <p>{speakersError}</p>
             </div>
