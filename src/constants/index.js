@@ -10,6 +10,7 @@ export const ROUTES = {
   HOME: '/',
   SPEAKERS: '/speakers',
   SCHEDULE: '/schedule',
+  WORKSHOPS: '/workshops',
   REGISTER: '/register',
   FAQ: '/faq',
   ABOUT: '/about',
@@ -77,6 +78,7 @@ export const NAV_ITEMS = [
   { label: 'Home', path: ROUTES.HOME, isAnchor: false },
   { label: 'Speakers', path: ROUTES.SPEAKERS, isAnchor: false },
   { label: 'Schedule', path: ROUTES.SCHEDULE, isAnchor: false },
+  { label: 'Workshops', path: ROUTES.WORKSHOPS, isAnchor: false },
   { label: 'FAQ', path: ROUTES.FAQ, isAnchor: false },
   { label: 'Register', path: ROUTES.REGISTER, isAnchor: false, isPrimary: true },
 ];
@@ -473,6 +475,118 @@ export const SCHEDULE = [
 ];
 
 /**
+ * Workshop track identifiers
+ * track_1: Default/open access for all attendees
+ * track_2: Requires pre-registration
+ */
+export const WORKSHOP_TRACK_IDS = Object.freeze({
+  TRACK_1: 'track_1',
+  TRACK_2: 'track_2',
+});
+
+/**
+ * Workshop track labels for display
+ */
+export const WORKSHOP_TRACK_LABELS = {
+  [WORKSHOP_TRACK_IDS.TRACK_1]: 'Track 1 (Open Access)',
+  [WORKSHOP_TRACK_IDS.TRACK_2]: 'Track 2 (Pre-registration)',
+};
+
+/**
+ * Workshop track descriptions
+ */
+export const WORKSHOP_TRACK_DESCRIPTIONS = {
+  [WORKSHOP_TRACK_IDS.TRACK_1]: 'Open to all attendees without pre-registration',
+  [WORKSHOP_TRACK_IDS.TRACK_2]: 'Requires selection during registration',
+};
+
+/**
+ * Workshop category identifiers
+ */
+export const WORKSHOP_CATEGORIES = Object.freeze({
+  MISSIONS: 'missions',
+  MARKETPLACE: 'marketplace',
+  SOCIAL_JUSTICE: 'social_justice',
+  MEDIA_INFLUENCE: 'media_influence',
+  MENTAL_WELLNESS: 'mental_wellness',
+  SEXUAL_WHOLENESS: 'sexual_wholeness',
+  OTHER: 'other',
+});
+
+/**
+ * Workshop category labels for display
+ */
+export const WORKSHOP_CATEGORY_LABELS = {
+  [WORKSHOP_CATEGORIES.MISSIONS]: 'Missions',
+  [WORKSHOP_CATEGORIES.MARKETPLACE]: 'Marketplace',
+  [WORKSHOP_CATEGORIES.SOCIAL_JUSTICE]: 'Social Justice',
+  [WORKSHOP_CATEGORIES.MEDIA_INFLUENCE]: 'Media Influence',
+  [WORKSHOP_CATEGORIES.MENTAL_WELLNESS]: 'Mental Wellness',
+  [WORKSHOP_CATEGORIES.SEXUAL_WHOLENESS]: 'Sexual Wholeness',
+  [WORKSHOP_CATEGORIES.OTHER]: 'Other',
+};
+
+/**
+ * Workshop category colors for styling
+ */
+export const WORKSHOP_CATEGORY_COLORS = {
+  [WORKSHOP_CATEGORIES.MISSIONS]: {
+    background: '#dbeafe',
+    border: '#3b82f6',
+    text: '#1e40af',
+  },
+  [WORKSHOP_CATEGORIES.MARKETPLACE]: {
+    background: '#dcfce7',
+    border: '#22c55e',
+    text: '#166534',
+  },
+  [WORKSHOP_CATEGORIES.SOCIAL_JUSTICE]: {
+    background: '#fef3c7',
+    border: '#f59e0b',
+    text: '#92400e',
+  },
+  [WORKSHOP_CATEGORIES.MEDIA_INFLUENCE]: {
+    background: '#f3e8ff',
+    border: '#a855f7',
+    text: '#7c3aed',
+  },
+  [WORKSHOP_CATEGORIES.MENTAL_WELLNESS]: {
+    background: '#e0f2fe',
+    border: '#0ea5e9',
+    text: '#0369a1',
+  },
+  [WORKSHOP_CATEGORIES.SEXUAL_WHOLENESS]: {
+    background: '#ffe4e6',
+    border: '#f43f5e',
+    text: '#be123c',
+  },
+  [WORKSHOP_CATEGORIES.OTHER]: {
+    background: '#f3f4f6',
+    border: '#6b7280',
+    text: '#374151',
+  },
+};
+
+/**
+ * Workshop time slot identifiers for registration selection
+ */
+export const WORKSHOP_TIME_SLOTS = Object.freeze({
+  DAY1_AFTERNOON: 'day1_afternoon',
+});
+
+/**
+ * Workshop time slot labels
+ */
+export const WORKSHOP_TIME_SLOT_LABELS = {
+  [WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON]: 'Day 1 Afternoon (1:15 PM - 3:00 PM)',
+};
+
+/**
+ * Default capacity value when not specified (unlimited)
+ */
+export const WORKSHOP_UNLIMITED_CAPACITY = -1;
+
+/**
  * Speaker data for IDMC Conference
  * Based on GCFSM leadership and conference presenters
  */
@@ -541,5 +655,102 @@ export const SPEAKERS = [
     featured: true,
     order: 5,
     status: SPEAKER_STATUS.PUBLISHED,
+  },
+];
+
+/**
+ * Workshop data for IDMC Conference (static fallback)
+ * Based on epic test data specifications
+ */
+export const WORKSHOPS = [
+  {
+    id: 'workshop-mental-wellness',
+    title: 'Mental Wellness Workshop',
+    description: 'A comprehensive workshop on mental health and wellness from a biblical perspective. Learn practical strategies for maintaining mental health while growing spiritually.',
+    sessionType: SESSION_TYPES.WORKSHOP,
+    track: WORKSHOP_TRACK_IDS.TRACK_1,
+    category: WORKSHOP_CATEGORIES.MENTAL_WELLNESS,
+    time: '1:15 PM',
+    endTime: '3:00 PM',
+    timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
+    venue: 'Hall 1',
+    capacity: 500,
+    registeredCount: 0,
+    speakerIds: [],
+    speakerNames: [],
+    order: 1,
+    status: SESSION_STATUS.PUBLISHED,
+  },
+  {
+    id: 'workshop-social-justice',
+    title: 'Social Justice Workshop',
+    description: 'Exploring how Christians can engage with social justice issues while remaining grounded in biblical truth. Understanding our role in creating positive change.',
+    sessionType: SESSION_TYPES.WORKSHOP,
+    track: WORKSHOP_TRACK_IDS.TRACK_1,
+    category: WORKSHOP_CATEGORIES.SOCIAL_JUSTICE,
+    time: '1:15 PM',
+    endTime: '3:00 PM',
+    timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
+    venue: 'Hall 1',
+    capacity: null,
+    registeredCount: 0,
+    speakerIds: [],
+    speakerNames: [],
+    order: 2,
+    status: SESSION_STATUS.PUBLISHED,
+  },
+  {
+    id: 'workshop-sexual-wholeness',
+    title: 'Sexual Wholeness Workshop',
+    description: 'A biblical approach to understanding sexuality and wholeness. This workshop provides a safe space to discuss important topics with grace and truth.',
+    sessionType: SESSION_TYPES.WORKSHOP,
+    track: WORKSHOP_TRACK_IDS.TRACK_2,
+    category: WORKSHOP_CATEGORIES.SEXUAL_WHOLENESS,
+    time: '1:15 PM',
+    endTime: '3:00 PM',
+    timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
+    venue: 'Garnet Room',
+    capacity: 100,
+    registeredCount: 0,
+    speakerIds: [],
+    speakerNames: [],
+    order: 3,
+    status: SESSION_STATUS.PUBLISHED,
+  },
+  {
+    id: 'workshop-marketplace',
+    title: 'God in the Marketplace',
+    description: 'Discover how to live out your faith in your workplace. Learn practical ways to be salt and light in your professional environment.',
+    sessionType: SESSION_TYPES.WORKSHOP,
+    track: WORKSHOP_TRACK_IDS.TRACK_2,
+    category: WORKSHOP_CATEGORIES.MARKETPLACE,
+    time: '1:15 PM',
+    endTime: '3:00 PM',
+    timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
+    venue: 'Peridot Room',
+    capacity: 150,
+    registeredCount: 45,
+    speakerIds: [],
+    speakerNames: [],
+    order: 4,
+    status: SESSION_STATUS.PUBLISHED,
+  },
+  {
+    id: 'workshop-missions',
+    title: 'Missions Workshop',
+    description: 'An introduction to global missions and how you can participate. Learn about different mission opportunities and how to discern your calling.',
+    sessionType: SESSION_TYPES.WORKSHOP,
+    track: WORKSHOP_TRACK_IDS.TRACK_2,
+    category: WORKSHOP_CATEGORIES.MISSIONS,
+    time: '1:15 PM',
+    endTime: '3:00 PM',
+    timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
+    venue: 'Tourmaline Room',
+    capacity: 100,
+    registeredCount: 98,
+    speakerIds: [],
+    speakerNames: [],
+    order: 5,
+    status: SESSION_STATUS.PUBLISHED,
   },
 ];
