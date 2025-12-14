@@ -181,7 +181,7 @@
   outline-offset: 2px;
 }
 
-.comingSoon {
+.availableSoon {
   display: inline-block;
   padding: var(--spacing-3) var(--spacing-6);
   background: var(--color-background-secondary);

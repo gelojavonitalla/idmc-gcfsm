@@ -119,7 +119,7 @@ function DownloadsPage() {
                         Download
                       </button>
                     ) : (
-                      <span className={styles.comingSoon}>Coming Soon</span>
+                      <span className={styles.availableSoon}>Available Soon</span>
                     )}
                   </div>
                 </div>
