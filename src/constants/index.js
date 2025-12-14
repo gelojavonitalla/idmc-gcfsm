@@ -739,6 +739,10 @@ export const CONTACT_INQUIRY_STATUS = Object.freeze({
 /**
  * Downloads data for attendees
  * Materials that can be downloaded during or after the conference
+ *
+ * Note: downloadUrl and thumbnailUrl should be Firebase Storage URLs
+ * Format: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{encoded-path}?alt=media
+ * Or use Firebase Storage download URLs from the Firebase Console
  */
 export const DOWNLOADS = [
   {
@@ -749,9 +753,11 @@ export const DOWNLOADS = [
     fileSize: '2.5 MB',
     fileType: 'PDF',
     category: 'booklet',
-    downloadUrl: '/downloads/IDMC-2026-Booklet.pdf',
+    // Replace with actual Firebase Storage URLs when available
+    downloadUrl: '',
+    thumbnailUrl: '',
     order: 1,
-    isAvailable: true,
+    isAvailable: false,
   },
 ];
 
