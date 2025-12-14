@@ -63,11 +63,12 @@ create_index "speakers" \
     "field-path=status,order=ascending" \
     "field-path=order,order=ascending"
 
-# Index 2: speakers (featured ASC, status ASC, order ASC)
+# Index 2: speakers (featured ASC, status ASC, order ASC, __name__ ASC)
 create_index "speakers" \
     "field-path=featured,order=ascending" \
     "field-path=status,order=ascending" \
-    "field-path=order,order=ascending"
+    "field-path=order,order=ascending" \
+    "field-path=__name__,order=ascending"
 
 echo "✅ Firestore index deployment complete!"
 echo "   Note: Indexes are created asynchronously. Check the Firebase console for status."
