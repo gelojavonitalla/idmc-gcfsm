@@ -12,8 +12,48 @@ on:
           - 'false'
           - 'true'
       seed_speakers:
-        description: 'Enable speaker seeding (requires Firestore permissions)'
-        required: true
+        description: 'Seed speakers data'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      seed_sessions:
+        description: 'Seed sessions data'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      seed_workshops:
+        description: 'Seed workshops data'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      seed_schedule:
+        description: 'Seed schedule data'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      seed_faq:
+        description: 'Seed FAQ data'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      seed_all:
+        description: 'Seed ALL data (overrides individual options)'
+        required: false
         default: 'false'
         type: choice
         options:
@@ -54,7 +94,7 @@ jobs:
           echo "✅ Firestore indexes deployed successfully!"
 
   seed_data:
-    if: ${{ inputs.seed_speakers == 'true' }}
+    if: ${{ inputs.seed_speakers == 'true' || inputs.seed_sessions == 'true' || inputs.seed_workshops == 'true' || inputs.seed_schedule == 'true' || inputs.seed_faq == 'true' || inputs.seed_all == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -75,6 +115,7 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_IDMC_GCFSM_DEV }}
 
       - name: Seed Speakers Data
+        if: ${{ inputs.seed_speakers == 'true' || inputs.seed_all == 'true' }}
         run: |
           if [ "${{ inputs.clear_existing }}" == "true" ]; then
             echo "Clearing and re-seeding speakers..."
@@ -86,7 +127,60 @@ jobs:
         env:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
+      - name: Seed Sessions Data
+        if: ${{ inputs.seed_sessions == 'true' || inputs.seed_all == 'true' }}
+        run: |
+          if [ "${{ inputs.clear_existing }}" == "true" ]; then
+            echo "Clearing and re-seeding sessions..."
+            node scripts/seed-sessions.js --clear
+          else
+            echo "Seeding sessions (preserving existing)..."
+            node scripts/seed-sessions.js
+          fi
+        env:
+          GCLOUD_PROJECT: idmc-gcfsm-dev
+
+      - name: Seed Workshops Data
+        if: ${{ inputs.seed_workshops == 'true' || inputs.seed_all == 'true' }}
+        run: |
+          if [ "${{ inputs.clear_existing }}" == "true" ]; then
+            echo "Clearing and re-seeding workshops..."
+            node scripts/seed-workshops.js --clear
+          else
+            echo "Seeding workshops (preserving existing)..."
+            node scripts/seed-workshops.js
+          fi
+        env:
+          GCLOUD_PROJECT: idmc-gcfsm-dev
+
+      - name: Seed Schedule Data
+        if: ${{ inputs.seed_schedule == 'true' || inputs.seed_all == 'true' }}
+        run: |
+          if [ "${{ inputs.clear_existing }}" == "true" ]; then
+            echo "Clearing and re-seeding schedule..."
+            node scripts/seed-schedule.js --clear
+          else
+            echo "Seeding schedule (preserving existing)..."
+            node scripts/seed-schedule.js
+          fi
+        env:
+          GCLOUD_PROJECT: idmc-gcfsm-dev
+
+      - name: Seed FAQ Data
+        if: ${{ inputs.seed_faq == 'true' || inputs.seed_all == 'true' }}
+        run: |
+          if [ "${{ inputs.clear_existing }}" == "true" ]; then
+            echo "Clearing and re-seeding FAQ..."
+            node scripts/seed-faq.js --clear
+          else
+            echo "Seeding FAQ (preserving existing)..."
+            node scripts/seed-faq.js
+          fi
+        env:
+          GCLOUD_PROJECT: idmc-gcfsm-dev
+
       - name: Seed Complete
         run: |
           echo "✅ Firestore seeding complete!"
+          echo "Seeded: speakers=${{ inputs.seed_speakers == 'true' || inputs.seed_all == 'true' }}, sessions=${{ inputs.seed_sessions == 'true' || inputs.seed_all == 'true' }}, workshops=${{ inputs.seed_workshops == 'true' || inputs.seed_all == 'true' }}, schedule=${{ inputs.seed_schedule == 'true' || inputs.seed_all == 'true' }}, faq=${{ inputs.seed_faq == 'true' || inputs.seed_all == 'true' }}"
           echo "Cleared existing: ${{ inputs.clear_existing }}"
