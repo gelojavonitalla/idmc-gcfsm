@@ -1,0 +1,82 @@
+/**
+ * FAQSearch Component Styles
+ * Styles for the FAQ search input
+ */
+
+.searchContainer {
+  margin-bottom: var(--spacing-6);
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--spacing-4);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  padding: var(--spacing-4);
+  padding-left: calc(var(--spacing-4) + 28px);
+  padding-right: calc(var(--spacing-4) + 36px);
+  font-size: var(--font-size-base);
+  border: 2px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-lg);
+  background: white;
+  color: var(--color-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.clearButton {
+  position: absolute;
+  right: var(--spacing-3);
+  padding: var(--spacing-1);
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.clearButton:hover {
+  color: var(--color-text);
+  background: var(--color-background-secondary);
+}
+
+.clearButton:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .input {
+    padding: var(--spacing-3);
+    padding-left: calc(var(--spacing-3) + 28px);
+    padding-right: calc(var(--spacing-3) + 36px);
+    font-size: var(--font-size-sm);
+  }
+}

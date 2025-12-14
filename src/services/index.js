@@ -29,3 +29,11 @@ export {
   groupWorkshopsByTrack,
   groupWorkshopsByTimeSlot,
 } from './workshops';
+
+export {
+  getPublishedFAQs,
+  getFAQsByCategory,
+  getFAQById,
+} from './faq';
+
+export { submitContactInquiry } from './contactInquiries';
