@@ -477,32 +477,6 @@ export const SCHEDULE = [
 ];
 
 /**
- * Workshop track identifiers
- * track_1: Default/open access for all attendees
- * track_2: Requires pre-registration
- */
-export const WORKSHOP_TRACK_IDS = Object.freeze({
-  TRACK_1: 'track_1',
-  TRACK_2: 'track_2',
-});
-
-/**
- * Workshop track labels for display
- */
-export const WORKSHOP_TRACK_LABELS = {
-  [WORKSHOP_TRACK_IDS.TRACK_1]: 'Track 1 (Open Access)',
-  [WORKSHOP_TRACK_IDS.TRACK_2]: 'Track 2 (Pre-registration)',
-};
-
-/**
- * Workshop track descriptions
- */
-export const WORKSHOP_TRACK_DESCRIPTIONS = {
-  [WORKSHOP_TRACK_IDS.TRACK_1]: 'Open to all attendees without pre-registration',
-  [WORKSHOP_TRACK_IDS.TRACK_2]: 'Requires selection during registration',
-};
-
-/**
  * Workshop category identifiers
  */
 export const WORKSHOP_CATEGORIES = Object.freeze({
@@ -670,7 +644,6 @@ export const WORKSHOPS = [
     title: 'Mental Wellness Workshop',
     description: 'A comprehensive workshop on mental health and wellness from a biblical perspective. Learn practical strategies for maintaining mental health while growing spiritually.',
     sessionType: SESSION_TYPES.WORKSHOP,
-    track: WORKSHOP_TRACK_IDS.TRACK_1,
     category: WORKSHOP_CATEGORIES.MENTAL_WELLNESS,
     time: '1:15 PM',
     endTime: '3:00 PM',
@@ -688,7 +661,6 @@ export const WORKSHOPS = [
     title: 'Social Justice Workshop',
     description: 'Exploring how Christians can engage with social justice issues while remaining grounded in biblical truth. Understanding our role in creating positive change.',
     sessionType: SESSION_TYPES.WORKSHOP,
-    track: WORKSHOP_TRACK_IDS.TRACK_1,
     category: WORKSHOP_CATEGORIES.SOCIAL_JUSTICE,
     time: '1:15 PM',
     endTime: '3:00 PM',
@@ -706,7 +678,6 @@ export const WORKSHOPS = [
     title: 'Sexual Wholeness Workshop',
     description: 'A biblical approach to understanding sexuality and wholeness. This workshop provides a safe space to discuss important topics with grace and truth.',
     sessionType: SESSION_TYPES.WORKSHOP,
-    track: WORKSHOP_TRACK_IDS.TRACK_2,
     category: WORKSHOP_CATEGORIES.SEXUAL_WHOLENESS,
     time: '1:15 PM',
     endTime: '3:00 PM',
@@ -724,7 +695,6 @@ export const WORKSHOPS = [
     title: 'God in the Marketplace',
     description: 'Discover how to live out your faith in your workplace. Learn practical ways to be salt and light in your professional environment.',
     sessionType: SESSION_TYPES.WORKSHOP,
-    track: WORKSHOP_TRACK_IDS.TRACK_2,
     category: WORKSHOP_CATEGORIES.MARKETPLACE,
     time: '1:15 PM',
     endTime: '3:00 PM',
@@ -742,7 +712,6 @@ export const WORKSHOPS = [
     title: 'Missions Workshop',
     description: 'An introduction to global missions and how you can participate. Learn about different mission opportunities and how to discern your calling.',
     sessionType: SESSION_TYPES.WORKSHOP,
-    track: WORKSHOP_TRACK_IDS.TRACK_2,
     category: WORKSHOP_CATEGORIES.MISSIONS,
     time: '1:15 PM',
     endTime: '3:00 PM',
