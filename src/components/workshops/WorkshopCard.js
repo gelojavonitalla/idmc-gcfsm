@@ -3,8 +3,6 @@ import {
   WORKSHOP_CATEGORY_LABELS,
   WORKSHOP_CATEGORY_COLORS,
   WORKSHOP_CATEGORIES,
-  WORKSHOP_TRACK_LABELS,
-  WORKSHOP_TRACK_IDS,
 } from '../../constants';
 import CapacityBadge from './CapacityBadge';
 import styles from './WorkshopCard.module.css';
@@ -21,7 +19,6 @@ import styles from './WorkshopCard.module.css';
  * @param {string} props.workshop.time - Workshop start time display string
  * @param {string} [props.workshop.endTime] - Workshop end time display string
  * @param {string} [props.workshop.venue] - Venue/room name
- * @param {string} [props.workshop.track] - Workshop track (track_1, track_2)
  * @param {string} [props.workshop.category] - Workshop category
  * @param {number|null} [props.workshop.capacity] - Maximum capacity
  * @param {number} [props.workshop.registeredCount] - Current registered count
@@ -33,8 +30,6 @@ function WorkshopCard({ workshop, onClick }) {
   const categoryColors = WORKSHOP_CATEGORY_COLORS[workshop.category] ||
     WORKSHOP_CATEGORY_COLORS[WORKSHOP_CATEGORIES.OTHER];
   const categoryLabel = WORKSHOP_CATEGORY_LABELS[workshop.category] || 'Workshop';
-  const trackLabel = WORKSHOP_TRACK_LABELS[workshop.track] ||
-    WORKSHOP_TRACK_LABELS[WORKSHOP_TRACK_IDS.TRACK_1];
 
   /**
    * Handles keyboard navigation for accessibility
@@ -156,10 +151,6 @@ function WorkshopCard({ workshop, onClick }) {
           </div>
         )}
       </div>
-
-      <div className={styles.footer}>
-        <span className={styles.trackBadge}>{trackLabel}</span>
-      </div>
     </div>
   );
 }
@@ -171,7 +162,6 @@ WorkshopCard.propTypes = {
     time: PropTypes.string.isRequired,
     endTime: PropTypes.string,
     venue: PropTypes.string,
-    track: PropTypes.string,
     category: PropTypes.string,
     capacity: PropTypes.number,
     registeredCount: PropTypes.number,
