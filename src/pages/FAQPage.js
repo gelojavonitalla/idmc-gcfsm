@@ -83,10 +83,15 @@ function FAQPage() {
   }, [faqs, selectedCategory, searchTerm]);
 
   /**
-   * Groups FAQs by category for display
+   * Groups FAQs by category for display.
+   * Uses 'search' as key when search is active to indicate cross-category results.
    */
   const groupedFAQs = useMemo(() => {
-    if (selectedCategory !== ALL_CATEGORIES || searchTerm.trim()) {
+    if (searchTerm.trim()) {
+      return { search: filteredFAQs };
+    }
+
+    if (selectedCategory !== ALL_CATEGORIES) {
       return { [selectedCategory]: filteredFAQs };
     }
 

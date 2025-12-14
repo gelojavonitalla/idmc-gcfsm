@@ -6,7 +6,7 @@
  * @module components/faq/FAQAccordion
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import styles from './FAQAccordion.module.css';
 
@@ -25,19 +25,18 @@ function escapeRegExp(string) {
 }
 
 /**
- * Highlights matching text in a string.
+ * Highlights matching text in a string using a pre-compiled regex.
  *
  * @param {string} text - The text to search within
- * @param {string} searchTerm - The term to highlight
+ * @param {string} searchTerm - The original search term (for comparison)
+ * @param {RegExp|null} regex - Pre-compiled regex for matching
  * @returns {JSX.Element|string} Text with highlighted matches or original text
  */
-function highlightText(text, searchTerm) {
-  if (!searchTerm || !text) {
+function highlightText(text, searchTerm, regex) {
+  if (!searchTerm || !text || !regex) {
     return text;
   }
 
-  const escapedTerm = escapeRegExp(searchTerm);
-  const regex = new RegExp(`(${escapedTerm})`, 'gi');
   const parts = text.split(regex);
 
   return parts.map((part, index) => {
@@ -69,6 +68,18 @@ function highlightText(text, searchTerm) {
 function FAQAccordion({ faq, searchTerm, defaultExpanded }) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
+  /**
+   * Memoized regex for search term highlighting.
+   * Avoids recompiling regex on every render when searchTerm hasn't changed.
+   */
+  const searchRegex = useMemo(() => {
+    if (!searchTerm) {
+      return null;
+    }
+    const escapedTerm = escapeRegExp(searchTerm);
+    return new RegExp(`(${escapedTerm})`, 'gi');
+  }, [searchTerm]);
+
   const handleToggle = useCallback(() => {
     setIsExpanded((prev) => !prev);
   }, []);
@@ -95,7 +106,7 @@ function FAQAccordion({ faq, searchTerm, defaultExpanded }) {
         aria-controls={`faq-answer-${faq.id}`}
       >
         <span className={styles.question}>
-          {highlightText(faq.question, searchTerm)}
+          {highlightText(faq.question, searchTerm, searchRegex)}
         </span>
         <span className={styles.icon} aria-hidden="true">
           {isExpanded ? '−' : '+'}
@@ -109,7 +120,7 @@ function FAQAccordion({ faq, searchTerm, defaultExpanded }) {
         hidden={!isExpanded}
       >
         <div className={styles.answer}>
-          {highlightText(faq.answer, searchTerm)}
+          {highlightText(faq.answer, searchTerm, searchRegex)}
         </div>
       </div>
     </div>
