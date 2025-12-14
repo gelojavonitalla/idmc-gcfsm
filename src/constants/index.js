@@ -16,6 +16,7 @@ export const ROUTES = {
   ABOUT: '/about',
   VENUE: '/venue',
   CONTACT: '/contact',
+  DOWNLOADS: '/downloads',
   PRIVACY: '/privacy',
   TERMS: '/terms',
 };
@@ -82,6 +83,7 @@ export const NAV_ITEMS = [
   { label: 'Schedule', path: ROUTES.SCHEDULE, isAnchor: false },
   { label: 'Workshops', path: ROUTES.WORKSHOPS, isAnchor: false },
   { label: 'Venue', path: ROUTES.VENUE, isAnchor: false },
+  { label: 'Downloads', path: ROUTES.DOWNLOADS, isAnchor: false },
   { label: 'FAQ', path: ROUTES.FAQ, isAnchor: false },
   { label: 'Register', path: ROUTES.REGISTER, isAnchor: false, isPrimary: true },
 ];
@@ -735,6 +737,51 @@ export const CONTACT_INQUIRY_STATUS = Object.freeze({
   READ: 'read',
   REPLIED: 'replied',
 });
+
+/**
+ * Downloads data for attendees
+ * Materials that can be downloaded during or after the conference
+ *
+ * Note: downloadUrl and thumbnailUrl should be Firebase Storage URLs
+ * Format: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{encoded-path}?alt=media
+ * Or use Firebase Storage download URLs from the Firebase Console
+ */
+export const DOWNLOADS = [
+  {
+    id: 'idmc-2026-booklet',
+    title: 'IDMC 2026 Conference Booklet',
+    description: 'Complete conference program, schedule, speaker information, and session outlines.',
+    fileName: 'IDMC-2026-Booklet.pdf',
+    fileSize: '2.5 MB',
+    fileType: 'PDF',
+    category: 'booklet',
+    // Replace with actual Firebase Storage URLs when available
+    downloadUrl: '',
+    thumbnailUrl: '',
+    order: 1,
+    isAvailable: false,
+  },
+];
+
+/**
+ * Download category identifiers
+ */
+export const DOWNLOAD_CATEGORIES = Object.freeze({
+  BOOKLET: 'booklet',
+  PRESENTATION: 'presentation',
+  HANDOUT: 'handout',
+  RESOURCE: 'resource',
+});
+
+/**
+ * Download category labels for display
+ */
+export const DOWNLOAD_CATEGORY_LABELS = {
+  [DOWNLOAD_CATEGORIES.BOOKLET]: 'Conference Booklet',
+  [DOWNLOAD_CATEGORIES.PRESENTATION]: 'Presentations',
+  [DOWNLOAD_CATEGORIES.HANDOUT]: 'Handouts',
+  [DOWNLOAD_CATEGORIES.RESOURCE]: 'Resources',
+};
 
 /**
  * FAQ seed data for testing and initial content
