@@ -38,6 +38,10 @@
   transition: color 0.3s ease;
 }
 
+.logo:hover {
+  text-decoration: none;
+}
+
 .header:not(.scrolled) .logo {
   color: white;
 }
