@@ -15,6 +15,7 @@ export const ROUTES = {
   FAQ: '/faq',
   ABOUT: '/about',
   VENUE: '/venue',
+  CONTACT: '/contact',
   PRIVACY: '/privacy',
   TERMS: '/terms',
 };
@@ -28,6 +29,7 @@ export const COLLECTIONS = {
   SESSIONS: 'sessions',
   REGISTRATIONS: 'registrations',
   FAQ: 'faq',
+  CONTACT_INQUIRIES: 'contactInquiries',
   ADMINS: 'admins',
   ACTIVITY_LOGS: 'activityLogs',
 };
@@ -752,5 +754,170 @@ export const WORKSHOPS = [
     speakerNames: [],
     order: 5,
     status: SESSION_STATUS.PUBLISHED,
+  },
+];
+
+/**
+ * FAQ category identifiers
+ */
+export const FAQ_CATEGORIES = Object.freeze({
+  REGISTRATION: 'registration',
+  PAYMENT: 'payment',
+  VENUE: 'venue',
+  ACCOMMODATION: 'accommodation',
+  GENERAL: 'general',
+});
+
+/**
+ * FAQ category labels for display
+ */
+export const FAQ_CATEGORY_LABELS = {
+  [FAQ_CATEGORIES.REGISTRATION]: 'Registration',
+  [FAQ_CATEGORIES.PAYMENT]: 'Payment',
+  [FAQ_CATEGORIES.VENUE]: 'Venue',
+  [FAQ_CATEGORIES.ACCOMMODATION]: 'Accommodation',
+  [FAQ_CATEGORIES.GENERAL]: 'General',
+};
+
+/**
+ * FAQ status values
+ */
+export const FAQ_STATUS = Object.freeze({
+  DRAFT: 'draft',
+  PUBLISHED: 'published',
+});
+
+/**
+ * Contact inquiry status values
+ */
+export const CONTACT_INQUIRY_STATUS = Object.freeze({
+  NEW: 'new',
+  READ: 'read',
+  REPLIED: 'replied',
+});
+
+/**
+ * FAQ seed data for testing and initial content
+ */
+export const FAQ_SEED_DATA = [
+  {
+    id: 'faq-registration-1',
+    question: 'How do I register for IDMC 2026?',
+    answer: 'You can register online through our website by clicking the "Register" button. Fill out the registration form with your personal information, select your ticket type, and complete the payment process.',
+    category: FAQ_CATEGORIES.REGISTRATION,
+    order: 1,
+    status: FAQ_STATUS.PUBLISHED,
+  },
+  {
+    id: 'faq-registration-2',
+    question: 'Can I register on-site?',
+    answer: 'Yes, on-site registration is available, but we highly recommend registering in advance to secure your spot and avoid long queues on the day of the event. On-site registration is subject to availability.',
+    category: FAQ_CATEGORIES.REGISTRATION,
+    order: 2,
+    status: FAQ_STATUS.PUBLISHED,
+  },
+  {
+    id: 'faq-registration-3',
+    question: 'Can I transfer my registration to someone else?',
+    answer: 'Registration transfers are allowed up to 7 days before the event. Please contact us via the Contact page with the details of the original registrant and the new attendee.',
+    category: FAQ_CATEGORIES.REGISTRATION,
+    order: 3,
+    status: FAQ_STATUS.PUBLISHED,
+  },
+  {
+    id: 'faq-payment-1',
+    question: 'What payment methods are accepted?',
+    answer: 'We accept GCash and bank transfers (BDO). Payment instructions will be provided after you complete the registration form. Please upload your proof of payment to confirm your registration.',
+    category: FAQ_CATEGORIES.PAYMENT,
+    order: 1,
+    status: FAQ_STATUS.PUBLISHED,
+  },
+  {
+    id: 'faq-payment-2',
+    question: 'Is there a refund policy?',
+    answer: 'Refunds are available up to 14 days before the event, minus a processing fee. Within 14 days of the event, registrations are non-refundable but may be transferred to another person. Contact us for more details.',
+    category: FAQ_CATEGORIES.PAYMENT,
+    order: 2,
+    status: FAQ_STATUS.PUBLISHED,
+  },
+  {
+    id: 'faq-payment-3',
+    question: 'Are there student or senior citizen discounts?',
+    answer: 'Yes! Students and senior citizens (60 years and above) receive discounted rates. Please select the appropriate category during registration and bring a valid ID for verification at the event.',
+    category: FAQ_CATEGORIES.PAYMENT,
+    order: 3,
+    status: FAQ_STATUS.PUBLISHED,
+  },
+  {
+    id: 'faq-venue-1',
+    question: 'Where is the conference held?',
+    answer: 'IDMC 2026 will be held at GCF South Metro, located at Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750, Philippines. Visit our Venue page for detailed directions and a map.',
+    category: FAQ_CATEGORIES.VENUE,
+    order: 1,
+    status: FAQ_STATUS.PUBLISHED,
+  },
+  {
+    id: 'faq-venue-2',
+    question: 'Is parking available?',
+    answer: 'Yes, free parking is available at the venue on a first-come, first-served basis. We recommend arriving early to secure a parking spot, or consider using public transportation.',
+    category: FAQ_CATEGORIES.VENUE,
+    order: 2,
+    status: FAQ_STATUS.PUBLISHED,
+  },
+  {
+    id: 'faq-venue-3',
+    question: 'How do I get to the venue by public transport?',
+    answer: 'You can take a jeepney or bus to Daang Hari Road in Las Piñas. GCF South Metro is located in the Versailles Village area. Ride-sharing services like Grab are also readily available in the area.',
+    category: FAQ_CATEGORIES.VENUE,
+    order: 3,
+    status: FAQ_STATUS.PUBLISHED,
+  },
+  {
+    id: 'faq-accommodation-1',
+    question: 'Are there hotel recommendations near the venue?',
+    answer: 'Yes, there are several hotels in Las Piñas and nearby areas. Some options include hotels in Alabang and along the South Superhighway. We recommend booking early for better rates.',
+    category: FAQ_CATEGORIES.ACCOMMODATION,
+    order: 1,
+    status: FAQ_STATUS.PUBLISHED,
+  },
+  {
+    id: 'faq-accommodation-2',
+    question: 'Does the registration include accommodation?',
+    answer: 'No, the registration fee does not include accommodation. Attendees are responsible for their own lodging arrangements. Please check with nearby hotels for group rates if you are attending with a church group.',
+    category: FAQ_CATEGORIES.ACCOMMODATION,
+    order: 2,
+    status: FAQ_STATUS.PUBLISHED,
+  },
+  {
+    id: 'faq-general-1',
+    question: 'What should I bring to the conference?',
+    answer: 'Please bring your registration confirmation (printed or on your phone), a valid ID, a Bible, a notebook for taking notes, and any personal items you may need throughout the day.',
+    category: FAQ_CATEGORIES.GENERAL,
+    order: 1,
+    status: FAQ_STATUS.PUBLISHED,
+  },
+  {
+    id: 'faq-general-2',
+    question: 'Is there a dress code?',
+    answer: 'We recommend smart casual attire. The venue is air-conditioned, so you may want to bring a light jacket. Comfortable shoes are recommended as you may be moving between sessions.',
+    category: FAQ_CATEGORIES.GENERAL,
+    order: 2,
+    status: FAQ_STATUS.PUBLISHED,
+  },
+  {
+    id: 'faq-general-3',
+    question: 'Will meals be provided?',
+    answer: 'Lunch is included in your registration. Snacks and refreshments will also be available during breaks. Please let us know during registration if you have any dietary restrictions.',
+    category: FAQ_CATEGORIES.GENERAL,
+    order: 3,
+    status: FAQ_STATUS.PUBLISHED,
+  },
+  {
+    id: 'faq-general-4',
+    question: 'Can I attend only specific sessions?',
+    answer: 'The conference is designed as a full-day experience and we encourage attendees to participate in all sessions. However, you are free to choose which workshops to attend during the afternoon breakout sessions.',
+    category: FAQ_CATEGORIES.GENERAL,
+    order: 4,
+    status: FAQ_STATUS.PUBLISHED,
   },
 ];

@@ -1,6 +1,16 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout, ScrollToTop } from './components/layout';
-import { HomePage, RegisterPage, SpeakersPage, SchedulePage, WorkshopsPage } from './pages';
+import {
+  HomePage,
+  RegisterPage,
+  SpeakersPage,
+  SchedulePage,
+  WorkshopsPage,
+  FAQPage,
+  AboutPage,
+  VenuePage,
+  ContactPage,
+} from './pages';
 import { ROUTES } from './constants';
 import './index.css';
 
@@ -21,9 +31,10 @@ function App() {
           <Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
           <Route path={ROUTES.WORKSHOPS} element={<WorkshopsPage />} />
           <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
-          <Route path={ROUTES.FAQ} element={<PlaceholderPage title="FAQ" />} />
-          <Route path={ROUTES.ABOUT} element={<PlaceholderPage title="About" />} />
-          <Route path={ROUTES.VENUE} element={<PlaceholderPage title="Venue" />} />
+          <Route path={ROUTES.FAQ} element={<FAQPage />} />
+          <Route path={ROUTES.ABOUT} element={<AboutPage />} />
+          <Route path={ROUTES.VENUE} element={<VenuePage />} />
+          <Route path={ROUTES.CONTACT} element={<ContactPage />} />
           <Route path={ROUTES.PRIVACY} element={<PlaceholderPage title="Privacy Policy" />} />
           <Route path={ROUTES.TERMS} element={<PlaceholderPage title="Terms of Service" />} />
           <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />

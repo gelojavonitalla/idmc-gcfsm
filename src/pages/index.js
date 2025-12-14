@@ -8,3 +8,7 @@ export { default as RegisterPage } from './RegisterPage';
 export { default as SpeakersPage } from './SpeakersPage';
 export { default as SchedulePage } from './SchedulePage';
 export { default as WorkshopsPage } from './WorkshopsPage';
+export { default as FAQPage } from './FAQPage';
+export { default as AboutPage } from './AboutPage';
+export { default as VenuePage } from './VenuePage';
+export { default as ContactPage } from './ContactPage';
