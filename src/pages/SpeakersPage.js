@@ -73,9 +73,12 @@ function SpeakersPage() {
    * Generates initials from a speaker's name for the placeholder avatar
    *
    * @param {string} name - Full name of the speaker
-   * @returns {string} First letter of the first name
+   * @returns {string} First letter of the first name, or '?' if name is empty/undefined
    */
   const getInitials = (name) => {
+    if (!name || name.length === 0) {
+      return '?';
+    }
     return name.charAt(0).toUpperCase();
   };
 
