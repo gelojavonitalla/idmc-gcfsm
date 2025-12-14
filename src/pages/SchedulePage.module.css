@@ -107,7 +107,7 @@
   display: inline-block;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-primary);
+  color: var(--color-text-on-primary);
   background: var(--color-primary-light, rgba(59, 130, 246, 0.1));
   padding: var(--spacing-1) var(--spacing-2);
   border-radius: var(--radius-md);

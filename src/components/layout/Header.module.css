@@ -38,6 +38,10 @@
   transition: color 0.3s ease;
 }
 
+.logo:hover {
+  text-decoration: none;
+}
+
 .header:not(.scrolled) .logo {
   color: white;
 }
@@ -125,6 +129,10 @@
 
 .header:not(.scrolled) .navLink {
   color: white;
+}
+
+.navLink:hover {
+  text-decoration: none;
 }
 
 .navLink::after {

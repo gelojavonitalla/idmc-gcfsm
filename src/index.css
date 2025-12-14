@@ -45,6 +45,7 @@
   --color-text: var(--color-gray-900);
   --color-text-secondary: var(--color-gray-600);
   --color-text-muted: var(--color-gray-400);
+  --color-text-on-primary: var(--color-white);
 
   /* Background Colors */
   --color-background: var(--color-white);
