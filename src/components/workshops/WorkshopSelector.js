@@ -65,7 +65,6 @@ function WorkshopSelector({ workshops, selections, onSelectionChange, disabled =
       newSelections.push({
         sessionId: workshopId,
         sessionTitle: selectedWorkshop.title,
-        track: selectedWorkshop.track,
         timeSlot,
       });
       onSelectionChange(newSelections);
@@ -97,7 +96,7 @@ function WorkshopSelector({ workshops, selections, onSelectionChange, disabled =
       <div className={styles.header}>
         <h3 className={styles.title}>Workshop Selection</h3>
         <p className={styles.description}>
-          Select your preferred workshop for each time slot. Track 2 workshops require pre-registration.
+          Select your preferred workshop for each time slot.
         </p>
       </div>
 
@@ -127,7 +126,7 @@ function WorkshopSelector({ workshops, selections, onSelectionChange, disabled =
                 <div className={styles.optionContent}>
                   <span className={styles.optionTitle}>No workshop selection</span>
                   <span className={styles.optionDescription}>
-                    I will choose a Track 1 workshop on the day of the event
+                    Skip workshop selection for this time slot
                   </span>
                 </div>
               </label>
@@ -176,7 +175,7 @@ function WorkshopSelector({ workshops, selections, onSelectionChange, disabled =
                               !isAvailable ? styles.full : remaining <= 10 ? styles.limited : ''
                             }`}
                           >
-                            {!isAvailable ? 'Full' : `${remaining} spots left`}
+                            {!isAvailable ? 'Closed' : `${remaining} spots left`}
                           </span>
                         )}
                       </div>
@@ -210,7 +209,6 @@ WorkshopSelector.propTypes = {
       time: PropTypes.string.isRequired,
       endTime: PropTypes.string,
       venue: PropTypes.string,
-      track: PropTypes.string,
       category: PropTypes.string,
       capacity: PropTypes.number,
       registeredCount: PropTypes.number,
@@ -222,7 +220,6 @@ WorkshopSelector.propTypes = {
     PropTypes.shape({
       sessionId: PropTypes.string.isRequired,
       sessionTitle: PropTypes.string,
-      track: PropTypes.string,
       timeSlot: PropTypes.string.isRequired,
     })
   ).isRequired,

@@ -21,7 +21,6 @@ import {
   COLLECTIONS,
   SESSION_STATUS,
   SESSION_TYPES,
-  WORKSHOP_TRACK_IDS,
 } from '../constants';
 
 /**
@@ -77,35 +76,6 @@ export async function getWorkshopById(workshopId) {
     id: snapshot.id,
     ...data,
   };
-}
-
-/**
- * Fetches all published workshops for a specific track.
- *
- * @param {string} track - The workshop track to filter by (track_1, track_2)
- * @returns {Promise<Array>} Array of workshop objects for the specified track
- * @throws {Error} If the Firestore query fails
- */
-export async function getWorkshopsByTrack(track) {
-  if (!track) {
-    return [];
-  }
-
-  const sessionsRef = collection(db, COLLECTIONS.SESSIONS);
-  const trackQuery = query(
-    sessionsRef,
-    where('sessionType', '==', SESSION_TYPES.WORKSHOP),
-    where('track', '==', track),
-    where('status', '==', SESSION_STATUS.PUBLISHED),
-    orderBy('order', 'asc')
-  );
-
-  const snapshot = await getDocs(trackQuery);
-
-  return snapshot.docs.map((docSnapshot) => ({
-    id: docSnapshot.id,
-    ...docSnapshot.data(),
-  }));
 }
 
 /**
@@ -207,42 +177,6 @@ export function getRemainingCapacity(workshop) {
   }
 
   return Math.max(0, workshop.capacity - (workshop.registeredCount || 0));
-}
-
-/**
- * Checks if a workshop requires pre-registration (Track 2).
- *
- * @param {Object} workshop - The workshop object
- * @param {string} workshop.track - The workshop track
- * @returns {boolean} True if the workshop requires pre-registration
- */
-export function requiresPreRegistration(workshop) {
-  if (!workshop) {
-    return false;
-  }
-
-  return workshop.track === WORKSHOP_TRACK_IDS.TRACK_2;
-}
-
-/**
- * Groups workshops by their track.
- *
- * @param {Array} workshops - Array of workshop objects
- * @returns {Object} Object with track IDs as keys and arrays of workshops as values
- */
-export function groupWorkshopsByTrack(workshops) {
-  if (!Array.isArray(workshops)) {
-    return {};
-  }
-
-  return workshops.reduce((groups, workshop) => {
-    const track = workshop.track || WORKSHOP_TRACK_IDS.TRACK_1;
-    if (!groups[track]) {
-      groups[track] = [];
-    }
-    groups[track].push(workshop);
-    return groups;
-  }, {});
 }
 
 /**

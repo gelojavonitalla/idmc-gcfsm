@@ -20,13 +20,10 @@ export {
 export {
   getPublishedWorkshops,
   getWorkshopById,
-  getWorkshopsByTrack,
   getWorkshopsByCategory,
   getWorkshopsByTimeSlot,
   hasAvailableCapacity,
   getRemainingCapacity,
-  requiresPreRegistration,
-  groupWorkshopsByTrack,
   groupWorkshopsByTimeSlot,
 } from './workshops';
 

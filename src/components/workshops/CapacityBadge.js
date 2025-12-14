@@ -4,8 +4,8 @@ import styles from './CapacityBadge.module.css';
 /**
  * CapacityBadge Component
  * Displays workshop capacity status with visual indicators.
- * Shows "Open" for unlimited capacity, "Full" when at capacity,
- * or "X/Y spots" for limited capacity workshops.
+ * Shows "Open" for unlimited capacity, "Closed" when at capacity,
+ * or "X spots left" for limited capacity workshops.
  *
  * @param {Object} props - Component props
  * @param {number|null} props.capacity - Maximum capacity (null for unlimited)
@@ -15,7 +15,7 @@ import styles from './CapacityBadge.module.css';
  */
 function CapacityBadge({ capacity, registeredCount = 0, showRemaining = true }) {
   const isUnlimited = capacity === null || capacity === undefined;
-  const isFull = !isUnlimited && registeredCount >= capacity;
+  const isClosed = !isUnlimited && registeredCount >= capacity;
   const remaining = isUnlimited ? null : Math.max(0, capacity - registeredCount);
 
   /**
@@ -27,7 +27,7 @@ function CapacityBadge({ capacity, registeredCount = 0, showRemaining = true }) 
     if (isUnlimited) {
       return styles.open;
     }
-    if (isFull) {
+    if (isClosed) {
       return styles.full;
     }
     if (remaining <= 10) {
@@ -45,8 +45,8 @@ function CapacityBadge({ capacity, registeredCount = 0, showRemaining = true }) 
     if (isUnlimited) {
       return 'Open';
     }
-    if (isFull) {
-      return 'Full';
+    if (isClosed) {
+      return 'Closed';
     }
     if (showRemaining) {
       return `${remaining} spots left`;
@@ -56,7 +56,7 @@ function CapacityBadge({ capacity, registeredCount = 0, showRemaining = true }) 
 
   return (
     <span className={`${styles.badge} ${getStatusClass()}`}>
-      {isFull && (
+      {isClosed && (
         <svg
           className={styles.icon}
           width="12"
@@ -74,7 +74,7 @@ function CapacityBadge({ capacity, registeredCount = 0, showRemaining = true }) 
           <line x1="9" y1="9" x2="15" y2="15" />
         </svg>
       )}
-      {!isUnlimited && !isFull && (
+      {!isUnlimited && !isClosed && (
         <svg
           className={styles.icon}
           width="12"

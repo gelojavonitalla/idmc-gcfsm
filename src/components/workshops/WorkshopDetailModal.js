@@ -5,8 +5,6 @@ import {
   WORKSHOP_CATEGORY_LABELS,
   WORKSHOP_CATEGORY_COLORS,
   WORKSHOP_CATEGORIES,
-  WORKSHOP_TRACK_LABELS,
-  WORKSHOP_TRACK_IDS,
   ROUTES,
 } from '../../constants';
 import CapacityBadge from './CapacityBadge';
@@ -15,7 +13,7 @@ import styles from './WorkshopDetailModal.module.css';
 /**
  * WorkshopDetailModal Component
  * Modal component that displays detailed workshop information including
- * full description, time, venue, category, track, capacity status, and speaker(s).
+ * full description, time, venue, category, capacity status, and speaker(s).
  *
  * @param {Object} props - Component props
  * @param {Object} props.workshop - Workshop data object
@@ -25,7 +23,6 @@ import styles from './WorkshopDetailModal.module.css';
  * @param {string} props.workshop.time - Workshop start time
  * @param {string} [props.workshop.endTime] - Workshop end time
  * @param {string} [props.workshop.venue] - Venue/room name
- * @param {string} [props.workshop.track] - Workshop track
  * @param {string} [props.workshop.category] - Workshop category
  * @param {number|null} [props.workshop.capacity] - Maximum capacity
  * @param {number} [props.workshop.registeredCount] - Current registered count
@@ -43,9 +40,6 @@ function WorkshopDetailModal({ workshop, speakers = [], isOpen, onClose }) {
     : {};
   const categoryLabel = workshop
     ? WORKSHOP_CATEGORY_LABELS[workshop.category] || 'Workshop'
-    : '';
-  const trackLabel = workshop
-    ? WORKSHOP_TRACK_LABELS[workshop.track] || WORKSHOP_TRACK_LABELS[WORKSHOP_TRACK_IDS.TRACK_1]
     : '';
 
   /**
@@ -175,7 +169,6 @@ function WorkshopDetailModal({ workshop, speakers = [], isOpen, onClose }) {
             >
               {categoryLabel}
             </span>
-            <span className={styles.trackBadge}>{trackLabel}</span>
           </div>
 
           {/* Title */}
@@ -298,27 +291,6 @@ function WorkshopDetailModal({ workshop, speakers = [], isOpen, onClose }) {
             </div>
           )}
 
-          {/* Registration Note */}
-          {workshop.track === WORKSHOP_TRACK_IDS.TRACK_2 && (
-            <div className={styles.registrationNote}>
-              <svg
-                className={styles.noteIcon}
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="16" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12.01" y2="8" />
-              </svg>
-              <span>This workshop requires pre-registration. Select it during the registration process.</span>
-            </div>
-          )}
         </div>
 
         <div className={styles.footer}>
@@ -339,7 +311,6 @@ WorkshopDetailModal.propTypes = {
     time: PropTypes.string.isRequired,
     endTime: PropTypes.string,
     venue: PropTypes.string,
-    track: PropTypes.string,
     category: PropTypes.string,
     capacity: PropTypes.number,
     registeredCount: PropTypes.number,
