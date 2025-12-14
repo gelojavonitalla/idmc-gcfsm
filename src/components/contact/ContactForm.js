@@ -5,10 +5,16 @@
  * @module components/contact/ContactForm
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { submitContactInquiry } from '../../services/contactInquiries';
 import styles from './ContactForm.module.css';
+
+/**
+ * Rate limiter for spam logging to prevent DoS via log flooding.
+ * Limits logging to once per minute.
+ */
+const SPAM_LOG_INTERVAL_MS = 60000;
 
 /**
  * Form field validation configuration
@@ -21,7 +27,7 @@ const VALIDATION_RULES = {
   },
   email: {
     required: true,
-    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    pattern: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
   },
   subject: {
     required: true,
@@ -88,6 +94,7 @@ function ContactForm({ onSuccess }) {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
+  const lastSpamLogTimeRef = useRef(0);
 
   const handleChange = useCallback((event) => {
     const { name, value } = event.target;
@@ -120,6 +127,11 @@ function ContactForm({ onSuccess }) {
       event.preventDefault();
 
       if (formData.honeypot) {
+        const now = Date.now();
+        if (now - lastSpamLogTimeRef.current > SPAM_LOG_INTERVAL_MS) {
+          lastSpamLogTimeRef.current = now;
+          console.warn('Spam attempt detected via honeypot field');
+        }
         return;
       }
 

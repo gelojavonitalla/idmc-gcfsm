@@ -11,6 +11,20 @@ import PropTypes from 'prop-types';
 import styles from './FAQAccordion.module.css';
 
 /**
+ * Escapes special regex characters in a string.
+ * Uses a comprehensive character class that handles all regex metacharacters.
+ *
+ * @param {string} string - The string to escape
+ * @returns {string} The escaped string safe for use in a RegExp
+ */
+function escapeRegExp(string) {
+  if (!string) {
+    return '';
+  }
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
  * Highlights matching text in a string.
  *
  * @param {string} text - The text to search within
@@ -22,7 +36,8 @@ function highlightText(text, searchTerm) {
     return text;
   }
 
-  const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  const escapedTerm = escapeRegExp(searchTerm);
+  const regex = new RegExp(`(${escapedTerm})`, 'gi');
   const parts = text.split(regex);
 
   return parts.map((part, index) => {
