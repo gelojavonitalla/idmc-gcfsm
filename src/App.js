@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Layout } from './components/layout';
+import { Layout, ScrollToTop } from './components/layout';
 import {
   HomePage,
   RegisterPage,
@@ -23,6 +23,7 @@ import './index.css';
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Layout>
         <Routes>
           <Route path={ROUTES.HOME} element={<HomePage />} />
