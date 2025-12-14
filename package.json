@@ -28,10 +28,13 @@
     "seed:sessions:clear": "node scripts/seed-sessions.js --clear",
     "seed:workshops": "node scripts/seed-workshops.js",
     "seed:workshops:clear": "node scripts/seed-workshops.js --clear",
+    "seed:schedule": "node scripts/seed-schedule.js",
+    "seed:schedule:clear": "node scripts/seed-schedule.js --clear",
     "emulators": "firebase emulators:start",
     "seed:emulator": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-speakers.js --clear",
     "seed:emulator:sessions": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-sessions.js --clear",
-    "seed:emulator:workshops": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-workshops.js --clear"
+    "seed:emulator:workshops": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-workshops.js --clear",
+    "seed:emulator:schedule": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-schedule.js --clear"
   },
   "eslintConfig": {
     "extends": [
