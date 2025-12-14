@@ -168,7 +168,7 @@ function VenuePage() {
               <h3 className={styles.transportTitle}>Parking</h3>
               <ul className={styles.transportList}>
                 <li>Free parking available at the venue</li>
-                <li>Additional parking available at Versailles Village</li>
+                <li>Additional parking available at Versailles Town Plaza</li>
                 <li>Limited spots - arrive early to secure parking</li>
                 <li>Carpooling with church groups is encouraged</li>
               </ul>
