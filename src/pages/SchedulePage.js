@@ -36,14 +36,15 @@ function SchedulePage() {
         setIsLoading(true);
 
         const [fetchedSessions, fetchedSpeakers] = await Promise.all([
-          getPublishedSessions().catch(() => SCHEDULE),
-          getPublishedSpeakers().catch(() => []),
+          getPublishedSessions(),
+          getPublishedSpeakers(),
         ]);
 
-        setSessions(fetchedSessions.length > 0 ? fetchedSessions : SCHEDULE);
+        setSessions(fetchedSessions);
         setSpeakers(fetchedSpeakers);
       } catch (fetchError) {
         console.error('Failed to fetch schedule data:', fetchError);
+        // Only fall back to static data on actual fetch errors
         setSessions(SCHEDULE);
       } finally {
         setIsLoading(false);
