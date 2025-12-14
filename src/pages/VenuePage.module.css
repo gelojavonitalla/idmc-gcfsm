@@ -101,6 +101,12 @@
   overflow: hidden;
 }
 
+/* Floor Plan Section */
+.floorPlanSection {
+  padding: var(--spacing-16) var(--spacing-4);
+  background: var(--color-background-secondary);
+}
+
 /* Section Title */
 .sectionTitle {
   font-size: var(--font-size-2xl);
@@ -300,7 +306,8 @@
 
   .locationSection,
   .transportSection,
-  .amenitiesSection {
+  .amenitiesSection,
+  .floorPlanSection {
     padding: var(--spacing-12) var(--spacing-4);
   }
 
@@ -352,7 +359,8 @@
 
   .locationSection,
   .transportSection,
-  .amenitiesSection {
+  .amenitiesSection,
+  .floorPlanSection {
     padding: var(--spacing-8) var(--spacing-4);
   }
 

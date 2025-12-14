@@ -7,7 +7,8 @@
 
 import { Link } from 'react-router-dom';
 import { VenueMap } from '../components/contact';
-import { VENUE, CONFERENCE, ROUTES } from '../constants';
+import { FloorPlan } from '../components/venue';
+import { VENUE, CONFERENCE, ROUTES, SCHEDULE, WORKSHOPS } from '../constants';
 import styles from './VenuePage.module.css';
 
 /**
@@ -68,6 +69,13 @@ function VenuePage() {
               <VenueMap height="350px" />
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Interactive Floor Plan Section */}
+      <section className={styles.floorPlanSection}>
+        <div className="container">
+          <FloorPlan schedule={SCHEDULE} workshops={WORKSHOPS} />
         </div>
       </section>
 
