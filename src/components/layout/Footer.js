@@ -51,6 +51,11 @@ function Footer() {
                   </Link>
                 </li>
                 <li>
+                  <Link to={ROUTES.DOWNLOADS} className={styles.link}>
+                    Downloads
+                  </Link>
+                </li>
+                <li>
                   <Link to={ROUTES.REGISTER} className={styles.link}>
                     Register
                   </Link>
