@@ -98,6 +98,7 @@ function SessionCard({ session, onClick }) {
             <CapacityBadge
               capacity={session.capacity}
               registeredCount={session.registeredCount || 0}
+              compact={true}
             />
           )}
         </div>

@@ -81,6 +81,7 @@ function WorkshopCard({ workshop, onClick }) {
         <CapacityBadge
           capacity={workshop.capacity}
           registeredCount={workshop.registeredCount || 0}
+          compact={true}
         />
       </div>
 

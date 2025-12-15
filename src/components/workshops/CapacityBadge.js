@@ -11,9 +11,10 @@ import styles from './CapacityBadge.module.css';
  * @param {number|null} props.capacity - Maximum capacity (null for unlimited)
  * @param {number} props.registeredCount - Current number of registered attendees
  * @param {boolean} [props.showRemaining=true] - Whether to show remaining spots or fraction
+ * @param {boolean} [props.compact=false] - Whether to show compact display (just Open/Closed)
  * @returns {JSX.Element} The capacity badge component
  */
-function CapacityBadge({ capacity, registeredCount = 0, showRemaining = true }) {
+function CapacityBadge({ capacity, registeredCount = 0, showRemaining = true, compact = false }) {
   const isUnlimited = capacity === null || capacity === undefined;
   const isClosed = !isUnlimited && registeredCount >= capacity;
   const remaining = isUnlimited ? null : Math.max(0, capacity - registeredCount);
@@ -47,6 +48,9 @@ function CapacityBadge({ capacity, registeredCount = 0, showRemaining = true }) 
     }
     if (isClosed) {
       return 'Closed';
+    }
+    if (compact) {
+      return 'Open';
     }
     if (showRemaining) {
       return `${remaining} spots left`;
@@ -100,6 +104,7 @@ CapacityBadge.propTypes = {
   capacity: PropTypes.number,
   registeredCount: PropTypes.number,
   showRemaining: PropTypes.bool,
+  compact: PropTypes.bool,
 };
 
 export default CapacityBadge;
