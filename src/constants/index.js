@@ -35,6 +35,7 @@ export const ADMIN_ROUTES = {
   SCHEDULE: '/admin/schedule',
   WORKSHOPS: '/admin/workshops',
   FAQ: '/admin/faq',
+  DOWNLOADS: '/admin/downloads',
   SETTINGS: '/admin/settings',
   USERS: '/admin/users',
   ACTIVITY: '/admin/activity',
@@ -153,6 +154,7 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Speakers', path: ADMIN_ROUTES.SPEAKERS, icon: 'mic' },
       { label: 'Schedule', path: ADMIN_ROUTES.SCHEDULE, icon: 'calendar' },
       { label: 'FAQ', path: ADMIN_ROUTES.FAQ, icon: 'help' },
+      { label: 'Downloads', path: ADMIN_ROUTES.DOWNLOADS, icon: 'download' },
     ],
   },
   {
@@ -192,6 +194,7 @@ export const COLLECTIONS = {
   CONTACT_INQUIRIES: 'contactInquiries',
   ADMINS: 'admins',
   ACTIVITY_LOGS: 'activityLogs',
+  DOWNLOADS: 'downloads',
 };
 
 /**
@@ -202,6 +205,7 @@ export const STORAGE_PATHS = {
   CONFERENCE_HERO_IMAGES: 'conference/hero-images',
   CONFERENCE_HERO_VIDEOS: 'conference/hero-videos',
   SPEAKER_PHOTOS: 'speakers/photos',
+  DOWNLOAD_FILES: 'downloads/files',
 };
 
 /**
@@ -210,6 +214,7 @@ export const STORAGE_PATHS = {
 export const ALLOWED_FILE_TYPES = {
   IMAGES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
   VIDEOS: ['video/mp4', 'video/webm', 'video/quicktime'],
+  DOCUMENTS: ['application/pdf'],
 };
 
 /**
@@ -218,6 +223,7 @@ export const ALLOWED_FILE_TYPES = {
 export const MAX_FILE_SIZES = {
   IMAGE: 10 * 1024 * 1024, // 10MB
   VIDEO: 100 * 1024 * 1024, // 100MB
+  DOCUMENT: 50 * 1024 * 1024, // 50MB
 };
 
 /**
@@ -1047,6 +1053,14 @@ export const DOWNLOAD_CATEGORY_LABELS = {
   [DOWNLOAD_CATEGORIES.HANDOUT]: 'Handouts',
   [DOWNLOAD_CATEGORIES.RESOURCE]: 'Resources',
 };
+
+/**
+ * Download status values
+ */
+export const DOWNLOAD_STATUS = Object.freeze({
+  DRAFT: 'draft',
+  PUBLISHED: 'published',
+});
 
 /**
  * FAQ seed data for testing and initial content

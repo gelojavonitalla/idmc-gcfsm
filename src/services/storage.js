@@ -19,6 +19,15 @@ import {
 } from '../constants';
 
 /**
+ * File type mapping for human-readable names
+ */
+const FILE_TYPE_NAMES = {
+  image: 'JPEG, PNG, GIF, or WebP',
+  video: 'MP4, WebM, or QuickTime',
+  document: 'PDF',
+};
+
+/**
  * Generates a unique filename with timestamp
  *
  * @param {string} originalName - Original file name
@@ -32,10 +41,46 @@ function generateUniqueFilename(originalName) {
 }
 
 /**
+ * Gets allowed file types based on type string
+ *
+ * @param {string} type - Type of file ('image', 'video', or 'document')
+ * @returns {string[]} Array of allowed MIME types
+ */
+function getAllowedTypes(type) {
+  switch (type) {
+    case 'video':
+      return ALLOWED_FILE_TYPES.VIDEOS;
+    case 'document':
+      return ALLOWED_FILE_TYPES.DOCUMENTS;
+    case 'image':
+    default:
+      return ALLOWED_FILE_TYPES.IMAGES;
+  }
+}
+
+/**
+ * Gets maximum file size based on type string
+ *
+ * @param {string} type - Type of file ('image', 'video', or 'document')
+ * @returns {number} Maximum file size in bytes
+ */
+function getMaxSize(type) {
+  switch (type) {
+    case 'video':
+      return MAX_FILE_SIZES.VIDEO;
+    case 'document':
+      return MAX_FILE_SIZES.DOCUMENT;
+    case 'image':
+    default:
+      return MAX_FILE_SIZES.IMAGE;
+  }
+}
+
+/**
  * Validates a file before upload
  *
  * @param {File} file - File to validate
- * @param {string} type - Type of file ('image' or 'video')
+ * @param {string} type - Type of file ('image', 'video', or 'document')
  * @returns {{ valid: boolean, error?: string }} Validation result
  */
 export function validateFile(file, type) {
@@ -43,11 +88,11 @@ export function validateFile(file, type) {
     return { valid: false, error: 'No file selected' };
   }
 
-  const allowedTypes = type === 'video' ? ALLOWED_FILE_TYPES.VIDEOS : ALLOWED_FILE_TYPES.IMAGES;
-  const maxSize = type === 'video' ? MAX_FILE_SIZES.VIDEO : MAX_FILE_SIZES.IMAGE;
+  const allowedTypes = getAllowedTypes(type);
+  const maxSize = getMaxSize(type);
 
   if (!allowedTypes.includes(file.type)) {
-    const typeNames = type === 'video' ? 'MP4, WebM, or QuickTime' : 'JPEG, PNG, GIF, or WebP';
+    const typeNames = FILE_TYPE_NAMES[type] || FILE_TYPE_NAMES.image;
     return { valid: false, error: `Invalid file type. Please upload ${typeNames} files.` };
   }
 
@@ -119,6 +164,31 @@ export async function uploadSpeakerPhoto(file, speakerId, onProgress) {
 
   const filename = generateUniqueFilename(file.name);
   const storagePath = `${STORAGE_PATHS.SPEAKER_PHOTOS}/${speakerId}/${filename}`;
+  const storageRef = ref(storage, storagePath);
+
+  return uploadFile(storageRef, file, onProgress);
+}
+
+/**
+ * Uploads a download file (PDF document)
+ *
+ * @param {File} file - Document file to upload
+ * @param {string} downloadId - Download ID for organizing the file
+ * @param {Function} onProgress - Progress callback (0-100)
+ * @returns {Promise<string>} Download URL of uploaded file
+ */
+export async function uploadDownloadFile(file, downloadId, onProgress) {
+  const validation = validateFile(file, 'document');
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  if (!downloadId) {
+    throw new Error('Download ID is required for file upload');
+  }
+
+  const filename = generateUniqueFilename(file.name);
+  const storagePath = `${STORAGE_PATHS.DOWNLOAD_FILES}/${downloadId}/${filename}`;
   const storageRef = ref(storage, storagePath);
 
   return uploadFile(storageRef, file, onProgress);

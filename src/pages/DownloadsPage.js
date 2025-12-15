@@ -5,12 +5,15 @@
  * @module pages/DownloadsPage
  */
 
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   CONFERENCE,
-  DOWNLOADS,
+  DOWNLOADS as FALLBACK_DOWNLOADS,
   ROUTES,
+  DOWNLOAD_STATUS,
 } from '../constants';
+import { getPublishedDownloads } from '../services/downloads';
 import styles from './DownloadsPage.module.css';
 
 /**
@@ -20,6 +23,36 @@ import styles from './DownloadsPage.module.css';
  * @returns {JSX.Element} The downloads page component
  */
 function DownloadsPage() {
+  const [downloads, setDownloads] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  /**
+   * Fetch downloads on mount
+   */
+  useEffect(() => {
+    async function fetchDownloads() {
+      setIsLoading(true);
+      try {
+        const data = await getPublishedDownloads();
+        // If no downloads from Firestore, use fallback
+        if (data.length === 0) {
+          // Filter fallback to only show available ones
+          setDownloads(FALLBACK_DOWNLOADS.filter((d) => d.isAvailable));
+        } else {
+          setDownloads(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch downloads:', error);
+        // Use fallback on error
+        setDownloads(FALLBACK_DOWNLOADS.filter((d) => d.isAvailable));
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchDownloads();
+  }, []);
+
   /**
    * Handles download button click
    * Opens the download URL in a new tab for the file
@@ -27,9 +60,24 @@ function DownloadsPage() {
    * @param {Object} download - The download item object
    */
   function handleDownload(download) {
-    if (download.isAvailable && download.downloadUrl) {
+    if (download.downloadUrl) {
       window.open(download.downloadUrl, '_blank', 'noopener,noreferrer');
     }
+  }
+
+  /**
+   * Check if download is available (has a download URL)
+   *
+   * @param {Object} download - The download item object
+   * @returns {boolean} Whether the download is available
+   */
+  function isDownloadAvailable(download) {
+    // For Firestore downloads, check status and downloadUrl
+    if (download.status) {
+      return download.status === DOWNLOAD_STATUS.PUBLISHED && download.downloadUrl;
+    }
+    // For fallback downloads, check isAvailable flag
+    return download.isAvailable && download.downloadUrl;
   }
 
   return (
@@ -54,77 +102,105 @@ function DownloadsPage() {
               to help you make the most of your conference experience.
             </p>
 
-            <div className={styles.downloadsList}>
-              {DOWNLOADS.map((download) => (
-                <div key={download.id} className={styles.downloadCard}>
-                  {download.thumbnailUrl ? (
-                    <div className={styles.downloadThumbnail}>
-                      <img
-                        src={download.thumbnailUrl}
-                        alt={`${download.title} cover`}
-                        className={styles.thumbnailImage}
-                      />
-                    </div>
-                  ) : (
-                    <div className={styles.downloadIcon}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="48"
-                        height="48"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                        <line x1="12" y1="18" x2="12" y2="12" />
-                        <polyline points="9 15 12 18 15 15" />
-                      </svg>
-                    </div>
-                  )}
-                  <div className={styles.downloadInfo}>
-                    <h3 className={styles.downloadTitle}>{download.title}</h3>
-                    <p className={styles.downloadDescription}>{download.description}</p>
-                    <div className={styles.downloadMeta}>
-                      <span className={styles.fileType}>{download.fileType}</span>
-                      <span className={styles.fileSize}>{download.fileSize}</span>
-                    </div>
-                  </div>
-                  <div className={styles.downloadAction}>
-                    {download.isAvailable ? (
-                      <button
-                        type="button"
-                        className={styles.downloadButton}
-                        onClick={() => handleDownload(download)}
-                        aria-label={`Download ${download.title}`}
-                      >
+            {isLoading ? (
+              <div className={styles.loadingState}>
+                <div className={styles.loadingSpinner} />
+                <p>Loading downloads...</p>
+              </div>
+            ) : downloads.length === 0 ? (
+              <div className={styles.emptyState}>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="12" y1="18" x2="12" y2="12" />
+                  <polyline points="9 15 12 18 15 15" />
+                </svg>
+                <p>Downloads will be available soon.</p>
+                <p className={styles.emptyHint}>Check back closer to the conference date.</p>
+              </div>
+            ) : (
+              <div className={styles.downloadsList}>
+                {downloads.map((download) => (
+                  <div key={download.id} className={styles.downloadCard}>
+                    {download.thumbnailUrl ? (
+                      <div className={styles.downloadThumbnail}>
+                        <img
+                          src={download.thumbnailUrl}
+                          alt={`${download.title} cover`}
+                          className={styles.thumbnailImage}
+                        />
+                      </div>
+                    ) : (
+                      <div className={styles.downloadIcon}>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          width="20"
-                          height="20"
+                          width="48"
+                          height="48"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
-                          strokeWidth="2"
+                          strokeWidth="1.5"
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         >
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                          <polyline points="7 10 12 15 17 10" />
-                          <line x1="12" y1="15" x2="12" y2="3" />
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="12" y1="18" x2="12" y2="12" />
+                          <polyline points="9 15 12 18 15 15" />
                         </svg>
-                        Download
-                      </button>
-                    ) : (
-                      <span className={styles.availableSoon}>Available Soon</span>
+                      </div>
                     )}
+                    <div className={styles.downloadInfo}>
+                      <h3 className={styles.downloadTitle}>{download.title}</h3>
+                      <p className={styles.downloadDescription}>{download.description}</p>
+                      <div className={styles.downloadMeta}>
+                        <span className={styles.fileType}>{download.fileType}</span>
+                        <span className={styles.fileSize}>{download.fileSize}</span>
+                      </div>
+                    </div>
+                    <div className={styles.downloadAction}>
+                      {isDownloadAvailable(download) ? (
+                        <button
+                          type="button"
+                          className={styles.downloadButton}
+                          onClick={() => handleDownload(download)}
+                          aria-label={`Download ${download.title}`}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                          </svg>
+                          Download
+                        </button>
+                      ) : (
+                        <span className={styles.availableSoon}>Available Soon</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
