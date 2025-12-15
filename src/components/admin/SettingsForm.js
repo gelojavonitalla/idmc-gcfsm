@@ -18,34 +18,68 @@ import styles from './SettingsForm.module.css';
  * @param {boolean} props.isLoading - Loading state
  * @returns {JSX.Element} The settings form
  */
+/**
+ * Default settings values for IDMC 2026
+ */
+const DEFAULT_SETTINGS = {
+  title: 'IDMC 2026',
+  theme: 'All In for Jesus and His Kingdom',
+  tagline: 'Intentional Disciple-Making Churches Conference',
+  year: 2026,
+  startDate: '2026-03-28',
+  endDate: '2026-03-28',
+  startTime: '07:00',
+  endTime: '17:30',
+  timezone: 'Asia/Manila',
+  registrationOpen: true,
+  venue: {
+    name: 'GCF South Metro',
+    address: 'Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines',
+    mapUrl: 'https://maps.google.com/?q=GCF+South+Metro+Las+Pinas',
+    mapEmbedUrl:
+      'https://www.google.com/maps?q=GCF+South+Metro,+Daang+Hari+Road,+Las+Piñas,+Philippines&output=embed',
+  },
+  contact: {
+    email: 'email@gcfsouthmetro.org',
+    phone: '(02) 8478 1271 / (02) 8478 1273',
+    mobile: '0917 650 0011',
+    website: 'https://gcfsouthmetro.org',
+  },
+  social: {
+    facebook: 'https://facebook.com/gcfsouthmetro',
+    instagram: 'https://instagram.com/gcfsouthmetro',
+    youtube: 'https://youtube.com/channel/UCJ36YX23P_yCjMzetI1s6Ag',
+  },
+};
+
 function SettingsForm({ settings, onSave, isLoading }) {
   const [formData, setFormData] = useState({
-    title: settings?.title || '',
-    theme: settings?.theme || '',
-    tagline: settings?.tagline || '',
-    year: settings?.year || new Date().getFullYear(),
-    startDate: settings?.startDate || '',
-    endDate: settings?.endDate || '',
-    startTime: settings?.startTime || '09:00',
-    endTime: settings?.endTime || '17:00',
-    timezone: settings?.timezone || 'Asia/Manila',
-    registrationOpen: settings?.registrationOpen ?? true,
+    title: settings?.title || DEFAULT_SETTINGS.title,
+    theme: settings?.theme || DEFAULT_SETTINGS.theme,
+    tagline: settings?.tagline || DEFAULT_SETTINGS.tagline,
+    year: settings?.year || DEFAULT_SETTINGS.year,
+    startDate: settings?.startDate || DEFAULT_SETTINGS.startDate,
+    endDate: settings?.endDate || DEFAULT_SETTINGS.endDate,
+    startTime: settings?.startTime || DEFAULT_SETTINGS.startTime,
+    endTime: settings?.endTime || DEFAULT_SETTINGS.endTime,
+    timezone: settings?.timezone || DEFAULT_SETTINGS.timezone,
+    registrationOpen: settings?.registrationOpen ?? DEFAULT_SETTINGS.registrationOpen,
     venue: {
-      name: settings?.venue?.name || '',
-      address: settings?.venue?.address || '',
-      mapUrl: settings?.venue?.mapUrl || '',
-      mapEmbedUrl: settings?.venue?.mapEmbedUrl || '',
+      name: settings?.venue?.name || DEFAULT_SETTINGS.venue.name,
+      address: settings?.venue?.address || DEFAULT_SETTINGS.venue.address,
+      mapUrl: settings?.venue?.mapUrl || DEFAULT_SETTINGS.venue.mapUrl,
+      mapEmbedUrl: settings?.venue?.mapEmbedUrl || DEFAULT_SETTINGS.venue.mapEmbedUrl,
     },
     contact: {
-      email: settings?.contact?.email || '',
-      phone: settings?.contact?.phone || '',
-      mobile: settings?.contact?.mobile || '',
-      website: settings?.contact?.website || '',
+      email: settings?.contact?.email || DEFAULT_SETTINGS.contact.email,
+      phone: settings?.contact?.phone || DEFAULT_SETTINGS.contact.phone,
+      mobile: settings?.contact?.mobile || DEFAULT_SETTINGS.contact.mobile,
+      website: settings?.contact?.website || DEFAULT_SETTINGS.contact.website,
     },
     social: {
-      facebook: settings?.social?.facebook || '',
-      instagram: settings?.social?.instagram || '',
-      youtube: settings?.social?.youtube || '',
+      facebook: settings?.social?.facebook || DEFAULT_SETTINGS.social.facebook,
+      instagram: settings?.social?.instagram || DEFAULT_SETTINGS.social.instagram,
+      youtube: settings?.social?.youtube || DEFAULT_SETTINGS.social.youtube,
     },
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -306,7 +340,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               onChange={handleChange}
               className={styles.textarea}
               rows={2}
-              placeholder="Full venue address"
+              placeholder="Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines"
             />
           </div>
           <div className={styles.field}>
@@ -320,7 +354,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.venue.mapUrl}
               onChange={handleChange}
               className={styles.input}
-              placeholder="https://maps.google.com/..."
+              placeholder="https://maps.google.com/?q=GCF+South+Metro+Las+Pinas"
             />
           </div>
           <div className={styles.field}>
@@ -334,7 +368,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.venue.mapEmbedUrl}
               onChange={handleChange}
               className={styles.input}
-              placeholder="https://www.google.com/maps?..."
+              placeholder="https://www.google.com/maps?q=GCF+South+Metro&output=embed"
             />
           </div>
         </div>
@@ -355,7 +389,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.contact.email}
               onChange={handleChange}
               className={styles.input}
-              placeholder="email@example.org"
+              placeholder="email@gcfsouthmetro.org"
             />
           </div>
           <div className={styles.field}>
@@ -369,7 +403,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.contact.phone}
               onChange={handleChange}
               className={styles.input}
-              placeholder="(02) 1234 5678"
+              placeholder="(02) 8478 1271 / (02) 8478 1273"
             />
           </div>
           <div className={styles.field}>
@@ -383,7 +417,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.contact.mobile}
               onChange={handleChange}
               className={styles.input}
-              placeholder="0917 123 4567"
+              placeholder="0917 650 0011"
             />
           </div>
           <div className={styles.field}>
@@ -397,7 +431,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.contact.website}
               onChange={handleChange}
               className={styles.input}
-              placeholder="https://example.org"
+              placeholder="https://gcfsouthmetro.org"
             />
           </div>
         </div>
@@ -418,7 +452,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.social.facebook}
               onChange={handleChange}
               className={styles.input}
-              placeholder="https://facebook.com/..."
+              placeholder="https://facebook.com/gcfsouthmetro"
             />
           </div>
           <div className={styles.field}>
@@ -432,7 +466,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.social.instagram}
               onChange={handleChange}
               className={styles.input}
-              placeholder="https://instagram.com/..."
+              placeholder="https://instagram.com/gcfsouthmetro"
             />
           </div>
           <div className={styles.field}>
@@ -446,7 +480,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.social.youtube}
               onChange={handleChange}
               className={styles.input}
-              placeholder="https://youtube.com/..."
+              placeholder="https://youtube.com/channel/UCJ36YX23P_yCjMzetI1s6Ag"
             />
           </div>
         </div>

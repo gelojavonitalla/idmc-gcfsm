@@ -51,6 +51,14 @@ on:
         options:
           - 'false'
           - 'true'
+      seed_settings:
+        description: 'Seed settings & pricing tiers'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
       seed_all:
         description: 'Seed ALL data (overrides individual options)'
         required: false
@@ -94,7 +102,7 @@ jobs:
           echo "✅ Firestore indexes deployed successfully!"
 
   seed_data:
-    if: ${{ inputs.seed_speakers == 'true' || inputs.seed_sessions == 'true' || inputs.seed_workshops == 'true' || inputs.seed_schedule == 'true' || inputs.seed_faq == 'true' || inputs.seed_all == 'true' }}
+    if: ${{ inputs.seed_speakers == 'true' || inputs.seed_sessions == 'true' || inputs.seed_workshops == 'true' || inputs.seed_schedule == 'true' || inputs.seed_faq == 'true' || inputs.seed_settings == 'true' || inputs.seed_all == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -179,8 +187,21 @@ jobs:
         env:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
+      - name: Seed Settings Data
+        if: ${{ inputs.seed_settings == 'true' || inputs.seed_all == 'true' }}
+        run: |
+          if [ "${{ inputs.clear_existing }}" == "true" ]; then
+            echo "Clearing and re-seeding settings..."
+            node scripts/seed-settings.js --clear
+          else
+            echo "Seeding settings (preserving existing)..."
+            node scripts/seed-settings.js
+          fi
+        env:
+          GCLOUD_PROJECT: idmc-gcfsm-dev
+
       - name: Seed Complete
         run: |
           echo "✅ Firestore seeding complete!"
-          echo "Seeded: speakers=${{ inputs.seed_speakers == 'true' || inputs.seed_all == 'true' }}, sessions=${{ inputs.seed_sessions == 'true' || inputs.seed_all == 'true' }}, workshops=${{ inputs.seed_workshops == 'true' || inputs.seed_all == 'true' }}, schedule=${{ inputs.seed_schedule == 'true' || inputs.seed_all == 'true' }}, faq=${{ inputs.seed_faq == 'true' || inputs.seed_all == 'true' }}"
+          echo "Seeded: speakers=${{ inputs.seed_speakers == 'true' || inputs.seed_all == 'true' }}, sessions=${{ inputs.seed_sessions == 'true' || inputs.seed_all == 'true' }}, workshops=${{ inputs.seed_workshops == 'true' || inputs.seed_all == 'true' }}, schedule=${{ inputs.seed_schedule == 'true' || inputs.seed_all == 'true' }}, faq=${{ inputs.seed_faq == 'true' || inputs.seed_all == 'true' }}, settings=${{ inputs.seed_settings == 'true' || inputs.seed_all == 'true' }}"
           echo "Cleared existing: ${{ inputs.clear_existing }}"
