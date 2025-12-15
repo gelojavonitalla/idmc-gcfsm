@@ -19,12 +19,22 @@ import styles from './VenuePage.module.css';
 function VenuePage() {
   return (
     <div className={styles.page}>
+      {/* Hero Section */}
+      <section className={styles.heroSection}>
+        <div className="container">
+          <h1 className={styles.heroTitle}>Venue</h1>
+          <p className={styles.heroSubtitle}>
+            Join us at {VENUE.NAME} for IDMC {CONFERENCE.YEAR}
+          </p>
+        </div>
+      </section>
+
       {/* Map Section */}
       <section className={styles.mapSection}>
         <div className="container">
           <div className={styles.mapContent}>
             <div className={styles.mapInfo}>
-              <h1 className={styles.mapTitle}>{VENUE.NAME}</h1>
+              <h2 className={styles.mapTitle}>{VENUE.NAME}</h2>
               <p className={styles.mapAddress}>{VENUE.ADDRESS}</p>
               <a
                 href={VENUE.MAP_URL}
