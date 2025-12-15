@@ -47,20 +47,15 @@
   color: var(--color-text-secondary);
 }
 
-.badges {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  flex-wrap: wrap;
-}
-
 .badge {
+  display: inline-block;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   padding: var(--spacing-1) var(--spacing-2);
   border-radius: var(--radius-full);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  align-self: flex-start;
 }
 
 /* Title */
