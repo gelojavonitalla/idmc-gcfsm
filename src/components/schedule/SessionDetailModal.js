@@ -1,7 +1,16 @@
 import { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { SESSION_TYPE_LABELS, SESSION_TYPE_COLORS, SESSION_TYPES, ROUTES } from '../../constants';
+import {
+  SESSION_TYPE_LABELS,
+  SESSION_TYPE_COLORS,
+  SESSION_TYPES,
+  ROUTES,
+  WORKSHOP_CATEGORY_LABELS,
+  WORKSHOP_CATEGORY_COLORS,
+  WORKSHOP_CATEGORIES,
+} from '../../constants';
+import { CapacityBadge } from '../workshops';
 import styles from './SessionDetailModal.module.css';
 
 /**
@@ -27,11 +36,20 @@ import styles from './SessionDetailModal.module.css';
  */
 function SessionDetailModal({ session, speakers = [], isOpen, onClose }) {
   const navigate = useNavigate();
+  const isWorkshop = session?.sessionType === SESSION_TYPES.WORKSHOP;
+
+  // For workshops, use category colors; for other sessions, use session type colors
   const colors = session
-    ? SESSION_TYPE_COLORS[session.sessionType] || SESSION_TYPE_COLORS[SESSION_TYPES.OTHER]
+    ? isWorkshop && session.category
+      ? WORKSHOP_CATEGORY_COLORS[session.category] || WORKSHOP_CATEGORY_COLORS[WORKSHOP_CATEGORIES.NEXT_GENERATION]
+      : SESSION_TYPE_COLORS[session.sessionType] || SESSION_TYPE_COLORS[SESSION_TYPES.OTHER]
     : {};
-  const typeLabel = session
-    ? SESSION_TYPE_LABELS[session.sessionType] || 'Session'
+
+  // For workshops, show category label; for other sessions, show type label
+  const badgeLabel = session
+    ? isWorkshop && session.category
+      ? WORKSHOP_CATEGORY_LABELS[session.category] || 'Workshop'
+      : SESSION_TYPE_LABELS[session.sessionType] || 'Session'
     : '';
 
   /**
@@ -149,21 +167,38 @@ function SessionDetailModal({ session, speakers = [], isOpen, onClose }) {
         </button>
 
         <div className={styles.content}>
-          {/* Type Badge */}
-          <span
-            className={styles.badge}
-            style={{
-              backgroundColor: colors.border,
-              color: '#ffffff',
-            }}
-          >
-            {typeLabel}
-          </span>
+          {/* Type/Category Badge */}
+          <div className={styles.badges}>
+            <span
+              className={styles.badge}
+              style={isWorkshop && session.category ? {
+                backgroundColor: colors.background,
+                color: colors.text,
+                border: `1px solid ${colors.border}`,
+              } : {
+                backgroundColor: colors.border,
+                color: '#ffffff',
+              }}
+            >
+              {badgeLabel}
+            </span>
+          </div>
 
           {/* Title */}
           <h2 id="session-modal-title" className={styles.title}>
             {session.title}
           </h2>
+
+          {/* Capacity Status for Workshops */}
+          {isWorkshop && (
+            <div className={styles.capacitySection}>
+              <CapacityBadge
+                capacity={session.capacity}
+                registeredCount={session.registeredCount || 0}
+                showRemaining={true}
+              />
+            </div>
+          )}
 
           {/* Time and Venue */}
           <div className={styles.details}>
@@ -209,16 +244,20 @@ function SessionDetailModal({ session, speakers = [], isOpen, onClose }) {
           {/* Description */}
           {session.description && (
             <div className={styles.descriptionSection}>
-              <h3 className={styles.sectionLabel}>About</h3>
+              <h3 className={styles.sectionLabel}>
+                {isWorkshop ? 'About this workshop' : 'About'}
+              </h3>
               <p className={styles.description}>{session.description}</p>
             </div>
           )}
 
-          {/* Speakers */}
+          {/* Speakers/Facilitators */}
           {session.speakerIds && session.speakerIds.length > 0 && (
             <div className={styles.speakersSection}>
               <h3 className={styles.sectionLabel}>
-                {session.speakerIds.length > 1 ? 'Speakers' : 'Speaker'}
+                {isWorkshop
+                  ? session.speakerIds.length > 1 ? 'Facilitators' : 'Facilitator'
+                  : session.speakerIds.length > 1 ? 'Speakers' : 'Speaker'}
               </h3>
               <div className={styles.speakersList}>
                 {session.speakerIds.map((speakerId, index) => {
@@ -293,6 +332,9 @@ SessionDetailModal.propTypes = {
     venue: PropTypes.string,
     speakerIds: PropTypes.arrayOf(PropTypes.string),
     speakerNames: PropTypes.arrayOf(PropTypes.string),
+    category: PropTypes.string,
+    capacity: PropTypes.number,
+    registeredCount: PropTypes.number,
   }),
   speakers: PropTypes.arrayOf(
     PropTypes.shape({

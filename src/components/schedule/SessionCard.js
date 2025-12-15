@@ -1,5 +1,13 @@
 import PropTypes from 'prop-types';
-import { SESSION_TYPE_LABELS, SESSION_TYPE_COLORS, SESSION_TYPES } from '../../constants';
+import {
+  SESSION_TYPE_LABELS,
+  SESSION_TYPE_COLORS,
+  SESSION_TYPES,
+  WORKSHOP_CATEGORY_LABELS,
+  WORKSHOP_CATEGORY_COLORS,
+  WORKSHOP_CATEGORIES,
+} from '../../constants';
+import { CapacityBadge } from '../workshops';
 import styles from './SessionCard.module.css';
 
 /**
@@ -21,8 +29,17 @@ import styles from './SessionCard.module.css';
  * @returns {JSX.Element} The session card component
  */
 function SessionCard({ session, onClick }) {
-  const colors = SESSION_TYPE_COLORS[session.sessionType] || SESSION_TYPE_COLORS[SESSION_TYPES.OTHER];
-  const typeLabel = SESSION_TYPE_LABELS[session.sessionType] || 'Session';
+  const isWorkshop = session.sessionType === SESSION_TYPES.WORKSHOP;
+
+  // For workshops, use category colors; for other sessions, use session type colors
+  const colors = isWorkshop && session.category
+    ? WORKSHOP_CATEGORY_COLORS[session.category] || WORKSHOP_CATEGORY_COLORS[WORKSHOP_CATEGORIES.NEXT_GENERATION]
+    : SESSION_TYPE_COLORS[session.sessionType] || SESSION_TYPE_COLORS[SESSION_TYPES.OTHER];
+
+  // For workshops, show category label; for other sessions, show type label
+  const badgeLabel = isWorkshop && session.category
+    ? WORKSHOP_CATEGORY_LABELS[session.category] || 'Workshop'
+    : SESSION_TYPE_LABELS[session.sessionType] || 'Session';
 
   /**
    * Handles keyboard navigation for accessibility
@@ -63,15 +80,27 @@ function SessionCard({ session, onClick }) {
     >
       <div className={styles.header}>
         <span className={styles.time}>{getTimeDisplay()}</span>
-        <span
-          className={styles.badge}
-          style={{
-            backgroundColor: colors.border,
-            color: '#ffffff',
-          }}
-        >
-          {typeLabel}
-        </span>
+        <div className={styles.badges}>
+          <span
+            className={styles.badge}
+            style={isWorkshop && session.category ? {
+              backgroundColor: colors.background,
+              color: colors.text,
+              border: `1px solid ${colors.border}`,
+            } : {
+              backgroundColor: colors.border,
+              color: '#ffffff',
+            }}
+          >
+            {badgeLabel}
+          </span>
+          {isWorkshop && (
+            <CapacityBadge
+              capacity={session.capacity}
+              registeredCount={session.registeredCount || 0}
+            />
+          )}
+        </div>
       </div>
 
       <h3 className={styles.title}>{session.title}</h3>
@@ -130,6 +159,9 @@ SessionCard.propTypes = {
     sessionType: PropTypes.string.isRequired,
     venue: PropTypes.string,
     speakerNames: PropTypes.arrayOf(PropTypes.string),
+    category: PropTypes.string,
+    capacity: PropTypes.number,
+    registeredCount: PropTypes.number,
   }).isRequired,
   onClick: PropTypes.func.isRequired,
 };
