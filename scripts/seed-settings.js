@@ -39,8 +39,8 @@ const SETTINGS_DATA = {
   year: 2026,
   startDate: '2026-03-28',
   endDate: '2026-03-28',
-  startTime: '09:00',
-  endTime: '17:00',
+  startTime: '07:00',
+  endTime: '17:30',
   timezone: 'Asia/Manila',
   venue: {
     name: 'GCF South Metro',
