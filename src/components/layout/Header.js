@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { NAV_ITEMS, CONFERENCE } from '../../constants';
+import { useSettings } from '../../context';
+import { NAV_ITEMS } from '../../constants';
 import styles from './Header.module.css';
 
 /**
@@ -11,6 +12,7 @@ import styles from './Header.module.css';
  * @returns {JSX.Element} The header navigation component
  */
 function Header() {
+  const { settings } = useSettings();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
@@ -86,7 +88,7 @@ function Header() {
       <div className={styles.container}>
         <Link to="/" className={styles.logo} onClick={closeMenu}>
           <span className={styles.logoText}>IDMC</span>
-          <span className={styles.logoYear}>{CONFERENCE.YEAR}</span>
+          <span className={styles.logoYear}>{settings.year}</span>
         </Link>
 
         <button

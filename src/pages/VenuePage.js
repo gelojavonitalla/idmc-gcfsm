@@ -7,7 +7,8 @@
 
 import { Link } from 'react-router-dom';
 import { FloorPlan } from '../components/venue';
-import { VENUE, CONFERENCE, ROUTES, SCHEDULE, WORKSHOPS } from '../constants';
+import { useSettings } from '../context';
+import { ROUTES, SCHEDULE, WORKSHOPS } from '../constants';
 import styles from './VenuePage.module.css';
 
 /**
@@ -17,6 +18,8 @@ import styles from './VenuePage.module.css';
  * @returns {JSX.Element} The venue page component
  */
 function VenuePage() {
+  const { settings } = useSettings();
+
   return (
     <div className={styles.page}>
       {/* Hero Section */}
@@ -24,7 +27,7 @@ function VenuePage() {
         <div className="container">
           <h1 className={styles.heroTitle}>Venue</h1>
           <p className={styles.heroSubtitle}>
-            Join us at {VENUE.NAME} for IDMC {CONFERENCE.YEAR}
+            Join us at {settings.venue?.name} for {settings.title}
           </p>
         </div>
       </section>
@@ -34,10 +37,10 @@ function VenuePage() {
         <div className="container">
           <div className={styles.mapContent}>
             <div className={styles.mapInfo}>
-              <h2 className={styles.mapTitle}>{VENUE.NAME}</h2>
-              <p className={styles.mapAddress}>{VENUE.ADDRESS}</p>
+              <h2 className={styles.mapTitle}>{settings.venue?.name}</h2>
+              <p className={styles.mapAddress}>{settings.venue?.address}</p>
               <a
-                href={VENUE.MAP_URL}
+                href={settings.venue?.mapUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={styles.mapLink}
@@ -47,8 +50,8 @@ function VenuePage() {
             </div>
             <div className={styles.mapEmbed}>
               <iframe
-                src={VENUE.MAP_EMBED_URL}
-                title={`Map of ${VENUE.NAME}`}
+                src={settings.venue?.mapEmbedUrl}
+                title={`Map of ${settings.venue?.name}`}
                 className={styles.mapIframe}
                 allowFullScreen
                 loading="lazy"
@@ -199,7 +202,7 @@ function VenuePage() {
         <div className="container">
           <h2 className={styles.ctaTitle}>Ready to Join Us?</h2>
           <p className={styles.ctaText}>
-            Secure your spot at IDMC {CONFERENCE.YEAR} today!
+            Secure your spot at {settings.title} today!
           </p>
           <div className={styles.ctaButtons}>
             <Link to={ROUTES.REGISTER} className={styles.ctaButtonPrimary}>
