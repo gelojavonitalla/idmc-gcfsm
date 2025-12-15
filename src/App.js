@@ -1,7 +1,8 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout, ScrollToTop } from './components/layout';
 import { ProtectedRoute } from './components/auth';
-import { AuthProvider } from './context';
+import { AdminProtectedRoute } from './components/admin';
+import { AuthProvider, AdminAuthProvider } from './context';
 import {
   HomePage,
   RegisterPage,
@@ -17,7 +18,8 @@ import {
   IDMC2025Page,
   MaintenancePage,
 } from './pages';
-import { ROUTES, IDMC_TEAM_ROLES } from './constants';
+import { AdminLoginPage, AdminDashboardPage, AdminSettingsPage, AdminUsersPage, AdminActivityPage, AdminSpeakersPage, AdminSchedulePage } from './pages/admin';
+import { ROUTES, ADMIN_ROUTES, IDMC_TEAM_ROLES } from './constants';
 import './index.css';
 
 /**
@@ -29,34 +31,108 @@ import './index.css';
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <ScrollToTop />
-        <Layout>
+      <AdminAuthProvider>
+        <BrowserRouter>
+          <ScrollToTop />
           <Routes>
-            <Route path={ROUTES.HOME} element={<HomePage />} />
-            <Route path={ROUTES.SPEAKERS} element={<SpeakersPage />} />
-            <Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
-            <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
-            <Route path={ROUTES.FAQ} element={<FAQPage />} />
-            <Route path={ROUTES.ABOUT} element={<AboutPage />} />
-            <Route path={ROUTES.VENUE} element={<VenuePage />} />
-            <Route path={ROUTES.CONTACT} element={<ContactPage />} />
-            <Route path={ROUTES.DOWNLOADS} element={<DownloadsPage />} />
-            <Route path={ROUTES.PRIVACY} element={<PrivacyPolicyPage />} />
-            <Route path={ROUTES.TERMS} element={<TermsOfServicePage />} />
-            <Route path={ROUTES.IDMC_2025} element={<IDMC2025Page />} />
+            {/* Admin Routes - No public layout */}
+            <Route path={ADMIN_ROUTES.LOGIN} element={<AdminLoginPage />} />
             <Route
-              path={ROUTES.MAINTENANCE}
+              path={ADMIN_ROUTES.ROOT}
+              element={<Navigate to={ADMIN_ROUTES.DASHBOARD} replace />}
+            />
+            <Route
+              path={ADMIN_ROUTES.DASHBOARD}
               element={
-                <ProtectedRoute allowedRoles={IDMC_TEAM_ROLES}>
-                  <MaintenancePage />
-                </ProtectedRoute>
+                <AdminProtectedRoute>
+                  <AdminDashboardPage />
+                </AdminProtectedRoute>
               }
             />
-            <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
+            <Route
+              path={ADMIN_ROUTES.SETTINGS}
+              element={
+                <AdminProtectedRoute>
+                  <AdminSettingsPage />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path={ADMIN_ROUTES.USERS}
+              element={
+                <AdminProtectedRoute requiredRole="superadmin">
+                  <AdminUsersPage />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path={ADMIN_ROUTES.ACTIVITY}
+              element={
+                <AdminProtectedRoute>
+                  <AdminActivityPage />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path={ADMIN_ROUTES.SPEAKERS}
+              element={
+                <AdminProtectedRoute>
+                  <AdminSpeakersPage />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path={ADMIN_ROUTES.SCHEDULE}
+              element={
+                <AdminProtectedRoute>
+                  <AdminSchedulePage />
+                </AdminProtectedRoute>
+              }
+            />
+            {/* Placeholder admin routes - to be implemented in later phases */}
+            <Route
+              path={`${ADMIN_ROUTES.ROOT}/*`}
+              element={
+                <AdminProtectedRoute>
+                  <AdminDashboardPage />
+                </AdminProtectedRoute>
+              }
+            />
+
+            {/* Public Routes - With public layout */}
+            <Route
+              path="*"
+              element={
+                <Layout>
+                  <Routes>
+                    <Route path={ROUTES.HOME} element={<HomePage />} />
+                    <Route path={ROUTES.SPEAKERS} element={<SpeakersPage />} />
+                    <Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
+                    <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+                    <Route path={ROUTES.FAQ} element={<FAQPage />} />
+                    <Route path={ROUTES.ABOUT} element={<AboutPage />} />
+                    <Route path={ROUTES.VENUE} element={<VenuePage />} />
+                    <Route path={ROUTES.CONTACT} element={<ContactPage />} />
+                    <Route path={ROUTES.DOWNLOADS} element={<DownloadsPage />} />
+                    <Route path={ROUTES.PRIVACY} element={<PrivacyPolicyPage />} />
+                    <Route path={ROUTES.TERMS} element={<TermsOfServicePage />} />
+                    <Route path={ROUTES.IDMC_2025} element={<IDMC2025Page />} />
+                    <Route
+                      path={ROUTES.MAINTENANCE}
+                      element={
+                        <ProtectedRoute allowedRoles={IDMC_TEAM_ROLES}>
+                          <MaintenancePage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
+                  </Routes>
+                </Layout>
+              }
+            />
           </Routes>
-        </Layout>
-      </BrowserRouter>
+        </BrowserRouter>
+      </AdminAuthProvider>
     </AuthProvider>
   );
 }

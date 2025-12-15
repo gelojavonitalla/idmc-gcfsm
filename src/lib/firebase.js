@@ -1,12 +1,13 @@
 /**
  * Firebase Client Configuration
- * Initializes Firebase app and Firestore for the IDMC Conference frontend.
+ * Initializes Firebase app, Firestore, and Authentication for the IDMC Conference frontend.
  *
  * @module lib/firebase
  */
 
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
 
 /**
  * Firebase database configuration
@@ -40,4 +41,16 @@ const app = initializeApp(firebaseConfig);
  */
 const db = getFirestore(app, FIREBASE_CONFIG.DATABASE_ID);
 
-export { app, db, FIREBASE_CONFIG };
+/**
+ * Firebase Authentication instance
+ */
+const auth = getAuth(app);
+
+/**
+ * Connect to Auth emulator in development
+ */
+if (process.env.REACT_APP_USE_EMULATORS === 'true') {
+  connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+}
+
+export { app, db, auth, FIREBASE_CONFIG };

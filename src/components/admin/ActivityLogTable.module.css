@@ -1,0 +1,269 @@
+/**
+ * ActivityLogTable Component Styles
+ */
+
+.container {
+  background: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-5);
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.filters {
+  display: flex;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-5);
+  padding-bottom: var(--spacing-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.filterLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.filterSelect {
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: white;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.logList {
+  display: flex;
+  flex-direction: column;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-12);
+  color: var(--color-text-secondary);
+}
+
+.emptyState svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--spacing-4);
+  opacity: 0.5;
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.logEntry {
+  display: flex;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.logEntry:last-of-type {
+  border-bottom: none;
+}
+
+.logIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.activityAuth {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.activityCreate {
+  background: #f0fdf4;
+  color: #22c55e;
+}
+
+.activityUpdate {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.activityDelete {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.activityApprove {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.activityExport {
+  background: #f3e8ff;
+  color: #8b5cf6;
+}
+
+.activityDefault {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.logContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.logHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-1);
+}
+
+.logAction {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.logEntity {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-full);
+  text-transform: capitalize;
+}
+
+.logDescription {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-2) 0;
+  line-height: 1.5;
+}
+
+.logMeta {
+  display: flex;
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+}
+
+.logAdmin,
+.logTime {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.logAdmin svg,
+.logTime svg {
+  width: 14px;
+  height: 14px;
+}
+
+.loadMore {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--spacing-4);
+  margin-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.loadMoreButton {
+  padding: var(--spacing-2) var(--spacing-6);
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.loadMoreButton:hover:not(:disabled) {
+  background: var(--color-background-secondary);
+  color: var(--color-text);
+}
+
+.loadMoreButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .container {
+    padding: var(--spacing-4);
+  }
+
+  .filters {
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+
+  .filterSelect {
+    width: 100%;
+  }
+
+  .logEntry {
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+
+  .logIcon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .logIcon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .logMeta {
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+}

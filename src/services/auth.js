@@ -1,0 +1,129 @@
+/**
+ * Authentication Service
+ * Provides Firebase Authentication operations for admin users.
+ *
+ * @module services/auth
+ */
+
+import {
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  sendPasswordResetEmail,
+  onAuthStateChanged,
+} from 'firebase/auth';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
+import { COLLECTIONS } from '../constants';
+
+/**
+ * Signs in an admin user with email and password
+ *
+ * @param {string} email - User email address
+ * @param {string} password - User password
+ * @returns {Promise<Object>} User credentials and admin profile
+ * @throws {Error} If credentials are invalid or user is not an admin
+ */
+export async function signInAdmin(email, password) {
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  const { user } = userCredential;
+
+  const adminDoc = await getDoc(doc(db, COLLECTIONS.ADMINS, user.uid));
+
+  if (!adminDoc.exists()) {
+    await firebaseSignOut(auth);
+    throw new Error('You do not have admin access. Please contact a super admin.');
+  }
+
+  const adminData = adminDoc.data();
+
+  if (adminData.status !== 'active') {
+    await firebaseSignOut(auth);
+    throw new Error('Your admin account is inactive. Please contact a super admin.');
+  }
+
+  await updateDoc(doc(db, COLLECTIONS.ADMINS, user.uid), {
+    lastLoginAt: serverTimestamp(),
+  });
+
+  return {
+    user,
+    admin: {
+      id: user.uid,
+      email: user.email,
+      ...adminData,
+    },
+  };
+}
+
+/**
+ * Signs out the current user
+ *
+ * @returns {Promise<void>}
+ */
+export async function signOutAdmin() {
+  await firebaseSignOut(auth);
+}
+
+/**
+ * Sends a password reset email
+ *
+ * @param {string} email - User email address
+ * @returns {Promise<void>}
+ */
+export async function sendAdminPasswordReset(email) {
+  await sendPasswordResetEmail(auth, email);
+}
+
+/**
+ * Gets the current admin profile from Firestore
+ *
+ * @param {string} uid - Firebase Auth UID
+ * @returns {Promise<Object|null>} Admin profile or null if not found
+ */
+export async function getAdminProfile(uid) {
+  if (!uid) {
+    return null;
+  }
+
+  const adminDoc = await getDoc(doc(db, COLLECTIONS.ADMINS, uid));
+
+  if (!adminDoc.exists()) {
+    return null;
+  }
+
+  return {
+    id: adminDoc.id,
+    ...adminDoc.data(),
+  };
+}
+
+/**
+ * Subscribes to auth state changes
+ *
+ * @param {Function} callback - Callback function receiving (user, admin) or (null, null)
+ * @returns {Function} Unsubscribe function
+ */
+export function subscribeToAuthState(callback) {
+  return onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      try {
+        const admin = await getAdminProfile(user.uid);
+        callback(user, admin);
+      } catch (error) {
+        console.error('Failed to get admin profile:', error);
+        callback(user, null);
+      }
+    } else {
+      callback(null, null);
+    }
+  });
+}
+
+/**
+ * Gets the current Firebase Auth user
+ *
+ * @returns {Object|null} Current user or null
+ */
+export function getCurrentUser() {
+  return auth.currentUser;
+}
