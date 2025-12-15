@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CountdownTimer, YouTubeEmbed } from '../components/ui';
+import { CountdownTimer } from '../components/ui';
 import { getFeaturedSpeakers } from '../services/speakers';
 import {
   CONFERENCE,
@@ -14,11 +14,6 @@ import {
 } from '../constants';
 import { getCurrentPricingTier, calculatePrice, formatPrice } from '../utils';
 import styles from './HomePage.module.css';
-
-/**
- * YouTube video ID for IDMC 2025 promotional video
- */
-const PROMO_VIDEO_ID = 'emGTZDXOaZY';
 
 /**
  * HomePage Component
@@ -77,20 +72,6 @@ function HomePage() {
           <Link to={ROUTES.REGISTER} className={styles.heroButton}>
             Register Now
           </Link>
-        </div>
-      </section>
-
-      {/* Video Highlight Section */}
-      <section className={styles.videoSection}>
-        <div className="container">
-          <h2 className={styles.sectionTitle}>Watch Previous IDMC</h2>
-          <p className={styles.sectionSubtitle}>
-            See the highlights from our past conference
-          </p>
-          <YouTubeEmbed
-            videoId={PROMO_VIDEO_ID}
-            title="IDMC Previous Conference Video"
-          />
         </div>
       </section>
 
