@@ -222,14 +222,19 @@ function HomePage() {
             <div className={styles.venueInfo}>
               <h3 className={styles.venueName}>{VENUE.NAME}</h3>
               <p className={styles.venueAddress}>{VENUE.ADDRESS}</p>
-              <a
-                href={VENUE.MAP_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.venueLink}
-              >
-                Get Directions
-              </a>
+              <div className={styles.venueButtons}>
+                <a
+                  href={VENUE.MAP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.venueLink}
+                >
+                  Get Directions
+                </a>
+                <Link to={ROUTES.VENUE} className={styles.venueLinkSecondary}>
+                  More Details
+                </Link>
+              </div>
             </div>
             <div className={styles.venueMap}>
               <iframe
