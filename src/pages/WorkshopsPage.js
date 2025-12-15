@@ -120,9 +120,14 @@ function WorkshopsPage() {
           <p className={styles.ctaText}>
             Register now for IDMC {CONFERENCE.YEAR} and join our workshops.
           </p>
-          <Link to={ROUTES.REGISTER} className={styles.ctaButton}>
-            Register Now
-          </Link>
+          <div className={styles.ctaButtons}>
+            <Link to={ROUTES.REGISTER} className={styles.ctaButtonPrimary}>
+              Register Now
+            </Link>
+            <Link to={ROUTES.FAQ} className={styles.ctaButtonSecondary}>
+              View FAQ
+            </Link>
+          </div>
         </div>
       </section>
 
