@@ -8,7 +8,6 @@ import {
   SPEAKERS,
   SESSION_TYPES,
   VENUE,
-  SCHEDULE,
   ROUTES,
   REGISTRATION_CATEGORIES,
   REGISTRATION_CATEGORY_LABELS,
@@ -181,41 +180,6 @@ function HomePage() {
             </>
           )}
 
-        </div>
-      </section>
-
-      {/* Schedule Section */}
-      <section id="schedule" className={styles.scheduleSection}>
-        <div className="container">
-          <h2 className={styles.sectionTitle}>Conference Schedule</h2>
-          <p className={styles.sectionSubtitle}>
-            March 28, {CONFERENCE.YEAR} | {VENUE.NAME}
-          </p>
-          <div className={styles.scheduleList}>
-            {SCHEDULE.map((item) => (
-              <div
-                key={item.id}
-                className={`${styles.scheduleItem} ${styles[`scheduleType${item.sessionType.charAt(0).toUpperCase() + item.sessionType.slice(1)}`] || ''}`}
-              >
-                <div className={styles.scheduleTime}>{item.time}</div>
-                <div className={styles.scheduleContent}>
-                  <h3 className={styles.scheduleTitle}>{item.title}</h3>
-                  {item.subtitle && (
-                    <p className={styles.scheduleSubtitle}>{item.subtitle}</p>
-                  )}
-                  {item.tracks && (
-                    <div className={styles.scheduleTracks}>
-                      {item.tracks.map((track, index) => (
-                        <span key={index} className={styles.scheduleTrack}>
-                          {track}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
