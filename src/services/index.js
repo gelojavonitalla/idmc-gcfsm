@@ -72,3 +72,13 @@ export {
   deletePricingTier,
   getActivePricingTierFromDb,
 } from './settings';
+
+export {
+  ACTIVITY_TYPES,
+  ACTIVITY_TYPE_LABELS,
+  ENTITY_TYPES,
+  logActivity,
+  getActivityLogs,
+  getActivityLogsCount,
+  getAdminRecentActivity,
+} from './activityLog';
