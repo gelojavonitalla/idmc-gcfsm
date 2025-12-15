@@ -34,3 +34,24 @@ export {
 } from './faq';
 
 export { submitContactInquiry } from './contactInquiries';
+
+export {
+  signInAdmin,
+  signOutAdmin,
+  sendAdminPasswordReset,
+  getAdminProfile,
+  subscribeToAuthState,
+  getCurrentUser,
+} from './auth';
+
+export {
+  getAllAdmins,
+  getAdmin,
+  createAdmin,
+  updateAdmin,
+  updateAdminRole,
+  activateAdmin,
+  deactivateAdmin,
+  hasPermission,
+  isSuperAdmin,
+} from './admin';

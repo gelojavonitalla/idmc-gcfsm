@@ -23,6 +23,89 @@ export const ROUTES = {
 };
 
 /**
+ * Admin route paths for the admin dashboard
+ */
+export const ADMIN_ROUTES = {
+  ROOT: '/admin',
+  LOGIN: '/admin/login',
+  DASHBOARD: '/admin/dashboard',
+  REGISTRATIONS: '/admin/registrations',
+  SPEAKERS: '/admin/speakers',
+  SCHEDULE: '/admin/schedule',
+  WORKSHOPS: '/admin/workshops',
+  FAQ: '/admin/faq',
+  SETTINGS: '/admin/settings',
+  USERS: '/admin/users',
+  ACTIVITY: '/admin/activity',
+};
+
+/**
+ * Admin role identifiers for role-based access control
+ */
+export const ADMIN_ROLES = Object.freeze({
+  SUPERADMIN: 'superadmin',
+  ADMIN: 'admin',
+  VOLUNTEER: 'volunteer',
+});
+
+/**
+ * Admin role labels for display
+ */
+export const ADMIN_ROLE_LABELS = {
+  [ADMIN_ROLES.SUPERADMIN]: 'Super Admin',
+  [ADMIN_ROLES.ADMIN]: 'Admin',
+  [ADMIN_ROLES.VOLUNTEER]: 'Volunteer',
+};
+
+/**
+ * Default permissions by admin role
+ */
+export const ADMIN_ROLE_PERMISSIONS = {
+  [ADMIN_ROLES.SUPERADMIN]: {
+    manageConference: true,
+    manageSpeakers: true,
+    manageSchedule: true,
+    manageRegistrations: true,
+    manageCheckIn: true,
+    manageUsers: true,
+    viewAnalytics: true,
+  },
+  [ADMIN_ROLES.ADMIN]: {
+    manageConference: true,
+    manageSpeakers: true,
+    manageSchedule: true,
+    manageRegistrations: true,
+    manageCheckIn: true,
+    manageUsers: false,
+    viewAnalytics: true,
+  },
+  [ADMIN_ROLES.VOLUNTEER]: {
+    manageConference: false,
+    manageSpeakers: false,
+    manageSchedule: false,
+    manageRegistrations: false,
+    manageCheckIn: true,
+    manageUsers: false,
+    viewAnalytics: false,
+  },
+};
+
+/**
+ * Admin navigation items for sidebar
+ */
+export const ADMIN_NAV_ITEMS = [
+  { label: 'Dashboard', path: ADMIN_ROUTES.DASHBOARD, icon: 'dashboard' },
+  { label: 'Registrations', path: ADMIN_ROUTES.REGISTRATIONS, icon: 'people' },
+  { label: 'Speakers', path: ADMIN_ROUTES.SPEAKERS, icon: 'mic' },
+  { label: 'Schedule', path: ADMIN_ROUTES.SCHEDULE, icon: 'calendar' },
+  { label: 'Workshops', path: ADMIN_ROUTES.WORKSHOPS, icon: 'school' },
+  { label: 'FAQ', path: ADMIN_ROUTES.FAQ, icon: 'help' },
+  { label: 'Settings', path: ADMIN_ROUTES.SETTINGS, icon: 'settings' },
+  { label: 'Users', path: ADMIN_ROUTES.USERS, icon: 'admin', requiresRole: ADMIN_ROLES.SUPERADMIN },
+  { label: 'Activity Log', path: ADMIN_ROUTES.ACTIVITY, icon: 'history' },
+];
+
+/**
  * Firestore collection names
  */
 export const COLLECTIONS = {
