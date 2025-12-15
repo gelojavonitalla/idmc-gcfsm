@@ -55,3 +55,10 @@ export {
   hasPermission,
   isSuperAdmin,
 } from './admin';
+
+export {
+  getDashboardStats,
+  getRecentRegistrations,
+  getRegistrationChartData,
+  getActivePricingTier,
+} from './analytics';

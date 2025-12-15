@@ -2,15 +2,21 @@
  * AdminDashboardPage Component Styles
  */
 
+/* Welcome Section */
 .welcome {
-  margin-bottom: var(--spacing-8);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-6);
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
 }
 
 .welcomeTitle {
   font-size: var(--font-size-2xl);
   font-weight: 600;
   color: var(--color-text);
-  margin: 0 0 var(--spacing-2) 0;
+  margin: 0 0 var(--spacing-1) 0;
 }
 
 .welcomeSubtitle {
@@ -19,41 +25,114 @@
   margin: 0;
 }
 
-/* Placeholder */
-.placeholder {
+.refreshButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refreshButton:hover:not(:disabled) {
+  background: var(--color-background-secondary);
+  color: var(--color-text);
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.refreshButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Error Banner */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-3) var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-lg);
+  color: var(--color-error);
+}
+
+.errorBanner button {
+  background: none;
+  border: none;
+  font-size: var(--font-size-xl);
+  color: var(--color-error);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+}
+
+/* Content Grid */
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--spacing-6);
+}
+
+.leftColumn {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-16);
-  background: white;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  text-align: center;
+  gap: var(--spacing-6);
+  min-width: 0;
 }
 
-.placeholderIcon {
-  width: 64px;
-  height: 64px;
-  color: var(--color-text-muted);
-  margin-bottom: var(--spacing-4);
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
 }
 
-.placeholderIcon svg {
-  width: 100%;
-  height: 100%;
+/* Responsive */
+@media (max-width: 1200px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .rightColumn {
+    order: -1;
+  }
 }
 
-.placeholderTitle {
-  font-size: var(--font-size-xl);
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0 0 var(--spacing-2) 0;
+@media (max-width: 768px) {
+  .welcome {
+    flex-direction: column;
+  }
+
+  .welcomeTitle {
+    font-size: var(--font-size-xl);
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.placeholderText {
-  font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
-  margin: 0;
-  max-width: 400px;
+@media (max-width: 480px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
 }

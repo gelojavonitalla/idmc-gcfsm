@@ -1,0 +1,125 @@
+/**
+ * QuickActions Component Styles
+ */
+
+.container {
+  background: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-5);
+}
+
+.title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-4) 0;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.action:hover {
+  background: white;
+  border-color: var(--action-color);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  transform: translateX(4px);
+}
+
+.iconWrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--action-color);
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.action:hover .iconWrapper {
+  background: var(--action-color);
+  color: white;
+}
+
+.iconWrapper svg {
+  width: 20px;
+  height: 20px;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.description {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.arrow {
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: all 0.2s ease;
+}
+
+.action:hover .arrow {
+  opacity: 1;
+  transform: translateX(0);
+  color: var(--action-color);
+}
+
+.arrow svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .container {
+    padding: var(--spacing-4);
+  }
+
+  .action {
+    padding: var(--spacing-3);
+  }
+
+  .iconWrapper {
+    width: 36px;
+    height: 36px;
+  }
+
+  .iconWrapper svg {
+    width: 18px;
+    height: 18px;
+  }
+}
