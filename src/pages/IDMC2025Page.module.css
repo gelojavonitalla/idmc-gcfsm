@@ -1,0 +1,74 @@
+/**
+ * IDMC2025Page Component Styles
+ * Styles for the IDMC 2025 video highlights page
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hero Section */
+.heroSection {
+  padding: calc(var(--header-height) + var(--spacing-12)) 0 var(--spacing-8);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: white;
+  text-align: center;
+}
+
+.pageTitle {
+  font-size: var(--font-size-4xl);
+  color: white;
+  margin-bottom: var(--spacing-4);
+}
+
+.pageSubtitle {
+  font-size: var(--font-size-xl);
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Video Section */
+.videoSection {
+  padding: var(--spacing-16) 0;
+  background-color: var(--color-background);
+}
+
+.videoWrapper {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .heroSection {
+    padding: calc(var(--header-height) + var(--spacing-8)) 0 var(--spacing-6);
+  }
+
+  .pageTitle {
+    font-size: var(--font-size-3xl);
+  }
+
+  .pageSubtitle {
+    font-size: var(--font-size-lg);
+  }
+
+  .videoSection {
+    padding: var(--spacing-12) 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageTitle {
+    font-size: var(--font-size-2xl);
+  }
+
+  .pageSubtitle {
+    font-size: var(--font-size-base);
+  }
+
+  .videoSection {
+    padding: var(--spacing-8) 0;
+  }
+}

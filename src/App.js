@@ -12,6 +12,7 @@ import {
   DownloadsPage,
   PrivacyPolicyPage,
   TermsOfServicePage,
+  IDMC2025Page,
 } from './pages';
 import { ROUTES } from './constants';
 import './index.css';
@@ -39,6 +40,7 @@ function App() {
           <Route path={ROUTES.DOWNLOADS} element={<DownloadsPage />} />
           <Route path={ROUTES.PRIVACY} element={<PrivacyPolicyPage />} />
           <Route path={ROUTES.TERMS} element={<TermsOfServicePage />} />
+          <Route path={ROUTES.IDMC_2025} element={<IDMC2025Page />} />
           <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
         </Routes>
       </Layout>

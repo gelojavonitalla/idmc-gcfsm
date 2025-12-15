@@ -18,6 +18,7 @@ export const ROUTES = {
   DOWNLOADS: '/downloads',
   PRIVACY: '/privacy',
   TERMS: '/terms',
+  IDMC_2025: '/idmc-2025',
 };
 
 /**
@@ -83,6 +84,7 @@ export const NAV_ITEMS = [
   { label: 'Venue', path: ROUTES.VENUE, isAnchor: false },
   { label: 'Downloads', path: ROUTES.DOWNLOADS, isAnchor: false },
   { label: 'FAQ', path: ROUTES.FAQ, isAnchor: false },
+  { label: 'IDMC 2025', path: ROUTES.IDMC_2025, isAnchor: false },
   { label: 'Register', path: ROUTES.REGISTER, isAnchor: false, isPrimary: true },
 ];
 
