@@ -12,3 +12,4 @@ export { default as AdminUsersPage } from './AdminUsersPage';
 export { default as AdminActivityPage } from './AdminActivityPage';
 export { default as AdminSpeakersPage } from './AdminSpeakersPage';
 export { default as AdminSchedulePage } from './AdminSchedulePage';
+export { default as AdminFAQPage } from './AdminFAQPage';

@@ -60,6 +60,7 @@
   font-weight: 700;
   margin: 0 0 var(--spacing-4) 0;
   line-height: 1.2;
+  color: white;
 }
 
 .brandSubtitle {
