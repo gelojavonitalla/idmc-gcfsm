@@ -9,9 +9,7 @@
 import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import RoomDetailPanel from './RoomDetailPanel';
-import { VenueMap } from '../contact';
 import { FLOOR_PLAN_ROOMS } from './floorPlanData';
-import { VENUE } from '../../constants';
 import styles from './FloorPlan.module.css';
 
 /**
@@ -86,6 +84,7 @@ function FloorPlan({ schedule, workshops }) {
       <div className={styles.header}>
         <h3 className={styles.title}>Interactive Floor Plan</h3>
         <p className={styles.subtitle}>Click on a room to see what&apos;s happening there</p>
+        <p className={styles.disclaimer}>Note: This is a mockup and does not reflect the actual floor plan yet.</p>
       </div>
 
       <div className={styles.floorPlanWrapper}>
@@ -357,36 +356,6 @@ function FloorPlan({ schedule, workshops }) {
             Click to view details
           </div>
         )}
-      </div>
-
-      {/* Location Map */}
-      <div className={styles.mapSection}>
-        <div className={styles.mapHeader}>
-          <div className={styles.mapIcon}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-              <circle cx="12" cy="10" r="3" />
-            </svg>
-          </div>
-          <div className={styles.mapInfo}>
-            <h4 className={styles.mapTitle}>Find Us</h4>
-            <p className={styles.mapAddress}>{VENUE.ADDRESS}</p>
-          </div>
-          <a
-            href={VENUE.MAP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.directionsLink}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="3 11 22 2 13 21 11 13 3 11" />
-            </svg>
-            Get Directions
-          </a>
-        </div>
-        <div className={styles.mapWrapper}>
-          <VenueMap height="200px" />
-        </div>
       </div>
 
       {/* Room Detail Panel */}
