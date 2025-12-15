@@ -58,6 +58,8 @@ const DEFAULT_SETTINGS = {
   },
   registrationOpen: true,
   bannerImageUrl: null,
+  heroImageUrl: null,
+  heroVideoUrl: null,
 };
 
 /**

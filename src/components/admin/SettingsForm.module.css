@@ -71,6 +71,12 @@
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--color-text);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.sectionDescription {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
   margin: 0 0 var(--spacing-4) 0;
 }
 
@@ -78,6 +84,17 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--spacing-4);
+}
+
+.mediaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-6);
+}
+
+.mediaField {
+  display: flex;
+  flex-direction: column;
 }
 
 .field {
@@ -205,6 +222,10 @@
   }
 
   .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mediaGrid {
     grid-template-columns: 1fr;
   }
 

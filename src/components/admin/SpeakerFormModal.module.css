@@ -117,6 +117,12 @@
   margin-bottom: 0;
 }
 
+.fieldSpan2 {
+  display: flex;
+  flex-direction: column;
+  grid-column: span 2;
+}
+
 .label {
   display: block;
   font-size: var(--font-size-sm);
@@ -289,6 +295,10 @@
 
   .formGrid {
     grid-template-columns: 1fr;
+  }
+
+  .fieldSpan2 {
+    grid-column: span 1;
   }
 
   .header {

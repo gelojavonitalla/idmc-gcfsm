@@ -1,0 +1,227 @@
+/**
+ * Storage Service
+ * Handles file uploads to Firebase Storage for the IDMC Conference.
+ *
+ * @module services/storage
+ */
+
+import {
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+  deleteObject,
+} from 'firebase/storage';
+import { storage } from '../lib/firebase';
+import {
+  STORAGE_PATHS,
+  ALLOWED_FILE_TYPES,
+  MAX_FILE_SIZES,
+} from '../constants';
+
+/**
+ * Generates a unique filename with timestamp
+ *
+ * @param {string} originalName - Original file name
+ * @returns {string} Unique filename with timestamp
+ */
+function generateUniqueFilename(originalName) {
+  const timestamp = Date.now();
+  const extension = originalName.split('.').pop();
+  const baseName = originalName.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9]/g, '-');
+  return `${baseName}-${timestamp}.${extension}`;
+}
+
+/**
+ * Validates a file before upload
+ *
+ * @param {File} file - File to validate
+ * @param {string} type - Type of file ('image' or 'video')
+ * @returns {{ valid: boolean, error?: string }} Validation result
+ */
+export function validateFile(file, type) {
+  if (!file) {
+    return { valid: false, error: 'No file selected' };
+  }
+
+  const allowedTypes = type === 'video' ? ALLOWED_FILE_TYPES.VIDEOS : ALLOWED_FILE_TYPES.IMAGES;
+  const maxSize = type === 'video' ? MAX_FILE_SIZES.VIDEO : MAX_FILE_SIZES.IMAGE;
+
+  if (!allowedTypes.includes(file.type)) {
+    const typeNames = type === 'video' ? 'MP4, WebM, or QuickTime' : 'JPEG, PNG, GIF, or WebP';
+    return { valid: false, error: `Invalid file type. Please upload ${typeNames} files.` };
+  }
+
+  if (file.size > maxSize) {
+    const maxMB = maxSize / (1024 * 1024);
+    return { valid: false, error: `File too large. Maximum size is ${maxMB}MB.` };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Uploads a hero image for the conference
+ *
+ * @param {File} file - Image file to upload
+ * @param {Function} onProgress - Progress callback (0-100)
+ * @returns {Promise<string>} Download URL of uploaded image
+ */
+export async function uploadHeroImage(file, onProgress) {
+  const validation = validateFile(file, 'image');
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  const filename = generateUniqueFilename(file.name);
+  const storagePath = `${STORAGE_PATHS.CONFERENCE_HERO_IMAGES}/${filename}`;
+  const storageRef = ref(storage, storagePath);
+
+  return uploadFile(storageRef, file, onProgress);
+}
+
+/**
+ * Uploads a hero video for the conference
+ *
+ * @param {File} file - Video file to upload
+ * @param {Function} onProgress - Progress callback (0-100)
+ * @returns {Promise<string>} Download URL of uploaded video
+ */
+export async function uploadHeroVideo(file, onProgress) {
+  const validation = validateFile(file, 'video');
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  const filename = generateUniqueFilename(file.name);
+  const storagePath = `${STORAGE_PATHS.CONFERENCE_HERO_VIDEOS}/${filename}`;
+  const storageRef = ref(storage, storagePath);
+
+  return uploadFile(storageRef, file, onProgress);
+}
+
+/**
+ * Uploads a speaker photo
+ *
+ * @param {File} file - Image file to upload
+ * @param {string} speakerId - Speaker ID for organizing the file
+ * @param {Function} onProgress - Progress callback (0-100)
+ * @returns {Promise<string>} Download URL of uploaded photo
+ */
+export async function uploadSpeakerPhoto(file, speakerId, onProgress) {
+  const validation = validateFile(file, 'image');
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  if (!speakerId) {
+    throw new Error('Speaker ID is required for photo upload');
+  }
+
+  const filename = generateUniqueFilename(file.name);
+  const storagePath = `${STORAGE_PATHS.SPEAKER_PHOTOS}/${speakerId}/${filename}`;
+  const storageRef = ref(storage, storagePath);
+
+  return uploadFile(storageRef, file, onProgress);
+}
+
+/**
+ * Generic file upload function with progress tracking
+ *
+ * @param {Object} storageRef - Firebase Storage reference
+ * @param {File} file - File to upload
+ * @param {Function} onProgress - Progress callback (0-100)
+ * @returns {Promise<string>} Download URL of uploaded file
+ */
+async function uploadFile(storageRef, file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = Math.round(
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+        );
+        if (onProgress) {
+          onProgress(progress);
+        }
+      },
+      (error) => {
+        console.error('Upload error:', error);
+        let errorMessage = 'Failed to upload file. Please try again.';
+
+        switch (error.code) {
+          case 'storage/unauthorized':
+            errorMessage = 'You do not have permission to upload files.';
+            break;
+          case 'storage/canceled':
+            errorMessage = 'Upload was cancelled.';
+            break;
+          case 'storage/quota-exceeded':
+            errorMessage = 'Storage quota exceeded. Please contact support.';
+            break;
+          default:
+            break;
+        }
+
+        reject(new Error(errorMessage));
+      },
+      async () => {
+        try {
+          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadUrl);
+        } catch (error) {
+          reject(new Error('Failed to get download URL. Please try again.'));
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Deletes a file from Firebase Storage
+ *
+ * @param {string} fileUrl - Full URL of the file to delete
+ * @returns {Promise<void>}
+ */
+export async function deleteFile(fileUrl) {
+  if (!fileUrl) {
+    return;
+  }
+
+  try {
+    const fileRef = ref(storage, fileUrl);
+    await deleteObject(fileRef);
+  } catch (error) {
+    // File may not exist or already deleted - that's okay
+    if (error.code !== 'storage/object-not-found') {
+      console.error('Error deleting file:', error);
+      throw new Error('Failed to delete file.');
+    }
+  }
+}
+
+/**
+ * Extracts the storage path from a Firebase Storage URL
+ *
+ * @param {string} url - Full Firebase Storage URL
+ * @returns {string|null} Storage path or null if invalid
+ */
+export function getStoragePathFromUrl(url) {
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const urlObj = new URL(url);
+    const path = urlObj.pathname;
+    // Extract path after /o/ and decode
+    const match = path.match(/\/o\/(.+)/);
+    if (match) {
+      return decodeURIComponent(match[1]);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
