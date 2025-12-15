@@ -47,6 +47,13 @@
   color: var(--color-text-secondary);
 }
 
+.badges {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
 .badge {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
