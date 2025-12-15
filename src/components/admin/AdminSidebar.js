@@ -1,14 +1,15 @@
 /**
  * AdminSidebar Component
- * Navigation sidebar for the admin dashboard.
+ * Navigation sidebar for the admin dashboard with grouped navigation.
  *
  * @module components/admin/AdminSidebar
  */
 
-import { NavLink } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { useAdminAuth } from '../../context';
-import { ADMIN_NAV_ITEMS, ADMIN_ROLES, CONFERENCE } from '../../constants';
+import { ADMIN_NAV_GROUPS, ADMIN_ROLES, CONFERENCE } from '../../constants';
 import styles from './AdminSidebar.module.css';
 
 /**
@@ -85,6 +86,17 @@ function NavIcon({ name }) {
         <polyline points="12 6 12 12 16 14" />
       </svg>
     ),
+    checkin: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+        <polyline points="22 4 12 14.01 9 11.01" />
+      </svg>
+    ),
+    chevronDown: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+    ),
   };
 
   return <span className={styles.navIcon}>{icons[name] || icons.dashboard}</span>;
@@ -104,6 +116,30 @@ NavIcon.propTypes = {
  */
 function AdminSidebar({ isOpen, onClose }) {
   const { admin, hasRole } = useAdminAuth();
+  const location = useLocation();
+  const [collapsedGroups, setCollapsedGroups] = useState({});
+
+  /**
+   * Toggles a group's collapsed state
+   *
+   * @param {string} groupId - Group ID to toggle
+   */
+  const toggleGroup = (groupId) => {
+    setCollapsedGroups((prev) => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }));
+  };
+
+  /**
+   * Checks if a group has an active item
+   *
+   * @param {Array} items - Group items
+   * @returns {boolean} Whether group has active item
+   */
+  const hasActiveItem = (items) => {
+    return items.some((item) => location.pathname === item.path);
+  };
 
   /**
    * Filters nav items based on user role
@@ -118,7 +154,15 @@ function AdminSidebar({ isOpen, onClose }) {
     return hasRole(item.requiresRole);
   };
 
-  const visibleNavItems = ADMIN_NAV_ITEMS.filter(shouldShowNavItem);
+  /**
+   * Gets filtered items for a group
+   *
+   * @param {Array} items - Group items
+   * @returns {Array} Filtered items
+   */
+  const getVisibleItems = (items) => {
+    return items.filter(shouldShowNavItem);
+  };
 
   return (
     <>
@@ -137,22 +181,53 @@ function AdminSidebar({ isOpen, onClose }) {
 
         {/* Navigation */}
         <nav className={styles.nav}>
-          <ul className={styles.navList}>
-            {visibleNavItems.map((item) => (
-              <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`
-                  }
-                  onClick={onClose}
+          {ADMIN_NAV_GROUPS.map((group) => {
+            const visibleItems = getVisibleItems(group.items);
+            if (visibleItems.length === 0) return null;
+
+            const isCollapsed = collapsedGroups[group.id];
+            const isActive = hasActiveItem(visibleItems);
+
+            return (
+              <div key={group.id} className={styles.navGroup}>
+                <button
+                  className={`${styles.groupHeader} ${isActive ? styles.groupHeaderActive : ''}`}
+                  onClick={() => toggleGroup(group.id)}
+                  aria-expanded={!isCollapsed}
                 >
-                  <NavIcon name={item.icon} />
-                  <span className={styles.navLabel}>{item.label}</span>
-                </NavLink>
-              </li>
-            ))}
-          </ul>
+                  <span className={styles.groupLabel}>{group.label}</span>
+                  <span className={`${styles.groupChevron} ${isCollapsed ? styles.groupChevronCollapsed : ''}`}>
+                    <NavIcon name="chevronDown" />
+                  </span>
+                </button>
+                <ul className={`${styles.navList} ${isCollapsed ? styles.navListCollapsed : ''}`}>
+                  {visibleItems.map((item) => (
+                    <li key={item.path}>
+                      <NavLink
+                        to={item.comingSoon ? '#' : item.path}
+                        className={({ isActive: linkActive }) =>
+                          `${styles.navLink} ${linkActive && !item.comingSoon ? styles.navLinkActive : ''} ${item.comingSoon ? styles.navLinkDisabled : ''}`
+                        }
+                        onClick={(e) => {
+                          if (item.comingSoon) {
+                            e.preventDefault();
+                          } else {
+                            onClose();
+                          }
+                        }}
+                      >
+                        <NavIcon name={item.icon} />
+                        <span className={styles.navLabel}>{item.label}</span>
+                        {item.comingSoon && (
+                          <span className={styles.comingSoonBadge}>Soon</span>
+                        )}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </nav>
 
         {/* User info at bottom */}

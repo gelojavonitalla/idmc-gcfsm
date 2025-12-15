@@ -58,27 +58,91 @@
 .nav {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-4) 0;
+  padding: var(--spacing-3) 0;
 }
 
+/* Navigation Groups */
+.navGroup {
+  margin-bottom: var(--spacing-2);
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-4);
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.groupHeader:hover {
+  color: #9ca3af;
+}
+
+.groupHeaderActive {
+  color: #9ca3af;
+}
+
+.groupLabel {
+  flex: 1;
+  text-align: left;
+}
+
+.groupChevron {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.groupChevron svg {
+  width: 14px;
+  height: 14px;
+}
+
+.groupChevronCollapsed {
+  transform: rotate(-90deg);
+}
+
+/* Navigation List */
 .navList {
   list-style: none;
   padding: 0;
   margin: 0;
+  overflow: hidden;
+  max-height: 500px;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
 }
 
+.navListCollapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* Navigation Links */
 .navLink {
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
-  padding: var(--spacing-3) var(--spacing-4);
+  padding: var(--spacing-2) var(--spacing-4);
+  padding-left: var(--spacing-5);
   color: #9ca3af;
   text-decoration: none;
   font-size: var(--font-size-sm);
   font-weight: 500;
   transition: all 0.2s ease;
   border-left: 3px solid transparent;
-  margin: var(--spacing-1) var(--spacing-2);
+  margin: 2px var(--spacing-2);
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
@@ -92,6 +156,16 @@
   color: white;
   background: rgba(6, 184, 75, 0.15);
   border-left-color: var(--color-primary);
+}
+
+.navLinkDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.navLinkDisabled:hover {
+  color: #9ca3af;
+  background: none;
 }
 
 .navIcon {
@@ -110,6 +184,20 @@
 
 .navLabel {
   flex: 1;
+}
+
+/* Coming Soon Badge */
+.comingSoonBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #9ca3af;
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 /* User Section */

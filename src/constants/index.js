@@ -30,6 +30,7 @@ export const ADMIN_ROUTES = {
   LOGIN: '/admin/login',
   DASHBOARD: '/admin/dashboard',
   REGISTRATIONS: '/admin/registrations',
+  CHECKIN: '/admin/check-in',
   SPEAKERS: '/admin/speakers',
   SCHEDULE: '/admin/schedule',
   WORKSHOPS: '/admin/workshops',
@@ -91,19 +92,50 @@ export const ADMIN_ROLE_PERMISSIONS = {
 };
 
 /**
- * Admin navigation items for sidebar
+ * Admin navigation groups for sidebar
+ * Each group contains a label, optional icon, and array of items
  */
-export const ADMIN_NAV_ITEMS = [
-  { label: 'Dashboard', path: ADMIN_ROUTES.DASHBOARD, icon: 'dashboard' },
-  { label: 'Registrations', path: ADMIN_ROUTES.REGISTRATIONS, icon: 'people' },
-  { label: 'Speakers', path: ADMIN_ROUTES.SPEAKERS, icon: 'mic' },
-  { label: 'Schedule', path: ADMIN_ROUTES.SCHEDULE, icon: 'calendar' },
-  { label: 'Workshops', path: ADMIN_ROUTES.WORKSHOPS, icon: 'school' },
-  { label: 'FAQ', path: ADMIN_ROUTES.FAQ, icon: 'help' },
-  { label: 'Settings', path: ADMIN_ROUTES.SETTINGS, icon: 'settings' },
-  { label: 'Users', path: ADMIN_ROUTES.USERS, icon: 'admin', requiresRole: ADMIN_ROLES.SUPERADMIN },
-  { label: 'Activity Log', path: ADMIN_ROUTES.ACTIVITY, icon: 'history' },
+export const ADMIN_NAV_GROUPS = [
+  {
+    id: 'main',
+    label: 'Main',
+    items: [
+      { label: 'Dashboard', path: ADMIN_ROUTES.DASHBOARD, icon: 'dashboard' },
+    ],
+  },
+  {
+    id: 'content',
+    label: 'Content',
+    items: [
+      { label: 'Speakers', path: ADMIN_ROUTES.SPEAKERS, icon: 'mic' },
+      { label: 'Schedule', path: ADMIN_ROUTES.SCHEDULE, icon: 'calendar' },
+      { label: 'FAQ', path: ADMIN_ROUTES.FAQ, icon: 'help' },
+    ],
+  },
+  {
+    id: 'operations',
+    label: 'Operations',
+    items: [
+      { label: 'Registrations', path: ADMIN_ROUTES.REGISTRATIONS, icon: 'people' },
+      { label: 'Check-In', path: ADMIN_ROUTES.CHECKIN, icon: 'checkin', comingSoon: true },
+    ],
+  },
+  {
+    id: 'system',
+    label: 'System',
+    items: [
+      { label: 'Settings', path: ADMIN_ROUTES.SETTINGS, icon: 'settings' },
+      { label: 'Users', path: ADMIN_ROUTES.USERS, icon: 'admin', requiresRole: ADMIN_ROLES.SUPERADMIN },
+      { label: 'Activity Log', path: ADMIN_ROUTES.ACTIVITY, icon: 'history' },
+    ],
+  },
 ];
+
+/**
+ * Flat list of admin navigation items (for backward compatibility)
+ * @deprecated Use ADMIN_NAV_GROUPS instead
+ */
+export const ADMIN_NAV_ITEMS = ADMIN_NAV_GROUPS.flatMap((group) => group.items);
 
 /**
  * Firestore collection names
