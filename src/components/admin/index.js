@@ -18,3 +18,7 @@ export { default as PricingTierManager } from './PricingTierManager';
 export { default as UserTable } from './UserTable';
 export { default as InviteUserModal } from './InviteUserModal';
 export { default as ActivityLogTable } from './ActivityLogTable';
+export { default as SpeakerTable } from './SpeakerTable';
+export { default as SpeakerFormModal } from './SpeakerFormModal';
+export { default as SessionTable } from './SessionTable';
+export { default as SessionFormModal } from './SessionFormModal';
