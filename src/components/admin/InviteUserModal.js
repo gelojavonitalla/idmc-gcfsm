@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { ADMIN_ROLES, ADMIN_ROLE_LABELS } from '../../constants';
+import { ADMIN_ROLES, ADMIN_ROLE_LABELS, ADMIN_ROLE_DESCRIPTIONS } from '../../constants';
 import styles from './InviteUserModal.module.css';
 
 /**
@@ -225,9 +225,7 @@ function InviteUserModal({ isOpen, onClose, onInvite }) {
                   ))}
               </select>
               <span className={styles.hint}>
-                {formData.role === ADMIN_ROLES.ADMIN
-                  ? 'Can manage conference content, registrations, and view analytics.'
-                  : 'Limited access for check-in duties only.'}
+                {ADMIN_ROLE_DESCRIPTIONS[formData.role]}
               </span>
             </div>
           </div>

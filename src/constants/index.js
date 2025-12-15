@@ -46,6 +46,8 @@ export const ADMIN_ROUTES = {
 export const ADMIN_ROLES = Object.freeze({
   SUPERADMIN: 'superadmin',
   ADMIN: 'admin',
+  FINANCE: 'finance',
+  MEDIA: 'media',
   VOLUNTEER: 'volunteer',
 });
 
@@ -55,7 +57,20 @@ export const ADMIN_ROLES = Object.freeze({
 export const ADMIN_ROLE_LABELS = {
   [ADMIN_ROLES.SUPERADMIN]: 'Super Admin',
   [ADMIN_ROLES.ADMIN]: 'Admin',
+  [ADMIN_ROLES.FINANCE]: 'Finance',
+  [ADMIN_ROLES.MEDIA]: 'Media',
   [ADMIN_ROLES.VOLUNTEER]: 'Volunteer',
+};
+
+/**
+ * Admin role descriptions for UI display
+ */
+export const ADMIN_ROLE_DESCRIPTIONS = {
+  [ADMIN_ROLES.SUPERADMIN]: 'Full access to all features and user management.',
+  [ADMIN_ROLES.ADMIN]: 'Can manage conference content, registrations, and view analytics.',
+  [ADMIN_ROLES.FINANCE]: 'Can verify payments, send official receipts, and view registrations.',
+  [ADMIN_ROLES.MEDIA]: 'Can update content, upload hero images and videos.',
+  [ADMIN_ROLES.VOLUNTEER]: 'Limited access for check-in duties only.',
 };
 
 /**
@@ -70,6 +85,8 @@ export const ADMIN_ROLE_PERMISSIONS = {
     manageCheckIn: true,
     manageUsers: true,
     viewAnalytics: true,
+    manageContent: true,
+    manageFinance: true,
   },
   [ADMIN_ROLES.ADMIN]: {
     manageConference: true,
@@ -79,6 +96,30 @@ export const ADMIN_ROLE_PERMISSIONS = {
     manageCheckIn: true,
     manageUsers: false,
     viewAnalytics: true,
+    manageContent: true,
+    manageFinance: true,
+  },
+  [ADMIN_ROLES.FINANCE]: {
+    manageConference: false,
+    manageSpeakers: false,
+    manageSchedule: false,
+    manageRegistrations: true,
+    manageCheckIn: false,
+    manageUsers: false,
+    viewAnalytics: true,
+    manageContent: false,
+    manageFinance: true,
+  },
+  [ADMIN_ROLES.MEDIA]: {
+    manageConference: true,
+    manageSpeakers: true,
+    manageSchedule: false,
+    manageRegistrations: false,
+    manageCheckIn: false,
+    manageUsers: false,
+    viewAnalytics: false,
+    manageContent: true,
+    manageFinance: false,
   },
   [ADMIN_ROLES.VOLUNTEER]: {
     manageConference: false,
@@ -88,6 +129,8 @@ export const ADMIN_ROLE_PERMISSIONS = {
     manageCheckIn: true,
     manageUsers: false,
     viewAnalytics: false,
+    manageContent: false,
+    manageFinance: false,
   },
 };
 

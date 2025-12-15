@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { useAdminAuth } from '../../context';
-import { ADMIN_NAV_GROUPS, ADMIN_ROLES, CONFERENCE } from '../../constants';
+import { ADMIN_NAV_GROUPS, ADMIN_ROLE_LABELS, CONFERENCE } from '../../constants';
 import styles from './AdminSidebar.module.css';
 
 /**
@@ -239,11 +239,7 @@ function AdminSidebar({ isOpen, onClose }) {
             <div className={styles.userDetails}>
               <span className={styles.userName}>{admin?.displayName || 'Admin'}</span>
               <span className={styles.userRole}>
-                {admin?.role === ADMIN_ROLES.SUPERADMIN
-                  ? 'Super Admin'
-                  : admin?.role === ADMIN_ROLES.ADMIN
-                  ? 'Admin'
-                  : 'Volunteer'}
+                {ADMIN_ROLE_LABELS[admin?.role] || 'Admin'}
               </span>
             </div>
           </div>
