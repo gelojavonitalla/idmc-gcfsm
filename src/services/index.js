@@ -62,3 +62,13 @@ export {
   getRegistrationChartData,
   getActivePricingTier,
 } from './analytics';
+
+export {
+  getConferenceSettings,
+  updateConferenceSettings,
+  getPricingTiers,
+  createPricingTier,
+  updatePricingTier,
+  deletePricingTier,
+  getActivePricingTierFromDb,
+} from './settings';
