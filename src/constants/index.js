@@ -80,7 +80,6 @@ export const NAV_ITEMS = [
   { label: 'Home', path: ROUTES.HOME, isAnchor: false },
   { label: 'Speakers', path: ROUTES.SPEAKERS, isAnchor: false },
   { label: 'Schedule', path: ROUTES.SCHEDULE, isAnchor: false },
-  { label: 'Workshops', path: ROUTES.WORKSHOPS, isAnchor: false },
   { label: 'Venue', path: ROUTES.VENUE, isAnchor: false },
   { label: 'Downloads', path: ROUTES.DOWNLOADS, isAnchor: false },
   { label: 'FAQ', path: ROUTES.FAQ, isAnchor: false },
