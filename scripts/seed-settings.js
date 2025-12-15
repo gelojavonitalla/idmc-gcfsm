@@ -1,0 +1,286 @@
+/**
+ * Seed Settings Script
+ * Populates Firestore with initial conference settings and pricing tiers.
+ *
+ * Usage:
+ *   node scripts/seed-settings.js
+ *
+ * Prerequisites:
+ *   - Firebase CLI installed and logged in
+ *   - GOOGLE_APPLICATION_CREDENTIALS env var set to service account key path
+ *     OR run with: firebase emulators:exec "node scripts/seed-settings.js"
+ *
+ * For local emulator:
+ *   export FIRESTORE_EMULATOR_HOST="localhost:8080"
+ *   node scripts/seed-settings.js
+ */
+
+const admin = require('firebase-admin');
+const { getFirestore } = require('firebase-admin/firestore');
+
+// Collection name constant
+const COLLECTIONS = {
+  CONFERENCES: 'conferences',
+};
+
+// Settings document ID (singleton)
+const SETTINGS_DOC_ID = 'conference-settings';
+
+// Firestore database ID (named database)
+const DATABASE_ID = 'idmc-2026';
+
+/**
+ * Default conference settings seed data
+ */
+const SETTINGS_DATA = {
+  title: 'IDMC 2026',
+  theme: 'All In for Jesus and His Kingdom',
+  tagline: 'Intentional Disciple-Making Churches Conference',
+  year: 2026,
+  startDate: '2026-03-28',
+  endDate: '2026-03-28',
+  startTime: '09:00',
+  endTime: '17:00',
+  timezone: 'Asia/Manila',
+  venue: {
+    name: 'GCF South Metro',
+    address: 'Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines',
+    mapUrl: 'https://maps.google.com/?q=GCF+South+Metro+Las+Pinas',
+    mapEmbedUrl:
+      'https://www.google.com/maps?q=GCF+South+Metro,+Daang+Hari+Road,+Las+Piñas,+Philippines&output=embed',
+  },
+  contact: {
+    email: 'email@gcfsouthmetro.org',
+    phone: '(02) 8478 1271 / (02) 8478 1273',
+    mobile: '0917 650 0011',
+    website: 'https://gcfsouthmetro.org',
+  },
+  social: {
+    facebook: 'https://facebook.com/gcfsouthmetro',
+    instagram: 'https://instagram.com/gcfsouthmetro',
+    youtube: 'https://youtube.com/channel/UCJ36YX23P_yCjMzetI1s6Ag',
+  },
+  registrationOpen: true,
+  bannerImageUrl: null,
+};
+
+/**
+ * Pricing tiers seed data
+ */
+const PRICING_TIERS_DATA = [
+  {
+    tierId: 'standard',
+    name: 'Standard',
+    regularPrice: 500,
+    studentPrice: 300,
+    startDate: '2025-01-01',
+    endDate: '2026-03-28',
+    isActive: true,
+  },
+];
+
+/**
+ * Initialize Firebase Admin SDK
+ * Will use emulator if FIRESTORE_EMULATOR_HOST is set
+ */
+function initializeFirebase() {
+  // Check if already initialized
+  if (admin.apps.length > 0) {
+    return admin.app();
+  }
+
+  // Initialize with default credentials (will use emulator if env var is set)
+  admin.initializeApp({
+    projectId: process.env.GCLOUD_PROJECT || 'idmc-gcfsm-dev',
+  });
+
+  return admin.app();
+}
+
+/**
+ * Seed conference settings to Firestore
+ *
+ * @param {FirebaseFirestore.Firestore} db - Firestore instance
+ * @returns {Promise<void>}
+ */
+async function seedSettings(db) {
+  const settingsRef = db.collection(COLLECTIONS.CONFERENCES).doc(SETTINGS_DOC_ID);
+  const now = admin.firestore.Timestamp.now();
+
+  console.log('\nSeeding conference settings...');
+
+  await settingsRef.set({
+    ...SETTINGS_DATA,
+    createdAt: now,
+    updatedAt: now,
+    createdBy: 'seed-script',
+  });
+
+  console.log('  - Conference settings document created');
+  console.log(`    Title: ${SETTINGS_DATA.title}`);
+  console.log(`    Theme: ${SETTINGS_DATA.theme}`);
+  console.log(`    Date: ${SETTINGS_DATA.startDate}`);
+  console.log(`    Venue: ${SETTINGS_DATA.venue.name}`);
+}
+
+/**
+ * Seed pricing tiers to Firestore
+ *
+ * @param {FirebaseFirestore.Firestore} db - Firestore instance
+ * @returns {Promise<void>}
+ */
+async function seedPricingTiers(db) {
+  const tiersRef = db.collection(COLLECTIONS.CONFERENCES).doc(SETTINGS_DOC_ID).collection('pricingTiers');
+  const now = admin.firestore.Timestamp.now();
+
+  console.log(`\nSeeding ${PRICING_TIERS_DATA.length} pricing tier(s)...`);
+
+  for (const tier of PRICING_TIERS_DATA) {
+    const docRef = tiersRef.doc(tier.tierId);
+
+    await docRef.set({
+      name: tier.name,
+      regularPrice: tier.regularPrice,
+      studentPrice: tier.studentPrice,
+      startDate: tier.startDate,
+      endDate: tier.endDate,
+      isActive: tier.isActive,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: 'seed-script',
+    });
+
+    console.log(`  - ${tier.name} (${tier.tierId})`);
+    console.log(`    Regular Price: PHP ${tier.regularPrice}`);
+    console.log(`    Student/Senior Price: PHP ${tier.studentPrice}`);
+    console.log(`    Period: ${tier.startDate} to ${tier.endDate}`);
+    console.log(`    Active: ${tier.isActive}`);
+  }
+
+  console.log(`\nSuccessfully seeded ${PRICING_TIERS_DATA.length} pricing tier(s)!`);
+}
+
+/**
+ * Clear existing settings (optional, for clean re-seed)
+ *
+ * @param {FirebaseFirestore.Firestore} db - Firestore instance
+ * @returns {Promise<void>}
+ */
+async function clearSettings(db) {
+  const settingsRef = db.collection(COLLECTIONS.CONFERENCES).doc(SETTINGS_DOC_ID);
+
+  // First, clear pricing tiers subcollection
+  const tiersRef = settingsRef.collection('pricingTiers');
+  const tiersSnapshot = await tiersRef.get();
+
+  if (!tiersSnapshot.empty) {
+    const batch = db.batch();
+    tiersSnapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+    console.log(`Cleared ${tiersSnapshot.size} existing pricing tier(s).`);
+  }
+
+  // Then check if settings document exists
+  const settingsDoc = await settingsRef.get();
+  if (settingsDoc.exists) {
+    await settingsRef.delete();
+    console.log('Cleared existing settings document.');
+  } else {
+    console.log('No existing settings to clear.');
+  }
+}
+
+/**
+ * Check if settings already exist in Firestore
+ *
+ * @param {FirebaseFirestore.Firestore} db - Firestore instance
+ * @returns {Promise<boolean>} Whether settings exist
+ */
+async function settingsExist(db) {
+  const settingsRef = db.collection(COLLECTIONS.CONFERENCES).doc(SETTINGS_DOC_ID);
+  const settingsDoc = await settingsRef.get();
+  return settingsDoc.exists;
+}
+
+/**
+ * Count existing pricing tiers
+ *
+ * @param {FirebaseFirestore.Firestore} db - Firestore instance
+ * @returns {Promise<number>} Number of existing pricing tiers
+ */
+async function countExistingTiers(db) {
+  const tiersRef = db.collection(COLLECTIONS.CONFERENCES).doc(SETTINGS_DOC_ID).collection('pricingTiers');
+  const snapshot = await tiersRef.get();
+  return snapshot.size;
+}
+
+/**
+ * Main function to run the seed script
+ */
+async function main() {
+  console.log('='.repeat(50));
+  console.log('IDMC Settings Seed Script');
+  console.log('='.repeat(50));
+
+  // Check for emulator and CI environment
+  const isEmulator = !!process.env.FIRESTORE_EMULATOR_HOST;
+  const isCI = !!process.env.CI || !!process.env.GITHUB_ACTIONS;
+  console.log(`\nMode: ${isEmulator ? 'EMULATOR' : 'PRODUCTION'}`);
+  console.log(`Environment: ${isCI ? 'CI/CD' : 'Local'}`);
+
+  if (isEmulator) {
+    console.log(`Emulator host: ${process.env.FIRESTORE_EMULATOR_HOST}`);
+  } else if (!isCI) {
+    console.log('\n⚠️  WARNING: Running against PRODUCTION database!');
+    console.log('Press Ctrl+C within 5 seconds to cancel...\n');
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
+
+  try {
+    const app = initializeFirebase();
+    // Use named database 'idmc-2026'
+    const db = getFirestore(app, DATABASE_ID);
+    console.log(`Database: ${DATABASE_ID}`);
+
+    const shouldClear = process.argv.includes('--clear');
+    const forceReseed = process.argv.includes('--force');
+
+    // Check for existing data
+    const hasSettings = await settingsExist(db);
+    const tierCount = await countExistingTiers(db);
+
+    if ((hasSettings || tierCount > 0) && !shouldClear && !forceReseed) {
+      console.log('\n📋 Found existing settings in database:');
+      console.log(`   - Settings document: ${hasSettings ? 'Yes' : 'No'}`);
+      console.log(`   - Pricing tiers: ${tierCount}`);
+      console.log('Skipping seed to preserve existing data.');
+      console.log('Use --clear to replace or --force to add anyway.');
+      console.log('\n✅ No changes made.');
+      console.log('='.repeat(50));
+      process.exit(0);
+    }
+
+    // Clear existing settings if requested
+    if (shouldClear) {
+      await clearSettings(db);
+    }
+
+    // Seed settings and pricing tiers
+    await seedSettings(db);
+    await seedPricingTiers(db);
+
+    console.log('\n✅ Seed completed successfully!');
+    console.log('='.repeat(50));
+
+    process.exit(0);
+  } catch (error) {
+    console.error('\n❌ Seed failed:', error.message);
+    console.error(error);
+    process.exit(1);
+  }
+}
+
+// Run the script
+main();
