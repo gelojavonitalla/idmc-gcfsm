@@ -7,6 +7,8 @@
 
 import { useState } from 'react';
 import PropTypes from 'prop-types';
+import MediaUpload from './MediaUpload';
+import { uploadHeroImage, uploadHeroVideo, deleteFile } from '../../services/storage';
 import styles from './SettingsForm.module.css';
 
 /**
@@ -32,6 +34,8 @@ const DEFAULT_SETTINGS = {
   endTime: '17:30',
   timezone: 'Asia/Manila',
   registrationOpen: true,
+  heroImageUrl: null,
+  heroVideoUrl: null,
   venue: {
     name: 'GCF South Metro',
     address: 'Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines',
@@ -64,6 +68,8 @@ function SettingsForm({ settings, onSave, isLoading }) {
     endTime: settings?.endTime || DEFAULT_SETTINGS.endTime,
     timezone: settings?.timezone || DEFAULT_SETTINGS.timezone,
     registrationOpen: settings?.registrationOpen ?? DEFAULT_SETTINGS.registrationOpen,
+    heroImageUrl: settings?.heroImageUrl || DEFAULT_SETTINGS.heroImageUrl,
+    heroVideoUrl: settings?.heroVideoUrl || DEFAULT_SETTINGS.heroVideoUrl,
     venue: {
       name: settings?.venue?.name || DEFAULT_SETTINGS.venue.name,
       address: settings?.venue?.address || DEFAULT_SETTINGS.venue.address,
@@ -85,6 +91,15 @@ function SettingsForm({ settings, onSave, isLoading }) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Media upload states
+  const [heroImageUploading, setHeroImageUploading] = useState(false);
+  const [heroImageProgress, setHeroImageProgress] = useState(0);
+  const [heroImageError, setHeroImageError] = useState(null);
+
+  const [heroVideoUploading, setHeroVideoUploading] = useState(false);
+  const [heroVideoProgress, setHeroVideoProgress] = useState(0);
+  const [heroVideoError, setHeroVideoError] = useState(null);
 
   /**
    * Handles input changes
@@ -111,6 +126,94 @@ function SettingsForm({ settings, onSave, isLoading }) {
         [name]: actualValue,
       }));
     }
+  };
+
+  /**
+   * Handles hero image upload
+   *
+   * @param {File} file - Image file to upload
+   */
+  const handleHeroImageUpload = async (file) => {
+    setHeroImageUploading(true);
+    setHeroImageProgress(0);
+    setHeroImageError(null);
+
+    try {
+      // Delete old image if exists
+      if (formData.heroImageUrl) {
+        try {
+          await deleteFile(formData.heroImageUrl);
+        } catch {
+          // Ignore delete errors
+        }
+      }
+
+      const downloadUrl = await uploadHeroImage(file, setHeroImageProgress);
+      setFormData((prev) => ({ ...prev, heroImageUrl: downloadUrl }));
+    } catch (error) {
+      setHeroImageError(error.message);
+    } finally {
+      setHeroImageUploading(false);
+    }
+  };
+
+  /**
+   * Handles hero image removal
+   */
+  const handleHeroImageRemove = async () => {
+    if (formData.heroImageUrl) {
+      try {
+        await deleteFile(formData.heroImageUrl);
+      } catch {
+        // Ignore delete errors
+      }
+    }
+    setFormData((prev) => ({ ...prev, heroImageUrl: null }));
+    setHeroImageError(null);
+  };
+
+  /**
+   * Handles hero video upload
+   *
+   * @param {File} file - Video file to upload
+   */
+  const handleHeroVideoUpload = async (file) => {
+    setHeroVideoUploading(true);
+    setHeroVideoProgress(0);
+    setHeroVideoError(null);
+
+    try {
+      // Delete old video if exists
+      if (formData.heroVideoUrl) {
+        try {
+          await deleteFile(formData.heroVideoUrl);
+        } catch {
+          // Ignore delete errors
+        }
+      }
+
+      const downloadUrl = await uploadHeroVideo(file, setHeroVideoProgress);
+      setFormData((prev) => ({ ...prev, heroVideoUrl: downloadUrl }));
+    } catch (error) {
+      setHeroVideoError(error.message);
+    } finally {
+      setHeroVideoUploading(false);
+    }
+  };
+
+  /**
+   * Handles hero video removal
+   */
+  const handleHeroVideoRemove = async () => {
+    if (formData.heroVideoUrl) {
+      try {
+        await deleteFile(formData.heroVideoUrl);
+      } catch {
+        // Ignore delete errors
+      }
+    }
+    setFormData((prev) => ({ ...prev, heroVideoUrl: null }));
+    setHeroVideoError(null);
   };
 
   /**
@@ -219,6 +322,44 @@ function SettingsForm({ settings, onSave, isLoading }) {
               onChange={handleChange}
               className={styles.input}
               placeholder="Intentional Disciple-Making Churches Conference"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Media Section */}
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>Hero Media</h3>
+        <p className={styles.sectionDescription}>
+          Upload hero images and videos that will be displayed on the conference homepage.
+        </p>
+        <div className={styles.mediaGrid}>
+          <div className={styles.mediaField}>
+            <MediaUpload
+              type="image"
+              label="Hero Image"
+              currentUrl={formData.heroImageUrl}
+              onUpload={handleHeroImageUpload}
+              onRemove={handleHeroImageRemove}
+              isUploading={heroImageUploading}
+              uploadProgress={heroImageProgress}
+              error={heroImageError}
+              hint="Recommended size: 1920x1080 pixels"
+              disabled={isSaving}
+            />
+          </div>
+          <div className={styles.mediaField}>
+            <MediaUpload
+              type="video"
+              label="Hero Video"
+              currentUrl={formData.heroVideoUrl}
+              onUpload={handleHeroVideoUpload}
+              onRemove={handleHeroVideoRemove}
+              isUploading={heroVideoUploading}
+              uploadProgress={heroVideoProgress}
+              error={heroVideoError}
+              hint="Recommended: Short promotional video (under 30 seconds)"
+              disabled={isSaving}
             />
           </div>
         </div>
@@ -526,6 +667,8 @@ SettingsForm.propTypes = {
     endTime: PropTypes.string,
     timezone: PropTypes.string,
     registrationOpen: PropTypes.bool,
+    heroImageUrl: PropTypes.string,
+    heroVideoUrl: PropTypes.string,
     venue: PropTypes.shape({
       name: PropTypes.string,
       address: PropTypes.string,

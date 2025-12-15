@@ -8,6 +8,8 @@
 import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { SESSION_TYPES, SESSION_TYPE_LABELS, SPEAKER_STATUS } from '../../constants';
+import MediaUpload from './MediaUpload';
+import { uploadSpeakerPhoto, deleteFile } from '../../services/storage';
 import styles from './SpeakerFormModal.module.css';
 
 /**
@@ -43,6 +45,11 @@ function SpeakerFormModal({ isOpen, onClose, onSave, speaker }) {
   const modalRef = useRef(null);
   const nameInputRef = useRef(null);
 
+  // Photo upload states
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoProgress, setPhotoProgress] = useState(0);
+  const [photoError, setPhotoError] = useState(null);
+
   const isEditing = !!speaker;
 
   /**
@@ -67,6 +74,9 @@ function SpeakerFormModal({ isOpen, onClose, onSave, speaker }) {
         setFormData(INITIAL_FORM_STATE);
       }
       setError(null);
+      setPhotoError(null);
+      setPhotoUploading(false);
+      setPhotoProgress(0);
       setTimeout(() => {
         nameInputRef.current?.focus();
       }, 100);
@@ -124,6 +134,57 @@ function SpeakerFormModal({ isOpen, onClose, onSave, speaker }) {
       ...prev,
       [name]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : value,
     }));
+  };
+
+  /**
+   * Handles speaker photo upload
+   *
+   * @param {File} file - Image file to upload
+   */
+  const handlePhotoUpload = async (file) => {
+    setPhotoUploading(true);
+    setPhotoProgress(0);
+    setPhotoError(null);
+
+    try {
+      // Generate speaker ID from name or use existing
+      const speakerId = speaker?.id || generateSlug(formData.name);
+
+      if (!speakerId) {
+        throw new Error('Please enter a speaker name first');
+      }
+
+      // Delete old photo if exists
+      if (formData.photoUrl) {
+        try {
+          await deleteFile(formData.photoUrl);
+        } catch {
+          // Ignore delete errors
+        }
+      }
+
+      const downloadUrl = await uploadSpeakerPhoto(file, speakerId, setPhotoProgress);
+      setFormData((prev) => ({ ...prev, photoUrl: downloadUrl }));
+    } catch (uploadError) {
+      setPhotoError(uploadError.message);
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
+  /**
+   * Handles speaker photo removal
+   */
+  const handlePhotoRemove = async () => {
+    if (formData.photoUrl) {
+      try {
+        await deleteFile(formData.photoUrl);
+      } catch {
+        // Ignore delete errors
+      }
+    }
+    setFormData((prev) => ({ ...prev, photoUrl: '' }));
+    setPhotoError(null);
   };
 
   /**
@@ -260,23 +321,20 @@ function SpeakerFormModal({ isOpen, onClose, onSave, speaker }) {
                 />
               </div>
 
-              {/* Photo URL */}
-              <div className={styles.field}>
-                <label htmlFor="photoUrl" className={styles.label}>
-                  Photo URL
-                </label>
-                <input
-                  type="url"
-                  id="photoUrl"
-                  name="photoUrl"
-                  value={formData.photoUrl}
-                  onChange={handleChange}
-                  className={styles.input}
-                  placeholder="https://..."
+              {/* Speaker Photo */}
+              <div className={styles.fieldSpan2}>
+                <MediaUpload
+                  type="image"
+                  label="Speaker Photo"
+                  currentUrl={formData.photoUrl}
+                  onUpload={handlePhotoUpload}
+                  onRemove={handlePhotoRemove}
+                  isUploading={photoUploading}
+                  uploadProgress={photoProgress}
+                  error={photoError}
+                  hint="Square photo recommended (at least 400x400 pixels)"
+                  disabled={isSubmitting}
                 />
-                <span className={styles.hint}>
-                  URL to speaker&apos;s profile photo
-                </span>
               </div>
 
               {/* Session Type */}

@@ -195,6 +195,32 @@ export const COLLECTIONS = {
 };
 
 /**
+ * Firebase Storage path constants
+ * These paths must match the storage.rules configuration
+ */
+export const STORAGE_PATHS = {
+  CONFERENCE_HERO_IMAGES: 'conference/hero-images',
+  CONFERENCE_HERO_VIDEOS: 'conference/hero-videos',
+  SPEAKER_PHOTOS: 'speakers/photos',
+};
+
+/**
+ * Allowed file types for uploads
+ */
+export const ALLOWED_FILE_TYPES = {
+  IMAGES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+  VIDEOS: ['video/mp4', 'video/webm', 'video/quicktime'],
+};
+
+/**
+ * Maximum file sizes in bytes
+ */
+export const MAX_FILE_SIZES = {
+  IMAGE: 10 * 1024 * 1024, // 10MB
+  VIDEO: 100 * 1024 * 1024, // 100MB
+};
+
+/**
  * Conference configuration
  */
 export const CONFERENCE = {

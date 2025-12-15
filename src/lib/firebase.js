@@ -8,6 +8,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getStorage, connectStorageEmulator } from 'firebase/storage';
 
 /**
  * Firebase database configuration
@@ -47,10 +48,16 @@ const db = getFirestore(app, FIREBASE_CONFIG.DATABASE_ID);
 const auth = getAuth(app);
 
 /**
- * Connect to Auth emulator in development
+ * Firebase Storage instance
+ */
+const storage = getStorage(app);
+
+/**
+ * Connect to emulators in development
  */
 if (process.env.REACT_APP_USE_EMULATORS === 'true') {
   connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+  connectStorageEmulator(storage, 'localhost', 9199);
 }
 
-export { app, db, auth, FIREBASE_CONFIG };
+export { app, db, auth, storage, FIREBASE_CONFIG };
