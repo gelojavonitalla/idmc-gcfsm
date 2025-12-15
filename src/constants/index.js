@@ -19,6 +19,7 @@ export const ROUTES = {
   PRIVACY: '/privacy',
   TERMS: '/terms',
   IDMC_2025: '/idmc-2025',
+  MAINTENANCE: '/maintenance',
 };
 
 /**
@@ -787,6 +788,36 @@ export const CONTACT_INQUIRY_STATUS = Object.freeze({
   READ: 'read',
   REPLIED: 'replied',
 });
+
+/**
+ * User roles for access control
+ * IDMC team roles have access to maintenance features
+ */
+export const USER_ROLES = Object.freeze({
+  ADMIN: 'admin',
+  MEDIA_TEAM: 'media_team',
+  FINANCE_TEAM: 'finance_team',
+  PARTICIPANT: 'participant',
+});
+
+/**
+ * User role labels for display
+ */
+export const USER_ROLE_LABELS = {
+  [USER_ROLES.ADMIN]: 'Admin',
+  [USER_ROLES.MEDIA_TEAM]: 'Media Team',
+  [USER_ROLES.FINANCE_TEAM]: 'Finance Team',
+  [USER_ROLES.PARTICIPANT]: 'Participant',
+};
+
+/**
+ * Roles that are part of the IDMC team and have access to maintenance features
+ */
+export const IDMC_TEAM_ROLES = [
+  USER_ROLES.ADMIN,
+  USER_ROLES.MEDIA_TEAM,
+  USER_ROLES.FINANCE_TEAM,
+];
 
 /**
  * Downloads data for attendees
