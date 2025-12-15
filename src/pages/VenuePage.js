@@ -7,7 +7,8 @@
 
 import { Link } from 'react-router-dom';
 import { VenueMap } from '../components/contact';
-import { VENUE, CONFERENCE, ROUTES } from '../constants';
+import { FloorPlan } from '../components/venue';
+import { VENUE, CONFERENCE, ROUTES, SCHEDULE, WORKSHOPS } from '../constants';
 import styles from './VenuePage.module.css';
 
 /**
@@ -68,6 +69,13 @@ function VenuePage() {
               <VenueMap height="350px" />
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Interactive Floor Plan Section */}
+      <section className={styles.floorPlanSection}>
+        <div className="container">
+          <FloorPlan schedule={SCHEDULE} workshops={WORKSHOPS} />
         </div>
       </section>
 
@@ -160,9 +168,9 @@ function VenuePage() {
               <h3 className={styles.transportTitle}>Parking</h3>
               <ul className={styles.transportList}>
                 <li>Free parking available at the venue</li>
+                <li>Additional parking at Versailles Town Plaza (500m away)</li>
                 <li>Limited spots - arrive early to secure parking</li>
                 <li>Carpooling with church groups is encouraged</li>
-                <li>Additional street parking available nearby</li>
               </ul>
             </div>
           </div>
