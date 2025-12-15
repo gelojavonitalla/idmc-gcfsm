@@ -352,19 +352,24 @@ function RegisterPage() {
   if (!registrationOpen) {
     return (
       <div className={styles.page}>
-        <div className={styles.container}>
-          <div className={styles.closedMessage}>
-            <h1>Registration Closed</h1>
-            <p>
-              Registration for IDMC {CONFERENCE.YEAR} has ended. Thank you for your
-              interest!
-            </p>
-            <p>
-              If you have any questions, please contact us at{' '}
-              <a href="mailto:email@gcfsouthmetro.org">email@gcfsouthmetro.org</a>
-            </p>
+        <section className={styles.heroSection}>
+          <h1 className={styles.heroTitle}>Registration Closed</h1>
+          <p className={styles.heroSubtitle}>IDMC {CONFERENCE.YEAR}</p>
+        </section>
+        <section className={styles.contentSection}>
+          <div className={styles.container}>
+            <div className={styles.closedMessage}>
+              <p>
+                Registration for IDMC {CONFERENCE.YEAR} has ended. Thank you for your
+                interest!
+              </p>
+              <p>
+                If you have any questions, please contact us at{' '}
+                <a href="mailto:email@gcfsouthmetro.org">email@gcfsouthmetro.org</a>
+              </p>
+            </div>
           </div>
-        </div>
+        </section>
       </div>
     );
   }
@@ -375,66 +380,67 @@ function RegisterPage() {
 
     return (
       <div className={styles.page}>
-        <div className={styles.container}>
-          <div className={styles.confirmationCard}>
-            <div className={styles.confirmationHeader}>
-              <div className={styles.checkIcon}>✓</div>
-              <h1>Registration Submitted!</h1>
-              <p className={styles.registrationIdDisplay}>
-                Registration ID: <strong>{registrationId}</strong>
-              </p>
-            </div>
+        <section className={styles.heroSection}>
+          <div className={styles.checkIcon}>✓</div>
+          <h1 className={styles.heroTitle}>Registration Submitted!</h1>
+          <p className={styles.heroSubtitle}>
+            Registration ID: <strong>{registrationId}</strong>
+          </p>
+        </section>
+        <section className={styles.contentSection}>
+          <div className={styles.container}>
+            <div className={styles.confirmationCard}>
+              <div className={styles.confirmationDetails}>
+                <h2>Registration Summary</h2>
 
-            <div className={styles.confirmationDetails}>
-              <h2>Registration Summary</h2>
-
-              <div className={styles.churchSummary}>
-                <h3>Church Information</h3>
-                <p><strong>{formData.churchName}</strong></p>
-                <p>{formData.churchCity}, {formData.churchProvince}</p>
-              </div>
-
-              <h3>Attendees ({formData.attendees.length})</h3>
-              {formData.attendees.map((attendee, index) => (
-                <div key={attendee.id} className={styles.attendeeSummary}>
-                  <div className={styles.attendeeNumber}>#{index + 1}</div>
-                  <div className={styles.attendeeDetails}>
-                    <p className={styles.attendeeName}>
-                      {attendee.lastName}, {attendee.firstName} {attendee.middleName}
-                    </p>
-                    <p>{attendee.email} | {attendee.cellphone}</p>
-                    <p>{attendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[attendee.category]}</p>
-                    <p className={styles.attendeePrice}>
-                      {formatPrice(calculatePrice(attendee.category, currentTier))}
-                    </p>
-                  </div>
+                <div className={styles.churchSummary}>
+                  <h3>Church Information</h3>
+                  <p><strong>{formData.churchName}</strong></p>
+                  <p>{formData.churchCity}, {formData.churchProvince}</p>
                 </div>
-              ))}
 
-              <div className={styles.amountDue}>
-                <span>Total Amount Paid</span>
-                <span className={styles.amountValue}>{formatPrice(totalAmount)}</span>
+                <h3>Attendees ({formData.attendees.length})</h3>
+                {formData.attendees.map((attendee, index) => (
+                  <div key={attendee.id} className={styles.attendeeSummary}>
+                    <div className={styles.attendeeNumber}>#{index + 1}</div>
+                    <div className={styles.attendeeDetails}>
+                      <p className={styles.attendeeName}>
+                        {attendee.lastName}, {attendee.firstName} {attendee.middleName}
+                      </p>
+                      <p>{attendee.email} | {attendee.cellphone}</p>
+                      <p>{attendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[attendee.category]}</p>
+                      <p className={styles.attendeePrice}>
+                        {formatPrice(calculatePrice(attendee.category, currentTier))}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+
+                <div className={styles.amountDue}>
+                  <span>Total Amount Paid</span>
+                  <span className={styles.amountValue}>{formatPrice(totalAmount)}</span>
+                </div>
               </div>
-            </div>
 
-            <div className={styles.nextSteps}>
-              <h2>What&apos;s Next?</h2>
-              <ol>
-                <li>Your payment will be verified within 24-48 hours.</li>
-                <li>Confirmation emails will be sent to all registered attendees.</li>
-                <li>Please save your Registration ID: <strong>{registrationId}</strong></li>
-                <li>Present your confirmation email or Registration ID at the event.</li>
-              </ol>
-            </div>
+              <div className={styles.nextSteps}>
+                <h2>What&apos;s Next?</h2>
+                <ol>
+                  <li>Your payment will be verified within 24-48 hours.</li>
+                  <li>Confirmation emails will be sent to all registered attendees.</li>
+                  <li>Please save your Registration ID: <strong>{registrationId}</strong></li>
+                  <li>Present your confirmation email or Registration ID at the event.</li>
+                </ol>
+              </div>
 
-            <div className={styles.eventDetails}>
-              <h2>Event Details</h2>
-              <p><strong>Date:</strong> March 28, {CONFERENCE.YEAR}</p>
-              <p><strong>Venue:</strong> {VENUE.NAME}</p>
-              <p><strong>Address:</strong> {VENUE.ADDRESS}</p>
+              <div className={styles.eventDetails}>
+                <h2>Event Details</h2>
+                <p><strong>Date:</strong> March 28, {CONFERENCE.YEAR}</p>
+                <p><strong>Venue:</strong> {VENUE.NAME}</p>
+                <p><strong>Address:</strong> {VENUE.ADDRESS}</p>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
     );
   }
@@ -442,16 +448,17 @@ function RegisterPage() {
   // Main form state
   return (
     <div className={styles.page}>
-      <div className={styles.container}>
-        <div className={styles.formHeader}>
-          <h1>Register for IDMC {CONFERENCE.YEAR}</h1>
-          <p className={styles.conferenceInfo}>
-            {CONFERENCE.THEME} | March 28, {CONFERENCE.YEAR}
-          </p>
-        </div>
+      <section className={styles.heroSection}>
+        <h1 className={styles.heroTitle}>Register for IDMC {CONFERENCE.YEAR}</h1>
+        <p className={styles.heroSubtitle}>
+          {CONFERENCE.THEME} | March 28, {CONFERENCE.YEAR}
+        </p>
+      </section>
 
-        {/* Progress Steps */}
-        <div className={styles.progressBar}>
+      <section className={styles.contentSection}>
+        <div className={styles.container}>
+          {/* Progress Steps */}
+          <div className={styles.progressBar}>
           {Object.entries(REGISTRATION_STEP_LABELS).map(([step, label]) => {
             const stepNum = parseInt(step, 10);
             return (
@@ -995,6 +1002,7 @@ function RegisterPage() {
           </div>
         </div>
       </div>
+      </section>
     </div>
   );
 }
