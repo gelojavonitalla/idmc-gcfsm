@@ -24,6 +24,13 @@
   color: var(--color-text-secondary);
 }
 
+.disclaimer {
+  font-size: var(--font-size-sm);
+  color: var(--color-warning, #f59e0b);
+  font-style: italic;
+  margin-top: var(--spacing-2);
+}
+
 .floorPlanWrapper {
   position: relative;
   background: var(--color-white);
