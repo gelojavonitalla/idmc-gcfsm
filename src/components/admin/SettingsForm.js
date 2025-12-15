@@ -306,7 +306,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               onChange={handleChange}
               className={styles.textarea}
               rows={2}
-              placeholder="Full venue address"
+              placeholder="Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines"
             />
           </div>
           <div className={styles.field}>
@@ -320,7 +320,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.venue.mapUrl}
               onChange={handleChange}
               className={styles.input}
-              placeholder="https://maps.google.com/..."
+              placeholder="https://maps.google.com/?q=GCF+South+Metro+Las+Pinas"
             />
           </div>
           <div className={styles.field}>
@@ -334,7 +334,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.venue.mapEmbedUrl}
               onChange={handleChange}
               className={styles.input}
-              placeholder="https://www.google.com/maps?..."
+              placeholder="https://www.google.com/maps?q=GCF+South+Metro&output=embed"
             />
           </div>
         </div>
@@ -355,7 +355,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.contact.email}
               onChange={handleChange}
               className={styles.input}
-              placeholder="email@example.org"
+              placeholder="email@gcfsouthmetro.org"
             />
           </div>
           <div className={styles.field}>
@@ -369,7 +369,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.contact.phone}
               onChange={handleChange}
               className={styles.input}
-              placeholder="(02) 1234 5678"
+              placeholder="(02) 8478 1271 / (02) 8478 1273"
             />
           </div>
           <div className={styles.field}>
@@ -383,7 +383,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.contact.mobile}
               onChange={handleChange}
               className={styles.input}
-              placeholder="0917 123 4567"
+              placeholder="0917 650 0011"
             />
           </div>
           <div className={styles.field}>
@@ -397,7 +397,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.contact.website}
               onChange={handleChange}
               className={styles.input}
-              placeholder="https://example.org"
+              placeholder="https://gcfsouthmetro.org"
             />
           </div>
         </div>
@@ -418,7 +418,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.social.facebook}
               onChange={handleChange}
               className={styles.input}
-              placeholder="https://facebook.com/..."
+              placeholder="https://facebook.com/gcfsouthmetro"
             />
           </div>
           <div className={styles.field}>
@@ -432,7 +432,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.social.instagram}
               onChange={handleChange}
               className={styles.input}
-              placeholder="https://instagram.com/..."
+              placeholder="https://instagram.com/gcfsouthmetro"
             />
           </div>
           <div className={styles.field}>
@@ -446,7 +446,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
               value={formData.social.youtube}
               onChange={handleChange}
               className={styles.input}
-              placeholder="https://youtube.com/..."
+              placeholder="https://youtube.com/channel/UCJ36YX23P_yCjMzetI1s6Ag"
             />
           </div>
         </div>
