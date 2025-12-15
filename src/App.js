@@ -10,6 +10,8 @@ import {
   VenuePage,
   ContactPage,
   DownloadsPage,
+  PrivacyPolicyPage,
+  TermsOfServicePage,
 } from './pages';
 import { ROUTES } from './constants';
 import './index.css';
@@ -35,8 +37,8 @@ function App() {
           <Route path={ROUTES.VENUE} element={<VenuePage />} />
           <Route path={ROUTES.CONTACT} element={<ContactPage />} />
           <Route path={ROUTES.DOWNLOADS} element={<DownloadsPage />} />
-          <Route path={ROUTES.PRIVACY} element={<PlaceholderPage title="Privacy Policy" />} />
-          <Route path={ROUTES.TERMS} element={<PlaceholderPage title="Terms of Service" />} />
+          <Route path={ROUTES.PRIVACY} element={<PrivacyPolicyPage />} />
+          <Route path={ROUTES.TERMS} element={<TermsOfServicePage />} />
           <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
         </Routes>
       </Layout>

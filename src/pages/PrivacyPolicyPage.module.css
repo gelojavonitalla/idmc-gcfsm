@@ -1,0 +1,228 @@
+/**
+ * PrivacyPolicyPage Component Styles
+ * Styles for the public privacy policy page
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Hero Section */
+.heroSection {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: white;
+  text-align: center;
+  padding: calc(var(--header-height) + var(--spacing-16)) var(--spacing-4) var(--spacing-16);
+}
+
+.heroTitle {
+  font-size: var(--font-size-5xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--spacing-4);
+  color: white;
+}
+
+.heroSubtitle {
+  font-size: var(--font-size-xl);
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* Content Section */
+.contentSection {
+  padding: var(--spacing-16) var(--spacing-4);
+  background: var(--color-background);
+  flex: 1;
+}
+
+.contentWrapper {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.lastUpdated {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-8);
+  font-style: italic;
+}
+
+/* Section Styles */
+.section {
+  margin-bottom: var(--spacing-10);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  margin: 0 0 var(--spacing-4);
+  padding-bottom: var(--spacing-2);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.subTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: var(--spacing-6) 0 var(--spacing-3);
+}
+
+.text {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: 1.8;
+  margin: 0 0 var(--spacing-4);
+}
+
+.text:last-child {
+  margin-bottom: 0;
+}
+
+/* List Styles */
+.list {
+  list-style: disc;
+  padding-left: var(--spacing-6);
+  margin: 0 0 var(--spacing-4);
+}
+
+.list li {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: 1.8;
+  margin-bottom: var(--spacing-2);
+}
+
+.list li:last-child {
+  margin-bottom: 0;
+}
+
+.list li strong {
+  color: var(--color-text);
+}
+
+/* Contact Info */
+.contactInfo {
+  background: var(--color-background-secondary);
+  padding: var(--spacing-6);
+  border-radius: var(--radius-lg);
+  margin-top: var(--spacing-4);
+}
+
+.contactInfo p {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-2);
+  line-height: 1.6;
+}
+
+.contactInfo p:last-child {
+  margin-bottom: 0;
+}
+
+.contactInfo p strong {
+  color: var(--color-text);
+}
+
+/* Links */
+.link {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.link:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
+/* Navigation */
+.navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--spacing-12);
+  padding-top: var(--spacing-8);
+  border-top: 1px solid var(--color-border);
+}
+
+.backLink,
+.navLink {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  transition: color 0.2s ease;
+}
+
+.backLink:hover,
+.navLink:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
+/* Responsive - Tablet */
+@media (max-width: 768px) {
+  .heroSection {
+    padding: calc(var(--header-height) + var(--spacing-12)) var(--spacing-4) var(--spacing-12);
+  }
+
+  .heroTitle {
+    font-size: var(--font-size-4xl);
+  }
+
+  .heroSubtitle {
+    font-size: var(--font-size-lg);
+  }
+
+  .contentSection {
+    padding: var(--spacing-12) var(--spacing-4);
+  }
+
+  .sectionTitle {
+    font-size: var(--font-size-lg);
+  }
+
+  .subTitle {
+    font-size: var(--font-size-base);
+  }
+
+  .navigation {
+    flex-direction: column;
+    gap: var(--spacing-4);
+    align-items: flex-start;
+  }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 480px) {
+  .heroSection {
+    padding: calc(var(--header-height) + var(--spacing-8)) var(--spacing-4) var(--spacing-8);
+  }
+
+  .heroTitle {
+    font-size: var(--font-size-3xl);
+  }
+
+  .heroSubtitle {
+    font-size: var(--font-size-base);
+  }
+
+  .contentSection {
+    padding: var(--spacing-8) var(--spacing-4);
+  }
+
+  .section {
+    margin-bottom: var(--spacing-8);
+  }
+
+  .contactInfo {
+    padding: var(--spacing-4);
+  }
+}
