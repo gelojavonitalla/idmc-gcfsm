@@ -9,7 +9,6 @@ import { Link } from 'react-router-dom';
 import {
   CONFERENCE,
   ORGANIZATION,
-  CONTACT,
   ROUTES,
 } from '../constants';
 import styles from './AboutPage.module.css';
@@ -133,34 +132,6 @@ function AboutPage() {
             <p className={styles.sectionText}>
               <strong>Our Mission:</strong> {ORGANIZATION.MISSION}
             </p>
-            <div className={styles.contactInfo}>
-              <h3 className={styles.contactTitle}>Contact Information</h3>
-              <div className={styles.contactDetails}>
-                <p>
-                  <strong>Email:</strong>{' '}
-                  <a href={`mailto:${CONTACT.EMAIL}`} className={styles.link}>
-                    {CONTACT.EMAIL}
-                  </a>
-                </p>
-                <p>
-                  <strong>Phone:</strong> {CONTACT.PHONE}
-                </p>
-                <p>
-                  <strong>Mobile/Viber:</strong> {CONTACT.MOBILE}
-                </p>
-                <p>
-                  <strong>Website:</strong>{' '}
-                  <a
-                    href={CONTACT.WEBSITE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.link}
-                  >
-                    {CONTACT.WEBSITE}
-                  </a>
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </section>
