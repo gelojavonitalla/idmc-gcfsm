@@ -17,31 +17,6 @@ import { hasPermission, isSuperAdmin } from '../services/admin';
 import { ADMIN_ROLES } from '../constants';
 
 /**
- * Check if dev mode is enabled (bypasses Firebase auth for testing)
- */
-const DEV_MODE = process.env.REACT_APP_ADMIN_DEV_MODE === 'true';
-
-/**
- * Mock admin user for dev mode
- */
-const MOCK_ADMIN = {
-  id: 'dev-admin',
-  email: 'dev@test.com',
-  displayName: 'Dev Admin',
-  role: ADMIN_ROLES.SUPERADMIN,
-  status: 'active',
-};
-
-/**
- * Mock Firebase user for dev mode
- */
-const MOCK_USER = {
-  uid: 'dev-admin',
-  email: 'dev@test.com',
-  displayName: 'Dev Admin',
-};
-
-/**
  * Admin authentication context
  */
 const AdminAuthContext = createContext(null);
@@ -62,18 +37,8 @@ export function AdminAuthProvider({ children }) {
 
   /**
    * Subscribe to auth state changes on mount
-   * In dev mode, automatically authenticate with mock admin
    */
   useEffect(() => {
-    if (DEV_MODE) {
-      // eslint-disable-next-line no-console
-      console.log('🔓 Admin Dev Mode enabled - bypassing Firebase auth');
-      setUser(MOCK_USER);
-      setAdmin(MOCK_ADMIN);
-      setIsLoading(false);
-      return () => {};
-    }
-
     const unsubscribe = subscribeToAuthState((firebaseUser, adminProfile) => {
       setUser(firebaseUser);
       setAdmin(adminProfile);
@@ -91,12 +56,6 @@ export function AdminAuthProvider({ children }) {
    * @returns {Promise<Object>} Signed in admin data
    */
   const signIn = useCallback(async (email, password) => {
-    if (DEV_MODE) {
-      setUser(MOCK_USER);
-      setAdmin(MOCK_ADMIN);
-      return { user: MOCK_USER, admin: MOCK_ADMIN };
-    }
-
     setIsLoading(true);
     setError(null);
 
