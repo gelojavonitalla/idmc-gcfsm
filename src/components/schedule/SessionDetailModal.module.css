@@ -84,6 +84,15 @@
   padding: var(--spacing-8);
 }
 
+/* Badges Container */
+.badges {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-3);
+}
+
 /* Badge */
 .badge {
   display: inline-block;
@@ -93,7 +102,11 @@
   border-radius: var(--radius-full);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: var(--spacing-3);
+}
+
+/* Capacity Section for Workshops */
+.capacitySection {
+  margin-bottom: var(--spacing-4);
 }
 
 /* Title */

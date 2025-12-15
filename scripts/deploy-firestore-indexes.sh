@@ -58,14 +58,62 @@ create_index() {
 }
 
 # Deploy indexes defined in firestore.indexes.json
-# Index 1: speakers (status ASC, order ASC)
+
+# === SPEAKERS ===
+# Index 1: speakers (status ASC, order ASC, __name__ ASC)
 create_index "speakers" \
     "field-path=status,order=ascending" \
-    "field-path=order,order=ascending"
+    "field-path=order,order=ascending" \
+    "field-path=__name__,order=ascending"
 
 # Index 2: speakers (featured ASC, status ASC, order ASC, __name__ ASC)
 create_index "speakers" \
     "field-path=featured,order=ascending" \
+    "field-path=status,order=ascending" \
+    "field-path=order,order=ascending" \
+    "field-path=__name__,order=ascending"
+
+# === SESSIONS ===
+# Index 3: sessions (status ASC, order ASC, __name__ ASC)
+create_index "sessions" \
+    "field-path=status,order=ascending" \
+    "field-path=order,order=ascending" \
+    "field-path=__name__,order=ascending"
+
+# Index 4: sessions (sessionType ASC, status ASC, order ASC, __name__ ASC)
+create_index "sessions" \
+    "field-path=sessionType,order=ascending" \
+    "field-path=status,order=ascending" \
+    "field-path=order,order=ascending" \
+    "field-path=__name__,order=ascending"
+
+# Index 5: sessions (sessionType ASC, category ASC, status ASC, order ASC, __name__ ASC)
+create_index "sessions" \
+    "field-path=sessionType,order=ascending" \
+    "field-path=category,order=ascending" \
+    "field-path=status,order=ascending" \
+    "field-path=order,order=ascending" \
+    "field-path=__name__,order=ascending"
+
+# Index 6: sessions (sessionType ASC, timeSlot ASC, status ASC, order ASC, __name__ ASC)
+create_index "sessions" \
+    "field-path=sessionType,order=ascending" \
+    "field-path=timeSlot,order=ascending" \
+    "field-path=status,order=ascending" \
+    "field-path=order,order=ascending" \
+    "field-path=__name__,order=ascending"
+
+# === FAQ ===
+# Index 7: faq (status ASC, category ASC, order ASC, __name__ ASC)
+create_index "faq" \
+    "field-path=status,order=ascending" \
+    "field-path=category,order=ascending" \
+    "field-path=order,order=ascending" \
+    "field-path=__name__,order=ascending"
+
+# Index 8: faq (category ASC, status ASC, order ASC, __name__ ASC)
+create_index "faq" \
+    "field-path=category,order=ascending" \
     "field-path=status,order=ascending" \
     "field-path=order,order=ascending" \
     "field-path=__name__,order=ascending"

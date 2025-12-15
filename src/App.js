@@ -5,7 +5,6 @@ import {
   RegisterPage,
   SpeakersPage,
   SchedulePage,
-  WorkshopsPage,
   FAQPage,
   AboutPage,
   VenuePage,
@@ -30,7 +29,6 @@ function App() {
           <Route path={ROUTES.HOME} element={<HomePage />} />
           <Route path={ROUTES.SPEAKERS} element={<SpeakersPage />} />
           <Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
-          <Route path={ROUTES.WORKSHOPS} element={<WorkshopsPage />} />
           <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
           <Route path={ROUTES.FAQ} element={<FAQPage />} />
           <Route path={ROUTES.ABOUT} element={<AboutPage />} />
