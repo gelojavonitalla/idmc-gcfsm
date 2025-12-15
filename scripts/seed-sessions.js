@@ -46,6 +46,19 @@ const SESSION_STATUS = {
   DRAFT: 'draft',
 };
 
+// Workshop categories
+const WORKSHOP_CATEGORIES = {
+  NEXT_GENERATION: 'next_generation',
+  WOMEN: 'women',
+  MEN: 'men',
+  SENIOR_CITIZENS: 'senior_citizens',
+};
+
+// Workshop time slots
+const WORKSHOP_TIME_SLOTS = {
+  DAY1_AFTERNOON: 'day1_afternoon',
+};
+
 /**
  * Session seed data for IDMC 2026 - Single Day Conference
  * Based on the conference schedule
@@ -142,12 +155,16 @@ const SESSIONS_DATA = [
     title: 'Workshop: Next Generation',
     description: 'Overcoming Pitfalls in the Discipleship of the Next Generation',
     sessionType: SESSION_TYPES.WORKSHOP,
+    category: WORKSHOP_CATEGORIES.NEXT_GENERATION,
     day: 1,
     startTime: '13:15',
     endTime: '15:00',
     durationMinutes: 105,
+    timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
     venue: 'Room A',
     track: 'Next Generation',
+    capacity: 100,
+    registeredCount: 0,
     speakerIds: ['karen-monroy'],
     speakerNames: ['Teacher Karen Monroy'],
     order: 6,
@@ -160,12 +177,16 @@ const SESSIONS_DATA = [
     title: 'Workshop: Women',
     description: 'Overcoming Pitfalls in the Discipleship of Women',
     sessionType: SESSION_TYPES.WORKSHOP,
+    category: WORKSHOP_CATEGORIES.WOMEN,
     day: 1,
     startTime: '13:15',
     endTime: '15:00',
     durationMinutes: 105,
+    timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
     venue: 'Room B',
     track: 'Women',
+    capacity: 80,
+    registeredCount: 0,
     speakerIds: ['carol-felipe'],
     speakerNames: ['Teacher Carol Felipe'],
     order: 7,
@@ -178,12 +199,16 @@ const SESSIONS_DATA = [
     title: 'Workshop: Men',
     description: 'Overcoming Pitfalls in the Discipleship of Men',
     sessionType: SESSION_TYPES.WORKSHOP,
+    category: WORKSHOP_CATEGORIES.MEN,
     day: 1,
     startTime: '13:15',
     endTime: '15:00',
     durationMinutes: 105,
+    timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
     venue: 'Room C',
     track: 'Men',
+    capacity: 60,
+    registeredCount: 0,
     speakerIds: ['gilbert-bayang'],
     speakerNames: ['Elder Capt. Gilbert Bayang'],
     order: 8,
@@ -196,12 +221,16 @@ const SESSIONS_DATA = [
     title: 'Workshop: Senior Citizens',
     description: 'Overcoming Pitfalls in the Discipleship of Senior Citizens',
     sessionType: SESSION_TYPES.WORKSHOP,
+    category: WORKSHOP_CATEGORIES.SENIOR_CITIZENS,
     day: 1,
     startTime: '13:15',
     endTime: '15:00',
     durationMinutes: 105,
+    timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
     venue: 'Room D',
     track: 'Senior Citizens',
+    capacity: 50,
+    registeredCount: 0,
     speakerIds: ['jun-marivic-parcon'],
     speakerNames: ['Capt. Jun & Marivic Parcon'],
     order: 9,
