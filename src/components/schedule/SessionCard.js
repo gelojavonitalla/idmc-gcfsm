@@ -80,28 +80,13 @@ function SessionCard({ session, onClick }) {
     >
       <div className={styles.header}>
         <span className={styles.time}>{getTimeDisplay()}</span>
-        <div className={styles.badges}>
-          <span
-            className={styles.badge}
-            style={isWorkshop && session.category ? {
-              backgroundColor: colors.background,
-              color: colors.text,
-              border: `1px solid ${colors.border}`,
-            } : {
-              backgroundColor: colors.border,
-              color: '#ffffff',
-            }}
-          >
-            {badgeLabel}
-          </span>
-          {isWorkshop && (
-            <CapacityBadge
-              capacity={session.capacity}
-              registeredCount={session.registeredCount || 0}
-              compact={true}
-            />
-          )}
-        </div>
+        {isWorkshop && (
+          <CapacityBadge
+            capacity={session.capacity}
+            registeredCount={session.registeredCount || 0}
+            compact={true}
+          />
+        )}
       </div>
 
       <h3 className={styles.title}>{session.title}</h3>
@@ -146,6 +131,20 @@ function SessionCard({ session, onClick }) {
             {session.speakerNames.join(', ')}
           </span>
         )}
+
+        <span
+          className={styles.badge}
+          style={isWorkshop && session.category ? {
+            backgroundColor: colors.background,
+            color: colors.text,
+            border: `1px solid ${colors.border}`,
+          } : {
+            backgroundColor: colors.border,
+            color: '#ffffff',
+          }}
+        >
+          {badgeLabel}
+        </span>
       </div>
     </div>
   );
