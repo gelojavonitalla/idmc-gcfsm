@@ -60,6 +60,11 @@ function Footer() {
                     Register
                   </Link>
                 </li>
+                <li>
+                  <Link to={ROUTES.ABOUT} className={styles.link}>
+                    About IDMC
+                  </Link>
+                </li>
               </ul>
             </nav>
           </div>

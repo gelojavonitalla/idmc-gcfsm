@@ -4,7 +4,6 @@ import { CountdownTimer, YouTubeEmbed } from '../components/ui';
 import { getFeaturedSpeakers } from '../services/speakers';
 import {
   CONFERENCE,
-  ORGANIZATION,
   SPEAKERS,
   SESSION_TYPES,
   VENUE,
@@ -211,31 +210,6 @@ function HomePage() {
                 </div>
               );
             })}
-          </div>
-        </div>
-      </section>
-
-      {/* About IDMC Section */}
-      <section className={styles.aboutSection}>
-        <div className="container">
-          <h2 className={styles.sectionTitle}>About IDMC</h2>
-          <p className={styles.sectionSubtitle}>{CONFERENCE.TAGLINE}</p>
-          <div className={styles.aboutContent}>
-            <div className={styles.aboutOrg}>
-              <h3>Hosted by {ORGANIZATION.NAME}</h3>
-              <p className={styles.aboutMission}>
-                <strong>Mission:</strong> {ORGANIZATION.MISSION}
-              </p>
-              <p className={styles.aboutDescription}>{ORGANIZATION.DESCRIPTION}</p>
-              <div className={styles.coreValues}>
-                <h4>Core Values</h4>
-                <ul>
-                  {ORGANIZATION.CORE_VALUES.map((value, index) => (
-                    <li key={index}>{value}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
           </div>
         </div>
       </section>
