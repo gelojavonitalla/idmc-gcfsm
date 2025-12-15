@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IDMC 2026 Website - Content Request</title>
+  <style>
+    :root {
+      --primary: #1e40af;
+      --secondary: #3b82f6;
+      --accent: #f59e0b;
+      --success: #22c55e;
+      --warning: #f97316;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      padding: 40px 20px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      border-radius: 16px;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+
+    .greeting {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      border-left: 4px solid var(--accent);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .greeting h2 {
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .section {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .section h2 {
+      color: var(--primary);
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section h2 .badge {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .badge-required {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .badge-review {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .subsection {
+      margin-top: 20px;
+      padding: 16px;
+      background: var(--bg);
+      border-radius: 8px;
+    }
+
+    .subsection h3 {
+      color: var(--secondary);
+      margin-bottom: 12px;
+      font-size: 1rem;
+    }
+
+    ul {
+      margin-left: 20px;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    .highlight {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+    }
+
+    .specs {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+    }
+
+    .specs h4 {
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .specs code {
+      background: #e0f2fe;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--bg);
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      text-transform: uppercase;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .status-placeholder {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .status-review {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .status-ok {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    .current-data {
+      background: #f1f5f9;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 8px 0;
+      font-family: monospace;
+      font-size: 0.875rem;
+      word-break: break-all;
+    }
+
+    .note {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      font-style: italic;
+    }
+
+    .preview-link {
+      display: inline-block;
+      margin-top: 8px;
+      color: var(--secondary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .preview-link:hover {
+      text-decoration: underline;
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 1.5rem;
+      }
+
+      .section {
+        padding: 16px;
+      }
+
+      table {
+        font-size: 0.875rem;
+      }
+
+      th, td {
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>IDMC 2026 Website</h1>
+      <p>Content Request for the Team</p>
+    </header>
+
+    <!-- Greeting Section -->
+    <div class="greeting">
+      <h2>Greetings in Christ!</h2>
+      <p>
+        I'm <strong>Gelo</strong>, and I am developing the website for <strong>IDMC 2026</strong> (Intentional Disciple-Making Churches Conference).
+        The website is progressing well, but I need your help to finalize some content and assets.
+      </p>
+      <p style="margin-top: 12px;">
+        Below is my <strong>"wish list"</strong> of items needed for the website. I've organized them by category and included
+        specifications where applicable. Some items need to be provided fresh, while others just need your review and approval.
+      </p>
+      <p style="margin-top: 12px;">
+        Thank you for your support! God bless.
+      </p>
+    </div>
+
+    <!-- Section 1: Hero Media -->
+    <div class="section">
+      <h2>
+        <span>1. Hero Section Media</span>
+        <span class="badge badge-required">Required</span>
+      </h2>
+      <p>The hero section is the first thing visitors see on the homepage. We want to make it impactful with a background video.</p>
+
+      <div class="subsection">
+        <h3>Background Video</h3>
+        <p>A short promotional or highlight video that will play automatically (muted) in the background of the hero section.</p>
+        <div class="specs">
+          <h4>Video Specifications:</h4>
+          <ul>
+            <li><strong>Format:</strong> <code>MP4 (H.264 codec)</code> - best browser compatibility</li>
+            <li><strong>Resolution:</strong> <code>1920x1080</code> (Full HD) maximum</li>
+            <li><strong>Aspect Ratio:</strong> <code>16:9</code></li>
+            <li><strong>Duration:</strong> <code>15-30 seconds</code> (will loop continuously)</li>
+            <li><strong>File Size:</strong> Keep under <code>10-15 MB</code> for fast loading</li>
+            <li><strong>Content:</strong> Event highlights, worship moments, past conference clips, or promo video</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <h3>Poster Image (Fallback)</h3>
+        <p>A static image shown while the video loads, or on mobile devices to save bandwidth.</p>
+        <div class="specs">
+          <h4>Image Specifications:</h4>
+          <ul>
+            <li><strong>Format:</strong> <code>JPG</code> or <code>WebP</code></li>
+            <li><strong>Resolution:</strong> <code>1920x1080</code> (Full HD)</li>
+            <li><strong>Aspect Ratio:</strong> <code>16:9</code></li>
+            <li><strong>File Size:</strong> Under <code>500 KB</code> (optimized for web)</li>
+            <li><strong>Content:</strong> Should match/complement the video - could be a frame from the video or event photo</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>Note:</strong> The video will be hosted on Firebase Storage with caching enabled for optimal performance.
+        The image will display instantly while the video loads in the background.
+      </div>
+    </div>
+
+    <!-- Section 2: Speakers -->
+    <div class="section">
+      <h2>
+        <span>2. Speakers Information</span>
+        <span class="badge badge-required">Required</span>
+      </h2>
+      <p>
+        The current speakers on the website are <strong>placeholder data</strong>.
+        Please provide the confirmed list of speakers with their details.
+      </p>
+
+      <div class="subsection">
+        <h3>Sample Speaker Data (For Reference Only):</h3>
+        <p class="note" style="margin-bottom: 12px;">* The data below is just a sample to show the structure. Please provide the actual speaker information.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Session</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Rev. Dr. Lito Villoria</td>
+              <td>Senior Pastor, GCF South Metro</td>
+              <td>Plenary Sessions</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Teacher Karen Monroy</td>
+              <td>NextGen Ministry Director</td>
+              <td>Workshop: Next Generation</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Teacher Carol Felipe</td>
+              <td>School Discipleship Ministry Director</td>
+              <td>Workshop: Women</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Elder Capt. Gilbert Bayang</td>
+              <td>Airline Captain & Elder</td>
+              <td>Workshop: Men</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Capt. Jun & Marivic Parcon</td>
+              <td>Seasoned Citizens Ministry Leaders</td>
+              <td>Workshop: Senior Citizens</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="subsection">
+        <h3>Speaker Photos</h3>
+        <div class="specs">
+          <h4>Photo Specifications:</h4>
+          <ul>
+            <li><strong>Format:</strong> <code>JPG</code> or <code>PNG</code></li>
+            <li><strong>Resolution:</strong> <code>400x400</code> pixels minimum (square)</li>
+            <li><strong>Aspect Ratio:</strong> <code>1:1</code> (square crop)</li>
+            <li><strong>File Size:</strong> Under <code>200 KB</code> each</li>
+            <li><strong>Style:</strong> Professional headshot, good lighting, neutral background preferred</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <h3>Information Needed Per Speaker:</h3>
+        <ul>
+          <li>Full name (with title/honorifics)</li>
+          <li>Position/Title</li>
+          <li>Organization/Church</li>
+          <li>Short bio (2-4 sentences)</li>
+          <li>Session they will be speaking at</li>
+          <li>Photo (see specs above)</li>
+        </ul>
+      </div>
+
+      <p class="preview-link">
+        <a href="/speakers" target="_blank">Preview current Speakers page &rarr;</a>
+      </p>
+    </div>
+
+    <!-- Section 3: Workshops -->
+    <div class="section">
+      <h2>
+        <span>3. Workshops & Schedule</span>
+        <span class="badge badge-required">Required</span>
+      </h2>
+      <p>
+        The current workshops and schedule on the website are <strong>placeholder/sample data</strong>.
+        Please provide the confirmed workshop details and full conference schedule.
+      </p>
+
+      <div class="subsection">
+        <h3>Sample Workshop Data (For Reference Only):</h3>
+        <p class="note" style="margin-bottom: 12px;">* The data below is just a sample to show the structure. Please provide the actual workshop information.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Workshop</th>
+              <th>Speaker</th>
+              <th>Venue</th>
+              <th>Capacity</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Next Generation</td>
+              <td>Teacher Karen Monroy</td>
+              <td>Worship Hall</td>
+              <td>100</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Women</td>
+              <td>Teacher Carol Felipe</td>
+              <td>2nd Floor Lobby</td>
+              <td>80</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Men</td>
+              <td>Elder Capt. Gilbert Bayang</td>
+              <td>CDC</td>
+              <td>60</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Senior Citizens</td>
+              <td>Capt. Jun & Marivic Parcon</td>
+              <td>YDT</td>
+              <td>50</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Couples</td>
+              <td>?</td>
+              <td>?</td>
+              <td>?</td>
+              <td><span class="status status-placeholder">No Data</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="subsection">
+        <h3>Information Needed:</h3>
+        <ul>
+          <li>Final list of workshops for IDMC 2026</li>
+          <li>Workshop titles and descriptions</li>
+          <li>Assigned speakers for each workshop</li>
+          <li>Room assignments and actual room capacities</li>
+          <li>Workshop schedule/time slots</li>
+          <li>Full conference schedule (registration, plenary sessions, breaks, etc.)</li>
+        </ul>
+      </div>
+
+      <p class="preview-link">
+        <a href="/schedule" target="_blank">Preview current Schedule page &rarr;</a>
+      </p>
+    </div>
+
+    <!-- Section 4: Conference Booklet -->
+    <div class="section">
+      <h2>
+        <span>4. Conference Booklet (Digital Copy)</span>
+        <span class="badge badge-required">Required</span>
+      </h2>
+      <p>
+        A digital copy of the conference booklet for the Downloads section.
+        This is useful for attendees who prefer to use a tablet when taking notes - they can use Adobe Acrobat Reader
+        to annotate and take notes directly on the digital copy.
+      </p>
+
+      <div class="specs">
+        <h4>File Specifications:</h4>
+        <ul>
+          <li><strong>Format:</strong> <code>PDF</code></li>
+          <li><strong>Recommended Size:</strong> Under <code>10 MB</code> for easy download</li>
+          <li><strong>Features:</strong> Should be selectable text (not scanned images) for better accessibility</li>
+        </ul>
+      </div>
+
+      <div class="highlight">
+        <strong>Tip:</strong> Attendees can open the PDF in Adobe Acrobat Reader on their tablet, highlight text,
+        add notes, and save their annotated copy - making it a paperless option for taking session notes.
+      </div>
+
+      <p class="preview-link">
+        <a href="/downloads" target="_blank">Preview Downloads page &rarr;</a>
+      </p>
+    </div>
+
+    <!-- Section 5: Contact Details -->
+    <div class="section">
+      <h2>
+        <span>5. Contact Information</span>
+        <span class="badge badge-review">Needs Review</span>
+      </h2>
+      <p>Please verify these contact details are correct and up-to-date:</p>
+
+      <div class="subsection">
+        <h3>Current Contact Details:</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Current Value</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Email</td>
+              <td class="current-data">email@gcfsouthmetro.org</td>
+              <td><span class="status status-review">Please verify</span></td>
+            </tr>
+            <tr>
+              <td>Phone</td>
+              <td class="current-data">(02) 8478 1271 / (02) 8478 1273</td>
+              <td><span class="status status-review">Please verify</span></td>
+            </tr>
+            <tr>
+              <td>Mobile / Viber</td>
+              <td class="current-data">0917 650 0011</td>
+              <td><span class="status status-review">Please verify</span></td>
+            </tr>
+            <tr>
+              <td>Website</td>
+              <td class="current-data">https://gcfsouthmetro.org</td>
+              <td><span class="status status-review">Please verify</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="subsection">
+        <h3>Venue Address:</h3>
+        <div class="current-data">
+          GCF South Metro<br>
+          Daang Hari Road, Versailles, Almanza Dos,<br>
+          Las Piñas City 1750 Philippines
+        </div>
+        <p class="note" style="margin-top: 8px;">Please confirm if this address is complete and correct.</p>
+      </div>
+
+      <div class="subsection">
+        <h3>Social Media Links:</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Platform</th>
+              <th>Current URL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Facebook</td>
+              <td class="current-data">https://facebook.com/gcfsouthmetro</td>
+            </tr>
+            <tr>
+              <td>Instagram</td>
+              <td class="current-data">https://instagram.com/gcfsouthmetro</td>
+            </tr>
+            <tr>
+              <td>YouTube</td>
+              <td class="current-data">https://youtube.com/channel/UCJ36YX23P_yCjMzetI1s6Ag</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="preview-link">
+        <a href="/contact" target="_blank">Preview Contact page &rarr;</a>
+      </p>
+    </div>
+
+    <!-- Section 6: Legal Pages -->
+    <div class="section">
+      <h2>
+        <span>6. Terms & Conditions and Privacy Policy</span>
+        <span class="badge badge-review">Needs Review</span>
+      </h2>
+      <p>
+        These pages are important for legal compliance, especially since we collect personal information during registration.
+      </p>
+
+      <div class="subsection">
+        <h3>Terms & Conditions</h3>
+        <p>Please review and approve the terms covering:</p>
+        <ul>
+          <li>Registration and payment policies</li>
+          <li>Refund and cancellation policies</li>
+          <li>Code of conduct</li>
+          <li>Photography/video consent at the event</li>
+          <li>Liability disclaimers</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>Privacy Policy</h3>
+        <p>Please review and approve the policy covering:</p>
+        <ul>
+          <li>What personal data we collect</li>
+          <li>How we use the data</li>
+          <li>Data retention period</li>
+          <li>Third-party sharing (payment processors, etc.)</li>
+          <li>Contact for privacy concerns</li>
+        </ul>
+      </div>
+
+      <div class="highlight">
+        <strong>Note:</strong> These pages are not yet created. If you have existing templates or legal documents from GCF South Metro,
+        please share them and I can adapt them for the website.
+      </div>
+    </div>
+
+    <!-- Section 7: FAQ -->
+    <div class="section">
+      <h2>
+        <span>7. Frequently Asked Questions</span>
+        <span class="badge badge-review">Needs Review</span>
+      </h2>
+      <p>Please review the current FAQ content and let me know if any changes or additions are needed.</p>
+
+      <div class="subsection">
+        <h3>Current FAQ Categories:</h3>
+        <ul>
+          <li><strong>Registration</strong> - 3 questions</li>
+          <li><strong>Payment</strong> - 3 questions</li>
+          <li><strong>Venue</strong> - 3 questions</li>
+          <li><strong>Accommodation</strong> - 2 questions</li>
+          <li><strong>General</strong> - 4 questions</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>Please Consider:</h3>
+        <ul>
+          <li>Are the answers accurate and up-to-date?</li>
+          <li>Are there common questions we're missing?</li>
+          <li>Should we add specific questions about workshops?</li>
+          <li>Any COVID-19 or health protocols to mention?</li>
+        </ul>
+      </div>
+
+      <p class="preview-link">
+        <a href="/faq" target="_blank">Preview FAQ page &rarr;</a>
+      </p>
+    </div>
+
+    <!-- Section 8: Payment Information -->
+    <div class="section">
+      <h2>
+        <span>8. Payment Information</span>
+        <span class="badge badge-review">Needs Review</span>
+      </h2>
+      <p>Please verify the payment details for registration:</p>
+
+      <div class="subsection">
+        <h3>GCash:</h3>
+        <table>
+          <tr>
+            <td><strong>Account Name:</strong></td>
+            <td class="current-data">GCF South Metro</td>
+          </tr>
+          <tr>
+            <td><strong>Number:</strong></td>
+            <td class="current-data">0917 650 0011</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="subsection">
+        <h3>Bank Transfer:</h3>
+        <table>
+          <tr>
+            <td><strong>Bank:</strong></td>
+            <td class="current-data">BDO (Banco de Oro)</td>
+          </tr>
+          <tr>
+            <td><strong>Account Name:</strong></td>
+            <td class="current-data">GCF South Metro</td>
+          </tr>
+          <tr>
+            <td><strong>Account Number:</strong></td>
+            <td class="current-data">0012-3456-7890</td>
+          </tr>
+          <tr>
+            <td><strong>Branch:</strong></td>
+            <td class="current-data">Las Piñas Branch</td>
+          </tr>
+        </table>
+        <p class="note" style="margin-top: 8px;">* The account number shown is a placeholder. Please provide the actual account number.</p>
+      </div>
+
+      <div class="subsection">
+        <h3>Registration Fees:</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Current Price</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Regular</td>
+              <td class="current-data">PHP 500</td>
+              <td><span class="status status-placeholder">Placeholder</span></td>
+            </tr>
+            <tr>
+              <td>Student / Senior Citizen</td>
+              <td class="current-data">PHP 300</td>
+              <td><span class="status status-placeholder">Placeholder</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note" style="margin-top: 8px;">* These prices are placeholders. Please provide the actual registration fees.</p>
+      </div>
+
+      <div class="highlight">
+        <strong>Questions about pricing:</strong>
+        <ul style="margin-top: 8px;">
+          <li>What are the final registration fees?</li>
+          <li>Will there be early bird pricing?</li>
+          <li>Are there group discounts?</li>
+          <li>What does the fee include? (lunch, materials, etc.)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Summary Checklist -->
+    <div class="section" style="border: 2px solid var(--primary);">
+      <h2>Summary Checklist</h2>
+      <p>Quick reference of all items needed:</p>
+
+      <div class="subsection">
+        <h3>Assets to Provide:</h3>
+        <ul>
+          <li>&#9744; Hero background video (MP4, 1920x1080, 15-30 sec, under 15MB)</li>
+          <li>&#9744; Hero poster image (JPG/WebP, 1920x1080, under 500KB)</li>
+          <li>&#9744; Speaker photos - 5 photos (400x400 square, under 200KB each)</li>
+          <li>&#9744; Conference booklet PDF (under 10MB)</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>Information to Confirm:</h3>
+        <ul>
+          <li>&#9744; Speaker list and bios - are these final?</li>
+          <li>&#9744; Workshop titles, speakers, and room assignments</li>
+          <li>&#9744; Workshop room capacities</li>
+          <li>&#9744; Couples workshop - is there one?</li>
+          <li>&#9744; Registration fees (currently placeholder: PHP 500 / PHP 300)</li>
+          <li>&#9744; Early bird pricing or group discounts?</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>Content to Review:</h3>
+        <ul>
+          <li>&#9744; Contact information (email, phone, address)</li>
+          <li>&#9744; Payment details (GCash number, bank account number)</li>
+          <li>&#9744; Registration fees</li>
+          <li>&#9744; FAQ answers</li>
+          <li>&#9744; Terms & Conditions</li>
+          <li>&#9744; Privacy Policy</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer>
+      <p>IDMC 2026 Website Content Request</p>
+      <p>Prepared by Gelo | Last updated: December 2024</p>
+    </footer>
+  </div>
+</body>
+</html>
