@@ -22,3 +22,5 @@ export { default as SpeakerTable } from './SpeakerTable';
 export { default as SpeakerFormModal } from './SpeakerFormModal';
 export { default as SessionTable } from './SessionTable';
 export { default as SessionFormModal } from './SessionFormModal';
+export { default as FAQTable } from './FAQTable';
+export { default as FAQFormModal } from './FAQFormModal';

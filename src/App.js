@@ -18,7 +18,7 @@ import {
   IDMC2025Page,
   MaintenancePage,
 } from './pages';
-import { AdminLoginPage, AdminDashboardPage, AdminSettingsPage, AdminUsersPage, AdminActivityPage, AdminSpeakersPage, AdminSchedulePage } from './pages/admin';
+import { AdminLoginPage, AdminDashboardPage, AdminSettingsPage, AdminUsersPage, AdminActivityPage, AdminSpeakersPage, AdminSchedulePage, AdminFAQPage } from './pages/admin';
 import { ROUTES, ADMIN_ROUTES, IDMC_TEAM_ROLES } from './constants';
 import './index.css';
 
@@ -86,6 +86,14 @@ function App() {
               element={
                 <AdminProtectedRoute>
                   <AdminSchedulePage />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path={ADMIN_ROUTES.FAQ}
+              element={
+                <AdminProtectedRoute>
+                  <AdminFAQPage />
                 </AdminProtectedRoute>
               }
             />
