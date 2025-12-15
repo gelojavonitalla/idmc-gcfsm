@@ -12,12 +12,23 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteDoc,
   query,
   orderBy,
+  where,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { COLLECTIONS, ADMIN_ROLES, ADMIN_ROLE_PERMISSIONS } from '../constants';
+
+/**
+ * Error codes for admin operations
+ */
+export const ADMIN_ERROR_CODES = {
+  DUPLICATE_EMAIL: 'DUPLICATE_EMAIL',
+  INVALID_ROLE: 'INVALID_ROLE',
+  ADMIN_NOT_FOUND: 'ADMIN_NOT_FOUND',
+};
 
 /**
  * Fetches all admin users
@@ -61,27 +72,92 @@ export async function getAdmin(adminId) {
 }
 
 /**
- * Creates a new admin user (pending invitation)
- * Note: The actual Firebase Auth user must be created separately
+ * Gets an admin user by email address
  *
- * @param {string} adminId - Admin user ID (Firebase Auth UID)
+ * @param {string} email - Admin email address
+ * @returns {Promise<Object|null>} Admin user data or null
+ */
+export async function getAdminByEmail(email) {
+  if (!email) {
+    return null;
+  }
+
+  const collectionRef = collection(db, COLLECTIONS.ADMINS);
+  const emailQuery = query(collectionRef, where('email', '==', email.toLowerCase()));
+  const snapshot = await getDocs(emailQuery);
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const docSnapshot = snapshot.docs[0];
+  return {
+    id: docSnapshot.id,
+    ...docSnapshot.data(),
+  };
+}
+
+/**
+ * Checks if an email address is already registered as an admin
+ *
+ * @param {string} email - Email address to check
+ * @returns {Promise<boolean>} True if email already exists
+ */
+export async function isEmailRegistered(email) {
+  const admin = await getAdminByEmail(email);
+  return admin !== null;
+}
+
+/**
+ * Creates a new admin user (pending invitation)
+ * The Firebase Cloud Function will handle creating the Auth user and sending the invitation email.
+ *
+ * @param {string} adminId - Admin user ID (temporary ID, will be replaced by Firebase Auth UID)
  * @param {Object} adminData - Admin user data
  * @param {string} adminData.email - Admin email
  * @param {string} adminData.displayName - Admin display name
  * @param {string} adminData.role - Admin role
  * @param {string} invitedBy - UID of the admin who created this user
  * @returns {Promise<Object>} Created admin data
+ * @throws {Error} If email is already registered or role is invalid
  */
 export async function createAdmin(adminId, adminData, invitedBy) {
-  const { role = ADMIN_ROLES.ADMIN } = adminData;
+  const { email, role = ADMIN_ROLES.ADMIN } = adminData;
+
+  // Validate email is provided
+  if (!email) {
+    const error = new Error('Email is required');
+    error.code = ADMIN_ERROR_CODES.INVALID_ROLE;
+    throw error;
+  }
+
+  // Normalize email to lowercase
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // Check for duplicate email
+  const existingAdmin = await getAdminByEmail(normalizedEmail);
+  if (existingAdmin) {
+    const error = new Error('An admin with this email already exists');
+    error.code = ADMIN_ERROR_CODES.DUPLICATE_EMAIL;
+    throw error;
+  }
+
+  // Validate role
+  const validRoles = Object.values(ADMIN_ROLES);
+  if (!validRoles.includes(role)) {
+    const error = new Error(`Invalid role: ${role}. Must be one of: ${validRoles.join(', ')}`);
+    error.code = ADMIN_ERROR_CODES.INVALID_ROLE;
+    throw error;
+  }
+
   const permissions = ADMIN_ROLE_PERMISSIONS[role] || ADMIN_ROLE_PERMISSIONS[ADMIN_ROLES.ADMIN];
 
   const docRef = doc(db, COLLECTIONS.ADMINS, adminId);
   const timestamp = serverTimestamp();
 
   const data = {
-    email: adminData.email,
-    displayName: adminData.displayName || adminData.email.split('@')[0],
+    email: normalizedEmail,
+    displayName: adminData.displayName || normalizedEmail.split('@')[0],
     role,
     permissions,
     status: 'pending',
@@ -96,6 +172,61 @@ export async function createAdmin(adminId, adminData, invitedBy) {
 
   return {
     id: adminId,
+    ...data,
+  };
+}
+
+/**
+ * Resends invitation email to a pending admin
+ * This creates a new admin document to trigger the Cloud Function again.
+ *
+ * @param {string} adminId - Admin user ID
+ * @param {string} resendBy - UID of the admin requesting the resend
+ * @returns {Promise<Object>} Updated admin data
+ * @throws {Error} If admin not found or not in pending status
+ */
+export async function resendInvitation(adminId, resendBy) {
+  const admin = await getAdmin(adminId);
+
+  if (!admin) {
+    const error = new Error('Admin not found');
+    error.code = ADMIN_ERROR_CODES.ADMIN_NOT_FOUND;
+    throw error;
+  }
+
+  if (admin.status !== 'pending') {
+    throw new Error('Can only resend invitation to pending admins');
+  }
+
+  // Generate a new temporary ID for the new document
+  const newTempId = `pending_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  // Create new admin document to trigger Cloud Function
+  const docRef = doc(db, COLLECTIONS.ADMINS, newTempId);
+  const timestamp = serverTimestamp();
+
+  const data = {
+    email: admin.email,
+    displayName: admin.displayName,
+    role: admin.role,
+    permissions: admin.permissions,
+    status: 'pending',
+    invitedBy: admin.invitedBy,
+    invitedAt: admin.invitedAt,
+    resendRequestedBy: resendBy,
+    resendRequestedAt: timestamp,
+    createdAt: admin.createdAt,
+    updatedAt: timestamp,
+    lastLoginAt: null,
+  };
+
+  await setDoc(docRef, data);
+
+  // Delete the old document
+  await deleteDoc(doc(db, COLLECTIONS.ADMINS, adminId));
+
+  return {
+    id: newTempId,
     ...data,
   };
 }

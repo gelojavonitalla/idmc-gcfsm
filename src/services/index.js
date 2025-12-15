@@ -47,13 +47,17 @@ export {
 export {
   getAllAdmins,
   getAdmin,
+  getAdminByEmail,
+  isEmailRegistered,
   createAdmin,
   updateAdmin,
   updateAdminRole,
   activateAdmin,
   deactivateAdmin,
+  resendInvitation,
   hasPermission,
   isSuperAdmin,
+  ADMIN_ERROR_CODES,
 } from './admin';
 
 export {

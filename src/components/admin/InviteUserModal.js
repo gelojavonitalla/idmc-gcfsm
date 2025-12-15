@@ -112,8 +112,19 @@ function InviteUserModal({ isOpen, onClose, onInvite }) {
     setError(null);
 
     try {
-      await onInvite(formData);
-      onClose();
+      const result = await onInvite(formData);
+
+      // Handle the response object format
+      if (result && typeof result === 'object') {
+        if (result.success) {
+          onClose();
+        } else if (result.error) {
+          setError(result.error);
+        }
+      } else {
+        // Legacy support: if onInvite doesn't return anything, assume success
+        onClose();
+      }
     } catch (err) {
       setError(err.message || 'Failed to invite user. Please try again.');
     } finally {
