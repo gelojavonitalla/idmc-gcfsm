@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout, ScrollToTop } from './components/layout';
+import { ProtectedRoute } from './components/auth';
+import { AuthProvider } from './context';
 import {
   HomePage,
   RegisterPage,
@@ -13,8 +15,9 @@ import {
   PrivacyPolicyPage,
   TermsOfServicePage,
   IDMC2025Page,
+  MaintenancePage,
 } from './pages';
-import { ROUTES } from './constants';
+import { ROUTES, IDMC_TEAM_ROLES } from './constants';
 import './index.css';
 
 /**
@@ -25,26 +28,36 @@ import './index.css';
  */
 function App() {
   return (
-    <BrowserRouter>
-      <ScrollToTop />
-      <Layout>
-        <Routes>
-          <Route path={ROUTES.HOME} element={<HomePage />} />
-          <Route path={ROUTES.SPEAKERS} element={<SpeakersPage />} />
-          <Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
-          <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
-          <Route path={ROUTES.FAQ} element={<FAQPage />} />
-          <Route path={ROUTES.ABOUT} element={<AboutPage />} />
-          <Route path={ROUTES.VENUE} element={<VenuePage />} />
-          <Route path={ROUTES.CONTACT} element={<ContactPage />} />
-          <Route path={ROUTES.DOWNLOADS} element={<DownloadsPage />} />
-          <Route path={ROUTES.PRIVACY} element={<PrivacyPolicyPage />} />
-          <Route path={ROUTES.TERMS} element={<TermsOfServicePage />} />
-          <Route path={ROUTES.IDMC_2025} element={<IDMC2025Page />} />
-          <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <ScrollToTop />
+        <Layout>
+          <Routes>
+            <Route path={ROUTES.HOME} element={<HomePage />} />
+            <Route path={ROUTES.SPEAKERS} element={<SpeakersPage />} />
+            <Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
+            <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+            <Route path={ROUTES.FAQ} element={<FAQPage />} />
+            <Route path={ROUTES.ABOUT} element={<AboutPage />} />
+            <Route path={ROUTES.VENUE} element={<VenuePage />} />
+            <Route path={ROUTES.CONTACT} element={<ContactPage />} />
+            <Route path={ROUTES.DOWNLOADS} element={<DownloadsPage />} />
+            <Route path={ROUTES.PRIVACY} element={<PrivacyPolicyPage />} />
+            <Route path={ROUTES.TERMS} element={<TermsOfServicePage />} />
+            <Route path={ROUTES.IDMC_2025} element={<IDMC2025Page />} />
+            <Route
+              path={ROUTES.MAINTENANCE}
+              element={
+                <ProtectedRoute allowedRoles={IDMC_TEAM_ROLES}>
+                  <MaintenancePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
+          </Routes>
+        </Layout>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
