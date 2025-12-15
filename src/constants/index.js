@@ -334,6 +334,67 @@ export const MINISTRY_ROLES = [
 ];
 
 /**
+ * Workshop category identifiers
+ * Categories for GCF IDMC workshops
+ */
+export const WORKSHOP_CATEGORIES = Object.freeze({
+  NEXT_GENERATION: 'next_generation',
+  WOMEN: 'women',
+  MEN: 'men',
+  COUPLES: 'couples',
+  SENIOR_CITIZENS: 'senior_citizens',
+});
+
+/**
+ * Workshop category labels for display
+ */
+export const WORKSHOP_CATEGORY_LABELS = {
+  [WORKSHOP_CATEGORIES.NEXT_GENERATION]: 'Next Generation',
+  [WORKSHOP_CATEGORIES.WOMEN]: 'Women',
+  [WORKSHOP_CATEGORIES.MEN]: 'Men',
+  [WORKSHOP_CATEGORIES.COUPLES]: 'Couples',
+  [WORKSHOP_CATEGORIES.SENIOR_CITIZENS]: 'Senior Citizens',
+};
+
+/**
+ * Workshop category colors for styling
+ */
+export const WORKSHOP_CATEGORY_COLORS = {
+  [WORKSHOP_CATEGORIES.NEXT_GENERATION]: {
+    background: '#dbeafe',
+    border: '#3b82f6',
+    text: '#1e40af',
+  },
+  [WORKSHOP_CATEGORIES.WOMEN]: {
+    background: '#fce7f3',
+    border: '#ec4899',
+    text: '#9d174d',
+  },
+  [WORKSHOP_CATEGORIES.MEN]: {
+    background: '#e0f2fe',
+    border: '#0ea5e9',
+    text: '#0369a1',
+  },
+  [WORKSHOP_CATEGORIES.COUPLES]: {
+    background: '#fef3c7',
+    border: '#f59e0b',
+    text: '#92400e',
+  },
+  [WORKSHOP_CATEGORIES.SENIOR_CITIZENS]: {
+    background: '#dcfce7',
+    border: '#22c55e',
+    text: '#166534',
+  },
+};
+
+/**
+ * Workshop time slot identifiers for registration selection
+ */
+export const WORKSHOP_TIME_SLOTS = Object.freeze({
+  DAY1_AFTERNOON: 'day1_afternoon',
+});
+
+/**
  * Conference schedule data (static fallback)
  * Based on IDMC 2026 schedule format - single day conference
  */
@@ -404,9 +465,13 @@ export const SCHEDULE = [
     endTime: '3:00 PM',
     title: 'Workshop: Next Generation',
     sessionType: SESSION_TYPES.WORKSHOP,
+    category: WORKSHOP_CATEGORIES.NEXT_GENERATION,
     venue: 'Room A',
     description: 'Overcoming Pitfalls in the Discipleship of the Next Generation',
     track: 'Next Generation',
+    capacity: 100,
+    registeredCount: 0,
+    timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
     speakerIds: ['karen-monroy'],
     speakerNames: ['Teacher Karen Monroy'],
     order: 6,
@@ -417,9 +482,13 @@ export const SCHEDULE = [
     endTime: '3:00 PM',
     title: 'Workshop: Women',
     sessionType: SESSION_TYPES.WORKSHOP,
+    category: WORKSHOP_CATEGORIES.WOMEN,
     venue: 'Room B',
     description: 'Overcoming Pitfalls in the Discipleship of Women',
     track: 'Women',
+    capacity: 80,
+    registeredCount: 0,
+    timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
     speakerIds: ['carol-felipe'],
     speakerNames: ['Teacher Carol Felipe'],
     order: 7,
@@ -430,9 +499,13 @@ export const SCHEDULE = [
     endTime: '3:00 PM',
     title: 'Workshop: Men',
     sessionType: SESSION_TYPES.WORKSHOP,
+    category: WORKSHOP_CATEGORIES.MEN,
     venue: 'Room C',
     description: 'Overcoming Pitfalls in the Discipleship of Men',
     track: 'Men',
+    capacity: 60,
+    registeredCount: 0,
+    timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
     speakerIds: ['gilbert-bayang'],
     speakerNames: ['Elder Capt. Gilbert Bayang'],
     order: 8,
@@ -443,9 +516,13 @@ export const SCHEDULE = [
     endTime: '3:00 PM',
     title: 'Workshop: Senior Citizens',
     sessionType: SESSION_TYPES.WORKSHOP,
+    category: WORKSHOP_CATEGORIES.SENIOR_CITIZENS,
     venue: 'Room D',
     description: 'Overcoming Pitfalls in the Discipleship of Senior Citizens',
     track: 'Senior Citizens',
+    capacity: 50,
+    registeredCount: 0,
+    timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
     speakerIds: ['jun-marivic-parcon'],
     speakerNames: ['Capt. Jun & Marivic Parcon'],
     order: 9,
@@ -475,67 +552,6 @@ export const SCHEDULE = [
     order: 11,
   },
 ];
-
-/**
- * Workshop category identifiers
- * Categories for GCF IDMC workshops
- */
-export const WORKSHOP_CATEGORIES = Object.freeze({
-  NEXT_GENERATION: 'next_generation',
-  WOMEN: 'women',
-  MEN: 'men',
-  COUPLES: 'couples',
-  SENIOR_CITIZENS: 'senior_citizens',
-});
-
-/**
- * Workshop category labels for display
- */
-export const WORKSHOP_CATEGORY_LABELS = {
-  [WORKSHOP_CATEGORIES.NEXT_GENERATION]: 'Next Generation',
-  [WORKSHOP_CATEGORIES.WOMEN]: 'Women',
-  [WORKSHOP_CATEGORIES.MEN]: 'Men',
-  [WORKSHOP_CATEGORIES.COUPLES]: 'Couples',
-  [WORKSHOP_CATEGORIES.SENIOR_CITIZENS]: 'Senior Citizens',
-};
-
-/**
- * Workshop category colors for styling
- */
-export const WORKSHOP_CATEGORY_COLORS = {
-  [WORKSHOP_CATEGORIES.NEXT_GENERATION]: {
-    background: '#dbeafe',
-    border: '#3b82f6',
-    text: '#1e40af',
-  },
-  [WORKSHOP_CATEGORIES.WOMEN]: {
-    background: '#fce7f3',
-    border: '#ec4899',
-    text: '#9d174d',
-  },
-  [WORKSHOP_CATEGORIES.MEN]: {
-    background: '#e0f2fe',
-    border: '#0ea5e9',
-    text: '#0369a1',
-  },
-  [WORKSHOP_CATEGORIES.COUPLES]: {
-    background: '#fef3c7',
-    border: '#f59e0b',
-    text: '#92400e',
-  },
-  [WORKSHOP_CATEGORIES.SENIOR_CITIZENS]: {
-    background: '#dcfce7',
-    border: '#22c55e',
-    text: '#166534',
-  },
-};
-
-/**
- * Workshop time slot identifiers for registration selection
- */
-export const WORKSHOP_TIME_SLOTS = Object.freeze({
-  DAY1_AFTERNOON: 'day1_afternoon',
-});
 
 /**
  * Workshop time slot labels
