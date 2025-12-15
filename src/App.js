@@ -18,7 +18,7 @@ import {
   IDMC2025Page,
   MaintenancePage,
 } from './pages';
-import { AdminLoginPage, AdminDashboardPage, AdminSettingsPage } from './pages/admin';
+import { AdminLoginPage, AdminDashboardPage, AdminSettingsPage, AdminUsersPage } from './pages/admin';
 import { ROUTES, ADMIN_ROUTES, IDMC_TEAM_ROLES } from './constants';
 import './index.css';
 
@@ -54,6 +54,14 @@ function App() {
               element={
                 <AdminProtectedRoute>
                   <AdminSettingsPage />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path={ADMIN_ROUTES.USERS}
+              element={
+                <AdminProtectedRoute requiredRole="superadmin">
+                  <AdminUsersPage />
                 </AdminProtectedRoute>
               }
             />
