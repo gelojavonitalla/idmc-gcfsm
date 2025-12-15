@@ -6,7 +6,6 @@
  */
 
 import { Link } from 'react-router-dom';
-import { VenueMap } from '../components/contact';
 import { FloorPlan } from '../components/venue';
 import { VENUE, CONFERENCE, ROUTES, SCHEDULE, WORKSHOPS } from '../constants';
 import styles from './VenuePage.module.css';
@@ -20,53 +19,31 @@ import styles from './VenuePage.module.css';
 function VenuePage() {
   return (
     <div className={styles.page}>
-      {/* Hero Section */}
-      <section className={styles.heroSection}>
+      {/* Map Section */}
+      <section className={styles.mapSection}>
         <div className="container">
-          <h1 className={styles.heroTitle}>Venue</h1>
-          <p className={styles.heroSubtitle}>
-            Find us at {VENUE.NAME}
-          </p>
-        </div>
-      </section>
-
-      {/* Location Section */}
-      <section className={styles.locationSection}>
-        <div className="container">
-          <div className={styles.locationGrid}>
-            {/* Venue Details */}
-            <div className={styles.venueDetails}>
-              <h2 className={styles.venueName}>{VENUE.NAME}</h2>
-              <p className={styles.venueAddress}>{VENUE.ADDRESS}</p>
-
-              <div className={styles.actionButtons}>
-                <a
-                  href={VENUE.MAP_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.directionsButton}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polygon points="3 11 22 2 13 21 11 13 3 11" />
-                  </svg>
-                  Get Directions
-                </a>
-              </div>
+          <div className={styles.mapContent}>
+            <div className={styles.mapInfo}>
+              <h1 className={styles.mapTitle}>{VENUE.NAME}</h1>
+              <p className={styles.mapAddress}>{VENUE.ADDRESS}</p>
+              <a
+                href={VENUE.MAP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.mapLink}
+              >
+                Get Directions
+              </a>
             </div>
-
-            {/* Map */}
-            <div className={styles.mapWrapper}>
-              <VenueMap height="350px" />
+            <div className={styles.mapEmbed}>
+              <iframe
+                src={VENUE.MAP_EMBED_URL}
+                title={`Map of ${VENUE.NAME}`}
+                className={styles.mapIframe}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
             </div>
           </div>
         </div>

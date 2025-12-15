@@ -204,9 +204,14 @@ function SpeakersPage() {
             Join us at IDMC {CONFERENCE.YEAR} and be equipped for intentional
             disciple-making.
           </p>
-          <Link to={ROUTES.REGISTER} className={styles.ctaButton}>
-            Register Now
-          </Link>
+          <div className={styles.ctaButtons}>
+            <Link to={ROUTES.REGISTER} className={styles.ctaButtonPrimary}>
+              Register Now
+            </Link>
+            <Link to={ROUTES.FAQ} className={styles.ctaButtonSecondary}>
+              View FAQ
+            </Link>
+          </div>
         </div>
       </section>
     </div>

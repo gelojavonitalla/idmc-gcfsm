@@ -238,9 +238,14 @@ function FAQPage() {
           <p className={styles.ctaText}>
             Can&apos;t find what you&apos;re looking for? Feel free to reach out to us.
           </p>
-          <Link to={ROUTES.CONTACT} className={styles.ctaButton}>
-            Contact Us
-          </Link>
+          <div className={styles.ctaButtons}>
+            <Link to={ROUTES.CONTACT} className={styles.ctaButtonPrimary}>
+              Contact Us
+            </Link>
+            <Link to={ROUTES.REGISTER} className={styles.ctaButtonSecondary}>
+              Register Now
+            </Link>
+          </div>
         </div>
       </section>
     </div>

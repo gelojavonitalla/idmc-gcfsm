@@ -218,9 +218,14 @@ function SchedulePage() {
             Register now for IDMC {CONFERENCE.YEAR} and be part of this
             transformational conference.
           </p>
-          <Link to={ROUTES.REGISTER} className={styles.ctaButton}>
-            Register Now
-          </Link>
+          <div className={styles.ctaButtons}>
+            <Link to={ROUTES.REGISTER} className={styles.ctaButtonPrimary}>
+              Register Now
+            </Link>
+            <Link to={ROUTES.FAQ} className={styles.ctaButtonSecondary}>
+              View FAQ
+            </Link>
+          </div>
         </div>
       </section>
 
