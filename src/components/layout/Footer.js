@@ -65,6 +65,11 @@ function Footer() {
                     About IDMC
                   </Link>
                 </li>
+                <li>
+                  <Link to={ROUTES.CONTACT} className={styles.link}>
+                    Contact Us
+                  </Link>
+                </li>
               </ul>
             </nav>
           </div>
