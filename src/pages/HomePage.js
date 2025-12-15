@@ -1,18 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { CountdownTimer } from '../components/ui';
+import { useSettings } from '../context';
 import { getFeaturedSpeakers } from '../services/speakers';
 import {
-  CONFERENCE,
   SPEAKERS,
   SESSION_TYPES,
-  VENUE,
   ROUTES,
   REGISTRATION_CATEGORIES,
   REGISTRATION_CATEGORY_LABELS,
   REGISTRATION_CATEGORY_DESCRIPTIONS,
 } from '../constants';
-import { getCurrentPricingTier, calculatePrice, formatPrice } from '../utils';
+import { calculatePrice, formatPrice } from '../utils';
 import styles from './HomePage.module.css';
 
 /**
@@ -24,6 +23,7 @@ import styles from './HomePage.module.css';
  * @returns {JSX.Element} The home page component
  */
 function HomePage() {
+  const { settings, activePricingTier } = useSettings();
   const [speakers, setSpeakers] = useState([]);
   const [isLoadingSpeakers, setIsLoadingSpeakers] = useState(true);
   const [speakersError, setSpeakersError] = useState(null);
@@ -64,10 +64,10 @@ function HomePage() {
       {/* Hero Section */}
       <section className={styles.heroSection}>
         <div className={styles.heroContent}>
-          <h1>IDMC {CONFERENCE.YEAR}</h1>
-          <p className={styles.heroTheme}>{CONFERENCE.THEME}</p>
+          <h1>{settings.title}</h1>
+          <p className={styles.heroTheme}>{settings.theme}</p>
           <p className={styles.heroSubtext}>
-            March 28, {CONFERENCE.YEAR} | {VENUE.NAME}
+            {new Date(settings.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} | {settings.venue?.name}
           </p>
           <Link to={ROUTES.REGISTER} className={styles.heroButton}>
             Register Now
@@ -80,9 +80,9 @@ function HomePage() {
         <div className="container">
           <h2 className={styles.sectionTitle}>Conference Starts In</h2>
           <CountdownTimer
-            targetDate={CONFERENCE.START_DATE}
-            endDate={CONFERENCE.END_DATE}
-            timezone={CONFERENCE.TIMEZONE}
+            targetDate={settings.startDate}
+            endDate={settings.endDate}
+            timezone={settings.timezone}
           />
         </div>
       </section>
@@ -172,8 +172,7 @@ function HomePage() {
           </p>
           <div className={styles.pricingGrid}>
             {Object.entries(REGISTRATION_CATEGORIES).map(([key, value]) => {
-              const currentTier = getCurrentPricingTier();
-              const price = calculatePrice(value, currentTier);
+              const price = calculatePrice(value, activePricingTier);
               return (
                 <div key={key} className={styles.pricingCard}>
                   <h3 className={styles.pricingName}>
@@ -201,11 +200,11 @@ function HomePage() {
           <h2 className={styles.sectionTitle}>Venue</h2>
           <div className={styles.venueContent}>
             <div className={styles.venueInfo}>
-              <h3 className={styles.venueName}>{VENUE.NAME}</h3>
-              <p className={styles.venueAddress}>{VENUE.ADDRESS}</p>
+              <h3 className={styles.venueName}>{settings.venue?.name}</h3>
+              <p className={styles.venueAddress}>{settings.venue?.address}</p>
               <div className={styles.venueButtons}>
                 <a
-                  href={VENUE.MAP_URL}
+                  href={settings.venue?.mapUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={styles.venueLink}
@@ -219,8 +218,8 @@ function HomePage() {
             </div>
             <div className={styles.venueMap}>
               <iframe
-                src={VENUE.MAP_EMBED_URL}
-                title={`Map of ${VENUE.NAME}`}
+                src={settings.venue?.mapEmbedUrl}
+                title={`Map of ${settings.venue?.name}`}
                 className={styles.mapIframe}
                 allowFullScreen
                 loading="lazy"

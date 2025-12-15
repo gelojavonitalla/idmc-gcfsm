@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout, ScrollToTop } from './components/layout';
 import { ProtectedRoute } from './components/auth';
 import { AdminProtectedRoute } from './components/admin';
-import { AuthProvider, AdminAuthProvider } from './context';
+import { AuthProvider, AdminAuthProvider, SettingsProvider } from './context';
 import {
   HomePage,
   RegisterPage,
@@ -111,8 +111,9 @@ function App() {
             <Route
               path="*"
               element={
-                <Layout>
-                  <Routes>
+                <SettingsProvider>
+                  <Layout>
+                    <Routes>
                     <Route path={ROUTES.HOME} element={<HomePage />} />
                     <Route path={ROUTES.SPEAKERS} element={<SpeakersPage />} />
                     <Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
@@ -134,8 +135,9 @@ function App() {
                       }
                     />
                     <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
-                  </Routes>
-                </Layout>
+                    </Routes>
+                  </Layout>
+                </SettingsProvider>
               }
             />
           </Routes>

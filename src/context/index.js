@@ -5,3 +5,4 @@
 
 export { AuthProvider, useAuth } from './AuthContext';
 export { AdminAuthProvider, useAdminAuth } from './AdminAuthContext';
+export { SettingsProvider, useSettings } from './SettingsContext';

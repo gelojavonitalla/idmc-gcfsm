@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
+import { useSettings } from '../context';
 import {
-  CONFERENCE,
-  VENUE,
   REGISTRATION_STEPS,
   REGISTRATION_STEP_LABELS,
   REGISTRATION_CATEGORIES,
@@ -10,10 +9,8 @@ import {
   PAYMENT_INFO,
 } from '../constants';
 import {
-  getCurrentPricingTier,
   calculatePrice,
   generateRegistrationId,
-  isRegistrationOpen,
   formatPrice,
   isValidEmail,
   isValidPhoneNumber,
@@ -81,6 +78,7 @@ const INITIAL_FORM_DATA = {
  * @returns {JSX.Element} The registration page component
  */
 function RegisterPage() {
+  const { settings, activePricingTier } = useSettings();
   const [currentStep, setCurrentStep] = useState(REGISTRATION_STEPS.PERSONAL_INFO);
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [errors, setErrors] = useState({});
@@ -88,8 +86,8 @@ function RegisterPage() {
   const [registrationId, setRegistrationId] = useState(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const currentTier = getCurrentPricingTier();
-  const registrationOpen = isRegistrationOpen();
+  const currentTier = activePricingTier;
+  const registrationOpen = settings.registrationOpen !== false;
 
   /**
    * Updates a form field value
@@ -354,18 +352,18 @@ function RegisterPage() {
       <div className={styles.page}>
         <section className={styles.heroSection}>
           <h1 className={styles.heroTitle}>Registration Closed</h1>
-          <p className={styles.heroSubtitle}>IDMC {CONFERENCE.YEAR}</p>
+          <p className={styles.heroSubtitle}>{settings.title}</p>
         </section>
         <section className={styles.contentSection}>
           <div className={styles.container}>
             <div className={styles.closedMessage}>
               <p>
-                Registration for IDMC {CONFERENCE.YEAR} has ended. Thank you for your
+                Registration for {settings.title} has ended. Thank you for your
                 interest!
               </p>
               <p>
                 If you have any questions, please contact us at{' '}
-                <a href="mailto:email@gcfsouthmetro.org">email@gcfsouthmetro.org</a>
+                <a href={`mailto:${settings.contact?.email}`}>{settings.contact?.email}</a>
               </p>
             </div>
           </div>
@@ -434,9 +432,9 @@ function RegisterPage() {
 
               <div className={styles.eventDetails}>
                 <h2>Event Details</h2>
-                <p><strong>Date:</strong> March 28, {CONFERENCE.YEAR}</p>
-                <p><strong>Venue:</strong> {VENUE.NAME}</p>
-                <p><strong>Address:</strong> {VENUE.ADDRESS}</p>
+                <p><strong>Date:</strong> {new Date(settings.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                <p><strong>Venue:</strong> {settings.venue?.name}</p>
+                <p><strong>Address:</strong> {settings.venue?.address}</p>
               </div>
             </div>
           </div>
@@ -449,9 +447,9 @@ function RegisterPage() {
   return (
     <div className={styles.page}>
       <section className={styles.heroSection}>
-        <h1 className={styles.heroTitle}>Register for IDMC {CONFERENCE.YEAR}</h1>
+        <h1 className={styles.heroTitle}>Register for {settings.title}</h1>
         <p className={styles.heroSubtitle}>
-          {CONFERENCE.THEME} | March 28, {CONFERENCE.YEAR}
+          {settings.theme} | {new Date(settings.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
         </p>
       </section>
 
