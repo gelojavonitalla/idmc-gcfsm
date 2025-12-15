@@ -2,7 +2,6 @@ import PropTypes from 'prop-types';
 import {
   WORKSHOP_CATEGORY_LABELS,
   WORKSHOP_CATEGORY_COLORS,
-  WORKSHOP_CATEGORIES,
 } from '../../constants';
 import CapacityBadge from './CapacityBadge';
 import styles from './WorkshopCard.module.css';
@@ -26,9 +25,17 @@ import styles from './WorkshopCard.module.css';
  * @param {Function} props.onClick - Callback when card is clicked
  * @returns {JSX.Element} The workshop card component
  */
+/**
+ * Default colors used when workshop category is not recognized
+ */
+const DEFAULT_CATEGORY_COLORS = {
+  background: '#f3f4f6',
+  border: '#6b7280',
+  text: '#374151',
+};
+
 function WorkshopCard({ workshop, onClick }) {
-  const categoryColors = WORKSHOP_CATEGORY_COLORS[workshop.category] ||
-    WORKSHOP_CATEGORY_COLORS[WORKSHOP_CATEGORIES.OTHER];
+  const categoryColors = WORKSHOP_CATEGORY_COLORS[workshop.category] || DEFAULT_CATEGORY_COLORS;
   const categoryLabel = WORKSHOP_CATEGORY_LABELS[workshop.category] || 'Workshop';
 
   /**
