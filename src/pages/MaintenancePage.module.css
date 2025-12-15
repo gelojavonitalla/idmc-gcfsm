@@ -97,14 +97,42 @@
   line-height: 1;
 }
 
+/* Tabs Header */
+.tabsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+  flex-wrap: wrap;
+}
+
 /* Tabs */
 .tabs {
   display: flex;
   gap: var(--spacing-2);
-  margin-bottom: var(--spacing-4);
   border-bottom: 1px solid var(--color-border);
   padding-bottom: var(--spacing-2);
   flex-wrap: wrap;
+  flex: 1;
+}
+
+/* Add Button */
+.addButton {
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: white;
+  background-color: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.addButton:hover {
+  background-color: var(--color-primary-dark, #059940);
 }
 
 .tab {
@@ -254,6 +282,15 @@
 .actionButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.editButton {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.editButton:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.2);
 }
 
 .deleteButton {
