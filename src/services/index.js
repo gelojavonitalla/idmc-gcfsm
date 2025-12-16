@@ -102,3 +102,21 @@ export {
   lookupRegistration,
   incrementWorkshopCount,
 } from './registration';
+
+export {
+  ROOM_TYPES,
+  ROOM_TYPE_LABELS,
+  getVenueRooms,
+  getVenueRoomById,
+  createVenueRoom,
+  updateVenueRoom,
+  deleteVenueRoom,
+  getVenueTransport,
+  createVenueTransport,
+  updateVenueTransport,
+  deleteVenueTransport,
+  getVenueAmenities,
+  createVenueAmenity,
+  updateVenueAmenity,
+  deleteVenueAmenity,
+} from './venue';
