@@ -6,12 +6,13 @@
  */
 
 import { setGlobalOptions } from "firebase-functions";
-import { defineString, defineSecret } from "firebase-functions/params";
+import { defineString } from "firebase-functions/params";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import * as sgMail from "@sendgrid/mail";
 
 // Initialize Firebase Admin SDK
@@ -23,10 +24,6 @@ setGlobalOptions({
   region: "asia-southeast1",
 });
 
-// Define environment parameters
-// Secret stored in Google Secret Manager (optional - falls back to Firebase email)
-const sendgridApiKey = defineSecret("SENDGRID_API_KEY");
-
 // Regular config params (not sensitive)
 const senderEmail = defineString("SENDER_EMAIL", { default: "" });
 const senderName = defineString("SENDER_NAME", { default: "IDMC Admin" });
@@ -34,6 +31,26 @@ const appUrl = defineString("APP_URL", { default: "" });
 
 // Flag to enable/disable SendGrid (set to "true" to use SendGrid)
 const useSendGrid = defineString("USE_SENDGRID", { default: "false" });
+
+/**
+ * Retrieves SendGrid API key from Secret Manager
+ * Returns null if secret doesn't exist or can't be accessed
+ */
+async function getSendGridApiKey(): Promise<string | null> {
+  try {
+    const client = new SecretManagerServiceClient();
+    const projectId = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
+    const secretName = `projects/${projectId}/secrets/SENDGRID_API_KEY/versions/latest`;
+
+    const [version] = await client.accessSecretVersion({ name: secretName });
+    const payload = version.payload?.data?.toString();
+
+    return payload || null;
+  } catch (error) {
+    logger.warn("Could not access SENDGRID_API_KEY from Secret Manager:", error);
+    return null;
+  }
+}
 
 /**
  * Collection name constant for admins
@@ -217,14 +234,25 @@ async function sendInvitationEmailViaSendGrid(
   role: string,
   inviteLink: string
 ): Promise<void> {
+  // Get SendGrid API key from Secret Manager
+  const apiKey = await getSendGridApiKey();
+  if (!apiKey) {
+    throw new Error("SendGrid API key is not configured in Secret Manager");
+  }
+
   // Initialize SendGrid with API key
-  sgMail.setApiKey(sendgridApiKey.value());
+  sgMail.setApiKey(apiKey);
+
+  const fromEmail = senderEmail.value();
+  if (!fromEmail) {
+    throw new Error("SENDER_EMAIL is not configured");
+  }
 
   const msg = {
     to,
     from: {
-      email: senderEmail.value(),
-      name: senderName.value(),
+      email: fromEmail,
+      name: senderName.value() || "IDMC Admin",
     },
     subject: "You're Invited to IDMC Admin Dashboard",
     text: generateInvitationEmailText(displayName, role, inviteLink),
@@ -258,10 +286,7 @@ function isSendGridEnabled(): boolean {
  * @param event - The Firestore event containing the new document data
  */
 export const onAdminCreated = onDocumentCreated(
-  {
-    document: `${COLLECTIONS.ADMINS}/{adminId}`,
-    secrets: [sendgridApiKey],
-  },
+  `${COLLECTIONS.ADMINS}/{adminId}`,
   async (event) => {
     const snapshot = event.data;
     if (!snapshot) {
