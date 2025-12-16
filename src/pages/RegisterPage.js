@@ -15,7 +15,6 @@ import {
   formatPrice,
   isValidEmail,
   isValidPhoneNumber,
-  requiresProof,
 } from '../utils';
 import styles from './RegisterPage.module.css';
 
@@ -810,11 +809,6 @@ function RegisterPage() {
                         </option>
                       ))}
                     </select>
-                    {requiresProof(formData.primaryAttendee.category) && (
-                      <span className={styles.proofHint}>
-                        Valid ID required at check-in
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -957,11 +951,6 @@ function RegisterPage() {
                           </option>
                         ))}
                       </select>
-                      {requiresProof(attendee.category) && (
-                        <span className={styles.proofHint}>
-                          Valid ID required at check-in
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -1039,13 +1028,6 @@ function RegisterPage() {
                 <span>Total Amount ({getTotalAttendeeCount()} attendee{getTotalAttendeeCount() > 1 ? 's' : ''})</span>
                 <span className={styles.totalAmount}>{formatPrice(calculateTotalPrice())}</span>
               </div>
-
-              {(requiresProof(formData.primaryAttendee.category) ||
-                formData.additionalAttendees.some((a) => requiresProof(a.category))) && (
-                <div className={styles.proofNote}>
-                  <strong>Note:</strong> Attendees registered as Student/Senior Citizen must bring a valid ID for verification at check-in.
-                </div>
-              )}
 
               <div className={styles.termsSection}>
                 <div className={styles.checkboxGroup}>
