@@ -123,7 +123,7 @@ jobs:
           echo "✅ Firestore indexes deployed successfully!"
 
   seed_data:
-    if: ${{ inputs.seed_speakers == 'true' || inputs.seed_sessions == 'true' || inputs.seed_workshops == 'true' || inputs.seed_schedule == 'true' || inputs.seed_faq == 'true' || inputs.seed_settings == 'true' || inputs.seed_downloads == 'true' || inputs.seed_legal == 'true' || inputs.seed_registrations == 'true' || inputs.seed_all == 'true' }}
+    if: ${{ inputs.seed_speakers == 'true' || inputs.seed_sessions == 'true' || inputs.seed_workshops == 'true' || inputs.seed_schedule == 'true' || inputs.seed_faq == 'true' || inputs.seed_settings == 'true' || inputs.seed_downloads == 'true' || inputs.seed_legal == 'true' || inputs.seed_registrations || inputs.seed_all == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -248,7 +248,7 @@ jobs:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
       - name: Seed Mock Registrations
-        if: ${{ inputs.seed_registrations == 'true' }}
+        if: ${{ inputs.seed_registrations }}
         run: |
           if [ "${{ inputs.clear_existing }}" == "true" ]; then
             echo "Clearing and re-seeding mock registrations..."
@@ -263,5 +263,5 @@ jobs:
       - name: Seed Complete
         run: |
           echo "✅ Firestore seeding complete!"
-          echo "Seeded: speakers=${{ inputs.seed_speakers == 'true' || inputs.seed_all == 'true' }}, sessions=${{ inputs.seed_sessions == 'true' || inputs.seed_all == 'true' }}, workshops=${{ inputs.seed_workshops == 'true' || inputs.seed_all == 'true' }}, schedule=${{ inputs.seed_schedule == 'true' || inputs.seed_all == 'true' }}, faq=${{ inputs.seed_faq == 'true' || inputs.seed_all == 'true' }}, settings=${{ inputs.seed_settings == 'true' || inputs.seed_all == 'true' }}, downloads=${{ inputs.seed_downloads == 'true' || inputs.seed_all == 'true' }}, legal=${{ inputs.seed_legal == 'true' || inputs.seed_all == 'true' }}, registrations=${{ inputs.seed_registrations == 'true' }}"
+          echo "Seeded: speakers=${{ inputs.seed_speakers == 'true' || inputs.seed_all == 'true' }}, sessions=${{ inputs.seed_sessions == 'true' || inputs.seed_all == 'true' }}, workshops=${{ inputs.seed_workshops == 'true' || inputs.seed_all == 'true' }}, schedule=${{ inputs.seed_schedule == 'true' || inputs.seed_all == 'true' }}, faq=${{ inputs.seed_faq == 'true' || inputs.seed_all == 'true' }}, settings=${{ inputs.seed_settings == 'true' || inputs.seed_all == 'true' }}, downloads=${{ inputs.seed_downloads == 'true' || inputs.seed_all == 'true' }}, legal=${{ inputs.seed_legal == 'true' || inputs.seed_all == 'true' }}, registrations=${{ inputs.seed_registrations }}"
           echo "Cleared existing: ${{ inputs.clear_existing }}"
