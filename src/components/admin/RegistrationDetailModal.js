@@ -350,8 +350,7 @@ function RegistrationDetailModal({
           </div>
 
           {/* Additional Attendees (if group registration) */}
-          {registration.additionalAttendees &&
-            registration.additionalAttendees.length > 0 && (
+          {registration.additionalAttendees?.length > 0 && (
               <div className={styles.section}>
                 <h3 className={styles.sectionTitle}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

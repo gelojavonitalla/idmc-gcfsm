@@ -184,13 +184,13 @@ function PricingTierManager({ tiers, onCreate, onUpdate, onDelete, isLoading }) 
 
       {/* Existing Tiers */}
       <div className={styles.tierList}>
-        {tiers.length === 0 && !isCreating ? (
+        {(!tiers || tiers.length === 0) && !isCreating ? (
           <div className={styles.emptyState}>
             <p>No pricing tiers configured.</p>
             <p>Click &quot;Add Tier&quot; to create one.</p>
           </div>
         ) : (
-          tiers.map((tier) => (
+          (tiers || []).map((tier) => (
             <div key={tier.id} className={styles.tierCard}>
               {editingTier === tier.id ? (
                 <TierForm

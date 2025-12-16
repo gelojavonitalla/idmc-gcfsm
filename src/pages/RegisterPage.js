@@ -151,7 +151,7 @@ function RegisterPage() {
   const updateAdditionalAttendee = useCallback((index, field, value) => {
     setFormData((prev) => ({
       ...prev,
-      additionalAttendees: prev.additionalAttendees.map((attendee, i) =>
+      additionalAttendees: (prev.additionalAttendees || []).map((attendee, i) =>
         i === index ? { ...attendee, [field]: value } : attendee
       ),
     }));
@@ -167,7 +167,7 @@ function RegisterPage() {
   const addAdditionalAttendee = useCallback(() => {
     setFormData((prev) => ({
       ...prev,
-      additionalAttendees: [...prev.additionalAttendees, createEmptyAdditionalAttendee()],
+      additionalAttendees: [...(prev.additionalAttendees || []), createEmptyAdditionalAttendee()],
     }));
   }, []);
 
@@ -179,7 +179,7 @@ function RegisterPage() {
   const removeAdditionalAttendee = useCallback((index) => {
     setFormData((prev) => ({
       ...prev,
-      additionalAttendees: prev.additionalAttendees.filter((_, i) => i !== index),
+      additionalAttendees: (prev.additionalAttendees || []).filter((_, i) => i !== index),
     }));
     setAdditionalErrors((prev) => {
       const newErrors = { ...prev };
@@ -239,7 +239,7 @@ function RegisterPage() {
     const primaryPrice = calculatePrice(formData.primaryAttendee.category, currentTier);
 
     // Additional attendees price
-    const additionalPrice = formData.additionalAttendees.reduce((total, attendee) => {
+    const additionalPrice = (formData.additionalAttendees || []).reduce((total, attendee) => {
       return total + calculatePrice(attendee.category, currentTier);
     }, 0);
 
@@ -252,8 +252,8 @@ function RegisterPage() {
    * @returns {number} Total attendee count
    */
   const getTotalAttendeeCount = useCallback(() => {
-    return 1 + formData.additionalAttendees.length;
-  }, [formData.additionalAttendees.length]);
+    return 1 + (formData.additionalAttendees?.length || 0);
+  }, [formData.additionalAttendees?.length]);
 
   /**
    * Validates the personal information step (church info + primary + additional attendees)
@@ -305,7 +305,7 @@ function RegisterPage() {
     }
 
     // Validate additional attendees (phone required, email optional)
-    formData.additionalAttendees.forEach((attendee, index) => {
+    (formData.additionalAttendees || []).forEach((attendee, index) => {
       const attendeeErr = {};
 
       if (!attendee.lastName.trim()) {
@@ -468,7 +468,7 @@ function RegisterPage() {
           category: formData.primaryAttendee.category,
           workshopSelection: formData.primaryAttendee.workshopSelection || '',
         },
-        additionalAttendees: formData.additionalAttendees.map((attendee) => ({
+        additionalAttendees: (formData.additionalAttendees || []).map((attendee) => ({
           lastName: attendee.lastName,
           firstName: attendee.firstName,
           middleName: attendee.middleName || '',
@@ -596,10 +596,10 @@ function RegisterPage() {
                   </div>
                 </div>
 
-                {formData.additionalAttendees.length > 0 && (
+                {formData.additionalAttendees?.length > 0 && (
                   <>
-                    <h3>Additional Attendees ({formData.additionalAttendees.length})</h3>
-                    {formData.additionalAttendees.map((attendee, index) => (
+                    <h3>Additional Attendees ({formData.additionalAttendees?.length || 0})</h3>
+                    {(formData.additionalAttendees || []).map((attendee, index) => (
                       <div key={attendee.id} className={styles.attendeeSummary}>
                         <div className={styles.attendeeNumber}>#{index + 2}</div>
                         <div className={styles.attendeeDetails}>
@@ -909,14 +909,14 @@ function RegisterPage() {
 
               {/* Additional Attendees Section */}
               <div className={styles.sectionDivider}>
-                <span>Additional Attendees ({formData.additionalAttendees.length})</span>
+                <span>Additional Attendees ({formData.additionalAttendees?.length || 0})</span>
               </div>
               <p className={styles.sectionHint}>
                 Add more attendees from your group. Phone number is required for SMS notification.
                 Email is optional but recommended for individual QR code delivery.
               </p>
 
-              {formData.additionalAttendees.map((attendee, index) => (
+              {(formData.additionalAttendees || []).map((attendee, index) => (
                 <div key={attendee.id} className={styles.attendeeCard}>
                   <div className={styles.attendeeHeader}>
                     <h3>Attendee #{index + 2}</h3>
@@ -1097,11 +1097,11 @@ function RegisterPage() {
                 </div>
               </div>
 
-              {formData.additionalAttendees.length > 0 && (
+              {formData.additionalAttendees?.length > 0 && (
                 <div className={styles.reviewSection}>
-                  <h3>Additional Attendees ({formData.additionalAttendees.length})</h3>
+                  <h3>Additional Attendees ({formData.additionalAttendees?.length || 0})</h3>
                   <div className={styles.attendeeList}>
-                    {formData.additionalAttendees.map((attendee, index) => (
+                    {(formData.additionalAttendees || []).map((attendee, index) => (
                       <div key={attendee.id} className={styles.attendeeListItem}>
                         <span className={styles.attendeeListName}>
                           {index + 2}. {attendee.firstName} {attendee.lastName}
@@ -1327,10 +1327,10 @@ function RegisterPage() {
                 </div>
               </div>
 
-              {formData.additionalAttendees.length > 0 && (
+              {formData.additionalAttendees?.length > 0 && (
                 <div className={styles.reviewSection}>
-                  <h3>Additional Attendees ({formData.additionalAttendees.length})</h3>
-                  {formData.additionalAttendees.map((attendee, index) => (
+                  <h3>Additional Attendees ({formData.additionalAttendees?.length || 0})</h3>
+                  {(formData.additionalAttendees || []).map((attendee, index) => (
                     <div key={attendee.id} className={styles.attendeeSummary}>
                       <div className={styles.attendeeNumber}>#{index + 2}</div>
                       <div className={styles.attendeeDetails}>
