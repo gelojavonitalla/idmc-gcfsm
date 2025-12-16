@@ -24,13 +24,16 @@ setGlobalOptions({
 });
 
 // Define environment parameters
-// Secret stored in Google Secret Manager
+// Secret stored in Google Secret Manager (optional - falls back to Firebase email)
 const sendgridApiKey = defineSecret("SENDGRID_API_KEY");
 
 // Regular config params (not sensitive)
-const senderEmail = defineString("SENDER_EMAIL");
-const senderName = defineString("SENDER_NAME");
-const appUrl = defineString("APP_URL");
+const senderEmail = defineString("SENDER_EMAIL", { default: "" });
+const senderName = defineString("SENDER_NAME", { default: "IDMC Admin" });
+const appUrl = defineString("APP_URL", { default: "" });
+
+// Flag to enable/disable SendGrid (set to "true" to use SendGrid)
+const useSendGrid = defineString("USE_SENDGRID", { default: "false" });
 
 /**
  * Collection name constant for admins
@@ -208,7 +211,7 @@ If you didn't expect this invitation, you can safely ignore this email.
  * @param inviteLink - Password setup link
  * @returns Promise that resolves when email is sent
  */
-async function sendInvitationEmail(
+async function sendInvitationEmailViaSendGrid(
   to: string,
   displayName: string,
   role: string,
@@ -229,7 +232,16 @@ async function sendInvitationEmail(
   };
 
   await sgMail.send(msg);
-  logger.info(`Invitation email sent to ${to}`);
+  logger.info(`Invitation email sent via SendGrid to ${to}`);
+}
+
+/**
+ * Checks if SendGrid is enabled and configured
+ *
+ * @returns boolean indicating if SendGrid should be used
+ */
+function isSendGridEnabled(): boolean {
+  return useSendGrid.value().toLowerCase() === "true";
 }
 
 /**
@@ -317,24 +329,48 @@ export const onAdminCreated = onDocumentCreated(
       const inviteExpiresAt = new Date();
       inviteExpiresAt.setHours(inviteExpiresAt.getHours() + 72);
 
-      // Send invitation email via SendGrid
-      await sendInvitationEmail(
-        email,
-        displayName || email.split("@")[0],
-        role,
-        inviteLink
-      );
+      // Determine if email was sent via SendGrid or using Firebase fallback
+      let emailSentViaSendGrid = false;
+
+      // Send invitation email via SendGrid if enabled
+      if (isSendGridEnabled()) {
+        try {
+          await sendInvitationEmailViaSendGrid(
+            email,
+            displayName || email.split("@")[0],
+            role,
+            inviteLink
+          );
+          emailSentViaSendGrid = true;
+        } catch (sendGridError) {
+          logger.error("SendGrid email failed, storing link for manual sharing:", sendGridError);
+        }
+      }
+
+      // If SendGrid not enabled or failed, log for Firebase fallback
+      if (!emailSentViaSendGrid) {
+        logger.info(
+          `SendGrid not enabled. Invite link stored in Firestore for ${email}. ` +
+          `Admin can share manually or set USE_SENDGRID=true for automatic emails.`
+        );
+      }
 
       // Update the admin document with invitation details
       // If the document ID doesn't match the Auth UID, migrate the document
+      const updateData = {
+        invitationSentAt: FieldValue.serverTimestamp(),
+        inviteExpiresAt: inviteExpiresAt,
+        inviteLink: emailSentViaSendGrid ? null : inviteLink, // Store link only if email wasn't sent
+        emailSent: emailSentViaSendGrid,
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+
       if (adminId !== userRecord.uid) {
         // Create new document with correct UID
         const adminRef = db.collection(COLLECTIONS.ADMINS).doc(userRecord.uid);
         await adminRef.set({
           ...adminData,
-          invitationSentAt: FieldValue.serverTimestamp(),
-          inviteExpiresAt: inviteExpiresAt,
-          updatedAt: FieldValue.serverTimestamp(),
+          ...updateData,
         });
 
         // Delete the old document with temporary ID
@@ -345,15 +381,11 @@ export const onAdminCreated = onDocumentCreated(
         );
       } else {
         // Update existing document
-        await snapshot.ref.update({
-          invitationSentAt: FieldValue.serverTimestamp(),
-          inviteExpiresAt: inviteExpiresAt,
-          updatedAt: FieldValue.serverTimestamp(),
-        });
+        await snapshot.ref.update(updateData);
       }
 
       logger.info(
-        `Invitation email sent successfully to ${email} with role: ${role}`
+        `Invitation processed for ${email} with role: ${role}. Email sent: ${emailSentViaSendGrid}`
       );
     } catch (error) {
       logger.error(`Error processing invitation for ${email}:`, error);

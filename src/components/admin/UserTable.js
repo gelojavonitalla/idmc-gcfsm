@@ -140,6 +140,20 @@ function UserTable({ users, onUpdateRole, onToggleStatus, onResendInvitation, cu
                   </td>
                   <td>
                     <div className={styles.actions}>
+                      {user.status === 'pending' && user.inviteLink && (
+                        <button
+                          className={`${styles.actionButton} ${styles.copyButton}`}
+                          onClick={() => {
+                            navigator.clipboard.writeText(user.inviteLink);
+                          }}
+                          title="Copy invitation link"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                        </button>
+                      )}
                       {user.status === 'pending' && onResendInvitation && (
                         <button
                           className={`${styles.actionButton} ${styles.resendButton}`}
@@ -198,6 +212,7 @@ UserTable.propTypes = {
       role: PropTypes.string.isRequired,
       status: PropTypes.string,
       lastLoginAt: PropTypes.oneOfType([PropTypes.object, PropTypes.string]),
+      inviteLink: PropTypes.string,
     })
   ),
   onUpdateRole: PropTypes.func.isRequired,
