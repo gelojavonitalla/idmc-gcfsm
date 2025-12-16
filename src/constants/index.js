@@ -208,6 +208,7 @@ export const STORAGE_PATHS = {
   CONFERENCE_HERO_VIDEOS: 'conference/hero-videos',
   SPEAKER_PHOTOS: 'speakers/photos',
   DOWNLOAD_FILES: 'downloads/files',
+  DOWNLOAD_THUMBNAILS: 'downloads/thumbnails',
 };
 
 /**
@@ -226,6 +227,16 @@ export const MAX_FILE_SIZES = {
   IMAGE: 10 * 1024 * 1024, // 10MB
   VIDEO: 100 * 1024 * 1024, // 100MB
   DOCUMENT: 50 * 1024 * 1024, // 50MB
+  THUMBNAIL: 2 * 1024 * 1024, // 2MB
+};
+
+/**
+ * Recommended thumbnail dimensions in pixels
+ * Optimized for download cards and list displays
+ */
+export const THUMBNAIL_DIMENSIONS = {
+  WIDTH: 400,
+  HEIGHT: 300,
 };
 
 /**

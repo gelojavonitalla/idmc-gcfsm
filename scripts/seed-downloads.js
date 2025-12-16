@@ -142,8 +142,8 @@ async function seedDownloads(db) {
 
   await batch.commit();
   console.log(`\nSuccessfully seeded ${DOWNLOADS_DATA.length} downloads!`);
-  console.log('\nNote: Download URLs are empty. Upload files to Firebase Storage');
-  console.log('and update the downloadUrl field via the admin panel.');
+  console.log('\nNote: Download and thumbnail URLs are empty. Upload files via the admin panel.');
+  console.log('Recommended thumbnail size: 400x300 pixels.');
 }
 
 /**

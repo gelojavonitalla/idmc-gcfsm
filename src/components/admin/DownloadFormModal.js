@@ -13,8 +13,14 @@ import {
   DOWNLOAD_STATUS,
   ALLOWED_FILE_TYPES,
   MAX_FILE_SIZES,
+  THUMBNAIL_DIMENSIONS,
 } from '../../constants';
-import { uploadDownloadFile, deleteFile, validateFile } from '../../services/storage';
+import {
+  uploadDownloadFile,
+  uploadDownloadThumbnail,
+  deleteFile,
+  validateFile,
+} from '../../services/storage';
 import { formatFileSize } from '../../services/downloads';
 import styles from './DownloadFormModal.module.css';
 
@@ -29,6 +35,7 @@ const INITIAL_FORM_STATE = {
   fileType: 'PDF',
   category: DOWNLOAD_CATEGORIES.BOOKLET,
   downloadUrl: '',
+  thumbnailUrl: '',
   order: 1,
   status: DOWNLOAD_STATUS.DRAFT,
 };
@@ -57,6 +64,13 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
   const [fileError, setFileError] = useState(null);
   const [dragActive, setDragActive] = useState(false);
 
+  // Thumbnail upload states
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [thumbnailProgress, setThumbnailProgress] = useState(0);
+  const [thumbnailError, setThumbnailError] = useState(null);
+  const [thumbnailDragActive, setThumbnailDragActive] = useState(false);
+  const thumbnailInputRef = useRef(null);
+
   const isEditing = !!download;
 
   /**
@@ -73,6 +87,7 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
           fileType: download.fileType || 'PDF',
           category: download.category || DOWNLOAD_CATEGORIES.BOOKLET,
           downloadUrl: download.downloadUrl || '',
+          thumbnailUrl: download.thumbnailUrl || '',
           order: download.order || 1,
           status: download.status || DOWNLOAD_STATUS.DRAFT,
         });
@@ -83,6 +98,9 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
       setFileError(null);
       setFileUploading(false);
       setFileProgress(0);
+      setThumbnailError(null);
+      setThumbnailUploading(false);
+      setThumbnailProgress(0);
       setTimeout(() => {
         titleInputRef.current?.focus();
       }, 100);
@@ -286,6 +304,129 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
   };
 
   /**
+   * Handles thumbnail file selection
+   *
+   * @param {File} file - Selected thumbnail file
+   */
+  const handleThumbnail = async (file) => {
+    setThumbnailError(null);
+
+    const validation = validateFile(file, 'thumbnail');
+    if (!validation.valid) {
+      setThumbnailError(validation.error);
+      return;
+    }
+
+    setThumbnailUploading(true);
+    setThumbnailProgress(0);
+
+    try {
+      const downloadId = download?.id || generateSlug(formData.title) || `download-${Date.now()}`;
+
+      // Delete old thumbnail if exists
+      if (formData.thumbnailUrl) {
+        try {
+          await deleteFile(formData.thumbnailUrl);
+        } catch {
+          // Ignore delete errors
+        }
+      }
+
+      const thumbnailUrl = await uploadDownloadThumbnail(file, downloadId, setThumbnailProgress);
+
+      setFormData((prev) => ({
+        ...prev,
+        thumbnailUrl,
+      }));
+    } catch (uploadError) {
+      setThumbnailError(uploadError.message);
+    } finally {
+      setThumbnailUploading(false);
+    }
+  };
+
+  /**
+   * Handles thumbnail input change
+   *
+   * @param {Event} event - Change event
+   */
+  const handleThumbnailInputChange = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleThumbnail(file);
+    }
+    // Reset input so same file can be selected again
+    event.target.value = '';
+  };
+
+  /**
+   * Handles thumbnail drag events
+   *
+   * @param {Event} event - Drag event
+   */
+  const handleThumbnailDrag = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (isSubmitting || thumbnailUploading) {
+      return;
+    }
+
+    if (event.type === 'dragenter' || event.type === 'dragover') {
+      setThumbnailDragActive(true);
+    } else if (event.type === 'dragleave') {
+      setThumbnailDragActive(false);
+    }
+  };
+
+  /**
+   * Handles thumbnail file drop
+   *
+   * @param {Event} event - Drop event
+   */
+  const handleThumbnailDrop = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setThumbnailDragActive(false);
+
+    if (isSubmitting || thumbnailUploading) {
+      return;
+    }
+
+    const file = event.dataTransfer?.files?.[0];
+    if (file) {
+      handleThumbnail(file);
+    }
+  };
+
+  /**
+   * Opens thumbnail file picker
+   */
+  const openThumbnailPicker = () => {
+    if (!isSubmitting && !thumbnailUploading) {
+      thumbnailInputRef.current?.click();
+    }
+  };
+
+  /**
+   * Handles thumbnail removal
+   */
+  const handleThumbnailRemove = async () => {
+    if (formData.thumbnailUrl) {
+      try {
+        await deleteFile(formData.thumbnailUrl);
+      } catch {
+        // Ignore delete errors
+      }
+    }
+    setFormData((prev) => ({
+      ...prev,
+      thumbnailUrl: '',
+    }));
+    setThumbnailError(null);
+  };
+
+  /**
    * Handles form submission
    *
    * @param {Event} event - Submit event
@@ -320,6 +461,9 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
   const maxSizeMB = MAX_FILE_SIZES.DOCUMENT / (1024 * 1024);
   const acceptString = ALLOWED_FILE_TYPES.DOCUMENTS.join(',');
   const displayError = fileError;
+
+  const thumbnailMaxSizeMB = MAX_FILE_SIZES.THUMBNAIL / (1024 * 1024);
+  const thumbnailAcceptString = ALLOWED_FILE_TYPES.IMAGES.join(',');
 
   return (
     <div className={styles.overlay}>
@@ -493,6 +637,102 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
                 )}
               </div>
 
+              {/* Thumbnail Upload */}
+              <div className={styles.fieldSpan2}>
+                <label className={styles.label}>
+                  Thumbnail Image
+                </label>
+
+                {formData.thumbnailUrl && !thumbnailUploading ? (
+                  <div className={styles.thumbnailPreview}>
+                    <img
+                      src={formData.thumbnailUrl}
+                      alt="Thumbnail preview"
+                      className={styles.thumbnailImage}
+                    />
+                    <div className={styles.thumbnailActions}>
+                      <button
+                        type="button"
+                        className={styles.changeButton}
+                        onClick={openThumbnailPicker}
+                        disabled={isSubmitting}
+                      >
+                        Change
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.removeButton}
+                        onClick={handleThumbnailRemove}
+                        disabled={isSubmitting}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={`${styles.dropzone} ${thumbnailDragActive ? styles.dragActive : ''} ${thumbnailUploading ? styles.uploading : ''}`}
+                    onDragEnter={handleThumbnailDrag}
+                    onDragLeave={handleThumbnailDrag}
+                    onDragOver={handleThumbnailDrag}
+                    onDrop={handleThumbnailDrop}
+                    onClick={openThumbnailPicker}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && openThumbnailPicker()}
+                  >
+                    {thumbnailUploading ? (
+                      <div className={styles.uploadingState}>
+                        <div className={styles.progressBar}>
+                          <div
+                            className={styles.progressFill}
+                            style={{ width: `${thumbnailProgress}%` }}
+                          />
+                        </div>
+                        <span className={styles.progressText}>Uploading... {thumbnailProgress}%</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className={styles.dropzoneIcon}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
+                          </svg>
+                        </div>
+                        <p className={styles.dropzoneText}>
+                          <span className={styles.dropzonePrimary}>
+                            Click to upload or drag and drop
+                          </span>
+                          <span className={styles.dropzoneSecondary}>
+                            JPEG, PNG, GIF, or WebP (max {thumbnailMaxSizeMB}MB)
+                          </span>
+                          <span className={styles.dropzoneSecondary}>
+                            Recommended: {THUMBNAIL_DIMENSIONS.WIDTH}x{THUMBNAIL_DIMENSIONS.HEIGHT}px
+                          </span>
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                <input
+                  ref={thumbnailInputRef}
+                  type="file"
+                  accept={thumbnailAcceptString}
+                  onChange={handleThumbnailInputChange}
+                  className={styles.hiddenInput}
+                  disabled={isSubmitting || thumbnailUploading}
+                />
+
+                {thumbnailError && <span className={styles.error}>{thumbnailError}</span>}
+                {!formData.thumbnailUrl && !thumbnailUploading && (
+                  <span className={styles.hint}>
+                    Optional - A cover image for the download
+                  </span>
+                )}
+              </div>
+
               {/* Category */}
               <div className={styles.field}>
                 <label htmlFor="category" className={styles.label}>
@@ -603,6 +843,7 @@ DownloadFormModal.propTypes = {
     fileType: PropTypes.string,
     category: PropTypes.string,
     downloadUrl: PropTypes.string,
+    thumbnailUrl: PropTypes.string,
     order: PropTypes.number,
     status: PropTypes.string,
   }),
