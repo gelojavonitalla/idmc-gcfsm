@@ -37,6 +37,7 @@ export const ADMIN_ROUTES = {
   FAQ: '/admin/faq',
   DOWNLOADS: '/admin/downloads',
   ABOUT_CONTENT: '/admin/about-content',
+  LEGAL: '/admin/legal',
   SETTINGS: '/admin/settings',
   USERS: '/admin/users',
   ACTIVITY: '/admin/activity',
@@ -158,6 +159,7 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'FAQ', path: ADMIN_ROUTES.FAQ, icon: 'help' },
       { label: 'Downloads', path: ADMIN_ROUTES.DOWNLOADS, icon: 'download' },
       { label: 'About', path: ADMIN_ROUTES.ABOUT_CONTENT, icon: 'info' },
+      { label: 'Legal', path: ADMIN_ROUTES.LEGAL, icon: 'document' },
     ],
   },
   {
