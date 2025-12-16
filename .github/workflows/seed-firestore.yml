@@ -6,75 +6,48 @@ on:
       deploy_indexes:
         description: 'Deploy Firestore indexes'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
+        default: false
+        type: boolean
       seed_speakers:
         description: 'Seed speakers data'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
+        default: false
+        type: boolean
       seed_sessions:
         description: 'Seed sessions data'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
+        default: false
+        type: boolean
       seed_workshops:
         description: 'Seed workshops data'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
+        default: false
+        type: boolean
       seed_schedule:
         description: 'Seed schedule data'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
+        default: false
+        type: boolean
       seed_faq:
         description: 'Seed FAQ data'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
+        default: false
+        type: boolean
       seed_settings:
         description: 'Seed settings & pricing tiers'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
+        default: false
+        type: boolean
       seed_downloads:
         description: 'Seed downloads data'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
+        default: false
+        type: boolean
       seed_legal:
         description: 'Seed legal content (Terms & Privacy)'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
+        default: false
+        type: boolean
       seed_registrations:
         description: 'Seed mock registrations (for testing)'
         required: false
@@ -83,23 +56,17 @@ on:
       seed_all:
         description: 'Seed ALL data (overrides individual options)'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
+        default: false
+        type: boolean
       clear_existing:
         description: 'Clear existing data before seeding'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
+        default: false
+        type: boolean
 
 jobs:
   deploy_indexes:
-    if: ${{ inputs.deploy_indexes == 'true' }}
+    if: ${{ inputs.deploy_indexes }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -123,7 +90,7 @@ jobs:
           echo "✅ Firestore indexes deployed successfully!"
 
   seed_data:
-    if: ${{ inputs.seed_speakers == 'true' || inputs.seed_sessions == 'true' || inputs.seed_workshops == 'true' || inputs.seed_schedule == 'true' || inputs.seed_faq == 'true' || inputs.seed_settings == 'true' || inputs.seed_downloads == 'true' || inputs.seed_legal == 'true' || inputs.seed_registrations == 'true' || inputs.seed_all == 'true' }}
+    if: ${{ inputs.seed_speakers || inputs.seed_sessions || inputs.seed_workshops || inputs.seed_schedule || inputs.seed_faq || inputs.seed_settings || inputs.seed_downloads || inputs.seed_legal || inputs.seed_registrations || inputs.seed_all }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -144,7 +111,7 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_IDMC_GCFSM_DEV }}
 
       - name: Seed Speakers Data
-        if: ${{ inputs.seed_speakers == 'true' || inputs.seed_all == 'true' }}
+        if: ${{ inputs.seed_speakers || inputs.seed_all }}
         run: |
           if [ "${{ inputs.clear_existing }}" == "true" ]; then
             echo "Clearing and re-seeding speakers..."
@@ -157,7 +124,7 @@ jobs:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
       - name: Seed Sessions Data
-        if: ${{ inputs.seed_sessions == 'true' || inputs.seed_all == 'true' }}
+        if: ${{ inputs.seed_sessions || inputs.seed_all }}
         run: |
           if [ "${{ inputs.clear_existing }}" == "true" ]; then
             echo "Clearing and re-seeding sessions..."
@@ -170,7 +137,7 @@ jobs:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
       - name: Seed Workshops Data
-        if: ${{ inputs.seed_workshops == 'true' || inputs.seed_all == 'true' }}
+        if: ${{ inputs.seed_workshops || inputs.seed_all }}
         run: |
           if [ "${{ inputs.clear_existing }}" == "true" ]; then
             echo "Clearing and re-seeding workshops..."
@@ -183,7 +150,7 @@ jobs:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
       - name: Seed Schedule Data
-        if: ${{ inputs.seed_schedule == 'true' || inputs.seed_all == 'true' }}
+        if: ${{ inputs.seed_schedule || inputs.seed_all }}
         run: |
           if [ "${{ inputs.clear_existing }}" == "true" ]; then
             echo "Clearing and re-seeding schedule..."
@@ -196,7 +163,7 @@ jobs:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
       - name: Seed FAQ Data
-        if: ${{ inputs.seed_faq == 'true' || inputs.seed_all == 'true' }}
+        if: ${{ inputs.seed_faq || inputs.seed_all }}
         run: |
           if [ "${{ inputs.clear_existing }}" == "true" ]; then
             echo "Clearing and re-seeding FAQ..."
@@ -209,7 +176,7 @@ jobs:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
       - name: Seed Settings Data
-        if: ${{ inputs.seed_settings == 'true' || inputs.seed_all == 'true' }}
+        if: ${{ inputs.seed_settings || inputs.seed_all }}
         run: |
           if [ "${{ inputs.clear_existing }}" == "true" ]; then
             echo "Clearing and re-seeding settings..."
@@ -222,7 +189,7 @@ jobs:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
       - name: Seed Downloads Data
-        if: ${{ inputs.seed_downloads == 'true' || inputs.seed_all == 'true' }}
+        if: ${{ inputs.seed_downloads || inputs.seed_all }}
         run: |
           if [ "${{ inputs.clear_existing }}" == "true" ]; then
             echo "Clearing and re-seeding downloads..."
@@ -235,7 +202,7 @@ jobs:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
       - name: Seed Legal Content
-        if: ${{ inputs.seed_legal == 'true' || inputs.seed_all == 'true' }}
+        if: ${{ inputs.seed_legal || inputs.seed_all }}
         run: |
           if [ "${{ inputs.clear_existing }}" == "true" ]; then
             echo "Clearing and re-seeding legal content..."
@@ -248,7 +215,7 @@ jobs:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
       - name: Seed Mock Registrations
-        if: ${{ inputs.seed_registrations == 'true' }}
+        if: ${{ inputs.seed_registrations }}
         run: |
           if [ "${{ inputs.clear_existing }}" == "true" ]; then
             echo "Clearing and re-seeding mock registrations..."
@@ -263,5 +230,5 @@ jobs:
       - name: Seed Complete
         run: |
           echo "✅ Firestore seeding complete!"
-          echo "Seeded: speakers=${{ inputs.seed_speakers == 'true' || inputs.seed_all == 'true' }}, sessions=${{ inputs.seed_sessions == 'true' || inputs.seed_all == 'true' }}, workshops=${{ inputs.seed_workshops == 'true' || inputs.seed_all == 'true' }}, schedule=${{ inputs.seed_schedule == 'true' || inputs.seed_all == 'true' }}, faq=${{ inputs.seed_faq == 'true' || inputs.seed_all == 'true' }}, settings=${{ inputs.seed_settings == 'true' || inputs.seed_all == 'true' }}, downloads=${{ inputs.seed_downloads == 'true' || inputs.seed_all == 'true' }}, legal=${{ inputs.seed_legal == 'true' || inputs.seed_all == 'true' }}, registrations=${{ inputs.seed_registrations == 'true' }}"
+          echo "Seeded: speakers=${{ inputs.seed_speakers || inputs.seed_all }}, sessions=${{ inputs.seed_sessions || inputs.seed_all }}, workshops=${{ inputs.seed_workshops || inputs.seed_all }}, schedule=${{ inputs.seed_schedule || inputs.seed_all }}, faq=${{ inputs.seed_faq || inputs.seed_all }}, settings=${{ inputs.seed_settings || inputs.seed_all }}, downloads=${{ inputs.seed_downloads || inputs.seed_all }}, legal=${{ inputs.seed_legal || inputs.seed_all }}, registrations=${{ inputs.seed_registrations }}"
           echo "Cleared existing: ${{ inputs.clear_existing }}"
