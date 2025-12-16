@@ -62,7 +62,7 @@ jobs:
           rm -f $HOME/gcloud-key.json
         env:
           # Cloud Functions environment params (passed during deploy)
-          SENDER_EMAIL: noreply@idmc-gcfsm.com
-          SENDER_NAME: IDMC Admin
-          APP_URL: https://idmc-gcfsm-dev.web.app
-          USE_SENDGRID: "false"
+          SENDER_EMAIL: ${{ vars.SENDER_EMAIL }}
+          SENDER_NAME: ${{ vars.SENDER_NAME }}
+          APP_URL: ${{ vars.APP_URL }}
+          USE_SENDGRID: ${{ vars.USE_SENDGRID }}
