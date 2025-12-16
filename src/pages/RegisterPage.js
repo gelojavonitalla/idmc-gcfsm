@@ -7,6 +7,7 @@ import {
   REGISTRATION_CATEGORY_LABELS,
   MINISTRY_ROLES,
   PAYMENT_INFO,
+  ROUTES,
 } from '../constants';
 import {
   calculatePrice,
@@ -24,12 +25,12 @@ import styles from './RegisterPage.module.css';
 let attendeeIdCounter = 0;
 
 /**
- * Creates a new empty attendee object with a unique ID.
- * Uses a combination of timestamp, counter, and random string for uniqueness.
+ * Creates a new empty additional attendee object with a unique ID.
+ * Additional attendees have required phone but optional email.
  *
- * @returns {Object} Empty attendee data
+ * @returns {Object} Empty additional attendee data
  */
-const createEmptyAttendee = () => {
+const createEmptyAdditionalAttendee = () => {
   attendeeIdCounter += 1;
   const uniqueId = `${Date.now()}-${attendeeIdCounter}-${Math.random().toString(36).substring(2, 8)}`;
   return {
@@ -38,7 +39,7 @@ const createEmptyAttendee = () => {
     firstName: '',
     middleName: '',
     cellphone: '',
-    email: '',
+    email: '', // Optional for additional attendees
     ministryRole: '',
     category: REGISTRATION_CATEGORIES.REGULAR,
   };
@@ -46,6 +47,8 @@ const createEmptyAttendee = () => {
 
 /**
  * Initial form data structure for registration
+ * Primary attendee requires email + phone for all communications
+ * Additional attendees require phone (for SMS) but email is optional
  */
 const INITIAL_FORM_DATA = {
   // Church Information (shared)
@@ -53,8 +56,21 @@ const INITIAL_FORM_DATA = {
   churchCity: '',
   churchProvince: '',
 
-  // Attendees list
-  attendees: [createEmptyAttendee()],
+  // Primary attendee (required: email, emailConfirm, phone)
+  primaryAttendee: {
+    lastName: '',
+    firstName: '',
+    middleName: '',
+    cellphone: '',
+    email: '',
+    emailConfirm: '',
+    ministryRole: '',
+    category: REGISTRATION_CATEGORIES.REGULAR,
+    workshopSelection: '',
+  },
+
+  // Additional attendees (required: phone; optional: email)
+  additionalAttendees: [],
 
   // Payment
   paymentFile: null,
@@ -82,8 +98,10 @@ function RegisterPage() {
   const [currentStep, setCurrentStep] = useState(REGISTRATION_STEPS.PERSONAL_INFO);
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [errors, setErrors] = useState({});
-  const [attendeeErrors, setAttendeeErrors] = useState({});
+  const [primaryErrors, setPrimaryErrors] = useState({});
+  const [additionalErrors, setAdditionalErrors] = useState({});
   const [registrationId, setRegistrationId] = useState(null);
+  const [shortCode, setShortCode] = useState(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const currentTier = activePricingTier;
@@ -101,53 +119,65 @@ function RegisterPage() {
   }, []);
 
   /**
-   * Updates an attendee field value
+   * Updates primary attendee field value
+   *
+   * @param {string} field - The field name to update
+   * @param {*} value - The new value
+   */
+  const updatePrimaryAttendee = useCallback((field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      primaryAttendee: { ...prev.primaryAttendee, [field]: value },
+    }));
+    setPrimaryErrors((prev) => ({ ...prev, [field]: null }));
+  }, []);
+
+  /**
+   * Updates an additional attendee field value
    *
    * @param {number} index - The attendee index
    * @param {string} field - The field name to update
    * @param {*} value - The new value
    */
-  const updateAttendee = useCallback((index, field, value) => {
+  const updateAdditionalAttendee = useCallback((index, field, value) => {
     setFormData((prev) => ({
       ...prev,
-      attendees: prev.attendees.map((attendee, i) =>
+      additionalAttendees: prev.additionalAttendees.map((attendee, i) =>
         i === index ? { ...attendee, [field]: value } : attendee
       ),
     }));
-    setAttendeeErrors((prev) => ({
+    setAdditionalErrors((prev) => ({
       ...prev,
       [index]: { ...prev[index], [field]: null },
     }));
   }, []);
 
   /**
-   * Adds a new attendee
+   * Adds a new additional attendee
    */
-  const addAttendee = useCallback(() => {
+  const addAdditionalAttendee = useCallback(() => {
     setFormData((prev) => ({
       ...prev,
-      attendees: [...prev.attendees, createEmptyAttendee()],
+      additionalAttendees: [...prev.additionalAttendees, createEmptyAdditionalAttendee()],
     }));
   }, []);
 
   /**
-   * Removes an attendee
+   * Removes an additional attendee
    *
    * @param {number} index - The attendee index to remove
    */
-  const removeAttendee = useCallback((index) => {
-    if (formData.attendees.length > 1) {
-      setFormData((prev) => ({
-        ...prev,
-        attendees: prev.attendees.filter((_, i) => i !== index),
-      }));
-      setAttendeeErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[index];
-        return newErrors;
-      });
-    }
-  }, [formData.attendees.length]);
+  const removeAdditionalAttendee = useCallback((index) => {
+    setFormData((prev) => ({
+      ...prev,
+      additionalAttendees: prev.additionalAttendees.filter((_, i) => i !== index),
+    }));
+    setAdditionalErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[index];
+      return newErrors;
+    });
+  }, []);
 
   /**
    * Handles file selection for payment upload.
@@ -191,24 +221,40 @@ function RegisterPage() {
   }, []);
 
   /**
-   * Calculates total price for all attendees
+   * Calculates total price for all attendees (primary + additional)
    *
    * @returns {number} Total price
    */
   const calculateTotalPrice = useCallback(() => {
-    return formData.attendees.reduce((total, attendee) => {
+    // Primary attendee price
+    const primaryPrice = calculatePrice(formData.primaryAttendee.category, currentTier);
+
+    // Additional attendees price
+    const additionalPrice = formData.additionalAttendees.reduce((total, attendee) => {
       return total + calculatePrice(attendee.category, currentTier);
     }, 0);
-  }, [formData.attendees, currentTier]);
+
+    return primaryPrice + additionalPrice;
+  }, [formData.primaryAttendee.category, formData.additionalAttendees, currentTier]);
 
   /**
-   * Validates the personal information step (church info + attendees)
+   * Gets total attendee count (primary + additional)
+   *
+   * @returns {number} Total attendee count
+   */
+  const getTotalAttendeeCount = useCallback(() => {
+    return 1 + formData.additionalAttendees.length;
+  }, [formData.additionalAttendees.length]);
+
+  /**
+   * Validates the personal information step (church info + primary + additional attendees)
    *
    * @returns {boolean} True if valid
    */
   const validatePersonalInfo = useCallback(() => {
     const newErrors = {};
-    const newAttendeeErrors = {};
+    const newPrimaryErrors = {};
+    const newAdditionalErrors = {};
 
     // Validate church info
     if (!formData.churchName.trim()) {
@@ -221,8 +267,36 @@ function RegisterPage() {
       newErrors.churchProvince = 'Province/Region is required';
     }
 
-    // Validate each attendee
-    formData.attendees.forEach((attendee, index) => {
+    // Validate primary attendee (email + phone required)
+    const primary = formData.primaryAttendee;
+
+    if (!primary.lastName.trim()) {
+      newPrimaryErrors.lastName = 'Last name is required';
+    }
+    if (!primary.firstName.trim()) {
+      newPrimaryErrors.firstName = 'First name is required';
+    }
+    if (!primary.cellphone.trim()) {
+      newPrimaryErrors.cellphone = 'Cellphone number is required';
+    } else if (!isValidPhoneNumber(primary.cellphone)) {
+      newPrimaryErrors.cellphone = 'Please enter a valid Philippine cellphone number';
+    }
+    if (!primary.email.trim()) {
+      newPrimaryErrors.email = 'Email is required';
+    } else if (!isValidEmail(primary.email)) {
+      newPrimaryErrors.email = 'Please enter a valid email address';
+    }
+    if (!primary.emailConfirm.trim()) {
+      newPrimaryErrors.emailConfirm = 'Please confirm your email';
+    } else if (primary.email.trim().toLowerCase() !== primary.emailConfirm.trim().toLowerCase()) {
+      newPrimaryErrors.emailConfirm = 'Email addresses do not match';
+    }
+    if (!primary.ministryRole) {
+      newPrimaryErrors.ministryRole = 'Ministry role is required';
+    }
+
+    // Validate additional attendees (phone required, email optional)
+    formData.additionalAttendees.forEach((attendee, index) => {
       const attendeeErr = {};
 
       if (!attendee.lastName.trim()) {
@@ -236,9 +310,8 @@ function RegisterPage() {
       } else if (!isValidPhoneNumber(attendee.cellphone)) {
         attendeeErr.cellphone = 'Please enter a valid Philippine cellphone number';
       }
-      if (!attendee.email.trim()) {
-        attendeeErr.email = 'Email is required';
-      } else if (!isValidEmail(attendee.email)) {
+      // Email is optional for additional attendees, but validate if provided
+      if (attendee.email.trim() && !isValidEmail(attendee.email)) {
         attendeeErr.email = 'Please enter a valid email address';
       }
       if (!attendee.ministryRole) {
@@ -246,14 +319,19 @@ function RegisterPage() {
       }
 
       if (Object.keys(attendeeErr).length > 0) {
-        newAttendeeErrors[index] = attendeeErr;
+        newAdditionalErrors[index] = attendeeErr;
       }
     });
 
     setErrors(newErrors);
-    setAttendeeErrors(newAttendeeErrors);
+    setPrimaryErrors(newPrimaryErrors);
+    setAdditionalErrors(newAdditionalErrors);
 
-    return Object.keys(newErrors).length === 0 && Object.keys(newAttendeeErrors).length === 0;
+    return (
+      Object.keys(newErrors).length === 0 &&
+      Object.keys(newPrimaryErrors).length === 0 &&
+      Object.keys(newAdditionalErrors).length === 0
+    );
   }, [formData]);
 
   /**
@@ -340,8 +418,9 @@ function RegisterPage() {
    * Handles form submission
    */
   const handleSubmit = useCallback(() => {
-    const newRegistrationId = generateRegistrationId();
-    setRegistrationId(newRegistrationId);
+    const { registrationId: newRegId, shortCode: newShortCode } = generateRegistrationId();
+    setRegistrationId(newRegId);
+    setShortCode(newShortCode);
     setIsSubmitted(true);
     window.scrollTo(0, 0);
   }, []);
@@ -375,6 +454,8 @@ function RegisterPage() {
   // Submitted/Confirmation state
   if (isSubmitted) {
     const totalAmount = calculateTotalPrice();
+    const totalAttendees = getTotalAttendeeCount();
+    const primary = formData.primaryAttendee;
 
     return (
       <div className={styles.page}>
@@ -382,7 +463,7 @@ function RegisterPage() {
           <div className={styles.checkIcon}>✓</div>
           <h1 className={styles.heroTitle}>Registration Submitted!</h1>
           <p className={styles.heroSubtitle}>
-            Registration ID: <strong>{registrationId}</strong>
+            Quick Code: <strong>{shortCode}</strong>
           </p>
         </section>
         <section className={styles.contentSection}>
@@ -391,31 +472,62 @@ function RegisterPage() {
               <div className={styles.confirmationDetails}>
                 <h2>Registration Summary</h2>
 
+                <div className={styles.regIdBox}>
+                  <div className={styles.regIdLabel}>Your Registration ID</div>
+                  <div className={styles.regIdValue}>{registrationId}</div>
+                  <div className={styles.shortCodeHint}>
+                    Quick code for check-in: <strong>{shortCode}</strong>
+                  </div>
+                </div>
+
                 <div className={styles.churchSummary}>
                   <h3>Church Information</h3>
                   <p><strong>{formData.churchName}</strong></p>
                   <p>{formData.churchCity}, {formData.churchProvince}</p>
                 </div>
 
-                <h3>Attendees ({formData.attendees.length})</h3>
-                {formData.attendees.map((attendee, index) => (
-                  <div key={attendee.id} className={styles.attendeeSummary}>
-                    <div className={styles.attendeeNumber}>#{index + 1}</div>
-                    <div className={styles.attendeeDetails}>
-                      <p className={styles.attendeeName}>
-                        {attendee.lastName}, {attendee.firstName} {attendee.middleName}
-                      </p>
-                      <p>{attendee.email} | {attendee.cellphone}</p>
-                      <p>{attendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[attendee.category]}</p>
-                      <p className={styles.attendeePrice}>
-                        {formatPrice(calculatePrice(attendee.category, currentTier))}
-                      </p>
-                    </div>
+                <h3>Primary Contact</h3>
+                <div className={styles.attendeeSummary}>
+                  <div className={styles.attendeeNumber}>
+                    <span className={styles.primaryBadge}>Primary</span>
                   </div>
-                ))}
+                  <div className={styles.attendeeDetails}>
+                    <p className={styles.attendeeName}>
+                      {primary.lastName}, {primary.firstName} {primary.middleName}
+                    </p>
+                    <p>{primary.email} | {primary.cellphone}</p>
+                    <p>{primary.ministryRole} | {REGISTRATION_CATEGORY_LABELS[primary.category]}</p>
+                    <p className={styles.attendeePrice}>
+                      {formatPrice(calculatePrice(primary.category, currentTier))}
+                    </p>
+                  </div>
+                </div>
+
+                {formData.additionalAttendees.length > 0 && (
+                  <>
+                    <h3>Additional Attendees ({formData.additionalAttendees.length})</h3>
+                    {formData.additionalAttendees.map((attendee, index) => (
+                      <div key={attendee.id} className={styles.attendeeSummary}>
+                        <div className={styles.attendeeNumber}>#{index + 2}</div>
+                        <div className={styles.attendeeDetails}>
+                          <p className={styles.attendeeName}>
+                            {attendee.lastName}, {attendee.firstName} {attendee.middleName}
+                          </p>
+                          <p>
+                            {attendee.email || '(No email)'} | {attendee.cellphone}
+                          </p>
+                          <p>{attendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[attendee.category]}</p>
+                          <p className={styles.attendeePrice}>
+                            {formatPrice(calculatePrice(attendee.category, currentTier))}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
 
                 <div className={styles.amountDue}>
-                  <span>Total Amount Paid</span>
+                  <span>Total Amount ({totalAttendees} attendee{totalAttendees > 1 ? 's' : ''})</span>
                   <span className={styles.amountValue}>{formatPrice(totalAmount)}</span>
                 </div>
               </div>
@@ -424,10 +536,25 @@ function RegisterPage() {
                 <h2>What&apos;s Next?</h2>
                 <ol>
                   <li>Your payment will be verified within 24-48 hours.</li>
-                  <li>Confirmation emails will be sent to all registered attendees.</li>
-                  <li>Please save your Registration ID: <strong>{registrationId}</strong></li>
-                  <li>Present your confirmation email or Registration ID at the event.</li>
+                  <li>
+                    <strong>{primary.email}</strong> will receive confirmation and QR codes for all attendees.
+                  </li>
+                  <li>
+                    All attendees will receive their registration code via SMS.
+                  </li>
+                  <li>
+                    Save your quick code: <strong>{shortCode}</strong> for easy check-in.
+                  </li>
                 </ol>
+              </div>
+
+              <div className={styles.recoveryInfo}>
+                <h2>Lost Your Confirmation?</h2>
+                <p>
+                  You can retrieve your registration anytime at:{' '}
+                  <a href={ROUTES.REGISTRATION_STATUS}>{ROUTES.REGISTRATION_STATUS}</a>
+                </p>
+                <p>Use your email, phone number, or registration ID to look up your registration.</p>
               </div>
 
               <div className={styles.eventDetails}>
@@ -479,7 +606,7 @@ function RegisterPage() {
             <div className={styles.formStep}>
               <h2>Church & Attendee Information</h2>
               <p className={styles.stepDescription}>
-                Enter your church details and add all attendees from your group.
+                Enter your church details and attendee information.
               </p>
 
               <div className={styles.sectionDivider}>
@@ -539,23 +666,179 @@ function RegisterPage() {
                 </div>
               </div>
 
+              {/* Primary Contact Section */}
               <div className={styles.sectionDivider}>
-                <span>Attendees ({formData.attendees.length})</span>
+                <span>Primary Contact</span>
+              </div>
+              <p className={styles.sectionHint}>
+                This person will receive all confirmations, QR codes, and payment updates.
+              </p>
+
+              <div className={styles.attendeeCard}>
+                <div className={styles.attendeeHeader}>
+                  <h3><span className={styles.primaryBadge}>Primary</span> Contact</h3>
+                </div>
+
+                <div className={styles.formRow3}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>
+                      Last Name <span className={styles.required}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className={`${styles.input} ${primaryErrors.lastName ? styles.inputError : ''}`}
+                      value={formData.primaryAttendee.lastName}
+                      onChange={(e) => updatePrimaryAttendee('lastName', e.target.value)}
+                      placeholder="Dela Cruz"
+                    />
+                    {primaryErrors.lastName && (
+                      <span className={styles.errorMessage}>{primaryErrors.lastName}</span>
+                    )}
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>
+                      First Name <span className={styles.required}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className={`${styles.input} ${primaryErrors.firstName ? styles.inputError : ''}`}
+                      value={formData.primaryAttendee.firstName}
+                      onChange={(e) => updatePrimaryAttendee('firstName', e.target.value)}
+                      placeholder="Juan"
+                    />
+                    {primaryErrors.firstName && (
+                      <span className={styles.errorMessage}>{primaryErrors.firstName}</span>
+                    )}
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>Middle Name</label>
+                    <input
+                      type="text"
+                      className={styles.input}
+                      value={formData.primaryAttendee.middleName}
+                      onChange={(e) => updatePrimaryAttendee('middleName', e.target.value)}
+                      placeholder="Santos"
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.formRow}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>
+                      Email Address <span className={styles.required}>*</span>
+                    </label>
+                    <input
+                      type="email"
+                      className={`${styles.input} ${primaryErrors.email ? styles.inputError : ''}`}
+                      value={formData.primaryAttendee.email}
+                      onChange={(e) => updatePrimaryAttendee('email', e.target.value)}
+                      placeholder="email@example.com"
+                    />
+                    {primaryErrors.email && (
+                      <span className={styles.errorMessage}>{primaryErrors.email}</span>
+                    )}
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>
+                      Confirm Email <span className={styles.required}>*</span>
+                    </label>
+                    <input
+                      type="email"
+                      className={`${styles.input} ${primaryErrors.emailConfirm ? styles.inputError : ''}`}
+                      value={formData.primaryAttendee.emailConfirm}
+                      onChange={(e) => updatePrimaryAttendee('emailConfirm', e.target.value)}
+                      placeholder="Re-enter your email"
+                    />
+                    {primaryErrors.emailConfirm && (
+                      <span className={styles.errorMessage}>{primaryErrors.emailConfirm}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>
+                    Cellphone Number <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    className={`${styles.input} ${primaryErrors.cellphone ? styles.inputError : ''}`}
+                    value={formData.primaryAttendee.cellphone}
+                    onChange={(e) => updatePrimaryAttendee('cellphone', e.target.value)}
+                    placeholder="09XX-XXX-XXXX"
+                  />
+                  <span className={styles.fieldHint}>Registration code will be sent via SMS</span>
+                  {primaryErrors.cellphone && (
+                    <span className={styles.errorMessage}>{primaryErrors.cellphone}</span>
+                  )}
+                </div>
+
+                <div className={styles.formRow}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>
+                      Ministry Role <span className={styles.required}>*</span>
+                    </label>
+                    <select
+                      className={`${styles.select} ${primaryErrors.ministryRole ? styles.inputError : ''}`}
+                      value={formData.primaryAttendee.ministryRole}
+                      onChange={(e) => updatePrimaryAttendee('ministryRole', e.target.value)}
+                    >
+                      <option value="">Select role</option>
+                      {MINISTRY_ROLES.map((role) => (
+                        <option key={role} value={role}>{role}</option>
+                      ))}
+                    </select>
+                    {primaryErrors.ministryRole && (
+                      <span className={styles.errorMessage}>{primaryErrors.ministryRole}</span>
+                    )}
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>
+                      Category <span className={styles.required}>*</span>
+                    </label>
+                    <select
+                      className={styles.select}
+                      value={formData.primaryAttendee.category}
+                      onChange={(e) => updatePrimaryAttendee('category', e.target.value)}
+                    >
+                      {Object.entries(REGISTRATION_CATEGORIES).map(([key, value]) => (
+                        <option key={key} value={value}>
+                          {REGISTRATION_CATEGORY_LABELS[value]} - {formatPrice(calculatePrice(value, currentTier))}
+                        </option>
+                      ))}
+                    </select>
+                    {requiresProof(formData.primaryAttendee.category) && (
+                      <span className={styles.proofHint}>
+                        Valid ID required at check-in
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {formData.attendees.map((attendee, index) => (
+              {/* Additional Attendees Section */}
+              <div className={styles.sectionDivider}>
+                <span>Additional Attendees ({formData.additionalAttendees.length})</span>
+              </div>
+              <p className={styles.sectionHint}>
+                Add more attendees from your group. Phone number is required for SMS notification.
+                Email is optional but recommended for individual QR code delivery.
+              </p>
+
+              {formData.additionalAttendees.map((attendee, index) => (
                 <div key={attendee.id} className={styles.attendeeCard}>
                   <div className={styles.attendeeHeader}>
-                    <h3>Attendee #{index + 1}</h3>
-                    {formData.attendees.length > 1 && (
-                      <button
-                        type="button"
-                        className={styles.removeButton}
-                        onClick={() => removeAttendee(index)}
-                      >
-                        Remove
-                      </button>
-                    )}
+                    <h3>Attendee #{index + 2}</h3>
+                    <button
+                      type="button"
+                      className={styles.removeButton}
+                      onClick={() => removeAdditionalAttendee(index)}
+                    >
+                      Remove
+                    </button>
                   </div>
 
                   <div className={styles.formRow3}>
@@ -565,13 +848,13 @@ function RegisterPage() {
                       </label>
                       <input
                         type="text"
-                        className={`${styles.input} ${attendeeErrors[index]?.lastName ? styles.inputError : ''}`}
+                        className={`${styles.input} ${additionalErrors[index]?.lastName ? styles.inputError : ''}`}
                         value={attendee.lastName}
-                        onChange={(e) => updateAttendee(index, 'lastName', e.target.value)}
+                        onChange={(e) => updateAdditionalAttendee(index, 'lastName', e.target.value)}
                         placeholder="Dela Cruz"
                       />
-                      {attendeeErrors[index]?.lastName && (
-                        <span className={styles.errorMessage}>{attendeeErrors[index].lastName}</span>
+                      {additionalErrors[index]?.lastName && (
+                        <span className={styles.errorMessage}>{additionalErrors[index].lastName}</span>
                       )}
                     </div>
 
@@ -581,13 +864,13 @@ function RegisterPage() {
                       </label>
                       <input
                         type="text"
-                        className={`${styles.input} ${attendeeErrors[index]?.firstName ? styles.inputError : ''}`}
+                        className={`${styles.input} ${additionalErrors[index]?.firstName ? styles.inputError : ''}`}
                         value={attendee.firstName}
-                        onChange={(e) => updateAttendee(index, 'firstName', e.target.value)}
+                        onChange={(e) => updateAdditionalAttendee(index, 'firstName', e.target.value)}
                         placeholder="Juan"
                       />
-                      {attendeeErrors[index]?.firstName && (
-                        <span className={styles.errorMessage}>{attendeeErrors[index].firstName}</span>
+                      {additionalErrors[index]?.firstName && (
+                        <span className={styles.errorMessage}>{additionalErrors[index].firstName}</span>
                       )}
                     </div>
 
@@ -597,7 +880,7 @@ function RegisterPage() {
                         type="text"
                         className={styles.input}
                         value={attendee.middleName}
-                        onChange={(e) => updateAttendee(index, 'middleName', e.target.value)}
+                        onChange={(e) => updateAdditionalAttendee(index, 'middleName', e.target.value)}
                         placeholder="Santos"
                       />
                     </div>
@@ -610,29 +893,31 @@ function RegisterPage() {
                       </label>
                       <input
                         type="tel"
-                        className={`${styles.input} ${attendeeErrors[index]?.cellphone ? styles.inputError : ''}`}
+                        className={`${styles.input} ${additionalErrors[index]?.cellphone ? styles.inputError : ''}`}
                         value={attendee.cellphone}
-                        onChange={(e) => updateAttendee(index, 'cellphone', e.target.value)}
+                        onChange={(e) => updateAdditionalAttendee(index, 'cellphone', e.target.value)}
                         placeholder="09XX-XXX-XXXX"
                       />
-                      {attendeeErrors[index]?.cellphone && (
-                        <span className={styles.errorMessage}>{attendeeErrors[index].cellphone}</span>
+                      <span className={styles.fieldHint}>Required for SMS notification</span>
+                      {additionalErrors[index]?.cellphone && (
+                        <span className={styles.errorMessage}>{additionalErrors[index].cellphone}</span>
                       )}
                     </div>
 
                     <div className={styles.formGroup}>
                       <label className={styles.label}>
-                        Email Address <span className={styles.required}>*</span>
+                        Email Address <span className={styles.optional}>(optional)</span>
                       </label>
                       <input
                         type="email"
-                        className={`${styles.input} ${attendeeErrors[index]?.email ? styles.inputError : ''}`}
+                        className={`${styles.input} ${additionalErrors[index]?.email ? styles.inputError : ''}`}
                         value={attendee.email}
-                        onChange={(e) => updateAttendee(index, 'email', e.target.value)}
+                        onChange={(e) => updateAdditionalAttendee(index, 'email', e.target.value)}
                         placeholder="email@example.com"
                       />
-                      {attendeeErrors[index]?.email && (
-                        <span className={styles.errorMessage}>{attendeeErrors[index].email}</span>
+                      <span className={styles.fieldHint}>If provided, QR code will be sent here</span>
+                      {additionalErrors[index]?.email && (
+                        <span className={styles.errorMessage}>{additionalErrors[index].email}</span>
                       )}
                     </div>
                   </div>
@@ -643,17 +928,17 @@ function RegisterPage() {
                         Ministry Role <span className={styles.required}>*</span>
                       </label>
                       <select
-                        className={`${styles.select} ${attendeeErrors[index]?.ministryRole ? styles.inputError : ''}`}
+                        className={`${styles.select} ${additionalErrors[index]?.ministryRole ? styles.inputError : ''}`}
                         value={attendee.ministryRole}
-                        onChange={(e) => updateAttendee(index, 'ministryRole', e.target.value)}
+                        onChange={(e) => updateAdditionalAttendee(index, 'ministryRole', e.target.value)}
                       >
                         <option value="">Select role</option>
                         {MINISTRY_ROLES.map((role) => (
                           <option key={role} value={role}>{role}</option>
                         ))}
                       </select>
-                      {attendeeErrors[index]?.ministryRole && (
-                        <span className={styles.errorMessage}>{attendeeErrors[index].ministryRole}</span>
+                      {additionalErrors[index]?.ministryRole && (
+                        <span className={styles.errorMessage}>{additionalErrors[index].ministryRole}</span>
                       )}
                     </div>
 
@@ -664,7 +949,7 @@ function RegisterPage() {
                       <select
                         className={styles.select}
                         value={attendee.category}
-                        onChange={(e) => updateAttendee(index, 'category', e.target.value)}
+                        onChange={(e) => updateAdditionalAttendee(index, 'category', e.target.value)}
                       >
                         {Object.entries(REGISTRATION_CATEGORIES).map(([key, value]) => (
                           <option key={key} value={value}>
@@ -685,13 +970,13 @@ function RegisterPage() {
               <button
                 type="button"
                 className={styles.addButton}
-                onClick={addAttendee}
+                onClick={addAdditionalAttendee}
               >
                 + Add Another Attendee
               </button>
 
               <div className={styles.subtotalBox}>
-                <span>Subtotal ({formData.attendees.length} attendee{formData.attendees.length > 1 ? 's' : ''})</span>
+                <span>Subtotal ({getTotalAttendeeCount()} attendee{getTotalAttendeeCount() > 1 ? 's' : ''})</span>
                 <strong>{formatPrice(calculateTotalPrice())}</strong>
               </div>
             </div>
@@ -712,30 +997,51 @@ function RegisterPage() {
               </div>
 
               <div className={styles.reviewSection}>
-                <h3>Attendees ({formData.attendees.length})</h3>
+                <h3>Primary Contact</h3>
                 <div className={styles.attendeeList}>
-                  {formData.attendees.map((attendee, index) => (
-                    <div key={attendee.id} className={styles.attendeeListItem}>
-                      <span className={styles.attendeeListName}>
-                        {index + 1}. {attendee.firstName} {attendee.lastName}
-                      </span>
-                      <span className={styles.attendeeListCategory}>
-                        {REGISTRATION_CATEGORY_LABELS[attendee.category]}
-                      </span>
-                      <span className={styles.attendeeListPrice}>
-                        {formatPrice(calculatePrice(attendee.category, currentTier))}
-                      </span>
-                    </div>
-                  ))}
+                  <div className={styles.attendeeListItem}>
+                    <span className={styles.attendeeListName}>
+                      <span className={styles.primaryBadgeSmall}>Primary</span>
+                      {formData.primaryAttendee.firstName} {formData.primaryAttendee.lastName}
+                    </span>
+                    <span className={styles.attendeeListCategory}>
+                      {REGISTRATION_CATEGORY_LABELS[formData.primaryAttendee.category]}
+                    </span>
+                    <span className={styles.attendeeListPrice}>
+                      {formatPrice(calculatePrice(formData.primaryAttendee.category, currentTier))}
+                    </span>
+                  </div>
                 </div>
               </div>
 
+              {formData.additionalAttendees.length > 0 && (
+                <div className={styles.reviewSection}>
+                  <h3>Additional Attendees ({formData.additionalAttendees.length})</h3>
+                  <div className={styles.attendeeList}>
+                    {formData.additionalAttendees.map((attendee, index) => (
+                      <div key={attendee.id} className={styles.attendeeListItem}>
+                        <span className={styles.attendeeListName}>
+                          {index + 2}. {attendee.firstName} {attendee.lastName}
+                        </span>
+                        <span className={styles.attendeeListCategory}>
+                          {REGISTRATION_CATEGORY_LABELS[attendee.category]}
+                        </span>
+                        <span className={styles.attendeeListPrice}>
+                          {formatPrice(calculatePrice(attendee.category, currentTier))}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className={styles.totalSection}>
-                <span>Total Amount</span>
+                <span>Total Amount ({getTotalAttendeeCount()} attendee{getTotalAttendeeCount() > 1 ? 's' : ''})</span>
                 <span className={styles.totalAmount}>{formatPrice(calculateTotalPrice())}</span>
               </div>
 
-              {formData.attendees.some((a) => requiresProof(a.category)) && (
+              {(requiresProof(formData.primaryAttendee.category) ||
+                formData.additionalAttendees.some((a) => requiresProof(a.category))) && (
                 <div className={styles.proofNote}>
                   <strong>Note:</strong> Attendees registered as Student/Senior Citizen must bring a valid ID for verification at check-in.
                 </div>

@@ -234,3 +234,55 @@
     max-width: 150px;
   }
 }
+
+/* Short Code Cell */
+.codeCell {
+  white-space: nowrap;
+}
+
+.shortCode {
+  display: inline-block;
+  font-family: monospace;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-primary-50, rgba(59, 130, 246, 0.1));
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-md);
+  letter-spacing: 0.1em;
+}
+
+/* Primary Contact Info */
+.primaryInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.primaryName {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.primaryEmail {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* Attendee Count Cell */
+.attendeeCountCell {
+  text-align: center;
+}
+
+.attendeeCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}

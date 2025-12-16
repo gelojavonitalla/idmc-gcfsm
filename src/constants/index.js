@@ -11,6 +11,7 @@ export const ROUTES = {
   SPEAKERS: '/speakers',
   SCHEDULE: '/schedule',
   REGISTER: '/register',
+  REGISTRATION_STATUS: '/registration/status',
   FAQ: '/faq',
   ABOUT: '/about',
   VENUE: '/venue',
@@ -483,15 +484,26 @@ export const REGISTRATION_STATUS = {
  */
 export const PAYMENT_METHODS = {
   GCASH: 'gcash',
+  PAYMAYA: 'paymaya',
   BANK_TRANSFER: 'bank_transfer',
   CASH: 'cash',
 };
+
+/**
+ * Safe characters for registration short code generation.
+ * Excludes confusing characters: 0/O, 1/l/I, 5/S, 2/Z, 8/B
+ */
+export const SAFE_SHORT_CODE_CHARS = 'ACDEFGHJKMNPQRTUVWXY34679';
 
 /**
  * Payment information for registration
  */
 export const PAYMENT_INFO = {
   GCASH: {
+    NAME: 'GCF South Metro',
+    NUMBER: '0917 650 0011',
+  },
+  PAYMAYA: {
     NAME: 'GCF South Metro',
     NUMBER: '0917 650 0011',
   },
@@ -503,6 +515,7 @@ export const PAYMENT_INFO = {
   },
   CURRENCY: 'PHP',
   PAYMENT_DEADLINE_DAYS: 7,
+  PAYMENT_REMINDER_MINUTES: 5,
 };
 
 /**

@@ -8,6 +8,7 @@ import {
   PRICING_TIERS,
   CONFERENCE,
   REGISTRATION_CATEGORIES,
+  SAFE_SHORT_CODE_CHARS,
 } from '../constants';
 
 /**
@@ -59,19 +60,49 @@ export function calculatePrice(category, tier = null) {
 }
 
 /**
- * Generates a unique registration ID in the format REG-YYYY-XXXXXXXX.
- * Uses full timestamp base36 encoding combined with random characters
- * to minimize collision risk.
+ * Generates a unique 4-character short code using safe characters.
+ * Safe characters exclude confusing ones like 0/O, 1/l/I, 5/S, 2/Z, 8/B.
  *
- * @returns {string} The generated registration ID
+ * @returns {string} 4-character short code (e.g., "A7K3")
+ */
+export function generateShortCode() {
+  let code = '';
+  for (let i = 0; i < 4; i += 1) {
+    const randomIndex = Math.floor(Math.random() * SAFE_SHORT_CODE_CHARS.length);
+    code += SAFE_SHORT_CODE_CHARS[randomIndex];
+  }
+  return code;
+}
+
+/**
+ * Generates a unique registration ID in the format REG-YYYY-XXXX.
+ * Uses 4-character short code with safe characters for easy typing and lookup.
+ * The short code avoids confusing characters like 0/O, 1/l/I, 5/S, 2/Z, 8/B.
+ *
+ * @returns {Object} Object containing registrationId and shortCode
  */
 export function generateRegistrationId() {
   const year = CONFERENCE.YEAR;
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
-  const sequence = `${timestamp}${randomPart}`.slice(-8);
+  const shortCode = generateShortCode();
 
-  return `REG-${year}-${sequence}`;
+  return {
+    registrationId: `REG-${year}-${shortCode}`,
+    shortCode,
+  };
+}
+
+/**
+ * Extracts the short code from a registration ID.
+ *
+ * @param {string} registrationId - Full registration ID (e.g., "REG-2026-A7K3")
+ * @returns {string} The 4-character short code
+ */
+export function extractShortCode(registrationId) {
+  if (!registrationId) {
+    return '';
+  }
+  const parts = registrationId.split('-');
+  return parts.length >= 3 ? parts[2] : '';
 }
 
 /**
