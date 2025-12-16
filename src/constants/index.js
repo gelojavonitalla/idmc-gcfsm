@@ -157,7 +157,7 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Schedule', path: ADMIN_ROUTES.SCHEDULE, icon: 'calendar' },
       { label: 'FAQ', path: ADMIN_ROUTES.FAQ, icon: 'help' },
       { label: 'Downloads', path: ADMIN_ROUTES.DOWNLOADS, icon: 'download' },
-      { label: 'About Content', path: ADMIN_ROUTES.ABOUT_CONTENT, icon: 'info' },
+      { label: 'About', path: ADMIN_ROUTES.ABOUT_CONTENT, icon: 'info' },
     ],
   },
   {
