@@ -43,6 +43,8 @@
     "seed:legal:clear": "node scripts/seed-legal.js --clear",
     "seed:registrations": "node scripts/seed-registrations.js",
     "seed:registrations:clear": "node scripts/seed-registrations.js --clear",
+    "seed:venue": "node scripts/seed-venue.js",
+    "seed:venue:clear": "node scripts/seed-venue.js --clear",
     "emulators": "firebase emulators:start",
     "seed:emulator": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-speakers.js --clear",
     "seed:emulator:sessions": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-sessions.js --clear",
@@ -52,7 +54,8 @@
     "seed:emulator:settings": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-settings.js --clear",
     "seed:emulator:about": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-about.js --clear",
     "seed:emulator:legal": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-legal.js --clear",
-    "seed:emulator:registrations": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-registrations.js --clear"
+    "seed:emulator:registrations": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-registrations.js --clear",
+    "seed:emulator:venue": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-venue.js --clear"
   },
   "eslintConfig": {
     "extends": [
