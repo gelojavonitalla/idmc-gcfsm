@@ -5,14 +5,14 @@
  * @module functions/index
  */
 
-import { setGlobalOptions } from "firebase-functions";
-import { defineString } from "firebase-functions/params";
-import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import {setGlobalOptions} from "firebase-functions";
+import {defineString} from "firebase-functions/params";
+import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
-import { initializeApp } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
+import {initializeApp} from "firebase-admin/app";
+import {getAuth} from "firebase-admin/auth";
+import {getFirestore, FieldValue} from "firebase-admin/firestore";
+import {SecretManagerServiceClient} from "@google-cloud/secret-manager";
 import * as sgMail from "@sendgrid/mail";
 
 // Initialize Firebase Admin SDK
@@ -25,12 +25,12 @@ setGlobalOptions({
 });
 
 // Regular config params (not sensitive)
-const senderEmail = defineString("SENDER_EMAIL", { default: "" });
-const senderName = defineString("SENDER_NAME", { default: "IDMC Admin" });
-const appUrl = defineString("APP_URL", { default: "" });
+const senderEmail = defineString("SENDER_EMAIL", {default: ""});
+const senderName = defineString("SENDER_NAME", {default: "IDMC Admin"});
+const appUrl = defineString("APP_URL", {default: ""});
 
 // Flag to enable/disable SendGrid (set to "true" to use SendGrid)
-const useSendGrid = defineString("USE_SENDGRID", { default: "false" });
+const useSendGrid = defineString("USE_SENDGRID", {default: "false"});
 
 /**
  * Retrieves SendGrid API key from Secret Manager
@@ -42,7 +42,7 @@ async function getSendGridApiKey(): Promise<string | null> {
     const projectId = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
     const secretName = `projects/${projectId}/secrets/SENDGRID_API_KEY/versions/latest`;
 
-    const [version] = await client.accessSecretVersion({ name: secretName });
+    const [version] = await client.accessSecretVersion({name: secretName});
     const payload = version.payload?.data?.toString();
 
     return payload || null;
@@ -73,17 +73,17 @@ const ROLE_LABELS: Record<string, string> = {
 /**
  * Generates the HTML email template for admin invitations
  *
- * @param displayName - The invited user's display name
- * @param role - The assigned role
- * @param inviteLink - The password setup link
- * @param expiresIn - Hours until link expires
- * @returns HTML string for the email
+ * @param {string} displayName - The invited user's display name
+ * @param {string} role - The assigned role
+ * @param {string} inviteLink - The password setup link
+ * @param {number} expiresIn - Hours until link expires
+ * @return {string} HTML string for the email
  */
 function generateInvitationEmailHtml(
   displayName: string,
   role: string,
   inviteLink: string,
-  expiresIn: number = 72
+  expiresIn = 72
 ): string {
   const roleLabel = ROLE_LABELS[role] || role;
 
@@ -184,17 +184,17 @@ function generateInvitationEmailHtml(
 /**
  * Generates plain text version of the invitation email
  *
- * @param displayName - The invited user's display name
- * @param role - The assigned role
- * @param inviteLink - The password setup link
- * @param expiresIn - Hours until link expires
- * @returns Plain text string for the email
+ * @param {string} displayName - The invited user's display name
+ * @param {string} role - The assigned role
+ * @param {string} inviteLink - The password setup link
+ * @param {number} expiresIn - Hours until link expires
+ * @return {string} Plain text string for the email
  */
 function generateInvitationEmailText(
   displayName: string,
   role: string,
   inviteLink: string,
-  expiresIn: number = 72
+  expiresIn = 72
 ): string {
   const roleLabel = ROLE_LABELS[role] || role;
 
@@ -222,11 +222,11 @@ If you didn't expect this invitation, you can safely ignore this email.
 /**
  * Sends invitation email using SendGrid
  *
- * @param to - Recipient email address
- * @param displayName - Recipient's display name
- * @param role - Assigned admin role
- * @param inviteLink - Password setup link
- * @returns Promise that resolves when email is sent
+ * @param {string} to - Recipient email address
+ * @param {string} displayName - Recipient's display name
+ * @param {string} role - Assigned admin role
+ * @param {string} inviteLink - Password setup link
+ * @return {Promise<void>} Promise that resolves when email is sent
  */
 async function sendInvitationEmailViaSendGrid(
   to: string,
@@ -266,7 +266,7 @@ async function sendInvitationEmailViaSendGrid(
 /**
  * Checks if SendGrid is enabled and configured
  *
- * @returns boolean indicating if SendGrid should be used
+ * @return {boolean} boolean indicating if SendGrid should be used
  */
 function isSendGridEnabled(): boolean {
   return useSendGrid.value().toLowerCase() === "true";
@@ -303,7 +303,7 @@ export const onAdminCreated = onDocumentCreated(
       return;
     }
 
-    const { email, displayName, role } = adminData;
+    const {email, displayName, role} = adminData;
 
     if (!email) {
       logger.error(`Admin ${adminId} has no email address`);
@@ -376,16 +376,17 @@ export const onAdminCreated = onDocumentCreated(
       if (!emailSentViaSendGrid) {
         logger.info(
           `SendGrid not enabled. Invite link stored in Firestore for ${email}. ` +
-          `Admin can share manually or set USE_SENDGRID=true for automatic emails.`
+          "Admin can share manually or set USE_SENDGRID=true for automatic emails."
         );
       }
 
       // Update the admin document with invitation details
       // If the document ID doesn't match the Auth UID, migrate the document
+      // Store invite link only if email wasn't sent
       const updateData = {
         invitationSentAt: FieldValue.serverTimestamp(),
         inviteExpiresAt: inviteExpiresAt,
-        inviteLink: emailSentViaSendGrid ? null : inviteLink, // Store link only if email wasn't sent
+        inviteLink: emailSentViaSendGrid ? null : inviteLink,
         emailSent: emailSentViaSendGrid,
         updatedAt: FieldValue.serverTimestamp(),
       };
