@@ -17,8 +17,11 @@ import * as sgMail from "@sendgrid/mail";
 // Initialize Firebase Admin SDK
 initializeApp();
 
-// For cost control, set maximum containers that can run simultaneously
-setGlobalOptions({ maxInstances: 10 });
+// Set global options for all functions
+setGlobalOptions({
+  maxInstances: 10,
+  region: "asia-southeast1",
+});
 
 // Define environment parameters
 // Secret stored in Google Secret Manager
