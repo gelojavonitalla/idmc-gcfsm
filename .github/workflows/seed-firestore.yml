@@ -78,11 +78,8 @@ on:
       seed_registrations:
         description: 'Seed mock registrations (for testing)'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
+        default: false
+        type: boolean
       seed_all:
         description: 'Seed ALL data (overrides individual options)'
         required: false
