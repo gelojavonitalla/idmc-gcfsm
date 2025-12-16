@@ -17,6 +17,12 @@ import {
   isValidPhoneNumber,
   requiresProof,
 } from '../utils';
+import {
+  createRegistration,
+  uploadPaymentProof,
+  getRegistrationByEmail,
+  REGISTRATION_ERROR_CODES,
+} from '../services';
 import styles from './RegisterPage.module.css';
 
 /**
@@ -103,6 +109,10 @@ function RegisterPage() {
   const [registrationId, setRegistrationId] = useState(null);
   const [shortCode, setShortCode] = useState(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [duplicateRegistration, setDuplicateRegistration] = useState(null);
 
   const currentTier = activePricingTier;
   const registrationOpen = settings.registrationOpen !== false;
@@ -415,15 +425,99 @@ function RegisterPage() {
   }, [currentStep]);
 
   /**
-   * Handles form submission
+   * Handles form submission - saves to Firestore with payment proof upload
    */
-  const handleSubmit = useCallback(() => {
-    const { registrationId: newRegId, shortCode: newShortCode } = generateRegistrationId();
-    setRegistrationId(newRegId);
-    setShortCode(newShortCode);
-    setIsSubmitted(true);
-    window.scrollTo(0, 0);
-  }, []);
+  const handleSubmit = useCallback(async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setUploadProgress(0);
+
+    try {
+      // Generate registration ID
+      const { registrationId: newRegId, shortCode: newShortCode } = generateRegistrationId();
+
+      // Check for duplicate email first
+      const existing = await getRegistrationByEmail(formData.primaryAttendee.email);
+      if (existing) {
+        setDuplicateRegistration(existing);
+        setSubmitError('This email is already registered. Please use a different email or check your existing registration.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Upload payment proof first
+      let paymentProofUrl = null;
+      if (formData.paymentFile) {
+        paymentProofUrl = await uploadPaymentProof(
+          formData.paymentFile,
+          newRegId,
+          (progress) => setUploadProgress(progress)
+        );
+      }
+
+      // Prepare registration data
+      const registrationData = {
+        registrationId: newRegId,
+        shortCode: newShortCode,
+        primaryAttendee: {
+          lastName: formData.primaryAttendee.lastName,
+          firstName: formData.primaryAttendee.firstName,
+          middleName: formData.primaryAttendee.middleName || '',
+          cellphone: formData.primaryAttendee.cellphone,
+          email: formData.primaryAttendee.email,
+          ministryRole: formData.primaryAttendee.ministryRole,
+          category: formData.primaryAttendee.category,
+          workshopSelection: formData.primaryAttendee.workshopSelection || '',
+        },
+        additionalAttendees: formData.additionalAttendees.map((attendee) => ({
+          lastName: attendee.lastName,
+          firstName: attendee.firstName,
+          middleName: attendee.middleName || '',
+          cellphone: attendee.cellphone,
+          email: attendee.email || '',
+          ministryRole: attendee.ministryRole,
+          category: attendee.category,
+        })),
+        church: {
+          name: formData.churchName,
+          city: formData.churchCity,
+          province: formData.churchProvince,
+        },
+        payment: {
+          proofUrl: paymentProofUrl,
+          uploadedAt: new Date().toISOString(),
+        },
+        invoice: formData.invoiceRequest ? {
+          requested: true,
+          name: formData.invoiceName,
+          tin: formData.tin,
+          address: formData.invoiceAddress,
+        } : null,
+        totalAmount: calculateTotalPrice(),
+        pricingTier: currentTier?.id || 'standard',
+      };
+
+      // Save to Firestore
+      await createRegistration(registrationData);
+
+      // Update state on success
+      setRegistrationId(newRegId);
+      setShortCode(newShortCode);
+      setIsSubmitted(true);
+      window.scrollTo(0, 0);
+    } catch (error) {
+      console.error('Registration error:', error);
+
+      if (error.code === REGISTRATION_ERROR_CODES.DUPLICATE_EMAIL) {
+        setDuplicateRegistration({ registrationId: error.existingRegistrationId });
+        setSubmitError('This email is already registered. Please use a different email or check your existing registration.');
+      } else {
+        setSubmitError(error.message || 'Failed to submit registration. Please try again.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [formData, currentTier, calculateTotalPrice]);
 
   // Registration closed state
   if (!registrationOpen) {
@@ -1102,7 +1196,7 @@ function RegisterPage() {
                 </div>
 
                 <div className={styles.amountBox}>
-                  <span>Total Amount to Pay ({formData.attendees.length} attendee{formData.attendees.length > 1 ? 's' : ''}):</span>
+                  <span>Total Amount to Pay ({getTotalAttendeeCount()} attendee{getTotalAttendeeCount() > 1 ? 's' : ''}):</span>
                   <strong>{formatPrice(calculateTotalPrice())}</strong>
                 </div>
               </div>
@@ -1233,23 +1327,44 @@ function RegisterPage() {
               </div>
 
               <div className={styles.reviewSection}>
-                <h3>Attendees ({formData.attendees.length})</h3>
-                {formData.attendees.map((attendee, index) => (
-                  <div key={attendee.id} className={styles.attendeeSummary}>
-                    <div className={styles.attendeeNumber}>#{index + 1}</div>
-                    <div className={styles.attendeeDetails}>
-                      <p className={styles.attendeeName}>
-                        {attendee.lastName}, {attendee.firstName} {attendee.middleName}
-                      </p>
-                      <p>{attendee.email} | {attendee.cellphone}</p>
-                      <p>{attendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[attendee.category]}</p>
-                    </div>
-                    <div className={styles.attendeePrice}>
-                      {formatPrice(calculatePrice(attendee.category, currentTier))}
-                    </div>
+                <h3>Primary Contact</h3>
+                <div className={styles.attendeeSummary}>
+                  <div className={styles.attendeeNumber}>
+                    <span className={styles.primaryBadge}>Primary</span>
                   </div>
-                ))}
+                  <div className={styles.attendeeDetails}>
+                    <p className={styles.attendeeName}>
+                      {formData.primaryAttendee.lastName}, {formData.primaryAttendee.firstName} {formData.primaryAttendee.middleName}
+                    </p>
+                    <p>{formData.primaryAttendee.email} | {formData.primaryAttendee.cellphone}</p>
+                    <p>{formData.primaryAttendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[formData.primaryAttendee.category]}</p>
+                  </div>
+                  <div className={styles.attendeePrice}>
+                    {formatPrice(calculatePrice(formData.primaryAttendee.category, currentTier))}
+                  </div>
+                </div>
               </div>
+
+              {formData.additionalAttendees.length > 0 && (
+                <div className={styles.reviewSection}>
+                  <h3>Additional Attendees ({formData.additionalAttendees.length})</h3>
+                  {formData.additionalAttendees.map((attendee, index) => (
+                    <div key={attendee.id} className={styles.attendeeSummary}>
+                      <div className={styles.attendeeNumber}>#{index + 2}</div>
+                      <div className={styles.attendeeDetails}>
+                        <p className={styles.attendeeName}>
+                          {attendee.lastName}, {attendee.firstName} {attendee.middleName}
+                        </p>
+                        <p>{attendee.email || '(No email)'} | {attendee.cellphone}</p>
+                        <p>{attendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[attendee.category]}</p>
+                      </div>
+                      <div className={styles.attendeePrice}>
+                        {formatPrice(calculatePrice(attendee.category, currentTier))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className={styles.reviewSection}>
                 <h3>Payment</h3>
@@ -1274,6 +1389,33 @@ function RegisterPage() {
             </div>
           )}
 
+          {/* Error Message */}
+          {submitError && (
+            <div className={styles.errorBox}>
+              <p>{submitError}</p>
+              {duplicateRegistration && (
+                <p>
+                  <a href={`${ROUTES.REGISTRATION_STATUS}?id=${duplicateRegistration.registrationId}`}>
+                    Check your existing registration
+                  </a>
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Upload Progress */}
+          {isSubmitting && uploadProgress > 0 && uploadProgress < 100 && (
+            <div className={styles.progressBox}>
+              <p>Uploading payment proof: {uploadProgress}%</p>
+              <div className={styles.progressBarContainer}>
+                <div
+                  className={styles.progressBarFill}
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Navigation Buttons */}
           <div className={styles.formNavigation}>
             {currentStep > REGISTRATION_STEPS.PERSONAL_INFO && (
@@ -1281,6 +1423,7 @@ function RegisterPage() {
                 type="button"
                 className={styles.buttonSecondary}
                 onClick={handleBack}
+                disabled={isSubmitting}
               >
                 Back
               </button>
@@ -1299,8 +1442,9 @@ function RegisterPage() {
                 type="button"
                 className={styles.buttonPrimary}
                 onClick={handleSubmit}
+                disabled={isSubmitting}
               >
-                Submit Registration
+                {isSubmitting ? 'Submitting...' : 'Submit Registration'}
               </button>
             )}
           </div>
