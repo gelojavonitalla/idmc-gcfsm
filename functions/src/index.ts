@@ -466,7 +466,14 @@ function generateRegistrationConfirmationHtml(
     };
   }
 ): string {
-  const {registrationId, shortCode, primaryAttendee, totalAmount, paymentDeadline, church} = registration;
+  const {
+    registrationId,
+    shortCode,
+    primaryAttendee,
+    totalAmount,
+    paymentDeadline,
+    church,
+  } = registration;
   const formattedDeadline = new Date(paymentDeadline).toLocaleDateString("en-PH", {
     weekday: "long",
     year: "numeric",
@@ -581,6 +588,7 @@ function generateRegistrationConfirmationHtml(
  * Generates the HTML email template for ticket/confirmation
  *
  * @param {Object} registration - Registration data
+ * @param {Object} settings - Event settings data
  * @return {string} HTML string for the email
  */
 function generateTicketEmailHtml(
@@ -611,7 +619,13 @@ function generateTicketEmailHtml(
     };
   }
 ): string {
-  const {registrationId, shortCode, primaryAttendee, church, additionalAttendees} = registration;
+  const {
+    registrationId,
+    shortCode,
+    primaryAttendee,
+    church,
+    additionalAttendees,
+  } = registration;
   const eventDate = new Date(settings.startDate).toLocaleDateString("en-PH", {
     weekday: "long",
     year: "numeric",
@@ -742,6 +756,10 @@ function generateTicketEmailHtml(
 
 /**
  * Sends registration confirmation email
+ *
+ * @param {string} to - Recipient email address
+ * @param {Object} registration - Registration data
+ * @return {Promise<void>} Promise that resolves when email is sent
  */
 async function sendRegistrationConfirmationEmail(
   to: string,
@@ -777,6 +795,11 @@ async function sendRegistrationConfirmationEmail(
 
 /**
  * Sends ticket/confirmation email after payment verification
+ *
+ * @param {string} to - Recipient email address
+ * @param {Object} registration - Registration data
+ * @param {Object} settings - Event settings data
+ * @return {Promise<void>} Promise that resolves when email is sent
  */
 async function sendTicketEmail(
   to: string,
@@ -812,7 +835,8 @@ async function sendTicketEmail(
 }
 
 /**
- * Firestore trigger that sends confirmation email when a new registration is created
+ * Firestore trigger that sends confirmation email when a new
+ * registration is created
  */
 export const onRegistrationCreated = onDocumentCreated(
   `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
@@ -974,14 +998,14 @@ export const cancelExpiredRegistrations = onSchedule(
 
       expiredQuery.forEach((doc) => {
         batch.update(doc.ref, {
-          status: REGISTRATION_STATUS.CANCELLED,
+          "status": REGISTRATION_STATUS.CANCELLED,
           "payment.status": REGISTRATION_STATUS.CANCELLED,
-          cancellation: {
+          "cancellation": {
             reason: "Payment deadline exceeded",
             cancelledBy: "system",
             cancelledAt: FieldValue.serverTimestamp(),
           },
-          updatedAt: FieldValue.serverTimestamp(),
+          "updatedAt": FieldValue.serverTimestamp(),
         });
         cancelCount++;
       });
