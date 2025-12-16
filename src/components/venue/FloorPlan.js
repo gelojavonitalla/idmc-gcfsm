@@ -150,94 +150,7 @@ function FloorPlan({ schedule, workshops }) {
           {/* Ground Floor Label */}
           <text x="60" y="60" className={styles.floorLabel}>Ground Floor</text>
 
-          {/* Main Hall - Large central room */}
-          <g
-            className={`${styles.room} ${hoveredRoom === 'main-hall' ? styles.roomHovered : ''} ${selectedRoom?.id === 'main-hall' ? styles.roomSelected : ''}`}
-            onClick={() => handleRoomClick(FLOOR_PLAN_ROOMS.find(r => r.id === 'main-hall'))}
-            onMouseEnter={() => setHoveredRoom('main-hall')}
-            onMouseLeave={() => setHoveredRoom(null)}
-            onKeyDown={(e) => handleKeyDown(e, FLOOR_PLAN_ROOMS.find(r => r.id === 'main-hall'))}
-            tabIndex={0}
-            role="button"
-            aria-label="Main Hall - Click for details"
-          >
-            <rect
-              x="60"
-              y="80"
-              width="360"
-              height="220"
-              rx="6"
-              fill="url(#mainGradient)"
-              filter="url(#shadow)"
-              className={styles.roomRect}
-            />
-            <text x="240" y="180" className={styles.roomName}>Main Hall</text>
-            <text x="240" y="210" className={styles.roomCapacity}>Plenary Sessions</text>
-            <text x="240" y="240" className={styles.roomCapacity}>Capacity: 500</text>
-
-            {/* Stage indicator */}
-            <rect x="80" y="100" width="320" height="30" rx="4" fill="rgba(255,255,255,0.2)" />
-            <text x="240" y="120" className={styles.stageLabel}>STAGE</text>
-          </g>
-
-          {/* Fellowship Hall - Adjacent to Main Hall */}
-          <g
-            className={`${styles.room} ${hoveredRoom === 'fellowship-hall' ? styles.roomHovered : ''} ${selectedRoom?.id === 'fellowship-hall' ? styles.roomSelected : ''}`}
-            onClick={() => handleRoomClick(FLOOR_PLAN_ROOMS.find(r => r.id === 'fellowship-hall'))}
-            onMouseEnter={() => setHoveredRoom('fellowship-hall')}
-            onMouseLeave={() => setHoveredRoom(null)}
-            onKeyDown={(e) => handleKeyDown(e, FLOOR_PLAN_ROOMS.find(r => r.id === 'fellowship-hall'))}
-            tabIndex={0}
-            role="button"
-            aria-label="Fellowship Hall - Click for details"
-          >
-            <rect
-              x="440"
-              y="80"
-              width="300"
-              height="140"
-              rx="6"
-              fill="url(#serviceGradient)"
-              filter="url(#shadow)"
-              className={styles.roomRect}
-            />
-            <text x="590" y="145" className={styles.roomName}>Fellowship Hall</text>
-            <text x="590" y="175" className={styles.roomCapacity}>Meals & Breaks</text>
-          </g>
-
-          {/* Main Lobby - Entry area */}
-          <g
-            className={`${styles.room} ${hoveredRoom === 'main-lobby' ? styles.roomHovered : ''} ${selectedRoom?.id === 'main-lobby' ? styles.roomSelected : ''}`}
-            onClick={() => handleRoomClick(FLOOR_PLAN_ROOMS.find(r => r.id === 'main-lobby'))}
-            onMouseEnter={() => setHoveredRoom('main-lobby')}
-            onMouseLeave={() => setHoveredRoom(null)}
-            onKeyDown={(e) => handleKeyDown(e, FLOOR_PLAN_ROOMS.find(r => r.id === 'main-lobby'))}
-            tabIndex={0}
-            role="button"
-            aria-label="Main Lobby - Click for details"
-          >
-            <rect
-              x="440"
-              y="240"
-              width="300"
-              height="60"
-              rx="6"
-              fill="url(#serviceGradient)"
-              filter="url(#shadow)"
-              className={styles.roomRect}
-            />
-            <text x="590" y="278" className={styles.roomName}>Main Lobby</text>
-
-            {/* Entry indicator */}
-            <path d="M 740 255 L 760 270 L 740 285" fill="none" stroke="white" strokeWidth="2" />
-            <text x="765" y="275" className={styles.entryLabel}>ENTRY</text>
-          </g>
-
-          {/* Second Floor Section */}
-          <line x1="50" y1="320" x2="750" y2="320" stroke="#374151" strokeWidth="2" strokeDasharray="8,4" />
-          <text x="60" y="345" className={styles.floorLabel}>Second Floor</text>
-
-          {/* Worship Hall - Workshop Room 1 */}
+          {/* Worship Hall - Main venue (large central room) */}
           <g
             className={`${styles.room} ${hoveredRoom === 'worship-hall' ? styles.roomHovered : ''} ${selectedRoom?.id === 'worship-hall' ? styles.roomSelected : ''}`}
             onClick={() => handleRoomClick(FLOOR_PLAN_ROOMS.find(r => r.id === 'worship-hall'))}
@@ -250,69 +163,57 @@ function FloorPlan({ schedule, workshops }) {
           >
             <rect
               x="60"
-              y="360"
-              width="170"
-              height="90"
+              y="80"
+              width="480"
+              height="200"
               rx="6"
-              fill="url(#workshopGradient)"
+              fill="url(#mainGradient)"
               filter="url(#shadow)"
               className={styles.roomRect}
             />
-            <text x="145" y="400" className={styles.roomNameSmall}>Worship Hall</text>
-            <text x="145" y="425" className={styles.roomCapacitySmall}>Next Gen</text>
+            <text x="300" y="165" className={styles.roomName}>Worship Hall</text>
+            <text x="300" y="195" className={styles.roomCapacity}>Plenary Sessions &amp; Next Gen Workshop</text>
+            <text x="300" y="225" className={styles.roomCapacity}>Capacity: 500</text>
+
+            {/* Stage indicator */}
+            <rect x="80" y="100" width="440" height="30" rx="4" fill="rgba(255,255,255,0.2)" />
+            <text x="300" y="120" className={styles.stageLabel}>STAGE</text>
           </g>
 
-          {/* 2nd Floor Lobby - Workshop Room 2 */}
+          {/* 1st Floor Lobby - Registration area */}
           <g
-            className={`${styles.room} ${hoveredRoom === '2nd-floor-lobby' ? styles.roomHovered : ''} ${selectedRoom?.id === '2nd-floor-lobby' ? styles.roomSelected : ''}`}
-            onClick={() => handleRoomClick(FLOOR_PLAN_ROOMS.find(r => r.id === '2nd-floor-lobby'))}
-            onMouseEnter={() => setHoveredRoom('2nd-floor-lobby')}
+            className={`${styles.room} ${hoveredRoom === '1st-floor-lobby' ? styles.roomHovered : ''} ${selectedRoom?.id === '1st-floor-lobby' ? styles.roomSelected : ''}`}
+            onClick={() => handleRoomClick(FLOOR_PLAN_ROOMS.find(r => r.id === '1st-floor-lobby'))}
+            onMouseEnter={() => setHoveredRoom('1st-floor-lobby')}
             onMouseLeave={() => setHoveredRoom(null)}
-            onKeyDown={(e) => handleKeyDown(e, FLOOR_PLAN_ROOMS.find(r => r.id === '2nd-floor-lobby'))}
+            onKeyDown={(e) => handleKeyDown(e, FLOOR_PLAN_ROOMS.find(r => r.id === '1st-floor-lobby'))}
             tabIndex={0}
             role="button"
-            aria-label="2nd Floor Lobby - Click for details"
+            aria-label="1st Floor Lobby - Click for details"
           >
             <rect
-              x="250"
-              y="360"
-              width="170"
-              height="90"
+              x="560"
+              y="80"
+              width="180"
+              height="200"
               rx="6"
-              fill="url(#workshopGradient)"
+              fill="url(#serviceGradient)"
               filter="url(#shadow)"
               className={styles.roomRect}
             />
-            <text x="335" y="400" className={styles.roomNameSmall}>2nd Floor Lobby</text>
-            <text x="335" y="425" className={styles.roomCapacitySmall}>Women</text>
+            <text x="650" y="170" className={styles.roomName}>1st Floor Lobby</text>
+            <text x="650" y="200" className={styles.roomCapacity}>Registration</text>
+
+            {/* Entry indicator */}
+            <path d="M 740 165 L 760 180 L 740 195" fill="none" stroke="white" strokeWidth="2" />
+            <text x="765" y="185" className={styles.entryLabel}>ENTRY</text>
           </g>
 
-          {/* CDC - Workshop Room 3 */}
-          <g
-            className={`${styles.room} ${hoveredRoom === 'cdc' ? styles.roomHovered : ''} ${selectedRoom?.id === 'cdc' ? styles.roomSelected : ''}`}
-            onClick={() => handleRoomClick(FLOOR_PLAN_ROOMS.find(r => r.id === 'cdc'))}
-            onMouseEnter={() => setHoveredRoom('cdc')}
-            onMouseLeave={() => setHoveredRoom(null)}
-            onKeyDown={(e) => handleKeyDown(e, FLOOR_PLAN_ROOMS.find(r => r.id === 'cdc'))}
-            tabIndex={0}
-            role="button"
-            aria-label="CDC Room - Click for details"
-          >
-            <rect
-              x="440"
-              y="360"
-              width="140"
-              height="90"
-              rx="6"
-              fill="url(#workshopGradient)"
-              filter="url(#shadow)"
-              className={styles.roomRect}
-            />
-            <text x="510" y="400" className={styles.roomNameSmall}>CDC</text>
-            <text x="510" y="425" className={styles.roomCapacitySmall}>Men</text>
-          </g>
+          {/* Second Floor Section */}
+          <line x1="50" y1="300" x2="750" y2="300" stroke="#374151" strokeWidth="2" strokeDasharray="8,4" />
+          <text x="60" y="330" className={styles.floorLabel}>Second Floor</text>
 
-          {/* YDT - Workshop Room 4 */}
+          {/* YDT - Men's Workshop */}
           <g
             className={`${styles.room} ${hoveredRoom === 'ydt' ? styles.roomHovered : ''} ${selectedRoom?.id === 'ydt' ? styles.roomSelected : ''}`}
             onClick={() => handleRoomClick(FLOOR_PLAN_ROOMS.find(r => r.id === 'ydt'))}
@@ -324,24 +225,99 @@ function FloorPlan({ schedule, workshops }) {
             aria-label="YDT Room - Click for details"
           >
             <rect
-              x="600"
-              y="360"
+              x="60"
+              y="350"
               width="140"
-              height="90"
+              height="100"
               rx="6"
               fill="url(#workshopGradient)"
               filter="url(#shadow)"
               className={styles.roomRect}
             />
-            <text x="670" y="400" className={styles.roomNameSmall}>YDT</text>
-            <text x="670" y="425" className={styles.roomCapacitySmall}>Senior Citizens</text>
+            <text x="130" y="395" className={styles.roomNameSmall}>YDT</text>
+            <text x="130" y="420" className={styles.roomCapacitySmall}>Men</text>
+          </g>
+
+          {/* CDC - Women's Workshop */}
+          <g
+            className={`${styles.room} ${hoveredRoom === 'cdc' ? styles.roomHovered : ''} ${selectedRoom?.id === 'cdc' ? styles.roomSelected : ''}`}
+            onClick={() => handleRoomClick(FLOOR_PLAN_ROOMS.find(r => r.id === 'cdc'))}
+            onMouseEnter={() => setHoveredRoom('cdc')}
+            onMouseLeave={() => setHoveredRoom(null)}
+            onKeyDown={(e) => handleKeyDown(e, FLOOR_PLAN_ROOMS.find(r => r.id === 'cdc'))}
+            tabIndex={0}
+            role="button"
+            aria-label="CDC Room - Click for details"
+          >
+            <rect
+              x="220"
+              y="350"
+              width="140"
+              height="100"
+              rx="6"
+              fill="url(#workshopGradient)"
+              filter="url(#shadow)"
+              className={styles.roomRect}
+            />
+            <text x="290" y="395" className={styles.roomNameSmall}>CDC</text>
+            <text x="290" y="420" className={styles.roomCapacitySmall}>Women</text>
+          </g>
+
+          {/* Library - Senior Citizens Workshop */}
+          <g
+            className={`${styles.room} ${hoveredRoom === 'library' ? styles.roomHovered : ''} ${selectedRoom?.id === 'library' ? styles.roomSelected : ''}`}
+            onClick={() => handleRoomClick(FLOOR_PLAN_ROOMS.find(r => r.id === 'library'))}
+            onMouseEnter={() => setHoveredRoom('library')}
+            onMouseLeave={() => setHoveredRoom(null)}
+            onKeyDown={(e) => handleKeyDown(e, FLOOR_PLAN_ROOMS.find(r => r.id === 'library'))}
+            tabIndex={0}
+            role="button"
+            aria-label="Library - Click for details"
+          >
+            <rect
+              x="380"
+              y="350"
+              width="140"
+              height="100"
+              rx="6"
+              fill="url(#workshopGradient)"
+              filter="url(#shadow)"
+              className={styles.roomRect}
+            />
+            <text x="450" y="395" className={styles.roomNameSmall}>Library</text>
+            <text x="450" y="420" className={styles.roomCapacitySmall}>Senior Citizens</text>
+          </g>
+
+          {/* 2nd Floor Lobby - Couples Workshop */}
+          <g
+            className={`${styles.room} ${hoveredRoom === '2nd-floor-lobby' ? styles.roomHovered : ''} ${selectedRoom?.id === '2nd-floor-lobby' ? styles.roomSelected : ''}`}
+            onClick={() => handleRoomClick(FLOOR_PLAN_ROOMS.find(r => r.id === '2nd-floor-lobby'))}
+            onMouseEnter={() => setHoveredRoom('2nd-floor-lobby')}
+            onMouseLeave={() => setHoveredRoom(null)}
+            onKeyDown={(e) => handleKeyDown(e, FLOOR_PLAN_ROOMS.find(r => r.id === '2nd-floor-lobby'))}
+            tabIndex={0}
+            role="button"
+            aria-label="2nd Floor Lobby - Click for details"
+          >
+            <rect
+              x="540"
+              y="350"
+              width="200"
+              height="100"
+              rx="6"
+              fill="url(#workshopGradient)"
+              filter="url(#shadow)"
+              className={styles.roomRect}
+            />
+            <text x="640" y="395" className={styles.roomNameSmall}>2nd Floor Lobby</text>
+            <text x="640" y="420" className={styles.roomCapacitySmall}>Couples</text>
           </g>
 
           {/* Stairs indicators */}
           <g className={styles.stairs}>
-            <rect x="60" y="310" width="40" height="40" fill="#e5e7eb" stroke="#9ca3af" strokeWidth="1" rx="4" />
-            <path d="M 65 340 L 65 320 L 70 320 L 70 325 L 75 325 L 75 330 L 80 330 L 80 335 L 85 335 L 85 340 Z" fill="#9ca3af" />
-            <text x="80" y="360" className={styles.stairsLabel}>Stairs</text>
+            <rect x="60" y="295" width="40" height="40" fill="#e5e7eb" stroke="#9ca3af" strokeWidth="1" rx="4" />
+            <path d="M 65 325 L 65 305 L 70 305 L 70 310 L 75 310 L 75 315 L 80 315 L 80 320 L 85 320 L 85 325 Z" fill="#9ca3af" />
+            <text x="80" y="345" className={styles.stairsLabel}>Stairs</text>
           </g>
         </svg>
 
