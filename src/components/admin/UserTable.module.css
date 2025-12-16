@@ -230,6 +230,18 @@
   background: #f0fdf4;
 }
 
+.resendButton:hover:not(:disabled) {
+  color: #2563eb;
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.copyButton:hover:not(:disabled) {
+  color: #059669;
+  border-color: #059669;
+  background: #ecfdf5;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .table th,

@@ -16,11 +16,12 @@ import styles from './UserTable.module.css';
  * @param {Array} props.users - Array of user objects
  * @param {Function} props.onUpdateRole - Callback to update user role
  * @param {Function} props.onToggleStatus - Callback to toggle user status
+ * @param {Function} props.onResendInvitation - Callback to resend invitation email
  * @param {string} props.currentUserId - Current logged-in user ID
  * @param {boolean} props.isLoading - Loading state
  * @returns {JSX.Element} The user table
  */
-function UserTable({ users, onUpdateRole, onToggleStatus, currentUserId, isLoading }) {
+function UserTable({ users, onUpdateRole, onToggleStatus, onResendInvitation, currentUserId, isLoading }) {
   /**
    * Formats date for display
    *
@@ -139,6 +140,32 @@ function UserTable({ users, onUpdateRole, onToggleStatus, currentUserId, isLoadi
                   </td>
                   <td>
                     <div className={styles.actions}>
+                      {user.status === 'pending' && user.inviteLink && (
+                        <button
+                          className={`${styles.actionButton} ${styles.copyButton}`}
+                          onClick={() => {
+                            navigator.clipboard.writeText(user.inviteLink);
+                          }}
+                          title="Copy invitation link"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                        </button>
+                      )}
+                      {user.status === 'pending' && onResendInvitation && (
+                        <button
+                          className={`${styles.actionButton} ${styles.resendButton}`}
+                          onClick={() => onResendInvitation(user.id)}
+                          title="Resend invitation email"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                            <polyline points="22,6 12,13 2,6" />
+                          </svg>
+                        </button>
+                      )}
                       {user.status === 'active' ? (
                         <button
                           className={styles.actionButton}
@@ -151,7 +178,7 @@ function UserTable({ users, onUpdateRole, onToggleStatus, currentUserId, isLoadi
                             <line x1="12" y1="2" x2="12" y2="12" />
                           </svg>
                         </button>
-                      ) : (
+                      ) : user.status !== 'pending' && (
                         <button
                           className={`${styles.actionButton} ${styles.activateButton}`}
                           onClick={() => onToggleStatus(user.id, 'activate')}
@@ -185,16 +212,19 @@ UserTable.propTypes = {
       role: PropTypes.string.isRequired,
       status: PropTypes.string,
       lastLoginAt: PropTypes.oneOfType([PropTypes.object, PropTypes.string]),
+      inviteLink: PropTypes.string,
     })
   ),
   onUpdateRole: PropTypes.func.isRequired,
   onToggleStatus: PropTypes.func.isRequired,
+  onResendInvitation: PropTypes.func,
   currentUserId: PropTypes.string,
   isLoading: PropTypes.bool,
 };
 
 UserTable.defaultProps = {
   users: [],
+  onResendInvitation: null,
   currentUserId: null,
   isLoading: false,
 };

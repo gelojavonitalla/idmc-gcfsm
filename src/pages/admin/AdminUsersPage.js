@@ -18,6 +18,8 @@ import {
   updateAdminRole,
   activateAdmin,
   deactivateAdmin,
+  resendInvitation,
+  ADMIN_ERROR_CODES,
 } from '../../services';
 import styles from './AdminUsersPage.module.css';
 
@@ -62,15 +64,48 @@ function AdminUsersPage() {
    * Handles inviting a new user
    *
    * @param {Object} userData - User data from invite form
+   * @returns {Promise<{success: boolean, error?: string}>} Result of the invitation
    */
   const handleInviteUser = async (userData) => {
-    // Generate a temporary ID (in production, this would be handled by Firebase Auth)
-    const tempId = `pending_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    try {
+      // Generate a temporary ID (will be replaced by Firebase Auth UID in Cloud Function)
+      const tempId = `pending_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    await createAdmin(tempId, userData, user?.uid);
+      await createAdmin(tempId, userData, user?.uid);
 
-    // Refresh the user list
-    await fetchUsers();
+      // Refresh the user list
+      await fetchUsers();
+
+      return { success: true };
+    } catch (err) {
+      console.error('Failed to invite user:', err);
+
+      if (err.code === ADMIN_ERROR_CODES.DUPLICATE_EMAIL) {
+        return { success: false, error: 'An admin with this email already exists.' };
+      }
+
+      return { success: false, error: err.message || 'Failed to send invitation. Please try again.' };
+    }
+  };
+
+  /**
+   * Handles resending invitation to a pending user
+   *
+   * @param {string} userId - User ID to resend invitation to
+   */
+  const handleResendInvitation = async (userId) => {
+    try {
+      await resendInvitation(userId, user?.uid);
+
+      // Refresh the user list
+      await fetchUsers();
+
+      // Show success message (could be improved with a toast notification)
+      setError(null);
+    } catch (err) {
+      console.error('Failed to resend invitation:', err);
+      setError(err.message || 'Failed to resend invitation. Please try again.');
+    }
   };
 
   /**
@@ -203,6 +238,7 @@ function AdminUsersPage() {
         users={users}
         onUpdateRole={handleUpdateRole}
         onToggleStatus={handleToggleStatus}
+        onResendInvitation={handleResendInvitation}
         currentUserId={admin?.id}
         isLoading={isLoading}
       />
