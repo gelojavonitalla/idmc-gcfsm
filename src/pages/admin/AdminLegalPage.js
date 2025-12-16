@@ -241,18 +241,32 @@ function AdminLegalPage() {
             Manage the Terms of Service and Privacy Policy content.
           </p>
         </div>
-        <button
-          className={styles.refreshButton}
-          onClick={fetchSettings}
-          disabled={isLoading}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="23 4 23 10 17 10" />
-            <polyline points="1 20 1 14 7 14" />
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-          </svg>
-          {isLoading ? 'Loading...' : 'Refresh'}
-        </button>
+        <div className={styles.headerActions}>
+          <button
+            className={styles.saveButton}
+            onClick={activeTab === 'terms' ? handleTermsSubmit : handlePrivacySubmit}
+            disabled={isLoading || isSaving}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            {isSaving ? 'Saving...' : 'Save'}
+          </button>
+          <button
+            className={styles.refreshButton}
+            onClick={fetchSettings}
+            disabled={isLoading}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="23 4 23 10 17 10" />
+              <polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            {isLoading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {/* Error Banner */}
