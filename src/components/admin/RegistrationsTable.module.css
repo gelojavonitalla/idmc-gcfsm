@@ -1,0 +1,236 @@
+/**
+ * RegistrationsTable Styles
+ */
+
+.container {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.skeleton {
+  height: 400px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-12) var(--spacing-4);
+  color: var(--color-text-secondary);
+}
+
+.emptyState svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--spacing-4);
+  opacity: 0.5;
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: var(--font-size-base);
+}
+
+.emptyHint {
+  font-size: var(--font-size-sm) !important;
+  margin-top: var(--spacing-2) !important;
+  opacity: 0.7;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.table thead {
+  background: var(--color-background-secondary);
+}
+
+.table th {
+  padding: var(--spacing-3) var(--spacing-4);
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table td {
+  padding: var(--spacing-3) var(--spacing-4);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.table tbody tr:hover {
+  background: var(--color-background-secondary);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.nameCell {
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.emailCell {
+  color: var(--color-text-secondary);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category {
+  display: inline-block;
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.workshop {
+  display: inline-block;
+  padding: var(--spacing-1) var(--spacing-2);
+  background: #e0f2fe;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: #0369a1;
+}
+
+.amountCell {
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.dateCell {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+}
+
+/* Status Badges */
+.statusBadge {
+  display: inline-block;
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.statusConfirmed {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.statusPendingVerification {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.statusPendingPayment {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.statusCancelled {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+.statusRefunded {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+.viewButton,
+.confirmButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.viewButton {
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+}
+
+.viewButton:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.confirmButton {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.confirmButton:hover {
+  background: #10b981;
+  color: white;
+}
+
+.viewButton svg,
+.confirmButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .table {
+    font-size: var(--font-size-xs);
+  }
+
+  .table th,
+  .table td {
+    padding: var(--spacing-2) var(--spacing-3);
+  }
+}
+
+@media (max-width: 768px) {
+  .emailCell {
+    max-width: 150px;
+  }
+}
