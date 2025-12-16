@@ -46,6 +46,11 @@ const DEFAULT_SETTINGS = {
   },
   registrationOpen: true,
   bannerImageUrl: null,
+  idmc2025: {
+    title: 'IDMC 2025',
+    subtitle: 'Watch the highlights from our previous conference',
+    youtubeVideoId: 'emGTZDXOaZY',
+  },
 };
 
 /**

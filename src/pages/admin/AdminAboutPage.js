@@ -44,6 +44,13 @@ function AdminAboutPage() {
     coreValues: [],
   });
 
+  // IDMC 2025 form data
+  const [idmc2025Data, setIdmc2025Data] = useState({
+    title: '',
+    subtitle: '',
+    youtubeVideoId: '',
+  });
+
   /**
    * Fetches settings data
    */
@@ -66,6 +73,11 @@ function AdminAboutPage() {
         vision: data.aboutGcf?.vision || '',
         description: data.aboutGcf?.description || '',
         coreValues: data.aboutGcf?.coreValues || [],
+      });
+      setIdmc2025Data({
+        title: data.idmc2025?.title || '',
+        subtitle: data.idmc2025?.subtitle || '',
+        youtubeVideoId: data.idmc2025?.youtubeVideoId || '',
       });
     } catch (fetchError) {
       console.error('Failed to fetch settings:', fetchError);
@@ -143,6 +155,13 @@ function AdminAboutPage() {
     setSuccessMessage('');
   };
 
+  // IDMC 2025 handlers
+  const handleIdmc2025Change = (e) => {
+    const { name, value } = e.target;
+    setIdmc2025Data((prev) => ({ ...prev, [name]: value }));
+    setSuccessMessage('');
+  };
+
   /**
    * Handles IDMC form submission
    *
@@ -204,6 +223,38 @@ function AdminAboutPage() {
       await updateConferenceSettings(updatedSettings);
       setSettings(updatedSettings);
       setSuccessMessage('About GCF South Metro content saved successfully!');
+    } catch (saveError) {
+      console.error('Failed to save settings:', saveError);
+      setError('Failed to save content. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  /**
+   * Handles IDMC 2025 form submission
+   *
+   * @param {React.FormEvent} e - Form event
+   */
+  const handleIdmc2025Submit = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setError(null);
+    setSuccessMessage('');
+
+    try {
+      const updatedSettings = {
+        ...settings,
+        idmc2025: {
+          title: idmc2025Data.title,
+          subtitle: idmc2025Data.subtitle,
+          youtubeVideoId: idmc2025Data.youtubeVideoId,
+        },
+      };
+
+      await updateConferenceSettings(updatedSettings);
+      setSettings(updatedSettings);
+      setSuccessMessage('IDMC 2025 page content saved successfully!');
     } catch (saveError) {
       console.error('Failed to save settings:', saveError);
       setError('Failed to save content. Please try again.');
@@ -281,6 +332,16 @@ function AdminAboutPage() {
             <path d="M3 21h18" />
           </svg>
           About GCF South Metro
+        </button>
+        <button
+          className={`${styles.tab} ${activeTab === 'idmc2025' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('idmc2025')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polygon points="23 7 16 12 23 17 23 7" />
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+          </svg>
+          IDMC 2025
         </button>
       </div>
 
@@ -567,6 +628,98 @@ function AdminAboutPage() {
                       </button>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+
+            <div className={styles.formActions}>
+              <button
+                type="submit"
+                className={styles.submitButton}
+                disabled={isLoading || isSaving}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {activeTab === 'idmc2025' && (
+          <form onSubmit={handleIdmc2025Submit} className={styles.form}>
+            <div className={styles.formSection}>
+              <h3 className={styles.sectionTitle}>Page Content</h3>
+              <div className={styles.formGroup}>
+                <label htmlFor="idmc2025-title" className={styles.label}>
+                  Page Title
+                </label>
+                <input
+                  type="text"
+                  id="idmc2025-title"
+                  name="title"
+                  value={idmc2025Data.title}
+                  onChange={handleIdmc2025Change}
+                  className={styles.input}
+                  placeholder="IDMC 2025"
+                  disabled={isLoading}
+                />
+                <p className={styles.hint}>
+                  The main heading displayed on the IDMC 2025 page.
+                </p>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="idmc2025-subtitle" className={styles.label}>
+                  Subtitle
+                </label>
+                <input
+                  type="text"
+                  id="idmc2025-subtitle"
+                  name="subtitle"
+                  value={idmc2025Data.subtitle}
+                  onChange={handleIdmc2025Change}
+                  className={styles.input}
+                  placeholder="Watch the highlights from our previous conference"
+                  disabled={isLoading}
+                />
+                <p className={styles.hint}>
+                  A brief description shown below the title.
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.formSection}>
+              <h3 className={styles.sectionTitle}>Video Settings</h3>
+              <div className={styles.formGroup}>
+                <label htmlFor="idmc2025-videoId" className={styles.label}>
+                  YouTube Video ID
+                </label>
+                <input
+                  type="text"
+                  id="idmc2025-videoId"
+                  name="youtubeVideoId"
+                  value={idmc2025Data.youtubeVideoId}
+                  onChange={handleIdmc2025Change}
+                  className={styles.input}
+                  placeholder="emGTZDXOaZY"
+                  disabled={isLoading}
+                />
+                <p className={styles.hint}>
+                  The YouTube video ID (the part after &quot;v=&quot; in the URL, e.g., for https://youtube.com/watch?v=emGTZDXOaZY use &quot;emGTZDXOaZY&quot;).
+                </p>
+              </div>
+
+              {idmc2025Data.youtubeVideoId && (
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Video Preview</label>
+                  <div className={styles.videoPreview}>
+                    <iframe
+                      src={`https://www.youtube.com/embed/${idmc2025Data.youtubeVideoId}`}
+                      title="YouTube video preview"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
                 </div>
               )}
             </div>
