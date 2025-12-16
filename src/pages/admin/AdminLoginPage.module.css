@@ -43,15 +43,10 @@
 }
 
 .logo {
-  width: 64px;
-  height: 64px;
-  background: var(--color-primary);
-  border-radius: var(--radius-xl);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: var(--font-size-xl);
+  width: auto;
+  height: 80px;
+  max-width: 200px;
+  object-fit: contain;
   margin-bottom: var(--spacing-8);
 }
 
