@@ -85,10 +85,19 @@
   height: 20px;
 }
 
+form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .content {
   padding: var(--spacing-6);
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
 }
 
 .errorMessage {
