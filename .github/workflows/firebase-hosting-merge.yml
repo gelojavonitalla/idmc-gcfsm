@@ -48,8 +48,8 @@ jobs:
           channelId: live
           projectId: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
-      # Deploy Cloud Functions
-      - name: Deploy Cloud Functions
+      # Deploy Cloud Functions and Storage Rules
+      - name: Deploy Cloud Functions and Storage Rules
         run: |
           # Write service account to file for authentication
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > $HOME/gcloud-key.json
@@ -62,7 +62,7 @@ jobs:
           echo "USE_SENDGRID=${{ vars.USE_SENDGRID }}" >> functions/.env
 
           npm install -g firebase-tools
-          firebase deploy --only functions --project ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }} --force
+          firebase deploy --only functions,storage --project ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }} --force
 
           # Clean up
           rm -f $HOME/gcloud-key.json

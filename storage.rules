@@ -44,5 +44,17 @@ service firebase.storage {
       allow read: if true; // Public read access
       allow write: if isAuthenticated() && isValidImage();
     }
+
+    // Helper function to validate payment proof file (image or PDF)
+    function isValidPaymentProof() {
+      return (request.resource.contentType.matches('image/.*') || request.resource.contentType == 'application/pdf')
+        && request.resource.size < 5 * 1024 * 1024; // 5MB max
+    }
+
+    // Registration payment proofs - allows public uploads since users register without auth
+    match /registrations/payment-proofs/{registrationId}/{fileName} {
+      allow read: if true; // Public read access for admin verification
+      allow write: if isValidPaymentProof();
+    }
   }
 }
