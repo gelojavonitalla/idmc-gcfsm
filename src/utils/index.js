@@ -6,7 +6,9 @@
 export {
   getCurrentPricingTier,
   calculatePrice,
+  generateShortCode,
   generateRegistrationId,
+  extractShortCode,
   isRegistrationOpen,
   getDaysUntilConference,
   formatPrice,

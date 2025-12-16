@@ -6,11 +6,8 @@
  */
 
 import PropTypes from 'prop-types';
-import {
-  REGISTRATION_STATUS,
-  REGISTRATION_CATEGORY_LABELS,
-  WORKSHOP_CATEGORY_LABELS,
-} from '../../constants';
+import { REGISTRATION_STATUS } from '../../constants';
+import { extractShortCode } from '../../utils';
 import styles from './RegistrationsTable.module.css';
 
 /**
@@ -104,6 +101,17 @@ function getAttendeeEmail(registration) {
 }
 
 /**
+ * Gets the total attendee count from registration
+ *
+ * @param {Object} registration - Registration object
+ * @returns {number} Total attendee count
+ */
+function getAttendeeCount(registration) {
+  const additionalCount = registration.additionalAttendees?.length || 0;
+  return 1 + additionalCount;
+}
+
+/**
  * RegistrationsTable Component
  *
  * @param {Object} props - Component props
@@ -152,10 +160,9 @@ function RegistrationsTable({
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Category</th>
-              <th>Workshop</th>
+              <th>Code</th>
+              <th>Primary Contact</th>
+              <th>Attendees</th>
               <th>Amount</th>
               <th>Status</th>
               <th>Date</th>
@@ -167,28 +174,21 @@ function RegistrationsTable({
               const statusConfig =
                 STATUS_CONFIG[registration.status] ||
                 STATUS_CONFIG[REGISTRATION_STATUS.PENDING_PAYMENT];
+              const shortCode = extractShortCode(registration.id) || registration.shortCode || '—';
+              const attendeeCount = getAttendeeCount(registration);
               return (
                 <tr key={registration.id}>
+                  <td className={styles.codeCell}>
+                    <span className={styles.shortCode}>{shortCode}</span>
+                  </td>
                   <td className={styles.nameCell}>
-                    {getAttendeeName(registration)}
+                    <div className={styles.primaryInfo}>
+                      <span className={styles.primaryName}>{getAttendeeName(registration)}</span>
+                      <span className={styles.primaryEmail}>{getAttendeeEmail(registration)}</span>
+                    </div>
                   </td>
-                  <td className={styles.emailCell}>
-                    {getAttendeeEmail(registration)}
-                  </td>
-                  <td>
-                    <span className={styles.category}>
-                      {REGISTRATION_CATEGORY_LABELS[registration.category] ||
-                        registration.category ||
-                        '—'}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={styles.workshop}>
-                      {registration.workshopSelection
-                        ? WORKSHOP_CATEGORY_LABELS[registration.workshopSelection] ||
-                          registration.workshopSelection
-                        : '—'}
-                    </span>
+                  <td className={styles.attendeeCountCell}>
+                    <span className={styles.attendeeCount}>{attendeeCount}</span>
                   </td>
                   <td className={styles.amountCell}>
                     {formatCurrency(registration.totalAmount)}

@@ -1205,3 +1205,121 @@
     font-size: var(--font-size-2xl);
   }
 }
+
+/* Primary Badge */
+.primaryBadge {
+  display: inline-block;
+  background: var(--color-primary);
+  color: white;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: var(--spacing-2);
+}
+
+.primaryBadgeSmall {
+  display: inline-block;
+  background: var(--color-primary);
+  color: white;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 2px var(--spacing-2);
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: var(--spacing-2);
+}
+
+/* Section Hint */
+.sectionHint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-2);
+  margin-bottom: var(--spacing-4);
+}
+
+/* Field Hint */
+.fieldHint {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-1);
+}
+
+/* Optional Label */
+.optional {
+  color: var(--color-text-secondary);
+  font-weight: normal;
+}
+
+/* Registration ID Box */
+.regIdBox {
+  background: var(--color-primary-50);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  text-align: center;
+  margin-bottom: var(--spacing-6);
+}
+
+.regIdLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--spacing-2);
+}
+
+.regIdValue {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-primary);
+  font-family: monospace;
+  letter-spacing: 0.1em;
+}
+
+.shortCodeHint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-2);
+}
+
+.shortCodeHint strong {
+  color: var(--color-primary);
+  font-size: var(--font-size-lg);
+  font-family: monospace;
+}
+
+/* Recovery Info */
+.recoveryInfo {
+  background: var(--color-info-50, #eff6ff);
+  border-left: 4px solid var(--color-primary);
+  padding: var(--spacing-6);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-8);
+}
+
+.recoveryInfo h2 {
+  font-size: var(--font-size-lg);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-2);
+}
+
+.recoveryInfo p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+  margin-bottom: var(--spacing-2);
+}
+
+.recoveryInfo p:last-child {
+  margin-bottom: 0;
+}
+
+.recoveryInfo a {
+  color: var(--color-primary);
+  font-weight: 500;
+}

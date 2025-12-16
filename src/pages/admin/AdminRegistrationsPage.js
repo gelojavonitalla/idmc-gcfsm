@@ -16,6 +16,7 @@ import {
   updateRegistration,
 } from '../../services/maintenance';
 import { REGISTRATION_STATUS } from '../../constants';
+import { extractShortCode } from '../../utils';
 import styles from './AdminRegistrationsPage.module.css';
 
 /**
@@ -141,7 +142,7 @@ function AdminRegistrationsPage() {
 
       // Search filter
       if (searchQuery) {
-        const query = searchQuery.toLowerCase();
+        const query = searchQuery.toLowerCase().trim();
         const name =
           `${registration.primaryAttendee?.firstName || registration.firstName || ''} ${registration.primaryAttendee?.lastName || registration.lastName || ''}`.toLowerCase();
         const email = (
@@ -149,10 +150,20 @@ function AdminRegistrationsPage() {
           registration.email ||
           ''
         ).toLowerCase();
+        const phone = (
+          registration.primaryAttendee?.cellphone ||
+          registration.phone ||
+          ''
+        ).toLowerCase();
         const id = (registration.id || '').toLowerCase();
+        const shortCode = (extractShortCode(registration.id) || registration.shortCode || '').toLowerCase();
 
         return (
-          name.includes(query) || email.includes(query) || id.includes(query)
+          name.includes(query) ||
+          email.includes(query) ||
+          phone.includes(query) ||
+          id.includes(query) ||
+          shortCode.includes(query)
         );
       }
 
@@ -236,7 +247,7 @@ function AdminRegistrationsPage() {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Search by name, email, or registration ID..."
+            placeholder="Search by code, name, email, or phone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
