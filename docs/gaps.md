@@ -87,4 +87,25 @@ HISTORY: 'The Intentional Disciple-Making Churches (IDMC) Conference began as a 
 
 ---
 
-*Last updated: 2024-12-12*
+## Deferred Epics
+
+The following epics have been deferred and will not be implemented in the current release:
+
+### IDMC-EVT-05: Workshops & Tracks
+
+**Status:** ⏸️ Deferred
+
+**Scope (not implementing):**
+- Workshop pages, track organization, capacity management
+- Workshop selection during registration
+- Admin workshop management
+- Multi-track workshop system with capacity limits
+- Workshop categories (Missions, Marketplace, Social Justice, Media, Mental Wellness, Sexual Wholeness)
+- Public workshops page with track view
+- Workshop detail view
+
+**Reason:** Deferred to future release per stakeholder decision.
+
+---
+
+*Last updated: 2025-12-16*
