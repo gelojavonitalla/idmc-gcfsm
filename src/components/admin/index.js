@@ -24,3 +24,5 @@ export { default as SessionTable } from './SessionTable';
 export { default as SessionFormModal } from './SessionFormModal';
 export { default as FAQTable } from './FAQTable';
 export { default as FAQFormModal } from './FAQFormModal';
+export { default as DownloadsTable } from './DownloadsTable';
+export { default as DownloadFormModal } from './DownloadFormModal';
