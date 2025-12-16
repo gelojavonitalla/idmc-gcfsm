@@ -35,6 +35,9 @@
     "seed:faq:clear": "node scripts/seed-faq.js --clear",
     "seed:settings": "node scripts/seed-settings.js",
     "seed:settings:clear": "node scripts/seed-settings.js --clear",
+    "seed:about": "node scripts/seed-about.js",
+    "seed:about:clear": "node scripts/seed-about.js --clear",
+    "seed:about:force": "node scripts/seed-about.js --force",
     "seed:legal": "node scripts/seed-legal.js",
     "seed:legal:clear": "node scripts/seed-legal.js --clear",
     "seed:registrations": "node scripts/seed-registrations.js",
@@ -46,6 +49,7 @@
     "seed:emulator:schedule": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-schedule.js --clear",
     "seed:emulator:faq": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-faq.js --clear",
     "seed:emulator:settings": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-settings.js --clear",
+    "seed:emulator:about": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-about.js --clear",
     "seed:emulator:legal": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-legal.js --clear",
     "seed:emulator:registrations": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-registrations.js --clear"
   },
