@@ -6,7 +6,7 @@
  */
 
 import { setGlobalOptions } from "firebase-functions";
-import { defineString } from "firebase-functions/params";
+import { defineString, defineSecret } from "firebase-functions/params";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 import { initializeApp } from "firebase-admin/app";
@@ -21,7 +21,10 @@ initializeApp();
 setGlobalOptions({ maxInstances: 10 });
 
 // Define environment parameters
-const sendgridApiKey = defineString("SENDGRID_API_KEY");
+// Secret stored in Google Secret Manager
+const sendgridApiKey = defineSecret("SENDGRID_API_KEY");
+
+// Regular config params (not sensitive)
 const senderEmail = defineString("SENDER_EMAIL");
 const senderName = defineString("SENDER_NAME");
 const appUrl = defineString("APP_URL");
@@ -240,7 +243,10 @@ async function sendInvitationEmail(
  * @param event - The Firestore event containing the new document data
  */
 export const onAdminCreated = onDocumentCreated(
-  `${COLLECTIONS.ADMINS}/{adminId}`,
+  {
+    document: `${COLLECTIONS.ADMINS}/{adminId}`,
+    secrets: [sendgridApiKey],
+  },
   async (event) => {
     const snapshot = event.data;
     if (!snapshot) {
