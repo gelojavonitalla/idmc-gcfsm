@@ -333,6 +333,13 @@ export const BREAKPOINTS = {
 export const CSS_PREFIX = 'idmc';
 
 /**
+ * GCF South Metro branding assets
+ */
+export const BRANDING = {
+  GCF_LOGO_URL: 'https://gcfsouthmetro.org/wp-content/uploads/2020/06/gcfsm-main-compressor.png',
+};
+
+/**
  * Organization information for GCF South Metro
  */
 export const ORGANIZATION = {

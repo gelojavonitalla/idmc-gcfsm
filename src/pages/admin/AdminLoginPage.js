@@ -8,7 +8,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAdminAuth } from '../../context';
-import { ADMIN_ROUTES, CONFERENCE } from '../../constants';
+import { ADMIN_ROUTES, CONFERENCE, BRANDING } from '../../constants';
 import styles from './AdminLoginPage.module.css';
 
 /**
@@ -153,7 +153,11 @@ function AdminLoginPage() {
         {/* Left side - Branding */}
         <div className={styles.branding}>
           <div className={styles.brandingContent}>
-            <div className={styles.logo}>IDMC</div>
+            <img
+              src={BRANDING.GCF_LOGO_URL}
+              alt="GCF South Metro Logo"
+              className={styles.logo}
+            />
             <h1 className={styles.brandTitle}>Admin Dashboard</h1>
             <p className={styles.brandSubtitle}>
               {CONFERENCE.THEME}
