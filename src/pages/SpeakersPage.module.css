@@ -167,6 +167,7 @@
   color: var(--color-text);
   line-height: 1.7;
   margin: 0;
+  white-space: pre-wrap;
 }
 
 /* Loading State */
