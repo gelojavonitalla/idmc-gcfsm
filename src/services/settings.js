@@ -82,6 +82,11 @@ const DEFAULT_SETTINGS = {
       'Excellence through dedicated effort',
     ],
   },
+  idmc2025: {
+    title: 'IDMC 2025',
+    subtitle: 'Watch the highlights from our previous conference',
+    youtubeVideoId: 'emGTZDXOaZY',
+  },
 };
 
 /**
