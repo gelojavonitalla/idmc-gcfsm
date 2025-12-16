@@ -153,17 +153,21 @@ function AdminDashboardPage() {
             period="Last 30 Days"
             isLoading={isLoading}
           />
-          <RecentRegistrations
-            registrations={registrations}
-            isLoading={isLoading}
-            limit={10}
-          />
         </div>
 
         {/* Right Column - Quick Actions */}
         <div className={styles.rightColumn}>
           <QuickActions />
         </div>
+      </div>
+
+      {/* Recent Registrations - Full Width */}
+      <div className={styles.fullWidthSection}>
+        <RecentRegistrations
+          registrations={registrations}
+          isLoading={isLoading}
+          limit={10}
+        />
       </div>
     </AdminLayout>
   );
