@@ -42,6 +42,7 @@ export const ADMIN_ROUTES = {
   SETTINGS: '/admin/settings',
   USERS: '/admin/users',
   ACTIVITY: '/admin/activity',
+  VENUE: '/admin/venue',
 };
 
 /**
@@ -157,6 +158,7 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Site', path: ADMIN_ROUTES.SETTINGS, icon: 'settings' },
       { label: 'Speakers', path: ADMIN_ROUTES.SPEAKERS, icon: 'mic' },
       { label: 'Schedule', path: ADMIN_ROUTES.SCHEDULE, icon: 'calendar' },
+      { label: 'Venue', path: ADMIN_ROUTES.VENUE, icon: 'location' },
       { label: 'FAQ', path: ADMIN_ROUTES.FAQ, icon: 'help' },
       { label: 'Downloads', path: ADMIN_ROUTES.DOWNLOADS, icon: 'download' },
       { label: 'About', path: ADMIN_ROUTES.ABOUT_CONTENT, icon: 'info' },
@@ -200,6 +202,9 @@ export const COLLECTIONS = {
   ADMINS: 'admins',
   ACTIVITY_LOGS: 'activityLogs',
   DOWNLOADS: 'downloads',
+  VENUE_ROOMS: 'venueRooms',
+  VENUE_TRANSPORT: 'venueTransport',
+  VENUE_AMENITIES: 'venueAmenities',
 };
 
 /**

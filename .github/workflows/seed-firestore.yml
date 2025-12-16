@@ -58,6 +58,11 @@ on:
         required: false
         default: false
         type: boolean
+      seed_venue:
+        description: 'Seed venue data (rooms, transport, amenities)'
+        required: false
+        default: false
+        type: boolean
       seed_all:
         description: 'Seed ALL data (overrides individual options)'
         required: false
@@ -95,7 +100,7 @@ jobs:
           echo "✅ Firestore indexes deployed successfully!"
 
   seed_data:
-    if: ${{ inputs.seed_speakers || inputs.seed_sessions || inputs.seed_workshops || inputs.seed_schedule || inputs.seed_faq || inputs.seed_settings || inputs.seed_about || inputs.seed_downloads || inputs.seed_legal || inputs.seed_registrations || inputs.seed_all }}
+    if: ${{ inputs.seed_speakers || inputs.seed_sessions || inputs.seed_workshops || inputs.seed_schedule || inputs.seed_faq || inputs.seed_settings || inputs.seed_about || inputs.seed_downloads || inputs.seed_legal || inputs.seed_registrations || inputs.seed_venue || inputs.seed_all }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -245,8 +250,21 @@ jobs:
         env:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
+      - name: Seed Venue Data
+        if: ${{ inputs.seed_venue || inputs.seed_all }}
+        run: |
+          if [ "${{ inputs.clear_existing }}" == "true" ]; then
+            echo "Clearing and re-seeding venue data..."
+            node scripts/seed-venue.js --clear
+          else
+            echo "Seeding venue data (preserving existing)..."
+            node scripts/seed-venue.js
+          fi
+        env:
+          GCLOUD_PROJECT: idmc-gcfsm-dev
+
       - name: Seed Complete
         run: |
           echo "✅ Firestore seeding complete!"
-          echo "Seeded: speakers=${{ inputs.seed_speakers || inputs.seed_all }}, sessions=${{ inputs.seed_sessions || inputs.seed_all }}, workshops=${{ inputs.seed_workshops || inputs.seed_all }}, schedule=${{ inputs.seed_schedule || inputs.seed_all }}, faq=${{ inputs.seed_faq || inputs.seed_all }}, settings=${{ inputs.seed_settings || inputs.seed_all }}, about=${{ inputs.seed_about || inputs.seed_all }}, downloads=${{ inputs.seed_downloads || inputs.seed_all }}, legal=${{ inputs.seed_legal || inputs.seed_all }}, registrations=${{ inputs.seed_registrations }}"
+          echo "Seeded: speakers=${{ inputs.seed_speakers || inputs.seed_all }}, sessions=${{ inputs.seed_sessions || inputs.seed_all }}, workshops=${{ inputs.seed_workshops || inputs.seed_all }}, schedule=${{ inputs.seed_schedule || inputs.seed_all }}, faq=${{ inputs.seed_faq || inputs.seed_all }}, settings=${{ inputs.seed_settings || inputs.seed_all }}, about=${{ inputs.seed_about || inputs.seed_all }}, downloads=${{ inputs.seed_downloads || inputs.seed_all }}, legal=${{ inputs.seed_legal || inputs.seed_all }}, registrations=${{ inputs.seed_registrations }}, venue=${{ inputs.seed_venue || inputs.seed_all }}"
           echo "Cleared existing: ${{ inputs.clear_existing }}"
