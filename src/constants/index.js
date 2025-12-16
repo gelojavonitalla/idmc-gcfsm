@@ -210,6 +210,7 @@ export const STORAGE_PATHS = {
   CONFERENCE_HERO_VIDEOS: 'conference/hero-videos',
   SPEAKER_PHOTOS: 'speakers/photos',
   DOWNLOAD_FILES: 'downloads/files',
+  DOWNLOAD_THUMBNAILS: 'downloads/thumbnails',
 };
 
 /**
@@ -228,6 +229,16 @@ export const MAX_FILE_SIZES = {
   IMAGE: 10 * 1024 * 1024, // 10MB
   VIDEO: 100 * 1024 * 1024, // 100MB
   DOCUMENT: 50 * 1024 * 1024, // 50MB
+  THUMBNAIL: 2 * 1024 * 1024, // 2MB
+};
+
+/**
+ * Recommended thumbnail dimensions in pixels
+ * Optimized for download cards and list displays
+ */
+export const THUMBNAIL_DIMENSIONS = {
+  WIDTH: 400,
+  HEIGHT: 300,
 };
 
 /**
@@ -279,7 +290,7 @@ export const NAV_ITEMS = [
   { label: 'Venue', path: ROUTES.VENUE, isAnchor: false },
   { label: 'Downloads', path: ROUTES.DOWNLOADS, isAnchor: false },
   { label: 'FAQ', path: ROUTES.FAQ, isAnchor: false },
-  { label: 'IDMC 2025', path: ROUTES.IDMC_2025, isAnchor: false },
+  { label: 'Previous IDMC', path: ROUTES.IDMC_2025, isAnchor: false },
   { label: 'Register', path: ROUTES.REGISTER, isAnchor: false, isPrimary: true },
 ];
 

@@ -62,6 +62,42 @@ const SETTINGS_DATA = {
   },
   registrationOpen: true,
   bannerImageUrl: null,
+  heroImageUrl: null,
+  heroVideoUrl: null,
+  // About IDMC content
+  aboutIdmc: {
+    mission:
+      'The Intentional Disciple-Making Churches Conference (IDMC) is an annual gathering designed to equip and inspire churches to return to their disciple-making roots. We believe that every believer is called to make disciples who make disciples, transforming communities and nations for Christ.',
+    vision: '',
+    history:
+      'IDMC was born out of a vision to see churches across the Philippines and beyond embrace intentional disciple-making as their primary mission. What started as a small gathering of church leaders has grown into a movement that impacts thousands of believers each year.\n\nThrough plenary sessions, workshops, and fellowship, IDMC provides a platform for learning, sharing best practices, and encouraging one another in the disciple-making journey.',
+    milestones: [
+      { label: '2023-2033', description: 'National Disciple-Making Campaign' },
+      { label: '1000+', description: 'Churches Impacted' },
+      { label: '10+', description: 'Years of Ministry' },
+    ],
+  },
+  // About GCF South Metro content
+  aboutGcf: {
+    name: 'GCF South Metro',
+    mission: 'To love God, to love people and to make multiplying disciples.',
+    vision:
+      'To be a disciple-making congregation that reaches local communities while impacting the broader region and world.',
+    description:
+      'GCF South Metro is a disciple-making church focused on three interconnected activities: drawing individuals toward Christ, developing their faith, and deploying them for ministry purposes.',
+    coreValues: [
+      'Truth grounded in Scripture',
+      'Love demonstrated in relationships',
+      'Empowerment through the Holy Spirit',
+      'Excellence through dedicated effort',
+    ],
+  },
+  // Previous IDMC (IDMC 2025) content
+  idmc2025: {
+    title: 'IDMC 2025',
+    subtitle: 'Watch the highlights from our previous conference',
+    youtubeVideoId: 'emGTZDXOaZY',
+  },
 };
 
 /**
@@ -121,6 +157,10 @@ async function seedSettings(db) {
   console.log(`    Theme: ${SETTINGS_DATA.theme}`);
   console.log(`    Date: ${SETTINGS_DATA.startDate}`);
   console.log(`    Venue: ${SETTINGS_DATA.venue.name}`);
+  console.log('\n  - About content seeded:');
+  console.log(`    About IDMC: ${SETTINGS_DATA.aboutIdmc.milestones.length} milestones`);
+  console.log(`    About GCF: ${SETTINGS_DATA.aboutGcf.coreValues.length} core values`);
+  console.log(`    Previous IDMC: ${SETTINGS_DATA.idmc2025.title}`);
 }
 
 /**

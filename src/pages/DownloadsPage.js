@@ -214,27 +214,27 @@ function DownloadsPage() {
               <div className={styles.instructionItem}>
                 <div className={styles.instructionNumber}>1</div>
                 <div className={styles.instructionContent}>
-                  <h3 className={styles.instructionTitle}>Download the Booklet</h3>
+                  <h3 className={styles.instructionTitle}>Download</h3>
                   <p className={styles.instructionText}>
-                    Click the download button to save the conference booklet to your device.
+                    Click the download button to save the file to your device.
                   </p>
                 </div>
               </div>
               <div className={styles.instructionItem}>
                 <div className={styles.instructionNumber}>2</div>
                 <div className={styles.instructionContent}>
-                  <h3 className={styles.instructionTitle}>Review Before the Event</h3>
+                  <h3 className={styles.instructionTitle}>Review</h3>
                   <p className={styles.instructionText}>
-                    Familiarize yourself with the schedule, speakers, and workshop details.
+                    Open and review the materials at your convenience.
                   </p>
                 </div>
               </div>
               <div className={styles.instructionItem}>
                 <div className={styles.instructionNumber}>3</div>
                 <div className={styles.instructionContent}>
-                  <h3 className={styles.instructionTitle}>Bring to the Conference</h3>
+                  <h3 className={styles.instructionTitle}>Access Anytime</h3>
                   <p className={styles.instructionText}>
-                    Access the e-booklet on your phone or tablet during the event for easy reference.
+                    Keep the files on your device for easy reference during and after the conference.
                   </p>
                 </div>
               </div>

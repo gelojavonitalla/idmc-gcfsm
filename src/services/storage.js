@@ -16,6 +16,7 @@ import {
   STORAGE_PATHS,
   ALLOWED_FILE_TYPES,
   MAX_FILE_SIZES,
+  THUMBNAIL_DIMENSIONS,
 } from '../constants';
 
 /**
@@ -25,6 +26,7 @@ const FILE_TYPE_NAMES = {
   image: 'JPEG, PNG, GIF, or WebP',
   video: 'MP4, WebM, or QuickTime',
   document: 'PDF',
+  thumbnail: 'JPEG, PNG, GIF, or WebP',
 };
 
 /**
@@ -43,7 +45,7 @@ function generateUniqueFilename(originalName) {
 /**
  * Gets allowed file types based on type string
  *
- * @param {string} type - Type of file ('image', 'video', or 'document')
+ * @param {string} type - Type of file ('image', 'video', 'document', or 'thumbnail')
  * @returns {string[]} Array of allowed MIME types
  */
 function getAllowedTypes(type) {
@@ -52,6 +54,8 @@ function getAllowedTypes(type) {
       return ALLOWED_FILE_TYPES.VIDEOS;
     case 'document':
       return ALLOWED_FILE_TYPES.DOCUMENTS;
+    case 'thumbnail':
+      return ALLOWED_FILE_TYPES.IMAGES;
     case 'image':
     default:
       return ALLOWED_FILE_TYPES.IMAGES;
@@ -61,7 +65,7 @@ function getAllowedTypes(type) {
 /**
  * Gets maximum file size based on type string
  *
- * @param {string} type - Type of file ('image', 'video', or 'document')
+ * @param {string} type - Type of file ('image', 'video', 'document', or 'thumbnail')
  * @returns {number} Maximum file size in bytes
  */
 function getMaxSize(type) {
@@ -70,6 +74,8 @@ function getMaxSize(type) {
       return MAX_FILE_SIZES.VIDEO;
     case 'document':
       return MAX_FILE_SIZES.DOCUMENT;
+    case 'thumbnail':
+      return MAX_FILE_SIZES.THUMBNAIL;
     case 'image':
     default:
       return MAX_FILE_SIZES.IMAGE;
@@ -192,6 +198,44 @@ export async function uploadDownloadFile(file, downloadId, onProgress) {
   const storageRef = ref(storage, storagePath);
 
   return uploadFile(storageRef, file, onProgress);
+}
+
+/**
+ * Uploads a thumbnail image for a download
+ * Recommended size: 400x300 pixels (defined in THUMBNAIL_DIMENSIONS)
+ *
+ * @param {File} file - Image file to upload (JPEG, PNG, GIF, or WebP)
+ * @param {string} downloadId - Download ID for organizing the file
+ * @param {Function} onProgress - Progress callback (0-100)
+ * @returns {Promise<string>} Download URL of uploaded thumbnail
+ */
+export async function uploadDownloadThumbnail(file, downloadId, onProgress) {
+  const validation = validateFile(file, 'thumbnail');
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  if (!downloadId) {
+    throw new Error('Download ID is required for thumbnail upload');
+  }
+
+  const filename = generateUniqueFilename(file.name);
+  const storagePath = `${STORAGE_PATHS.DOWNLOAD_THUMBNAILS}/${downloadId}/${filename}`;
+  const storageRef = ref(storage, storagePath);
+
+  return uploadFile(storageRef, file, onProgress);
+}
+
+/**
+ * Gets the recommended thumbnail dimensions
+ *
+ * @returns {{ width: number, height: number }} Recommended thumbnail dimensions
+ */
+export function getThumbnailDimensions() {
+  return {
+    width: THUMBNAIL_DIMENSIONS.WIDTH,
+    height: THUMBNAIL_DIMENSIONS.HEIGHT,
+  };
 }
 
 /**
