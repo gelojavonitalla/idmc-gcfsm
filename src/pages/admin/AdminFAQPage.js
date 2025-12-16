@@ -156,17 +156,24 @@ function AdminFAQPage() {
   };
 
   /**
-   * Filters FAQs based on search query and category
+   * Filters and sorts FAQs based on search query and category.
+   * Sorted by category first, then by order within each category.
    */
-  const filteredFaqs = faqs.filter((faq) => {
-    const matchesSearch = !searchQuery ||
-      faq.question?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      faq.answer?.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredFaqs = faqs
+    .filter((faq) => {
+      const matchesSearch = !searchQuery ||
+        faq.question?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        faq.answer?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesCategory = !categoryFilter || faq.category === categoryFilter;
+      const matchesCategory = !categoryFilter || faq.category === categoryFilter;
 
-    return matchesSearch && matchesCategory;
-  });
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      const categoryCompare = (a.category || '').localeCompare(b.category || '');
+      if (categoryCompare !== 0) return categoryCompare;
+      return (a.order || 0) - (b.order || 0);
+    });
 
   const stats = getStats();
 
