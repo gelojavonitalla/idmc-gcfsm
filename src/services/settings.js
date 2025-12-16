@@ -87,6 +87,121 @@ const DEFAULT_SETTINGS = {
     subtitle: 'Watch the highlights from our previous conference',
     youtubeVideoId: 'emGTZDXOaZY',
   },
+  termsOfService: {
+    lastUpdated: '',
+    sections: [
+      {
+        id: 'agreement',
+        title: 'Agreement to Terms',
+        content: '',
+      },
+      {
+        id: 'registration',
+        title: 'Registration',
+        content: '',
+      },
+      {
+        id: 'payment',
+        title: 'Payment Terms',
+        content: '',
+      },
+      {
+        id: 'cancellation',
+        title: 'Cancellation and Refund Policy',
+        content: '',
+      },
+      {
+        id: 'conduct',
+        title: 'Conference Conduct',
+        content: '',
+      },
+      {
+        id: 'intellectual-property',
+        title: 'Intellectual Property',
+        content: '',
+      },
+      {
+        id: 'media-consent',
+        title: 'Photography and Media Consent',
+        content: '',
+      },
+      {
+        id: 'liability',
+        title: 'Limitation of Liability',
+        content: '',
+      },
+      {
+        id: 'health-safety',
+        title: 'Health and Safety',
+        content: '',
+      },
+      {
+        id: 'changes',
+        title: 'Changes to These Terms',
+        content: '',
+      },
+      {
+        id: 'governing-law',
+        title: 'Governing Law',
+        content: '',
+      },
+    ],
+  },
+  privacyPolicy: {
+    lastUpdated: '',
+    sections: [
+      {
+        id: 'introduction',
+        title: 'Introduction',
+        content: '',
+      },
+      {
+        id: 'information-collected',
+        title: 'Information We Collect',
+        content: '',
+      },
+      {
+        id: 'information-use',
+        title: 'How We Use Your Information',
+        content: '',
+      },
+      {
+        id: 'data-storage',
+        title: 'Data Storage and Security',
+        content: '',
+      },
+      {
+        id: 'data-sharing',
+        title: 'Data Sharing and Disclosure',
+        content: '',
+      },
+      {
+        id: 'data-retention',
+        title: 'Data Retention',
+        content: '',
+      },
+      {
+        id: 'your-rights',
+        title: 'Your Rights',
+        content: '',
+      },
+      {
+        id: 'cookies',
+        title: 'Cookies and Tracking',
+        content: '',
+      },
+      {
+        id: 'children',
+        title: "Children's Privacy",
+        content: '',
+      },
+      {
+        id: 'changes',
+        title: 'Changes to This Privacy Policy',
+        content: '',
+      },
+    ],
+  },
 };
 
 /**
