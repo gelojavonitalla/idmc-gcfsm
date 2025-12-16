@@ -393,7 +393,7 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
               {/* File Upload */}
               <div className={styles.fieldSpan2}>
                 <label className={styles.label}>
-                  File (PDF) <span className={styles.required}>*</span>
+                  File (PDF)
                 </label>
 
                 {formData.downloadUrl && !fileUploading ? (
@@ -486,6 +486,11 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
                 />
 
                 {displayError && <span className={styles.error}>{displayError}</span>}
+                {!formData.downloadUrl && !fileUploading && (
+                  <span className={styles.hint}>
+                    Optional - Downloads without a file will show &quot;Available Soon&quot;
+                  </span>
+                )}
               </div>
 
               {/* Category */}
@@ -560,7 +565,7 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
             <button
               type="submit"
               className={styles.submitButton}
-              disabled={isSubmitting || !formData.downloadUrl}
+              disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
