@@ -152,6 +152,7 @@ export const ADMIN_NAV_GROUPS = [
     id: 'content',
     label: 'Content',
     items: [
+      { label: 'Site', path: ADMIN_ROUTES.SETTINGS, icon: 'settings' },
       { label: 'Speakers', path: ADMIN_ROUTES.SPEAKERS, icon: 'mic' },
       { label: 'Schedule', path: ADMIN_ROUTES.SCHEDULE, icon: 'calendar' },
       { label: 'FAQ', path: ADMIN_ROUTES.FAQ, icon: 'help' },
@@ -171,7 +172,6 @@ export const ADMIN_NAV_GROUPS = [
     id: 'system',
     label: 'System',
     items: [
-      { label: 'Settings', path: ADMIN_ROUTES.SETTINGS, icon: 'settings' },
       { label: 'Users', path: ADMIN_ROUTES.USERS, icon: 'admin', requiresRole: ADMIN_ROLES.SUPERADMIN },
       { label: 'Activity Log', path: ADMIN_ROUTES.ACTIVITY, icon: 'history' },
     ],
