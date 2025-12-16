@@ -6,17 +6,25 @@
  */
 
 import { setGlobalOptions } from "firebase-functions";
+import { defineString } from "firebase-functions/params";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import * as sgMail from "@sendgrid/mail";
 
 // Initialize Firebase Admin SDK
 initializeApp();
 
 // For cost control, set maximum containers that can run simultaneously
 setGlobalOptions({ maxInstances: 10 });
+
+// Define environment parameters
+const sendgridApiKey = defineString("SENDGRID_API_KEY");
+const senderEmail = defineString("SENDER_EMAIL");
+const senderName = defineString("SENDER_NAME");
+const appUrl = defineString("APP_URL");
 
 /**
  * Collection name constant for admins
@@ -26,6 +34,199 @@ const COLLECTIONS = {
 };
 
 /**
+ * Role labels for display in emails
+ */
+const ROLE_LABELS: Record<string, string> = {
+  superadmin: "Super Admin",
+  admin: "Admin",
+  finance: "Finance",
+  media: "Media",
+  volunteer: "Volunteer",
+};
+
+/**
+ * Generates the HTML email template for admin invitations
+ *
+ * @param displayName - The invited user's display name
+ * @param role - The assigned role
+ * @param inviteLink - The password setup link
+ * @param expiresIn - Hours until link expires
+ * @returns HTML string for the email
+ */
+function generateInvitationEmailHtml(
+  displayName: string,
+  role: string,
+  inviteLink: string,
+  expiresIn: number = 72
+): string {
+  const roleLabel = ROLE_LABELS[role] || role;
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>You're Invited to IDMC Admin</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 20px; text-align: center; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 12px 12px 0 0;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
+                IDMC Admin
+              </h1>
+              <p style="margin: 8px 0 0; color: #bfdbfe; font-size: 14px;">
+                GCF South Metro
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <h2 style="margin: 0 0 16px; color: #1f2937; font-size: 24px; font-weight: 600;">
+                You're Invited!
+              </h2>
+              <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                Hi ${displayName},
+              </p>
+              <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                You've been invited to join the <strong>IDMC Admin Dashboard</strong> as a <strong>${roleLabel}</strong>.
+                Click the button below to set up your password and activate your account.
+              </p>
+
+              <!-- CTA Button -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td align="center" style="padding: 16px 0 32px;">
+                    <a href="${inviteLink}"
+                       style="display: inline-block; padding: 16px 32px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);">
+                      Set Up Your Account
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Info Box -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f0f9ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                <tr>
+                  <td style="padding: 16px 20px;">
+                    <p style="margin: 0; color: #1e40af; font-size: 14px; line-height: 1.5;">
+                      <strong>Note:</strong> This invitation link will expire in <strong>${expiresIn} hours</strong>.
+                      If it expires, please contact your administrator to request a new invitation.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Link fallback -->
+              <p style="margin: 32px 0 0; color: #9ca3af; font-size: 12px; line-height: 1.5;">
+                If the button doesn't work, copy and paste this link into your browser:
+              </p>
+              <p style="margin: 8px 0 0; color: #6b7280; font-size: 12px; word-break: break-all;">
+                ${inviteLink}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 12px 12px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; color: #6b7280; font-size: 12px; text-align: center; line-height: 1.5;">
+                This email was sent by IDMC Admin System.<br>
+                GCF South Metro, Daang Hari Road, Las Piñas City, Philippines
+              </p>
+              <p style="margin: 12px 0 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                If you didn't expect this invitation, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+}
+
+/**
+ * Generates plain text version of the invitation email
+ *
+ * @param displayName - The invited user's display name
+ * @param role - The assigned role
+ * @param inviteLink - The password setup link
+ * @param expiresIn - Hours until link expires
+ * @returns Plain text string for the email
+ */
+function generateInvitationEmailText(
+  displayName: string,
+  role: string,
+  inviteLink: string,
+  expiresIn: number = 72
+): string {
+  const roleLabel = ROLE_LABELS[role] || role;
+
+  return `
+You're Invited to IDMC Admin!
+
+Hi ${displayName},
+
+You've been invited to join the IDMC Admin Dashboard as a ${roleLabel}.
+
+Click the link below to set up your password and activate your account:
+
+${inviteLink}
+
+Note: This invitation link will expire in ${expiresIn} hours. If it expires, please contact your administrator to request a new invitation.
+
+---
+IDMC Admin System
+GCF South Metro, Daang Hari Road, Las Piñas City, Philippines
+
+If you didn't expect this invitation, you can safely ignore this email.
+`;
+}
+
+/**
+ * Sends invitation email using SendGrid
+ *
+ * @param to - Recipient email address
+ * @param displayName - Recipient's display name
+ * @param role - Assigned admin role
+ * @param inviteLink - Password setup link
+ * @returns Promise that resolves when email is sent
+ */
+async function sendInvitationEmail(
+  to: string,
+  displayName: string,
+  role: string,
+  inviteLink: string
+): Promise<void> {
+  // Initialize SendGrid with API key
+  sgMail.setApiKey(sendgridApiKey.value());
+
+  const msg = {
+    to,
+    from: {
+      email: senderEmail.value(),
+      name: senderName.value(),
+    },
+    subject: "You're Invited to IDMC Admin Dashboard",
+    text: generateInvitationEmailText(displayName, role, inviteLink),
+    html: generateInvitationEmailHtml(displayName, role, inviteLink),
+  };
+
+  await sgMail.send(msg);
+  logger.info(`Invitation email sent to ${to}`);
+}
+
+/**
  * Firestore trigger that sends invitation email when a new admin is created
  *
  * This function:
@@ -33,7 +234,7 @@ const COLLECTIONS = {
  * 2. Checks if the admin has status 'pending'
  * 3. Creates a Firebase Auth user if one doesn't exist
  * 4. Generates a password reset link (used as invitation link)
- * 5. Sends the invitation email via Firebase Auth
+ * 5. Sends custom invitation email via SendGrid
  * 6. Updates the admin document with the invitation details
  *
  * @param event - The Firestore event containing the new document data
@@ -90,9 +291,9 @@ export const onAdminCreated = onDocumentCreated(
       }
 
       // Generate password reset link (serves as invitation/setup link)
-      // The link will allow the user to set their password
+      const baseUrl = appUrl.value() || "https://idmc-gcfsm-dev.web.app";
       const actionCodeSettings = {
-        url: `${process.env.APP_URL || "https://idmc-gcfsm-dev.web.app"}/admin/login?setup=complete`,
+        url: `${baseUrl}/admin/login?setup=complete`,
         handleCodeInApp: false,
       };
 
@@ -107,12 +308,16 @@ export const onAdminCreated = onDocumentCreated(
       const inviteExpiresAt = new Date();
       inviteExpiresAt.setHours(inviteExpiresAt.getHours() + 72);
 
-      // Update the admin document with:
-      // 1. The correct Firebase Auth UID (replace temporary ID)
-      // 2. Invitation sent timestamp
-      // 3. Expiration timestamp
+      // Send invitation email via SendGrid
+      await sendInvitationEmail(
+        email,
+        displayName || email.split("@")[0],
+        role,
+        inviteLink
+      );
 
-      // If the document ID doesn't match the Auth UID, we need to migrate the document
+      // Update the admin document with invitation details
+      // If the document ID doesn't match the Auth UID, migrate the document
       if (adminId !== userRecord.uid) {
         // Create new document with correct UID
         const adminRef = db.collection(COLLECTIONS.ADMINS).doc(userRecord.uid);
@@ -120,7 +325,6 @@ export const onAdminCreated = onDocumentCreated(
           ...adminData,
           invitationSentAt: FieldValue.serverTimestamp(),
           inviteExpiresAt: inviteExpiresAt,
-          inviteLink: inviteLink,
           updatedAt: FieldValue.serverTimestamp(),
         });
 
@@ -135,24 +339,13 @@ export const onAdminCreated = onDocumentCreated(
         await snapshot.ref.update({
           invitationSentAt: FieldValue.serverTimestamp(),
           inviteExpiresAt: inviteExpiresAt,
-          inviteLink: inviteLink,
           updatedAt: FieldValue.serverTimestamp(),
         });
       }
 
-      // Send invitation email via Firebase Auth
-      // Firebase automatically sends the password reset email when generatePasswordResetLink is called
-      // However, we can also send a custom email if needed
-
-      // Log success with role information
       logger.info(
         `Invitation email sent successfully to ${email} with role: ${role}`
       );
-
-      // Note: The password reset email is sent automatically by Firebase Auth
-      // when generatePasswordResetLink is called. The email contains a link
-      // that allows the user to set their password.
-
     } catch (error) {
       logger.error(`Error processing invitation for ${email}:`, error);
 
@@ -170,11 +363,3 @@ export const onAdminCreated = onDocumentCreated(
     }
   }
 );
-
-/**
- * Resend invitation email for a pending admin
- *
- * This can be called via HTTP request to resend an invitation
- * to an admin user who hasn't set up their account yet.
- */
-export { onAdminCreated as sendAdminInvitation };
