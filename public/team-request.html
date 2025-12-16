@@ -884,6 +884,84 @@
       </p>
     </div>
 
+    <!-- Section 12: Custom Domain DNS -->
+    <div class="section">
+      <h2>
+        <span>12. Custom Domain Setup (DNS Configuration)</span>
+        <span class="badge badge-required">Action Required</span>
+      </h2>
+      <p>
+        To make the IDMC 2026 website accessible at <strong>idmc-gcfsm.org</strong>, we need to update the DNS records
+        in your domain provider's settings. Please coordinate with whoever manages the domain's DNS settings (likely through your domain registrar).
+      </p>
+
+      <div class="subsection">
+        <h3>DNS Records to ADD:</h3>
+        <p>Add the following records to your DNS provider to point the domain to Firebase Hosting:</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Record Type</th>
+              <th>Domain Name</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>A</strong></td>
+              <td class="current-data">idmc-gcfsm.org</td>
+              <td class="current-data">199.36.158.100</td>
+            </tr>
+            <tr>
+              <td><strong>TXT</strong></td>
+              <td class="current-data">idmc-gcfsm.org</td>
+              <td class="current-data">hosting-site=idmc-gcfsm</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="subsection">
+        <h3>DNS Record to REMOVE:</h3>
+        <p>If this existing record is present, it needs to be removed:</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Record Type</th>
+              <th>Domain Name</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>A</strong></td>
+              <td class="current-data">idmc-gcfsm.org</td>
+              <td class="current-data" style="text-decoration: line-through;">192.64.119.115</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="highlight">
+        <strong>Why is this needed?</strong>
+        <ul style="margin-top: 8px;">
+          <li>The <strong>A record</strong> points your domain to Firebase's servers</li>
+          <li>The <strong>TXT record</strong> verifies that you own the domain</li>
+          <li>Once configured, <strong>idmc-gcfsm.org</strong> will show the IDMC 2026 website</li>
+          <li>Firebase will automatically provision an SSL certificate for HTTPS</li>
+        </ul>
+      </div>
+
+      <div class="specs">
+        <h4>Common DNS Providers:</h4>
+        <p>Your domain DNS might be managed through:</p>
+        <ul>
+          <li>GoDaddy, Namecheap, Google Domains, Cloudflare, or your web hosting provider</li>
+          <li>DNS changes typically take 24-48 hours to propagate worldwide</li>
+        </ul>
+      </div>
+    </div>
+
     <!-- Summary Checklist -->
     <div class="section" style="border: 2px solid var(--primary);">
       <h2>Summary Checklist</h2>
@@ -930,6 +1008,15 @@
           <li>&#9744; Any insights from past conferences about attendee venue questions?</li>
           <li>&#9744; About IDMC (<a href="/about" target="_blank">preview</a>) - provide content you'd like to include</li>
           <li>&#9744; About GCF South Metro (<a href="/about" target="_blank">preview</a>) - provide content you'd like to include</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>Action Required (DNS):</h3>
+        <ul>
+          <li>&#9744; Add A record: <code>idmc-gcfsm.org</code> → <code>199.36.158.100</code></li>
+          <li>&#9744; Add TXT record: <code>idmc-gcfsm.org</code> → <code>hosting-site=idmc-gcfsm</code></li>
+          <li>&#9744; Remove old A record: <code>idmc-gcfsm.org</code> → <code>192.64.119.115</code> (if exists)</li>
         </ul>
       </div>
     </div>
