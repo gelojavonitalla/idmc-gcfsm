@@ -86,3 +86,19 @@ export {
   getActivityLogsCount,
   getAdminRecentActivity,
 } from './activityLog';
+
+export {
+  REGISTRATION_ERROR_CODES,
+  getRegistrationByEmail,
+  getRegistrationById,
+  getRegistrationByShortCode,
+  getRegistrationByPhone,
+  uploadPaymentProof,
+  createRegistration,
+  updatePaymentProof,
+  confirmPayment,
+  cancelRegistration,
+  markEmailSent,
+  lookupRegistration,
+  incrementWorkshopCount,
+} from './registration';

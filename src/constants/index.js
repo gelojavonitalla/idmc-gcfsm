@@ -212,6 +212,7 @@ export const STORAGE_PATHS = {
   SPEAKER_PHOTOS: 'speakers/photos',
   DOWNLOAD_FILES: 'downloads/files',
   DOWNLOAD_THUMBNAILS: 'downloads/thumbnails',
+  PAYMENT_PROOFS: 'registrations/payment-proofs',
 };
 
 /**

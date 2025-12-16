@@ -1,0 +1,501 @@
+/**
+ * RegistrationStatusPage Component Styles
+ * Status lookup page styling
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Hero Section */
+.heroSection {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: white;
+  text-align: center;
+  padding: calc(var(--header-height) + var(--spacing-12)) var(--spacing-4) var(--spacing-12);
+}
+
+.heroTitle {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--spacing-3);
+  color: white;
+}
+
+.heroSubtitle {
+  font-size: var(--font-size-lg);
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Content Section */
+.contentSection {
+  background-color: var(--color-background-secondary);
+  padding: var(--spacing-10) 0 var(--spacing-16);
+  flex: 1;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 var(--container-padding);
+}
+
+/* Search Card */
+.searchCard {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
+}
+
+.searchForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.searchInputWrapper {
+  display: flex;
+  gap: var(--spacing-3);
+}
+
+.searchInput {
+  flex: 1;
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+}
+
+.searchInput:disabled {
+  background-color: var(--color-background-secondary);
+  cursor: not-allowed;
+}
+
+.searchButton {
+  padding: var(--spacing-3) var(--spacing-6);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.searchButton:hover:not(:disabled) {
+  background: var(--color-primary-dark, #1d4ed8);
+}
+
+.searchButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.searchHint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Error Box */
+.errorBox {
+  background: var(--color-error-50, #fef2f2);
+  border: 1px solid var(--color-error, #ef4444);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+  text-align: center;
+}
+
+.errorBox p {
+  margin: 0 0 var(--spacing-2);
+  color: var(--color-error, #dc2626);
+  font-size: var(--font-size-sm);
+}
+
+.errorBox p:last-child {
+  margin-bottom: 0;
+}
+
+.errorBox a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+/* Result Card */
+.resultCard {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+/* Status Banner */
+.statusBanner {
+  padding: var(--spacing-3) var(--spacing-4);
+  text-align: center;
+}
+
+.statusLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statusPending {
+  background: var(--color-warning-50, #fffbeb);
+  color: var(--color-warning-700, #b45309);
+}
+
+.statusConfirmed {
+  background: var(--color-success-50, #f0fdf4);
+  color: var(--color-success-700, #15803d);
+}
+
+.statusCancelled {
+  background: var(--color-error-50, #fef2f2);
+  color: var(--color-error-700, #b91c1c);
+}
+
+/* Registration Header */
+.regHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: var(--spacing-6);
+  border-bottom: 1px solid var(--color-border);
+  gap: var(--spacing-4);
+}
+
+.regIdSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.regIdLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.regIdValue {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  font-family: monospace;
+}
+
+.shortCode {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.shortCode strong {
+  color: var(--color-primary);
+  font-size: var(--font-size-lg);
+  font-family: monospace;
+}
+
+.qrCodeSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.qrHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* Info Sections */
+.infoSection {
+  padding: var(--spacing-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.infoSection:last-child {
+  border-bottom: none;
+}
+
+.infoSection h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-4);
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-4);
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.infoLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.infoValue {
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Attendee Cards */
+.attendeeCard {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-3);
+}
+
+.attendeeCard:last-child {
+  margin-bottom: 0;
+}
+
+.attendeeBadge {
+  background: var(--color-primary);
+  color: white;
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+}
+
+.attendeeNumber {
+  background: var(--color-gray-200, #e5e7eb);
+  color: var(--color-text-secondary);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.attendeeInfo {
+  flex: 1;
+}
+
+.attendeeName {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-1);
+}
+
+.attendeeContact {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-1);
+}
+
+.attendeeMeta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Pending Note */
+.pendingNote {
+  background: var(--color-warning-50, #fffbeb);
+  border: 1px solid var(--color-warning-200, #fde68a);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.pendingNote h4 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning-700, #b45309);
+  margin: 0 0 var(--spacing-2);
+}
+
+.pendingNote p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.deadline {
+  margin-top: var(--spacing-2) !important;
+}
+
+.deadline strong {
+  color: var(--color-warning-700, #b45309);
+}
+
+/* Verification Note */
+.verificationNote {
+  background: var(--color-info-50, #eff6ff);
+  border: 1px solid var(--color-info-200, #bfdbfe);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.verificationNote h4 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  margin: 0 0 var(--spacing-2);
+}
+
+.verificationNote p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Event Details */
+.eventDetails {
+  background: var(--color-background-secondary);
+  padding: var(--spacing-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.eventDetails h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-4);
+}
+
+.eventDetails p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-2);
+}
+
+.eventDetails p:last-child {
+  margin-bottom: 0;
+}
+
+.eventDetails strong {
+  color: var(--color-text);
+}
+
+/* Download Section */
+.downloadSection {
+  padding: var(--spacing-6);
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.downloadSection h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-2);
+}
+
+.downloadSection p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-4);
+}
+
+.ticketQR {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4);
+  background: white;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.qrRegId {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  font-family: monospace;
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* Not Found */
+.notFound {
+  text-align: center;
+  padding: var(--spacing-12);
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.notFound h2 {
+  font-size: var(--font-size-xl);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-2);
+}
+
+.notFound p {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-2);
+}
+
+.notFound a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .heroTitle {
+    font-size: var(--font-size-2xl);
+  }
+
+  .searchInputWrapper {
+    flex-direction: column;
+  }
+
+  .searchButton {
+    width: 100%;
+  }
+
+  .regHeader {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .regIdSection {
+    align-items: center;
+  }
+
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .attendeeCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
