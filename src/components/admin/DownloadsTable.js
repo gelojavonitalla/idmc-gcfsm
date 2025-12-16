@@ -106,7 +106,13 @@ function DownloadsTable({ downloads, onEdit, onDelete, onToggleStatus, isLoading
                     {DOWNLOAD_CATEGORY_LABELS[download.category] || download.category || '-'}
                   </span>
                 </td>
-                <td className={styles.fileSize}>{download.fileSize || '-'}</td>
+                <td className={styles.fileSize}>
+                  {download.downloadUrl ? (
+                    download.fileSize || '-'
+                  ) : (
+                    <span className={styles.availableSoonBadge}>Available Soon</span>
+                  )}
+                </td>
                 <td>
                   <button
                     className={`${styles.statusBadge} ${getStatusClass(download.status)}`}

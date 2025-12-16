@@ -146,6 +146,18 @@
   white-space: nowrap;
 }
 
+.availableSoonBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
 .statusBadge {
   display: inline-flex;
   align-items: center;
