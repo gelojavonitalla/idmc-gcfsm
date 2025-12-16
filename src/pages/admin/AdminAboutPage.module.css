@@ -1,5 +1,5 @@
 /**
- * AdminAboutGCFPage Styles
+ * AdminAboutPage Styles
  */
 
 .header {
@@ -98,6 +98,52 @@
   cursor: pointer;
   padding: 0;
   line-height: 1;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: var(--spacing-1);
+  margin-bottom: var(--spacing-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab svg {
+  width: 18px;
+  height: 18px;
+}
+
+.tabActive {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.tabActive:hover {
+  color: var(--color-primary);
+}
+
+.content {
+  min-height: 400px;
 }
 
 /* Form Styles */
@@ -204,6 +250,34 @@
   margin-top: var(--spacing-2);
 }
 
+/* Milestones */
+.milestonesList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.milestoneItem {
+  display: flex;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+  align-items: flex-start;
+}
+
+.milestoneFields {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: var(--spacing-4);
+}
+
+.milestoneFields .formGroup {
+  margin-bottom: 0;
+}
+
 /* Core Values */
 .coreValuesList {
   display: flex;
@@ -235,6 +309,10 @@
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
+}
+
+.milestoneItem .removeButton {
+  margin-top: 24px;
 }
 
 .removeButton:hover:not(:disabled) {
@@ -337,8 +415,31 @@
     justify-content: center;
   }
 
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab {
+    white-space: nowrap;
+    padding: var(--spacing-3);
+  }
+
   .formSection {
     padding: var(--spacing-4);
+  }
+
+  .milestoneFields {
+    grid-template-columns: 1fr;
+  }
+
+  .milestoneItem {
+    flex-direction: column;
+  }
+
+  .milestoneItem .removeButton {
+    margin-top: 0;
+    align-self: flex-end;
   }
 
   .formActions {
