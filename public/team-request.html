@@ -225,6 +225,40 @@
       text-decoration: underline;
     }
 
+    .admin-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      padding: 8px 14px;
+      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.875rem;
+      border-radius: 6px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .admin-link:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+      text-decoration: none;
+    }
+
+    .admin-link::before {
+      content: "⚙️";
+    }
+
+    .admin-links-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+    }
+
     footer {
       text-align: center;
       padding: 24px;
@@ -260,7 +294,7 @@
         <a href="https://idmc-gcfsm-dev.web.app/" target="_blank" style="color: white; text-decoration: underline;">Preview the website &rarr;</a>
       </p>
       <p style="margin-top: 12px; font-size: 0.75rem; opacity: 0.8;">
-        Version 1.1 | Last Modified: December 15, 2025 at 12:15 PM
+        Version 1.2 | Last Modified: December 16, 2025 at 10:00 AM
       </p>
     </header>
 
@@ -409,9 +443,10 @@
         </ul>
       </div>
 
-      <p class="preview-link">
-        <a href="/speakers" target="_blank">Preview current Speakers page &rarr;</a>
-      </p>
+      <div class="admin-links-container">
+        <a href="/speakers" target="_blank" class="preview-link" style="margin: 0;">Preview Speakers page &rarr;</a>
+        <a href="/admin/speakers" target="_blank" class="admin-link">Edit Speakers</a>
+      </div>
     </div>
 
     <!-- Section 3: Workshops -->
@@ -490,9 +525,10 @@
         </ul>
       </div>
 
-      <p class="preview-link">
-        <a href="/schedule" target="_blank">Preview current Schedule page &rarr;</a>
-      </p>
+      <div class="admin-links-container">
+        <a href="/schedule" target="_blank" class="preview-link" style="margin: 0;">Preview Schedule page &rarr;</a>
+        <a href="/admin/schedule" target="_blank" class="admin-link">Edit Schedule</a>
+      </div>
     </div>
 
     <!-- Section 4: Conference Booklet -->
@@ -521,9 +557,10 @@
         add notes, and save their annotated copy - making it a paperless option for taking session notes.
       </div>
 
-      <p class="preview-link">
-        <a href="/downloads" target="_blank">Preview Downloads page &rarr;</a>
-      </p>
+      <div class="admin-links-container">
+        <a href="/downloads" target="_blank" class="preview-link" style="margin: 0;">Preview Downloads page &rarr;</a>
+        <a href="/admin/downloads" target="_blank" class="admin-link">Edit Downloads</a>
+      </div>
     </div>
 
     <!-- Section 5: Contact Details -->
@@ -605,9 +642,10 @@
         </table>
       </div>
 
-      <p class="preview-link">
-        <a href="/contact" target="_blank">Preview Contact page &rarr;</a>
-      </p>
+      <div class="admin-links-container">
+        <a href="/contact" target="_blank" class="preview-link" style="margin: 0;">Preview Contact page &rarr;</a>
+        <a href="/admin/settings" target="_blank" class="admin-link">Edit Settings</a>
+      </div>
     </div>
 
     <!-- Section 6: Legal Pages -->
@@ -633,9 +671,10 @@
           <li>Health and safety guidelines</li>
           <li>Liability disclaimers</li>
         </ul>
-        <p class="preview-link">
-          <a href="/terms" target="_blank">Preview Terms of Service page &rarr;</a>
-        </p>
+        <div class="admin-links-container">
+          <a href="/terms" target="_blank" class="preview-link" style="margin: 0;">Preview Terms of Service &rarr;</a>
+          <a href="/admin/legal" target="_blank" class="admin-link">Edit Legal Pages</a>
+        </div>
       </div>
 
       <div class="subsection">
@@ -650,9 +689,10 @@
           <li>User rights under Philippine Data Privacy Act</li>
           <li>Contact for privacy concerns</li>
         </ul>
-        <p class="preview-link">
-          <a href="/privacy" target="_blank">Preview Privacy Policy page &rarr;</a>
-        </p>
+        <div class="admin-links-container">
+          <a href="/privacy" target="_blank" class="preview-link" style="margin: 0;">Preview Privacy Policy &rarr;</a>
+          <a href="/admin/legal" target="_blank" class="admin-link">Edit Legal Pages</a>
+        </div>
       </div>
 
       <div class="highlight">
@@ -695,9 +735,10 @@
         </ul>
       </div>
 
-      <p class="preview-link">
-        <a href="/faq" target="_blank">Preview FAQ page &rarr;</a>
-      </p>
+      <div class="admin-links-container">
+        <a href="/faq" target="_blank" class="preview-link" style="margin: 0;">Preview FAQ page &rarr;</a>
+        <a href="/admin/faq" target="_blank" class="admin-link">Edit FAQ</a>
+      </div>
     </div>
 
     <!-- Section 8: Payment Information -->
@@ -778,6 +819,10 @@
           <li>What does the fee include? (lunch, materials, etc.)</li>
         </ul>
       </div>
+
+      <div class="admin-links-container">
+        <a href="/admin/settings" target="_blank" class="admin-link">Edit Settings (Pricing & Payment)</a>
+      </div>
     </div>
 
     <!-- Section 9: Venue Page -->
@@ -835,9 +880,10 @@
         that would help us ensure the page addresses their needs.
       </div>
 
-      <p class="preview-link">
-        <a href="/venue" target="_blank">Preview Venue page &rarr;</a>
-      </p>
+      <div class="admin-links-container">
+        <a href="/venue" target="_blank" class="preview-link" style="margin: 0;">Preview Venue page &rarr;</a>
+      </div>
+      <p class="note" style="margin-top: 8px;">Note: Venue content is currently managed in the code. Contact the developer for updates.</p>
     </div>
 
     <!-- Section 10: About IDMC Page -->
@@ -857,9 +903,10 @@
         You're not limited to what's already there.
       </div>
 
-      <p class="preview-link">
-        <a href="/about" target="_blank">Preview About IDMC page &rarr;</a>
-      </p>
+      <div class="admin-links-container">
+        <a href="/about" target="_blank" class="preview-link" style="margin: 0;">Preview About IDMC page &rarr;</a>
+        <a href="/admin/about" target="_blank" class="admin-link">Edit About Page</a>
+      </div>
     </div>
 
     <!-- Section 11: About GCF South Metro -->
@@ -879,9 +926,10 @@
         You're not limited to what's already there.
       </div>
 
-      <p class="preview-link">
-        <a href="/about" target="_blank">Preview About page &rarr;</a>
-      </p>
+      <div class="admin-links-container">
+        <a href="/about" target="_blank" class="preview-link" style="margin: 0;">Preview About page &rarr;</a>
+        <a href="/admin/about" target="_blank" class="admin-link">Edit About Page</a>
+      </div>
     </div>
 
     <!-- Section 12: Custom Domain DNS -->
