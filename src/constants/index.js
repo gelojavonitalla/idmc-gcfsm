@@ -36,6 +36,8 @@ export const ADMIN_ROUTES = {
   WORKSHOPS: '/admin/workshops',
   FAQ: '/admin/faq',
   DOWNLOADS: '/admin/downloads',
+  ABOUT_IDMC: '/admin/about-idmc',
+  ABOUT_GCF: '/admin/about-gcf',
   SETTINGS: '/admin/settings',
   USERS: '/admin/users',
   ACTIVITY: '/admin/activity',
@@ -155,6 +157,8 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Schedule', path: ADMIN_ROUTES.SCHEDULE, icon: 'calendar' },
       { label: 'FAQ', path: ADMIN_ROUTES.FAQ, icon: 'help' },
       { label: 'Downloads', path: ADMIN_ROUTES.DOWNLOADS, icon: 'download' },
+      { label: 'About IDMC', path: ADMIN_ROUTES.ABOUT_IDMC, icon: 'info' },
+      { label: 'About GCF', path: ADMIN_ROUTES.ABOUT_GCF, icon: 'church' },
     ],
   },
   {

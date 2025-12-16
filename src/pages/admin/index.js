@@ -14,3 +14,5 @@ export { default as AdminSpeakersPage } from './AdminSpeakersPage';
 export { default as AdminSchedulePage } from './AdminSchedulePage';
 export { default as AdminFAQPage } from './AdminFAQPage';
 export { default as AdminDownloadsPage } from './AdminDownloadsPage';
+export { default as AdminAboutIDMCPage } from './AdminAboutIDMCPage';
+export { default as AdminAboutGCFPage } from './AdminAboutGCFPage';
