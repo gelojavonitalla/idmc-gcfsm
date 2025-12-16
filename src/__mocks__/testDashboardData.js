@@ -8,7 +8,12 @@
  * @module __mocks__/testDashboardData
  */
 
-import { REGISTRATION_STATUS } from '../constants';
+import {
+  REGISTRATION_STATUS,
+  REGISTRATION_CATEGORIES,
+  WORKSHOP_CATEGORIES,
+  PAYMENT_METHODS,
+} from '../constants';
 
 /**
  * Sample first names for generating mock registrations
@@ -39,6 +44,48 @@ const EMAIL_DOMAINS = [
   'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com',
   'icloud.com', 'mail.com', 'proton.me',
 ];
+
+/**
+ * Sample churches for generating mock registrations
+ */
+const CHURCHES = [
+  'Jesus Is Lord Church - Alabang',
+  'Jesus Is Lord Church - Makati',
+  'Jesus Is Lord Church - Quezon City',
+  'Jesus Is Lord Church - Pasig',
+  'Jesus Is Lord Church - Mandaluyong',
+  'Jesus Is Lord Church - Taguig',
+  'Jesus Is Lord Church - Paranaque',
+  'Jesus Is Lord Church - Las Pinas',
+  'Jesus Is Lord Church - Muntinlupa',
+  'Jesus Is Lord Church - Cavite',
+  'Jesus Is Lord Church - Laguna',
+  'Jesus Is Lord Church - Batangas',
+  'Jesus Is Lord Church - Cebu',
+  'Jesus Is Lord Church - Davao',
+  'Jesus Is Lord Church - Iloilo',
+];
+
+/**
+ * Sample ministry roles
+ */
+const MINISTRY_ROLES = [
+  'Member',
+  'Small Group Leader',
+  'Worship Team',
+  'Usher',
+  'Children\'s Ministry',
+  'Youth Ministry',
+  'Media Ministry',
+  'Hospitality',
+  'Prayer Warrior',
+  'Outreach Team',
+];
+
+/**
+ * Sample phone number prefixes (Philippine mobile)
+ */
+const PHONE_PREFIXES = ['0917', '0918', '0919', '0920', '0921', '0927', '0928', '0929', '0939', '0949'];
 
 /**
  * Generates a random integer between min and max (inclusive)
@@ -76,6 +123,38 @@ function generateEmail(firstName, lastName) {
 }
 
 /**
+ * Generates a mock Philippine phone number
+ *
+ * @returns {string} Mock phone number
+ */
+function generatePhoneNumber() {
+  const prefix = randomPick(PHONE_PREFIXES);
+  const number = String(randomInt(1000000, 9999999));
+  return `${prefix}${number}`;
+}
+
+/**
+ * Generates a mock payment reference number
+ *
+ * @param {string} method - Payment method
+ * @returns {string} Mock reference number
+ */
+function generatePaymentReference(method) {
+  const timestamp = Date.now().toString().slice(-8);
+  const random = randomInt(1000, 9999);
+  switch (method) {
+    case PAYMENT_METHODS.GCASH:
+      return `GC${timestamp}${random}`;
+    case PAYMENT_METHODS.BANK_TRANSFER:
+      return `BT${timestamp}${random}`;
+    case PAYMENT_METHODS.CASH:
+      return `CASH${timestamp}`;
+    default:
+      return `REF${timestamp}${random}`;
+  }
+}
+
+/**
  * Generates a random date within a range
  *
  * @param {number} daysAgo - Maximum days in the past
@@ -89,7 +168,7 @@ function randomDate(daysAgo) {
 }
 
 /**
- * Generates a single mock registration
+ * Generates a single mock registration (simplified for dashboard)
  *
  * @param {number} index - Registration index (for ID generation)
  * @param {Object} options - Generation options
@@ -130,6 +209,146 @@ function generateMockRegistration(index, options = {}) {
     checkedIn: isConfirmed ? Math.random() > 0.6 : false,
     createdAt: options.createdAt || randomDate(30),
   };
+}
+
+/**
+ * Generates a full mock registration with all fields
+ *
+ * @param {number} index - Registration index (for ID generation)
+ * @param {Object} options - Generation options
+ * @param {string} [options.status] - Force specific status
+ * @param {string} [options.category] - Force specific category
+ * @param {string} [options.workshopSelection] - Force specific workshop
+ * @param {string} [options.paymentMethod] - Force specific payment method
+ * @param {Date} [options.createdAt] - Force specific date
+ * @param {boolean} [options.includeAdditionalAttendees] - Include additional attendees
+ * @returns {Object} Full mock registration object
+ */
+export function generateFullMockRegistration(index, options = {}) {
+  const firstName = randomPick(FIRST_NAMES);
+  const lastName = randomPick(LAST_NAMES);
+  const email = generateEmail(firstName, lastName);
+  const phone = generatePhoneNumber();
+  const church = randomPick(CHURCHES);
+  const ministryRole = randomPick(MINISTRY_ROLES);
+
+  const statuses = [
+    REGISTRATION_STATUS.CONFIRMED,
+    REGISTRATION_STATUS.CONFIRMED,
+    REGISTRATION_STATUS.CONFIRMED,
+    REGISTRATION_STATUS.PENDING_VERIFICATION,
+    REGISTRATION_STATUS.PENDING_PAYMENT,
+    REGISTRATION_STATUS.CANCELLED,
+  ];
+
+  const categories = [
+    REGISTRATION_CATEGORIES.REGULAR,
+    REGISTRATION_CATEGORIES.REGULAR,
+    REGISTRATION_CATEGORIES.REGULAR,
+    REGISTRATION_CATEGORIES.STUDENT_SENIOR,
+  ];
+
+  const workshops = [
+    WORKSHOP_CATEGORIES.NEXT_GENERATION,
+    WORKSHOP_CATEGORIES.WOMEN,
+    WORKSHOP_CATEGORIES.MEN,
+    WORKSHOP_CATEGORIES.COUPLES,
+    WORKSHOP_CATEGORIES.SENIOR_CITIZENS,
+  ];
+
+  const paymentMethods = [
+    PAYMENT_METHODS.GCASH,
+    PAYMENT_METHODS.GCASH,
+    PAYMENT_METHODS.BANK_TRANSFER,
+    PAYMENT_METHODS.CASH,
+  ];
+
+  const status = options.status || randomPick(statuses);
+  const category = options.category || randomPick(categories);
+  const workshopSelection = options.workshopSelection || randomPick(workshops);
+  const paymentMethod = options.paymentMethod || randomPick(paymentMethods);
+
+  const isConfirmed = status === REGISTRATION_STATUS.CONFIRMED;
+  const isPendingVerification = status === REGISTRATION_STATUS.PENDING_VERIFICATION;
+  const hasPaid = isConfirmed || isPendingVerification;
+
+  const regularPrices = [2000, 2500, 3000];
+  const studentPrices = [1500, 1800, 2000];
+  const prices = category === REGISTRATION_CATEGORIES.STUDENT_SENIOR ? studentPrices : regularPrices;
+  const totalAmount = hasPaid ? randomPick(prices) : 0;
+
+  const createdAt = options.createdAt || randomDate(30);
+  const updatedAt = new Date(createdAt.getTime() + randomInt(1, 48) * 60 * 60 * 1000);
+
+  const registration = {
+    id: `REG-2025-${String(index).padStart(4, '0')}`,
+    primaryAttendee: {
+      firstName,
+      lastName,
+      email,
+      phone,
+      church,
+      ministryRole,
+    },
+    category,
+    workshopSelection,
+    status,
+    totalAmount,
+    paymentMethod: hasPaid ? paymentMethod : null,
+    paymentReference: hasPaid ? generatePaymentReference(paymentMethod) : null,
+    paymentProofUrl: hasPaid && paymentMethod !== PAYMENT_METHODS.CASH
+      ? `https://storage.example.com/proofs/proof-${index}.jpg`
+      : null,
+    checkedIn: isConfirmed ? Math.random() > 0.6 : false,
+    checkedInAt: null,
+    checkedInBy: null,
+    createdAt,
+    updatedAt,
+    notes: Math.random() > 0.8 ? 'Special dietary requirements' : null,
+  };
+
+  // Set check-in details if checked in
+  if (registration.checkedIn) {
+    registration.checkedInAt = new Date(createdAt.getTime() + randomInt(24, 72) * 60 * 60 * 1000);
+    registration.checkedInBy = 'admin@idmc.org';
+  }
+
+  // Add additional attendees if requested
+  if (options.includeAdditionalAttendees && Math.random() > 0.7) {
+    const additionalCount = randomInt(1, 3);
+    registration.additionalAttendees = [];
+    for (let i = 0; i < additionalCount; i++) {
+      const addFirstName = randomPick(FIRST_NAMES);
+      const addLastName = randomPick(LAST_NAMES);
+      registration.additionalAttendees.push({
+        firstName: addFirstName,
+        lastName: addLastName,
+        email: generateEmail(addFirstName, addLastName),
+        category: randomPick(categories),
+      });
+    }
+    // Recalculate total amount for group registration
+    if (hasPaid) {
+      registration.totalAmount = totalAmount * (1 + registration.additionalAttendees.length);
+    }
+  }
+
+  return registration;
+}
+
+/**
+ * Generates an array of full mock registrations
+ *
+ * @param {number} count - Number of registrations to generate
+ * @param {Object} options - Generation options passed to each registration
+ * @returns {Array} Array of full mock registration objects
+ */
+export function generateFullMockRegistrations(count, options = {}) {
+  const registrations = [];
+  for (let i = 0; i < count; i++) {
+    registrations.push(generateFullMockRegistration(i + 1, options));
+  }
+  return registrations.sort((a, b) => b.createdAt - a.createdAt);
 }
 
 /**
@@ -719,6 +938,319 @@ function generateStaticRegistrations(count, scenario) {
   }
 
   return registrations;
+}
+
+// =============================================================================
+// DETAILED REGISTRATION MOCK DATA
+// =============================================================================
+
+/**
+ * Pre-built detailed registrations for testing registration views
+ * These have all fields populated for comprehensive testing
+ */
+export const MOCK_REGISTRATIONS = [
+  {
+    id: 'REG-2025-0001',
+    primaryAttendee: {
+      firstName: 'Juan',
+      lastName: 'Santos',
+      email: 'juan.santos@gmail.com',
+      phone: '09171234567',
+      church: 'Jesus Is Lord Church - Makati',
+      ministryRole: 'Small Group Leader',
+    },
+    category: REGISTRATION_CATEGORIES.REGULAR,
+    workshopSelection: WORKSHOP_CATEGORIES.MEN,
+    status: REGISTRATION_STATUS.CONFIRMED,
+    totalAmount: 2500,
+    paymentMethod: PAYMENT_METHODS.GCASH,
+    paymentReference: 'GC202512151234',
+    paymentProofUrl: 'https://storage.example.com/proofs/proof-001.jpg',
+    checkedIn: true,
+    checkedInAt: new Date('2025-01-15T08:30:00'),
+    checkedInBy: 'admin@idmc.org',
+    createdAt: new Date('2025-01-10T14:30:00'),
+    updatedAt: new Date('2025-01-10T16:45:00'),
+    notes: null,
+  },
+  {
+    id: 'REG-2025-0002',
+    primaryAttendee: {
+      firstName: 'Maria',
+      lastName: 'Reyes',
+      email: 'maria.reyes@yahoo.com',
+      phone: '09189876543',
+      church: 'Jesus Is Lord Church - Quezon City',
+      ministryRole: 'Worship Team',
+    },
+    category: REGISTRATION_CATEGORIES.REGULAR,
+    workshopSelection: WORKSHOP_CATEGORIES.WOMEN,
+    status: REGISTRATION_STATUS.CONFIRMED,
+    totalAmount: 2500,
+    paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
+    paymentReference: 'BT202512145678',
+    paymentProofUrl: 'https://storage.example.com/proofs/proof-002.jpg',
+    checkedIn: true,
+    checkedInAt: new Date('2025-01-15T08:45:00'),
+    checkedInBy: 'admin@idmc.org',
+    createdAt: new Date('2025-01-09T10:15:00'),
+    updatedAt: new Date('2025-01-09T14:30:00'),
+    notes: null,
+  },
+  {
+    id: 'REG-2025-0003',
+    primaryAttendee: {
+      firstName: 'Pedro',
+      lastName: 'Cruz',
+      email: 'pedro.cruz@outlook.com',
+      phone: '09201112233',
+      church: 'Jesus Is Lord Church - Pasig',
+      ministryRole: 'Usher',
+    },
+    category: REGISTRATION_CATEGORIES.REGULAR,
+    workshopSelection: WORKSHOP_CATEGORIES.MEN,
+    status: REGISTRATION_STATUS.PENDING_VERIFICATION,
+    totalAmount: 2500,
+    paymentMethod: PAYMENT_METHODS.GCASH,
+    paymentReference: 'GC202512139012',
+    paymentProofUrl: 'https://storage.example.com/proofs/proof-003.jpg',
+    checkedIn: false,
+    checkedInAt: null,
+    checkedInBy: null,
+    createdAt: new Date('2025-01-12T09:00:00'),
+    updatedAt: new Date('2025-01-12T09:30:00'),
+    notes: null,
+  },
+  {
+    id: 'REG-2025-0004',
+    primaryAttendee: {
+      firstName: 'Ana',
+      lastName: 'Garcia',
+      email: 'ana.garcia@gmail.com',
+      phone: '09273334455',
+      church: 'Jesus Is Lord Church - Alabang',
+      ministryRole: 'Children\'s Ministry',
+    },
+    category: REGISTRATION_CATEGORIES.STUDENT_SENIOR,
+    workshopSelection: WORKSHOP_CATEGORIES.WOMEN,
+    status: REGISTRATION_STATUS.CONFIRMED,
+    totalAmount: 1500,
+    paymentMethod: PAYMENT_METHODS.CASH,
+    paymentReference: 'CASH20251214',
+    paymentProofUrl: null,
+    checkedIn: false,
+    checkedInAt: null,
+    checkedInBy: null,
+    createdAt: new Date('2025-01-11T16:20:00'),
+    updatedAt: new Date('2025-01-11T16:20:00'),
+    notes: 'Senior citizen - 65 years old',
+  },
+  {
+    id: 'REG-2025-0005',
+    primaryAttendee: {
+      firstName: 'Carlos',
+      lastName: 'Mendoza',
+      email: 'carlos.mendoza@hotmail.com',
+      phone: '09285556677',
+      church: 'Jesus Is Lord Church - Taguig',
+      ministryRole: 'Youth Ministry',
+    },
+    category: REGISTRATION_CATEGORIES.REGULAR,
+    workshopSelection: WORKSHOP_CATEGORIES.NEXT_GENERATION,
+    status: REGISTRATION_STATUS.PENDING_PAYMENT,
+    totalAmount: 0,
+    paymentMethod: null,
+    paymentReference: null,
+    paymentProofUrl: null,
+    checkedIn: false,
+    checkedInAt: null,
+    checkedInBy: null,
+    createdAt: new Date('2025-01-13T11:00:00'),
+    updatedAt: new Date('2025-01-13T11:00:00'),
+    notes: null,
+  },
+  {
+    id: 'REG-2025-0006',
+    primaryAttendee: {
+      firstName: 'Elena',
+      lastName: 'Torres',
+      email: 'elena.torres@gmail.com',
+      phone: '09397778899',
+      church: 'Jesus Is Lord Church - Mandaluyong',
+      ministryRole: 'Prayer Warrior',
+    },
+    category: REGISTRATION_CATEGORIES.REGULAR,
+    workshopSelection: WORKSHOP_CATEGORIES.WOMEN,
+    status: REGISTRATION_STATUS.CANCELLED,
+    totalAmount: 0,
+    paymentMethod: null,
+    paymentReference: null,
+    paymentProofUrl: null,
+    checkedIn: false,
+    checkedInAt: null,
+    checkedInBy: null,
+    createdAt: new Date('2025-01-08T13:45:00'),
+    updatedAt: new Date('2025-01-10T09:00:00'),
+    notes: 'Cancelled due to schedule conflict',
+  },
+  {
+    id: 'REG-2025-0007',
+    primaryAttendee: {
+      firstName: 'Roberto',
+      lastName: 'Flores',
+      email: 'roberto.flores@yahoo.com',
+      phone: '09498889900',
+      church: 'Jesus Is Lord Church - Cavite',
+      ministryRole: 'Media Ministry',
+    },
+    category: REGISTRATION_CATEGORIES.REGULAR,
+    workshopSelection: WORKSHOP_CATEGORIES.MEN,
+    status: REGISTRATION_STATUS.REFUNDED,
+    totalAmount: 0,
+    paymentMethod: PAYMENT_METHODS.GCASH,
+    paymentReference: 'GC202512083456',
+    paymentProofUrl: 'https://storage.example.com/proofs/proof-007.jpg',
+    checkedIn: false,
+    checkedInAt: null,
+    checkedInBy: null,
+    createdAt: new Date('2025-01-07T10:30:00'),
+    updatedAt: new Date('2025-01-09T15:00:00'),
+    notes: 'Refunded - medical emergency',
+  },
+  {
+    id: 'REG-2025-0008',
+    primaryAttendee: {
+      firstName: 'Sofia',
+      lastName: 'Rivera',
+      email: 'sofia.rivera@outlook.com',
+      phone: '09170001122',
+      church: 'Jesus Is Lord Church - Laguna',
+      ministryRole: 'Hospitality',
+    },
+    category: REGISTRATION_CATEGORIES.REGULAR,
+    workshopSelection: WORKSHOP_CATEGORIES.COUPLES,
+    status: REGISTRATION_STATUS.CONFIRMED,
+    totalAmount: 5000,
+    paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
+    paymentReference: 'BT202512117890',
+    paymentProofUrl: 'https://storage.example.com/proofs/proof-008.jpg',
+    checkedIn: true,
+    checkedInAt: new Date('2025-01-15T09:15:00'),
+    checkedInBy: 'admin@idmc.org',
+    createdAt: new Date('2025-01-06T14:00:00'),
+    updatedAt: new Date('2025-01-06T18:30:00'),
+    notes: null,
+    additionalAttendees: [
+      {
+        firstName: 'Miguel',
+        lastName: 'Rivera',
+        email: 'miguel.rivera@outlook.com',
+        category: REGISTRATION_CATEGORIES.REGULAR,
+      },
+    ],
+  },
+  {
+    id: 'REG-2025-0009',
+    primaryAttendee: {
+      firstName: 'Isabella',
+      lastName: 'Ramos',
+      email: 'isabella.ramos@gmail.com',
+      phone: '09182223344',
+      church: 'Jesus Is Lord Church - Cebu',
+      ministryRole: 'Member',
+    },
+    category: REGISTRATION_CATEGORIES.STUDENT_SENIOR,
+    workshopSelection: WORKSHOP_CATEGORIES.NEXT_GENERATION,
+    status: REGISTRATION_STATUS.CONFIRMED,
+    totalAmount: 1500,
+    paymentMethod: PAYMENT_METHODS.GCASH,
+    paymentReference: 'GC202512106789',
+    paymentProofUrl: 'https://storage.example.com/proofs/proof-009.jpg',
+    checkedIn: false,
+    checkedInAt: null,
+    checkedInBy: null,
+    createdAt: new Date('2025-01-10T08:00:00'),
+    updatedAt: new Date('2025-01-10T10:15:00'),
+    notes: 'Student - University of Cebu',
+  },
+  {
+    id: 'REG-2025-0010',
+    primaryAttendee: {
+      firstName: 'Antonio',
+      lastName: 'Bautista',
+      email: 'antonio.bautista@hotmail.com',
+      phone: '09294445566',
+      church: 'Jesus Is Lord Church - Davao',
+      ministryRole: 'Outreach Team',
+    },
+    category: REGISTRATION_CATEGORIES.REGULAR,
+    workshopSelection: WORKSHOP_CATEGORIES.SENIOR_CITIZENS,
+    status: REGISTRATION_STATUS.CONFIRMED,
+    totalAmount: 7500,
+    paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
+    paymentReference: 'BT202512052345',
+    paymentProofUrl: 'https://storage.example.com/proofs/proof-010.jpg',
+    checkedIn: true,
+    checkedInAt: new Date('2025-01-15T07:45:00'),
+    checkedInBy: 'volunteer@idmc.org',
+    createdAt: new Date('2025-01-05T09:30:00'),
+    updatedAt: new Date('2025-01-05T14:00:00'),
+    notes: 'Group registration - family',
+    additionalAttendees: [
+      {
+        firstName: 'Carmen',
+        lastName: 'Bautista',
+        email: 'carmen.bautista@hotmail.com',
+        category: REGISTRATION_CATEGORIES.REGULAR,
+      },
+      {
+        firstName: 'Gabriel',
+        lastName: 'Bautista',
+        email: 'gabriel.bautista@gmail.com',
+        category: REGISTRATION_CATEGORIES.STUDENT_SENIOR,
+      },
+    ],
+  },
+];
+
+/**
+ * Get mock registrations filtered by status
+ *
+ * @param {string} status - Registration status to filter by
+ * @returns {Array} Filtered registrations
+ */
+export function getMockRegistrationsByStatus(status) {
+  return MOCK_REGISTRATIONS.filter((reg) => reg.status === status);
+}
+
+/**
+ * Get mock registrations filtered by workshop
+ *
+ * @param {string} workshop - Workshop category to filter by
+ * @returns {Array} Filtered registrations
+ */
+export function getMockRegistrationsByWorkshop(workshop) {
+  return MOCK_REGISTRATIONS.filter((reg) => reg.workshopSelection === workshop);
+}
+
+/**
+ * Get mock registrations that are checked in
+ *
+ * @returns {Array} Checked-in registrations
+ */
+export function getMockCheckedInRegistrations() {
+  return MOCK_REGISTRATIONS.filter((reg) => reg.checkedIn);
+}
+
+/**
+ * Get mock registrations with additional attendees (group registrations)
+ *
+ * @returns {Array} Group registrations
+ */
+export function getMockGroupRegistrations() {
+  return MOCK_REGISTRATIONS.filter(
+    (reg) => reg.additionalAttendees && reg.additionalAttendees.length > 0
+  );
 }
 
 // =============================================================================
