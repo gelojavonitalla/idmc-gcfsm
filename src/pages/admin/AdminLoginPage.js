@@ -162,7 +162,7 @@ function AdminLoginPage() {
             <p className={styles.brandSubtitle}>
               {CONFERENCE.THEME}
             </p>
-            <p className={styles.brandYear}>{CONFERENCE.YEAR}</p>
+            <p className={styles.brandYear}>IDMC {CONFERENCE.YEAR}</p>
           </div>
         </div>
 
