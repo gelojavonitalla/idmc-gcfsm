@@ -370,6 +370,31 @@ form {
   cursor: not-allowed;
 }
 
+/* Thumbnail Preview */
+.thumbnailPreview {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background-secondary);
+}
+
+.thumbnailImage {
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.thumbnailActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
 /* Footer */
 .footer {
   display: flex;
