@@ -131,7 +131,7 @@
   gap: 0.5rem;
   padding: 0.875rem 1rem;
   background: transparent;
-  color: var(--color-text-secondary, #a0a0a0);
+  color: #a0a0a0;
   border: none;
   border-radius: 8px;
   font-size: 0.9375rem;
@@ -142,7 +142,7 @@
 
 .modeTab:hover:not(.active) {
   background: var(--color-surface-elevated, #252540);
-  color: var(--color-text, #fff);
+  color: #fff;
 }
 
 .modeTab.active {
