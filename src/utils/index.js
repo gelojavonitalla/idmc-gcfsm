@@ -18,3 +18,9 @@ export {
   formatDate,
   requiresProof,
 } from './registration';
+
+export {
+  convertRegistrationsToCsv,
+  downloadCsv,
+  exportRegistrationsToCsv,
+} from './exportCsv';

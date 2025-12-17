@@ -16,7 +16,7 @@ import {
   updateRegistration,
 } from '../../services/maintenance';
 import { REGISTRATION_STATUS } from '../../constants';
-import { extractShortCode } from '../../utils';
+import { extractShortCode, exportRegistrationsToCsv } from '../../utils';
 import styles from './AdminRegistrationsPage.module.css';
 
 /**
@@ -33,6 +33,7 @@ function AdminRegistrationsPage() {
   const [selectedRegistration, setSelectedRegistration] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   /**
    * Fetches all registrations
@@ -97,6 +98,59 @@ function AdminRegistrationsPage() {
       setError('Failed to update status. Please try again.');
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  /**
+   * Handles updating registration notes
+   *
+   * @param {string} registrationId - Registration ID
+   * @param {string} notes - New notes value
+   */
+  const handleUpdateNotes = async (registrationId, notes) => {
+    try {
+      await updateRegistration(registrationId, { notes });
+
+      // Update local state
+      setRegistrations((prev) =>
+        prev.map((r) =>
+          r.id === registrationId ? { ...r, notes } : r
+        )
+      );
+
+      // Update selected registration if modal is open
+      if (selectedRegistration?.id === registrationId) {
+        setSelectedRegistration((prev) => ({ ...prev, notes }));
+      }
+    } catch (updateError) {
+      console.error('Failed to update registration notes:', updateError);
+      setError('Failed to save notes. Please try again.');
+      throw updateError;
+    }
+  };
+
+  /**
+   * Handles exporting registrations to CSV
+   * Exports filtered results if filters are active, otherwise all registrations
+   */
+  const handleExport = async () => {
+    setIsExporting(true);
+    setError(null);
+
+    try {
+      const dataToExport = getFilteredRegistrations();
+      if (dataToExport.length === 0) {
+        setError('No registrations to export.');
+        return;
+      }
+
+      const prefix = statusFilter !== 'all' ? `registrations-${statusFilter}` : 'registrations';
+      exportRegistrationsToCsv(dataToExport, prefix);
+    } catch (exportError) {
+      console.error('Failed to export registrations:', exportError);
+      setError('Failed to export registrations. Please try again.');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -185,6 +239,18 @@ function AdminRegistrationsPage() {
           </p>
         </div>
         <div className={styles.headerActions}>
+          <button
+            className={styles.exportButton}
+            onClick={handleExport}
+            disabled={isExporting || isLoading || registrations.length === 0}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            {isExporting ? 'Exporting...' : 'Export CSV'}
+          </button>
           <button
             className={styles.refreshButton}
             onClick={fetchRegistrations}
@@ -308,6 +374,7 @@ function AdminRegistrationsPage() {
         }}
         registration={selectedRegistration}
         onUpdateStatus={handleUpdateStatus}
+        onUpdateNotes={handleUpdateNotes}
         isUpdating={isUpdating}
       />
     </AdminLayout>

@@ -5,7 +5,7 @@
  * @module components/admin/RegistrationDetailModal
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
   REGISTRATION_STATUS,
@@ -124,15 +124,55 @@ function RegistrationDetailModal({
   onClose,
   registration,
   onUpdateStatus,
+  onUpdateNotes,
   isUpdating,
 }) {
   const [selectedStatus, setSelectedStatus] = useState(
     registration?.status || REGISTRATION_STATUS.PENDING_PAYMENT
   );
+  const [notes, setNotes] = useState(registration?.notes || '');
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+
+  /**
+   * Sync notes state when registration changes
+   */
+  useEffect(() => {
+    if (registration) {
+      setNotes(registration.notes || '');
+      setIsEditingNotes(false);
+    }
+  }, [registration]);
 
   if (!isOpen || !registration) {
     return null;
   }
+
+  /**
+   * Handles saving notes
+   */
+  const handleSaveNotes = async () => {
+    if (!onUpdateNotes) {
+      return;
+    }
+    setIsSavingNotes(true);
+    try {
+      await onUpdateNotes(registration.id, notes);
+      setIsEditingNotes(false);
+    } catch (error) {
+      console.error('Failed to save notes:', error);
+    } finally {
+      setIsSavingNotes(false);
+    }
+  };
+
+  /**
+   * Handles canceling notes edit
+   */
+  const handleCancelNotesEdit = () => {
+    setNotes(registration.notes || '');
+    setIsEditingNotes(false);
+  };
 
   /**
    * Handles status change
@@ -378,22 +418,65 @@ function RegistrationDetailModal({
               </div>
             )}
 
-          {/* Notes */}
-          {registration.notes && (
-            <div className={styles.section}>
-              <h3 className={styles.sectionTitle}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="16" y1="13" x2="8" y2="13" />
-                  <line x1="16" y1="17" x2="8" y2="17" />
-                  <polyline points="10 9 9 9 8 9" />
-                </svg>
-                Notes
-              </h3>
-              <p className={styles.notes}>{registration.notes}</p>
-            </div>
-          )}
+          {/* Internal Notes */}
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+              Internal Notes
+              {!isEditingNotes && (
+                <button
+                  className={styles.editNotesButton}
+                  onClick={() => setIsEditingNotes(true)}
+                  type="button"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  Edit
+                </button>
+              )}
+            </h3>
+            {isEditingNotes ? (
+              <div className={styles.notesEdit}>
+                <textarea
+                  className={styles.notesTextarea}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add internal notes about this registration..."
+                  rows={4}
+                />
+                <div className={styles.notesActions}>
+                  <button
+                    className={styles.notesCancelButton}
+                    onClick={handleCancelNotesEdit}
+                    disabled={isSavingNotes}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className={styles.notesSaveButton}
+                    onClick={handleSaveNotes}
+                    disabled={isSavingNotes}
+                    type="button"
+                  >
+                    {isSavingNotes ? 'Saving...' : 'Save Notes'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className={styles.notes}>
+                {registration.notes || 'No notes added yet.'}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Footer */}
@@ -410,6 +493,7 @@ function RegistrationDetailModal({
 RegistrationDetailModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
+  onUpdateNotes: PropTypes.func,
   registration: PropTypes.shape({
     id: PropTypes.string.isRequired,
     primaryAttendee: PropTypes.shape({
@@ -452,6 +536,7 @@ RegistrationDetailModal.propTypes = {
 RegistrationDetailModal.defaultProps = {
   registration: null,
   isUpdating: false,
+  onUpdateNotes: null,
 };
 
 export default RegistrationDetailModal;
