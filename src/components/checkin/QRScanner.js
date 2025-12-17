@@ -35,8 +35,10 @@ function QRScanner({ onScan, onError, isActive = true }) {
   const [cameras, setCameras] = useState([]);
   const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
   const [error, setError] = useState(null);
+  const [isReady, setIsReady] = useState(false);
   const scannerRef = useRef(null);
   const isScanningRef = useRef(false);
+  const hasRequestedPermissionRef = useRef(false);
   const scannerElementId = 'qr-scanner-container';
 
   /**
@@ -85,20 +87,20 @@ function QRScanner({ onScan, onError, isActive = true }) {
   }, []);
 
   /**
-   * Initializes the QR scanner
+   * Requests camera permission and gets available cameras.
+   * This is separated from scanner creation to avoid DOM timing issues.
    */
-  const initializeScanner = useCallback(async () => {
+  const requestCameraPermission = useCallback(async () => {
     if (!isActive) {
       return;
     }
 
     try {
-      // Get available cameras
+      // Get available cameras (this triggers permission prompt)
       const devices = await Html5Qrcode.getCameras();
 
       if (devices && devices.length > 0) {
         setCameras(devices);
-        setHasPermission(true);
 
         // Prefer back camera on mobile
         const backCameraIndex = devices.findIndex(
@@ -109,26 +111,58 @@ function QRScanner({ onScan, onError, isActive = true }) {
         const initialIndex = backCameraIndex >= 0 ? backCameraIndex : 0;
         setCurrentCameraIndex(initialIndex);
 
-        // Create scanner instance
-        if (!scannerRef.current) {
-          scannerRef.current = new Html5Qrcode(scannerElementId);
-        }
-
-        // Start scanning
-        await startScanning(devices[initialIndex].id);
+        // Mark permission granted - this will trigger re-render with scanner container
+        setHasPermission(true);
       } else {
         setHasPermission(false);
         setError('No cameras found on this device');
       }
     } catch (err) {
-      console.error('Camera initialization error:', err);
+      console.error('Camera permission error:', err);
       setHasPermission(false);
       setError(getCameraErrorMessage(err));
       if (onError) {
         onError(err);
       }
     }
-  }, [isActive, onError, startScanning]);
+  }, [isActive, onError]);
+
+  /**
+   * Creates scanner instance and starts scanning.
+   * Must be called AFTER the scanner container element exists in DOM.
+   */
+  const initializeScanner = useCallback(async () => {
+    if (!isActive || !hasPermission || cameras.length === 0) {
+      return;
+    }
+
+    // Small delay to ensure DOM is ready (helps with Safari/Mac timing issues)
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Verify DOM element exists
+    const element = document.getElementById(scannerElementId);
+    if (!element) {
+      console.error('Scanner container element not found in DOM');
+      return;
+    }
+
+    try {
+      // Create scanner instance if not exists
+      if (!scannerRef.current) {
+        scannerRef.current = new Html5Qrcode(scannerElementId);
+      }
+
+      // Start scanning
+      await startScanning(cameras[currentCameraIndex].id);
+      setIsReady(true);
+    } catch (err) {
+      console.error('Scanner initialization error:', err);
+      setError(getCameraErrorMessage(err));
+      if (onError) {
+        onError(err);
+      }
+    }
+  }, [isActive, hasPermission, cameras, currentCameraIndex, onError, startScanning]);
 
   /**
    * Switches between available cameras
@@ -145,35 +179,88 @@ function QRScanner({ onScan, onError, isActive = true }) {
   };
 
   /**
-   * Requests camera permission
+   * Requests camera permission (retry handler for Try Again button)
    */
   const requestPermission = async () => {
     setError(null);
-    await initializeScanner();
+    setIsReady(false);
+    await requestCameraPermission();
   };
 
   /**
-   * Returns user-friendly camera error message
+   * Returns user-friendly camera error message.
+   * Handles browser-specific error types including Safari/Mac.
+   *
+   * @param {Error} err - The error object from camera access attempt
+   * @returns {string} User-friendly error message
    */
   const getCameraErrorMessage = (err) => {
-    if (err.name === 'NotAllowedError') {
+    const errorName = err.name || '';
+    const errorMessage = err.message || '';
+
+    // Permission explicitly denied
+    if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError') {
       return 'Camera access denied. Please allow camera access in your browser settings.';
     }
-    if (err.name === 'NotFoundError') {
+
+    // No camera found
+    if (errorName === 'NotFoundError' || errorName === 'DevicesNotFoundError') {
       return 'No camera found on this device.';
     }
-    if (err.name === 'NotReadableError') {
-      return 'Camera is in use by another application.';
+
+    // Camera in use by another application
+    if (errorName === 'NotReadableError' || errorName === 'TrackStartError') {
+      return 'Camera is in use by another application. Please close other apps using the camera.';
     }
-    return 'Failed to access camera. Please check your device settings.';
+
+    // Camera constraints cannot be satisfied (common on Mac/Safari)
+    if (errorName === 'OverconstrainedError' || errorName === 'ConstraintNotSatisfiedError') {
+      return 'Camera settings not supported. Please try a different browser or camera.';
+    }
+
+    // User cancelled the permission dialog (Safari)
+    if (errorName === 'AbortError') {
+      return 'Camera access was cancelled. Please try again.';
+    }
+
+    // Security error (insecure context or blocked by browser policy)
+    if (errorName === 'SecurityError') {
+      return 'Camera access blocked by browser security settings.';
+    }
+
+    // TypeError - usually means getUserMedia is not supported
+    if (errorName === 'TypeError') {
+      return 'Camera not supported in this browser.';
+    }
+
+    // Check for specific error messages that might give more context
+    if (errorMessage.toLowerCase().includes('permission')) {
+      return 'Camera permission issue. Please check your browser and system settings.';
+    }
+
+    if (errorMessage.toLowerCase().includes('not found')) {
+      return 'Camera not found. Please ensure a camera is connected.';
+    }
+
+    // Default fallback with error details for debugging
+    console.debug('Unhandled camera error:', { name: errorName, message: errorMessage });
+    return 'Failed to access camera. Please check your device settings and try again.';
   };
 
   /**
-   * Initialize scanner on mount
+   * Request camera permission on mount (runs once)
    */
   useEffect(() => {
-    initializeScanner();
+    if (!hasRequestedPermissionRef.current) {
+      hasRequestedPermissionRef.current = true;
+      requestCameraPermission();
+    }
+  }, [requestCameraPermission]);
 
+  /**
+   * Cleanup scanner on unmount
+   */
+  useEffect(() => {
     return () => {
       if (scannerRef.current) {
         scannerRef.current.stop().catch((err) => {
@@ -183,7 +270,16 @@ function QRScanner({ onScan, onError, isActive = true }) {
         scannerRef.current = null;
       }
     };
-  }, [initializeScanner]);
+  }, []);
+
+  /**
+   * Initialize scanner after permission is granted and component re-renders with container
+   */
+  useEffect(() => {
+    if (hasPermission && cameras.length > 0 && !isReady) {
+      initializeScanner();
+    }
+  }, [hasPermission, cameras, isReady, initializeScanner]);
 
   /**
    * Handle isActive prop changes
@@ -191,10 +287,10 @@ function QRScanner({ onScan, onError, isActive = true }) {
   useEffect(() => {
     if (!isActive && isScanning) {
       stopScanning();
-    } else if (isActive && !isScanning && hasPermission && cameras.length > 0) {
+    } else if (isActive && !isScanning && hasPermission && cameras.length > 0 && isReady) {
       startScanning(cameras[currentCameraIndex].id);
     }
-  }, [isActive, isScanning, hasPermission, cameras, currentCameraIndex, startScanning, stopScanning]);
+  }, [isActive, isScanning, hasPermission, cameras, currentCameraIndex, isReady, startScanning, stopScanning]);
 
   // Permission pending state
   if (hasPermission === null) {
