@@ -28,6 +28,8 @@ import {
   STORAGE_PATHS,
   REGISTRATION_STATUS,
   PAYMENT_INFO,
+  SHORT_CODE_LENGTH,
+  SHORT_CODE_SUFFIX_LENGTH,
 } from '../constants';
 
 /**
@@ -110,9 +112,9 @@ export async function getRegistrationById(registrationId) {
 }
 
 /**
- * Gets a registration by its short code
+ * Gets a registration by its full short code
  *
- * @param {string} shortCode - 4-character short code
+ * @param {string} shortCode - 6-character short code
  * @returns {Promise<Object|null>} Registration data or null
  */
 export async function getRegistrationByShortCode(shortCode) {
@@ -128,6 +130,38 @@ export async function getRegistrationByShortCode(shortCode) {
   );
 
   const snapshot = await getDocs(codeQuery);
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const docData = snapshot.docs[0];
+  return {
+    id: docData.id,
+    ...docData.data(),
+  };
+}
+
+/**
+ * Gets a registration by its short code suffix (last 4 characters).
+ * Allows quick lookup using just the last 4 digits shown on tickets.
+ *
+ * @param {string} suffix - 4-character short code suffix
+ * @returns {Promise<Object|null>} Registration data or null
+ */
+export async function getRegistrationByShortCodeSuffix(suffix) {
+  if (!suffix) {
+    return null;
+  }
+
+  const normalizedSuffix = suffix.trim().toUpperCase();
+  const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+  const suffixQuery = query(
+    registrationsRef,
+    where('shortCodeSuffix', '==', normalizedSuffix)
+  );
+
+  const snapshot = await getDocs(suffixQuery);
 
   if (snapshot.empty) {
     return null;
@@ -226,7 +260,7 @@ export async function uploadPaymentProof(file, registrationId, onProgress) {
  *
  * @param {Object} registrationData - Registration data
  * @param {string} registrationData.registrationId - Unique registration ID
- * @param {string} registrationData.shortCode - 4-character short code
+ * @param {string} registrationData.shortCode - 6-character short code
  * @param {Object} registrationData.primaryAttendee - Primary attendee information
  * @param {Array} registrationData.additionalAttendees - Additional attendees
  * @param {Object} registrationData.church - Church information
@@ -282,9 +316,13 @@ export async function createRegistration(registrationData) {
 
   const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
 
+  // Extract last 4 characters for quick lookup
+  const shortCodeSuffix = shortCode.slice(-SHORT_CODE_SUFFIX_LENGTH);
+
   const registrationDoc = {
     registrationId,
     shortCode,
+    shortCodeSuffix,
     primaryAttendee: normalizedPrimaryAttendee,
     additionalAttendees: normalizedAdditionalAttendees,
     church,
@@ -421,9 +459,10 @@ export async function markEmailSent(registrationId, emailType) {
 }
 
 /**
- * Looks up a registration by various identifiers
+ * Looks up a registration by various identifiers.
+ * Supports: registration ID, 6-char short code, 4-char suffix, email, or phone.
  *
- * @param {string} identifier - Registration ID, short code, email, or phone
+ * @param {string} identifier - Registration ID, short code (4 or 6 chars), email, or phone
  * @returns {Promise<Object|null>} Registration data or null
  */
 export async function lookupRegistration(identifier) {
@@ -433,7 +472,7 @@ export async function lookupRegistration(identifier) {
 
   const trimmed = identifier.trim();
 
-  // Try registration ID format (REG-YYYY-XXXX)
+  // Try registration ID format (REG-YYYY-XXXXXX)
   if (trimmed.toUpperCase().startsWith('REG-')) {
     const result = await getRegistrationById(trimmed.toUpperCase());
     if (result) {
@@ -441,9 +480,17 @@ export async function lookupRegistration(identifier) {
     }
   }
 
-  // Try 4-character short code
-  if (trimmed.length === 4 && /^[A-Za-z0-9]+$/.test(trimmed)) {
+  // Try 6-character full short code
+  if (trimmed.length === SHORT_CODE_LENGTH && /^[A-Za-z0-9]+$/.test(trimmed)) {
     const result = await getRegistrationByShortCode(trimmed);
+    if (result) {
+      return result;
+    }
+  }
+
+  // Try 4-character short code suffix (last 4 digits)
+  if (trimmed.length === SHORT_CODE_SUFFIX_LENGTH && /^[A-Za-z0-9]+$/.test(trimmed)) {
+    const result = await getRegistrationByShortCodeSuffix(trimmed);
     if (result) {
       return result;
     }

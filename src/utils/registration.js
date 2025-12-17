@@ -9,6 +9,7 @@ import {
   CONFERENCE,
   REGISTRATION_CATEGORIES,
   SAFE_SHORT_CODE_CHARS,
+  SHORT_CODE_LENGTH,
 } from '../constants';
 
 /**
@@ -60,14 +61,15 @@ export function calculatePrice(category, tier = null) {
 }
 
 /**
- * Generates a unique 4-character short code using safe characters.
+ * Generates a unique 6-character short code using safe characters.
  * Safe characters exclude confusing ones like 0/O, 1/l/I, 5/S, 2/Z, 8/B.
+ * 6 characters with 25 safe chars = ~244 million unique combinations.
  *
- * @returns {string} 4-character short code (e.g., "A7K3")
+ * @returns {string} 6-character short code (e.g., "A7K3MN")
  */
 export function generateShortCode() {
   let code = '';
-  for (let i = 0; i < 4; i += 1) {
+  for (let i = 0; i < SHORT_CODE_LENGTH; i += 1) {
     const randomIndex = Math.floor(Math.random() * SAFE_SHORT_CODE_CHARS.length);
     code += SAFE_SHORT_CODE_CHARS[randomIndex];
   }
@@ -75,8 +77,8 @@ export function generateShortCode() {
 }
 
 /**
- * Generates a unique registration ID in the format REG-YYYY-XXXX.
- * Uses 4-character short code with safe characters for easy typing and lookup.
+ * Generates a unique registration ID in the format REG-YYYY-XXXXXX.
+ * Uses 6-character short code with safe characters for easy typing and lookup.
  * The short code avoids confusing characters like 0/O, 1/l/I, 5/S, 2/Z, 8/B.
  *
  * @returns {Object} Object containing registrationId and shortCode
@@ -94,8 +96,8 @@ export function generateRegistrationId() {
 /**
  * Extracts the short code from a registration ID.
  *
- * @param {string} registrationId - Full registration ID (e.g., "REG-2026-A7K3")
- * @returns {string} The 4-character short code
+ * @param {string} registrationId - Full registration ID (e.g., "REG-2026-A7K3MN")
+ * @returns {string} The 6-character short code
  */
 export function extractShortCode(registrationId) {
   if (!registrationId) {
