@@ -179,20 +179,36 @@ export async function searchRegistrations(searchTerm) {
     });
   }
 
-  // Search by short code (exact match)
+  // Search by short code suffix (last 4 characters) or full short code (6 characters)
   const upperTerm = searchTerm.trim().toUpperCase();
-  if (upperTerm.length === 4 && /^[A-Z0-9]+$/.test(upperTerm)) {
-    const codeQuery = query(
-      registrationsRef,
-      where('shortCode', '==', upperTerm)
-    );
-    const codeSnapshot = await getDocs(codeQuery);
-    codeSnapshot.forEach((docSnap) => {
-      if (!seenIds.has(docSnap.id)) {
-        seenIds.add(docSnap.id);
-        results.push({ id: docSnap.id, ...docSnap.data() });
-      }
-    });
+  if (/^[A-Z0-9]+$/.test(upperTerm)) {
+    if (upperTerm.length === 4) {
+      // Search by shortCodeSuffix (last 4 characters of the 6-char code)
+      const suffixQuery = query(
+        registrationsRef,
+        where('shortCodeSuffix', '==', upperTerm)
+      );
+      const suffixSnapshot = await getDocs(suffixQuery);
+      suffixSnapshot.forEach((docSnap) => {
+        if (!seenIds.has(docSnap.id)) {
+          seenIds.add(docSnap.id);
+          results.push({ id: docSnap.id, ...docSnap.data() });
+        }
+      });
+    } else if (upperTerm.length === 6) {
+      // Search by full shortCode (6 characters)
+      const codeQuery = query(
+        registrationsRef,
+        where('shortCode', '==', upperTerm)
+      );
+      const codeSnapshot = await getDocs(codeQuery);
+      codeSnapshot.forEach((docSnap) => {
+        if (!seenIds.has(docSnap.id)) {
+          seenIds.add(docSnap.id);
+          results.push({ id: docSnap.id, ...docSnap.data() });
+        }
+      });
+    }
   }
 
   // Search by registration ID (exact match)
