@@ -100,7 +100,7 @@
   background: var(--color-surface-elevated, #252540);
   border-radius: 8px;
   font-size: 0.875rem;
-  color: var(--color-text-secondary, #a0a0a0);
+  color: var(--color-text-muted, #d1d5db);
 }
 
 .hints p {
