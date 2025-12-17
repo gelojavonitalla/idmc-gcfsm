@@ -7,7 +7,7 @@ import {
   REGISTRATION_CATEGORY_LABELS,
   ROUTES,
 } from '../constants';
-import { formatPrice } from '../utils';
+import { formatPrice, maskEmail, maskName, maskPhone } from '../utils';
 import { lookupRegistration } from '../services';
 import styles from './RegistrationStatusPage.module.css';
 
@@ -236,10 +236,10 @@ function RegistrationStatusPage() {
                   <div className={styles.attendeeBadge}>Primary</div>
                   <div className={styles.attendeeInfo}>
                     <p className={styles.attendeeName}>
-                      {registration.primaryAttendee?.lastName}, {registration.primaryAttendee?.firstName} {registration.primaryAttendee?.middleName}
+                      {maskName(registration.primaryAttendee?.lastName)}, {maskName(registration.primaryAttendee?.firstName)} {maskName(registration.primaryAttendee?.middleName)}
                     </p>
                     <p className={styles.attendeeContact}>
-                      {registration.primaryAttendee?.email} | {registration.primaryAttendee?.cellphone}
+                      {maskEmail(registration.primaryAttendee?.email)} | {maskPhone(registration.primaryAttendee?.cellphone)}
                     </p>
                     <p className={styles.attendeeMeta}>
                       {registration.primaryAttendee?.ministryRole} | {REGISTRATION_CATEGORY_LABELS[registration.primaryAttendee?.category]}
@@ -257,10 +257,10 @@ function RegistrationStatusPage() {
                       <div className={styles.attendeeNumber}>#{index + 2}</div>
                       <div className={styles.attendeeInfo}>
                         <p className={styles.attendeeName}>
-                          {attendee.lastName}, {attendee.firstName} {attendee.middleName}
+                          {maskName(attendee.lastName)}, {maskName(attendee.firstName)} {maskName(attendee.middleName)}
                         </p>
                         <p className={styles.attendeeContact}>
-                          {attendee.email || '(No email)'} | {attendee.cellphone}
+                          {attendee.email ? maskEmail(attendee.email) : '(No email)'} | {maskPhone(attendee.cellphone)}
                         </p>
                         <p className={styles.attendeeMeta}>
                           {attendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[attendee.category]}
@@ -356,7 +356,7 @@ function RegistrationStatusPage() {
                   <h3>Your Ticket</h3>
                   <p>
                     Show this QR code or your registration ID at check-in.
-                    A confirmation email with your ticket has been sent to {registration.primaryAttendee?.email}.
+                    A confirmation email with your ticket has been sent to {maskEmail(registration.primaryAttendee?.email)}.
                   </p>
                   <div className={styles.ticketQR}>
                     <QRCodeSVG
