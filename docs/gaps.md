@@ -82,8 +82,8 @@ HISTORY: 'The Intentional Disciple-Making Churches (IDMC) Conference began as a 
 
 ## Status
 
-- [ ] AC-04: Speaker photo support implemented
-- [ ] AC-10: History section added
+- [x] AC-04: Speaker photo support implemented
+- [x] AC-10: History section added (exists in About page)
 
 ---
 

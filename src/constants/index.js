@@ -354,6 +354,8 @@ export const ORGANIZATION = {
     'To be a disciple-making congregation that reaches local communities while impacting the broader region and world.',
   DESCRIPTION:
     'GCF South Metro is a disciple-making church focused on three interconnected activities: drawing individuals toward Christ, developing their faith, and deploying them for ministry purposes.',
+  HISTORY:
+    'The Intentional Disciple-Making Churches (IDMC) Conference began as a vision to equip and mobilize churches across the Philippines for intentional discipleship. What started as a local initiative by GCF South Metro has grown into an annual gathering that brings together pastors, church leaders, and believers committed to the Great Commission. The conference serves as a catalyst for churches to return to their disciple-making roots, providing practical training and inspiration for effective ministry.',
   CORE_VALUES: [
     'Truth grounded in Scripture',
     'Love demonstrated in relationships',
