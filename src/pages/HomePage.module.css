@@ -362,7 +362,7 @@
 /* Venue Section */
 .venueSection {
   padding: var(--spacing-20) 0;
-  background-color: var(--color-background-secondary);
+  background-color: var(--color-background);
 }
 
 .venueContent {
