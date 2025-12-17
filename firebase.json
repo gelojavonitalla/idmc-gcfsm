@@ -37,6 +37,7 @@
     ]
   },
   "storage": {
+    "bucket": "idmc-2026",
     "rules": "storage.rules"
   }
 }
