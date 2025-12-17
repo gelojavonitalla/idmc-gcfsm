@@ -237,8 +237,8 @@ function generateRegistration(index) {
   const isPendingVerification = status === REGISTRATION_STATUS.PENDING_VERIFICATION;
   const hasPaid = isConfirmed || isPendingVerification;
 
-  const regularPrices = [2000, 2500, 3000];
-  const studentPrices = [1500, 1800, 2000];
+  const regularPrices = [300, 400, 500];
+  const studentPrices = [200, 300, 350];
   const prices = category === REGISTRATION_CATEGORIES.STUDENT_SENIOR ? studentPrices : regularPrices;
   const totalAmount = hasPaid ? randomPick(prices) : 0;
 
@@ -324,7 +324,7 @@ const STATIC_REGISTRATIONS = [
     category: REGISTRATION_CATEGORIES.REGULAR,
     workshopSelection: WORKSHOP_CATEGORIES.MEN,
     status: REGISTRATION_STATUS.CONFIRMED,
-    totalAmount: 2500,
+    totalAmount: 500,
     paymentMethod: PAYMENT_METHODS.GCASH,
     paymentReference: 'GC202512151234',
     paymentProofUrl: 'https://storage.example.com/proofs/proof-001.jpg',
@@ -350,7 +350,7 @@ const STATIC_REGISTRATIONS = [
     category: REGISTRATION_CATEGORIES.REGULAR,
     workshopSelection: WORKSHOP_CATEGORIES.WOMEN,
     status: REGISTRATION_STATUS.CONFIRMED,
-    totalAmount: 2500,
+    totalAmount: 500,
     paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
     paymentReference: 'BT202512145678',
     paymentProofUrl: 'https://storage.example.com/proofs/proof-002.jpg',
@@ -376,7 +376,7 @@ const STATIC_REGISTRATIONS = [
     category: REGISTRATION_CATEGORIES.REGULAR,
     workshopSelection: WORKSHOP_CATEGORIES.MEN,
     status: REGISTRATION_STATUS.PENDING_VERIFICATION,
-    totalAmount: 2500,
+    totalAmount: 500,
     paymentMethod: PAYMENT_METHODS.GCASH,
     paymentReference: 'GC202512139012',
     paymentProofUrl: 'https://storage.example.com/proofs/proof-003.jpg',
@@ -402,7 +402,7 @@ const STATIC_REGISTRATIONS = [
     category: REGISTRATION_CATEGORIES.STUDENT_SENIOR,
     workshopSelection: WORKSHOP_CATEGORIES.WOMEN,
     status: REGISTRATION_STATUS.CONFIRMED,
-    totalAmount: 1500,
+    totalAmount: 350,
     paymentMethod: PAYMENT_METHODS.CASH,
     paymentReference: 'CASH20251214',
     paymentProofUrl: null,
@@ -506,7 +506,7 @@ const STATIC_REGISTRATIONS = [
     category: REGISTRATION_CATEGORIES.REGULAR,
     workshopSelection: WORKSHOP_CATEGORIES.COUPLES,
     status: REGISTRATION_STATUS.CONFIRMED,
-    totalAmount: 5000,
+    totalAmount: 1000,
     paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
     paymentReference: 'BT202512117890',
     paymentProofUrl: 'https://storage.example.com/proofs/proof-008.jpg',
@@ -540,7 +540,7 @@ const STATIC_REGISTRATIONS = [
     category: REGISTRATION_CATEGORIES.STUDENT_SENIOR,
     workshopSelection: WORKSHOP_CATEGORIES.NEXT_GENERATION,
     status: REGISTRATION_STATUS.CONFIRMED,
-    totalAmount: 1500,
+    totalAmount: 350,
     paymentMethod: PAYMENT_METHODS.GCASH,
     paymentReference: 'GC202512106789',
     paymentProofUrl: 'https://storage.example.com/proofs/proof-009.jpg',
@@ -566,7 +566,7 @@ const STATIC_REGISTRATIONS = [
     category: REGISTRATION_CATEGORIES.REGULAR,
     workshopSelection: WORKSHOP_CATEGORIES.SENIOR_CITIZENS,
     status: REGISTRATION_STATUS.CONFIRMED,
-    totalAmount: 7500,
+    totalAmount: 1350,
     paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
     paymentReference: 'BT202512052345',
     paymentProofUrl: 'https://storage.example.com/proofs/proof-010.jpg',
