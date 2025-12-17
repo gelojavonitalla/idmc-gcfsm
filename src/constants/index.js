@@ -299,6 +299,7 @@ export const NAV_ITEMS = [
   { label: 'Downloads', path: ROUTES.DOWNLOADS, isAnchor: false },
   { label: 'FAQ', path: ROUTES.FAQ, isAnchor: false },
   { label: 'IDMC 2025', path: ROUTES.IDMC_2025, isAnchor: false },
+  { label: 'Check Status', path: ROUTES.REGISTRATION_STATUS, isAnchor: false },
   { label: 'Register', path: ROUTES.REGISTER, isAnchor: false, isPrimary: true },
 ];
 
