@@ -256,7 +256,13 @@ function AdminCheckInPage() {
                 {mode === CHECK_IN_MODES.QR ? (
                   <QRScanner
                     onScan={handleQRScan}
-                    onError={(err) => console.error('Scanner error:', err)}
+                    onError={(err) => {
+                      console.error('Scanner error:', err);
+                      setCheckInError({
+                        code: 'SCANNER_ERROR',
+                        message: err.message || 'Scanner error. Please try again.',
+                      });
+                    }}
                     isActive={!selectedRegistration}
                   />
                 ) : (
