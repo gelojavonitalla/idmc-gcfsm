@@ -79,10 +79,12 @@ function QRScanner({ onScan, onError, isActive = true }) {
     if (scannerRef.current && isScanningRef.current) {
       try {
         await scannerRef.current.stop();
-        isScanningRef.current = false;
-        setIsScanning(false);
       } catch (err) {
         console.error('Failed to stop scanner:', err);
+      } finally {
+        // Always reset state even if stop() fails
+        isScanningRef.current = false;
+        setIsScanning(false);
       }
     }
   }, []);
@@ -168,16 +170,29 @@ function QRScanner({ onScan, onError, isActive = true }) {
   /**
    * Switches between available cameras
    */
-  const switchCamera = async () => {
+  const switchCamera = useCallback(async () => {
     if (cameras.length <= 1) {
       return;
     }
 
-    await stopScanning();
-    const nextIndex = (currentCameraIndex + 1) % cameras.length;
-    setCurrentCameraIndex(nextIndex);
-    await startScanning(cameras[nextIndex].id);
-  };
+    try {
+      await stopScanning();
+
+      // Small delay to ensure camera is fully released before switching
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const nextIndex = (currentCameraIndex + 1) % cameras.length;
+      setCurrentCameraIndex(nextIndex);
+
+      // Reset paused state when switching cameras
+      setIsPaused(false);
+
+      await startScanning(cameras[nextIndex].id);
+    } catch (err) {
+      console.error('Failed to switch camera:', err);
+      setError('Failed to switch camera. Please try again.');
+    }
+  }, [cameras, currentCameraIndex, stopScanning, startScanning]);
 
   /**
    * Requests camera permission (retry handler for Try Again button)
