@@ -162,24 +162,24 @@
   align-items: center;
   gap: 0.75rem;
   font-size: 0.875rem;
-  color: var(--color-text-secondary, #d0d0d0);
+  color: #ffffff;
 }
 
 .detailRow svg {
   width: 18px;
   height: 18px;
-  color: var(--color-text-secondary, #d0d0d0);
+  color: #ffffff;
   flex-shrink: 0;
 }
 
 .guestList {
-  color: var(--color-text-tertiary, #b0b0b0);
+  color: #ffffff;
 }
 
 .registrationId {
   font-family: monospace;
   font-size: 0.8125rem;
-  color: var(--color-text-secondary, #d0d0d0);
+  color: #ffffff;
 }
 
 .error {
@@ -212,8 +212,8 @@
   flex: 1;
   padding: 0.875rem 1.5rem;
   background: transparent;
-  color: var(--color-text, #fff);
-  border: 1px solid var(--color-border, #555);
+  color: #ffffff;
+  border: 1px solid #555;
   border-radius: 8px;
   font-size: 0.9375rem;
   font-weight: 500;
