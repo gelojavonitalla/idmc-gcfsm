@@ -38,6 +38,7 @@ function QRScanner({ onScan, onError, isActive = true }) {
   const [isReady, setIsReady] = useState(false);
   const scannerRef = useRef(null);
   const isScanningRef = useRef(false);
+  const hasRequestedPermissionRef = useRef(false);
   const scannerElementId = 'qr-scanner-container';
 
   /**
@@ -247,11 +248,19 @@ function QRScanner({ onScan, onError, isActive = true }) {
   };
 
   /**
-   * Request camera permission on mount
+   * Request camera permission on mount (runs once)
    */
   useEffect(() => {
-    requestCameraPermission();
+    if (!hasRequestedPermissionRef.current) {
+      hasRequestedPermissionRef.current = true;
+      requestCameraPermission();
+    }
+  }, [requestCameraPermission]);
 
+  /**
+   * Cleanup scanner on unmount
+   */
+  useEffect(() => {
     return () => {
       if (scannerRef.current) {
         scannerRef.current.stop().catch((err) => {
@@ -261,7 +270,6 @@ function QRScanner({ onScan, onError, isActive = true }) {
         scannerRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
