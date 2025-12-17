@@ -1,0 +1,215 @@
+/**
+ * AdminCheckInPage Component Styles
+ */
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.5rem;
+  max-width: 1400px;
+}
+
+.mainColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sideColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Success/Error Banners */
+.successBanner,
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.successBanner {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid #10b981;
+}
+
+.successBanner svg {
+  width: 24px;
+  height: 24px;
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.successBanner div {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.successBanner strong {
+  font-size: 1rem;
+  color: #10b981;
+}
+
+.successBanner span {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #a0a0a0);
+}
+
+.errorBanner {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--color-error, #ef4444);
+}
+
+.errorBanner svg {
+  width: 24px;
+  height: 24px;
+  color: var(--color-error, #ef4444);
+  flex-shrink: 0;
+}
+
+.errorBanner div {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.errorBanner strong {
+  font-size: 1rem;
+  color: var(--color-error, #ef4444);
+}
+
+.errorBanner span {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #a0a0a0);
+}
+
+.errorBanner button {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  color: var(--color-text-tertiary, #666);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.errorBanner button:hover {
+  color: var(--color-error, #ef4444);
+}
+
+/* Mode Tabs */
+.modeTabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--color-surface, #1a1a2e);
+  border: 1px solid var(--color-border, #333);
+  border-radius: 12px;
+}
+
+.modeTab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  background: transparent;
+  color: var(--color-text-secondary, #a0a0a0);
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modeTab:hover:not(.active) {
+  background: var(--color-surface-elevated, #252540);
+  color: var(--color-text, #fff);
+}
+
+.modeTab.active {
+  background: var(--color-primary, #3b82f6);
+  color: white;
+}
+
+.modeTab svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Mode Content */
+.modeContent {
+  background: var(--color-surface, #1a1a2e);
+  border: 1px solid var(--color-border, #333);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+
+  .sideColumn {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .sideColumn {
+    grid-template-columns: 1fr;
+  }
+
+  .modeTabs {
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0.375rem;
+  }
+
+  .modeTab {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .modeContent {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    gap: 1rem;
+  }
+
+  .successBanner,
+  .errorBanner {
+    flex-wrap: wrap;
+    padding: 0.875rem 1rem;
+  }
+
+  .successBanner div,
+  .errorBanner div {
+    min-width: calc(100% - 40px);
+  }
+}
