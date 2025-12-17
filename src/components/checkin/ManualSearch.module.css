@@ -26,7 +26,7 @@
   transform: translateY(-50%);
   width: 20px;
   height: 20px;
-  color: var(--color-text-tertiary, #666);
+  color: var(--color-text-tertiary, #999);
   pointer-events: none;
 }
 
@@ -42,7 +42,7 @@
 }
 
 .searchInput::placeholder {
-  color: var(--color-text-tertiary, #666);
+  color: var(--color-text-tertiary, #999);
 }
 
 .searchInput:focus {
@@ -60,7 +60,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  color: var(--color-text-tertiary, #666);
+  color: var(--color-text-tertiary, #999);
   transition: color 0.2s;
 }
 
@@ -180,7 +180,7 @@
 .noResults svg {
   width: 48px;
   height: 48px;
-  color: var(--color-text-tertiary, #666);
+  color: var(--color-text-tertiary, #999);
 }
 
 .noResults p {
@@ -265,7 +265,7 @@
 
 .resultChurch {
   font-size: 0.75rem;
-  color: var(--color-text-tertiary, #666);
+  color: var(--color-text-tertiary, #999);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -309,7 +309,7 @@
 
 .attendeeCount {
   font-size: 0.75rem;
-  color: var(--color-text-tertiary, #666);
+  color: var(--color-text-tertiary, #999);
 }
 
 @media (max-width: 640px) {
