@@ -206,3 +206,67 @@ export function formatDate(date) {
 export function requiresProof(category) {
   return category === REGISTRATION_CATEGORIES.STUDENT_SENIOR;
 }
+
+/**
+ * Masks an email address for privacy on public pages.
+ * Shows first 2 characters of local part, masks the rest, preserves domain.
+ *
+ * @param {string} email - The email address to mask
+ * @returns {string} Masked email (e.g., "ju***@icloud.com")
+ */
+export function maskEmail(email) {
+  if (!email || typeof email !== 'string') {
+    return '';
+  }
+
+  const [localPart, domain] = email.split('@');
+  if (!localPart || !domain) {
+    return '***@***';
+  }
+
+  const visibleChars = Math.min(2, localPart.length);
+  const maskedLocal = localPart.slice(0, visibleChars) + '***';
+
+  return `${maskedLocal}@${domain}`;
+}
+
+/**
+ * Masks a name for privacy on public pages.
+ * Shows first character followed by asterisks.
+ *
+ * @param {string} name - The name to mask
+ * @returns {string} Masked name (e.g., "J***")
+ */
+export function maskName(name) {
+  if (!name || typeof name !== 'string') {
+    return '';
+  }
+
+  const trimmedName = name.trim();
+  if (trimmedName.length === 0) {
+    return '';
+  }
+
+  return trimmedName.charAt(0) + '***';
+}
+
+/**
+ * Masks a phone number for privacy on public pages.
+ * Shows only the last 4 digits.
+ *
+ * @param {string} phone - The phone number to mask
+ * @returns {string} Masked phone (e.g., "***-***-4567")
+ */
+export function maskPhone(phone) {
+  if (!phone || typeof phone !== 'string') {
+    return '';
+  }
+
+  const digitsOnly = phone.replace(/\D/g, '');
+  if (digitsOnly.length < 4) {
+    return '***-***-****';
+  }
+
+  const lastFour = digitsOnly.slice(-4);
+  return `***-***-${lastFour}`;
+}

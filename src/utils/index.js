@@ -17,6 +17,9 @@ export {
   getPaymentDeadline,
   formatDate,
   requiresProof,
+  maskEmail,
+  maskName,
+  maskPhone,
 } from './registration';
 
 export {
