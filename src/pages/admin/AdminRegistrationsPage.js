@@ -12,7 +12,8 @@ import {
   RegistrationDetailModal,
 } from '../../components/admin';
 import {
-  getAllRegistrations,
+  getRegistrations,
+  getRegistrationsCount,
   updateRegistration,
 } from '../../services/maintenance';
 import { REGISTRATION_STATUS } from '../../constants';
@@ -24,9 +25,15 @@ import styles from './AdminRegistrationsPage.module.css';
  *
  * @returns {JSX.Element} The admin registrations page
  */
+/**
+ * Default page size for pagination
+ */
+const PAGE_SIZE = 50;
+
 function AdminRegistrationsPage() {
   const [registrations, setRegistrations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -34,31 +41,70 @@ function AdminRegistrationsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [lastDoc, setLastDoc] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
 
   /**
-   * Fetches all registrations
+   * Fetches registrations with pagination
+   *
+   * @param {boolean} loadMore - Whether to load more or reset
    */
-  const fetchRegistrations = useCallback(async () => {
-    setIsLoading(true);
+  const fetchRegistrations = useCallback(async (loadMore = false) => {
+    if (loadMore) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
+      setLastDoc(null);
+    }
     setError(null);
 
     try {
-      const data = await getAllRegistrations();
-      setRegistrations(data);
+      const result = await getRegistrations({
+        pageSize: PAGE_SIZE,
+        lastDoc: loadMore ? lastDoc : null,
+        status: statusFilter,
+      });
+
+      if (loadMore) {
+        setRegistrations((prev) => [...prev, ...result.registrations]);
+      } else {
+        setRegistrations(result.registrations);
+      }
+
+      setLastDoc(result.lastDoc);
+      setHasMore(result.hasMore);
+
+      // Fetch total count for stats (only on initial load or filter change)
+      if (!loadMore) {
+        const countResult = await getRegistrationsCount({ status: statusFilter });
+        setTotalCount(countResult.filtered);
+      }
     } catch (fetchError) {
       console.error('Failed to fetch registrations:', fetchError);
       setError('Failed to load registrations. Please try again.');
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
-  }, []);
+  }, [lastDoc, statusFilter]);
 
   /**
-   * Fetch registrations on mount
+   * Handles loading more registrations
+   */
+  const handleLoadMore = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      fetchRegistrations(true);
+    }
+  }, [fetchRegistrations, isLoadingMore, hasMore]);
+
+  /**
+   * Fetch registrations on mount and when status filter changes
    */
   useEffect(() => {
-    fetchRegistrations();
-  }, [fetchRegistrations]);
+    fetchRegistrations(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter]);
 
   /**
    * Handles viewing registration details
@@ -155,12 +201,13 @@ function AdminRegistrationsPage() {
   };
 
   /**
-   * Gets registration statistics
+   * Gets registration statistics from loaded data
+   * Note: These stats are calculated from currently loaded registrations
    *
    * @returns {Object} Statistics object
    */
   const getStats = () => {
-    const total = registrations.length;
+    const loaded = registrations.length;
     const confirmed = registrations.filter(
       (r) => r.status === REGISTRATION_STATUS.CONFIRMED
     ).length;
@@ -174,12 +221,20 @@ function AdminRegistrationsPage() {
       (r) => r.status === REGISTRATION_STATUS.CANCELLED
     ).length;
 
-    // Calculate total revenue from confirmed registrations
+    // Calculate total revenue from confirmed registrations (loaded data only)
     const totalRevenue = registrations
       .filter((r) => r.status === REGISTRATION_STATUS.CONFIRMED)
       .reduce((sum, r) => sum + (r.totalAmount || 0), 0);
 
-    return { total, confirmed, pendingVerification, pendingPayment, cancelled, totalRevenue };
+    return {
+      total: statusFilter === 'all' ? totalCount : loaded,
+      loaded,
+      confirmed,
+      pendingVerification,
+      pendingPayment,
+      cancelled,
+      totalRevenue,
+    };
   };
 
   /**
@@ -363,6 +418,11 @@ function AdminRegistrationsPage() {
         onViewDetails={handleViewDetails}
         onUpdateStatus={handleUpdateStatus}
         isLoading={isLoading}
+        hasMore={hasMore && !searchQuery}
+        onLoadMore={handleLoadMore}
+        isLoadingMore={isLoadingMore}
+        totalCount={totalCount}
+        loadedCount={registrations.length}
       />
 
       {/* Registration Detail Modal */}

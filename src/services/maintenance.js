@@ -17,6 +17,10 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  limit,
+  startAfter,
+  where,
+  getCountFromServer,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { COLLECTIONS } from '../constants';
@@ -294,6 +298,88 @@ export async function getAllRegistrations() {
     id: docSnapshot.id,
     ...docSnapshot.data(),
   }));
+}
+
+/**
+ * Fetches registrations with pagination
+ *
+ * @param {Object} options - Query options
+ * @param {number} [options.pageSize=50] - Number of registrations per page
+ * @param {Object} [options.lastDoc] - Last document for pagination cursor
+ * @param {string} [options.status] - Filter by registration status
+ * @returns {Promise<Object>} { registrations, lastDoc, hasMore }
+ */
+export async function getRegistrations(options = {}) {
+  try {
+    const { pageSize = 50, lastDoc, status } = options;
+
+    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+    const constraints = [orderBy('createdAt', 'desc'), limit(pageSize + 1)];
+
+    // Add status filter if provided
+    if (status && status !== 'all') {
+      constraints.unshift(where('status', '==', status));
+    }
+
+    // Add pagination cursor
+    if (lastDoc) {
+      constraints.push(startAfter(lastDoc));
+    }
+
+    const registrationsQuery = query(registrationsRef, ...constraints);
+    const snapshot = await getDocs(registrationsQuery);
+
+    const docs = snapshot.docs;
+    const hasMore = docs.length > pageSize;
+
+    // Remove the extra document used to check for more
+    const registrations = (hasMore ? docs.slice(0, -1) : docs).map((docSnapshot) => ({
+      id: docSnapshot.id,
+      ...docSnapshot.data(),
+      _doc: docSnapshot, // Keep reference for pagination cursor
+    }));
+
+    return {
+      registrations,
+      lastDoc: registrations.length > 0 ? registrations[registrations.length - 1]._doc : null,
+      hasMore,
+    };
+  } catch (error) {
+    console.error('Failed to fetch registrations:', error);
+    return { registrations: [], lastDoc: null, hasMore: false };
+  }
+}
+
+/**
+ * Gets the total count of registrations with optional status filter
+ *
+ * @param {Object} filters - Optional filters
+ * @param {string} [filters.status] - Filter by registration status
+ * @returns {Promise<Object>} Count object with total and by-status breakdown
+ */
+export async function getRegistrationsCount(filters = {}) {
+  try {
+    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+
+    // Get total count
+    const totalSnapshot = await getCountFromServer(registrationsRef);
+    const total = totalSnapshot.data().count;
+
+    // If a specific status filter is requested, get that count too
+    if (filters.status && filters.status !== 'all') {
+      const statusQuery = query(registrationsRef, where('status', '==', filters.status));
+      const statusSnapshot = await getCountFromServer(statusQuery);
+      return {
+        total,
+        filtered: statusSnapshot.data().count,
+      };
+    }
+
+    return { total, filtered: total };
+  } catch (error) {
+    console.error('Failed to get registrations count:', error);
+    return { total: 0, filtered: 0 };
+  }
 }
 
 /**
