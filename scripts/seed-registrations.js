@@ -741,7 +741,7 @@ function parseArgs() {
   const args = {
     clear: false,
     force: false,
-    count: 50,
+    count: 500,
     static: false,
   };
 
