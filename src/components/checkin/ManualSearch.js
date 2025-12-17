@@ -204,9 +204,9 @@ function ManualSearch({ onSelect, autoFocus = false }) {
         <div className={styles.hints}>
           <p>Search by:</p>
           <ul>
-            <li>Full name (e.g., "Juan dela Cruz")</li>
-            <li>Email address</li>
-            <li>Phone number</li>
+            <li>Name (3+ characters, e.g., "Juan")</li>
+            <li>Email address (exact match)</li>
+            <li>Phone number (3+ digits)</li>
             <li>Registration code (e.g., "A7K3")</li>
             <li>Registration ID (e.g., "REG-2026-A7K3")</li>
           </ul>

@@ -204,12 +204,15 @@ export async function searchRegistrations(searchTerm) {
     }
   }
 
-  // If no results yet, fetch all confirmed registrations and filter by name
-  if (results.length === 0) {
+  // Name/phone search requires 3+ characters to reduce unnecessary fetches
+  // This fallback only runs when email/code/ID searches found nothing
+  if (results.length === 0 && normalizedTerm.length >= 3) {
+    // Fetch confirmed registrations in batches for client-side filtering
+    // Limit to 200 docs (~80-160KB) for acceptable performance on mobile
     const confirmedQuery = query(
       registrationsRef,
       where('status', '==', REGISTRATION_STATUS.CONFIRMED),
-      limit(500)
+      limit(200)
     );
     const confirmedSnapshot = await getDocs(confirmedQuery);
 
