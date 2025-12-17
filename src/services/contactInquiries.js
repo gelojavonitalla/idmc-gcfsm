@@ -5,7 +5,17 @@
  * @module services/contactInquiries
  */
 
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+  query,
+  orderBy,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { COLLECTIONS, CONTACT_INQUIRY_STATUS } from '../constants';
 
@@ -73,4 +83,62 @@ export async function submitContactInquiry(inquiryData) {
   });
 
   return docRef.id;
+}
+
+/**
+ * Retrieves all contact inquiries from Firestore, sorted by creation date (newest first).
+ *
+ * @returns {Promise<Array>} Array of inquiry objects with id and data
+ * @throws {Error} If the Firestore operation fails
+ */
+export async function getAllContactInquiries() {
+  const inquiriesRef = collection(db, COLLECTIONS.CONTACT_INQUIRIES);
+  const q = query(inquiriesRef, orderBy('createdAt', 'desc'));
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map((docSnap) => ({
+    id: docSnap.id,
+    ...docSnap.data(),
+  }));
+}
+
+/**
+ * Updates the status of a contact inquiry.
+ *
+ * @param {string} inquiryId - The ID of the inquiry to update
+ * @param {string} status - The new status (from CONTACT_INQUIRY_STATUS)
+ * @returns {Promise<void>}
+ * @throws {Error} If the Firestore operation fails or invalid status
+ */
+export async function updateContactInquiryStatus(inquiryId, status) {
+  if (!inquiryId) {
+    throw new Error('Inquiry ID is required');
+  }
+
+  const validStatuses = Object.values(CONTACT_INQUIRY_STATUS);
+  if (!validStatuses.includes(status)) {
+    throw new Error(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
+  }
+
+  const inquiryRef = doc(db, COLLECTIONS.CONTACT_INQUIRIES, inquiryId);
+  await updateDoc(inquiryRef, {
+    status,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Deletes a contact inquiry from Firestore.
+ *
+ * @param {string} inquiryId - The ID of the inquiry to delete
+ * @returns {Promise<void>}
+ * @throws {Error} If the Firestore operation fails
+ */
+export async function deleteContactInquiry(inquiryId) {
+  if (!inquiryId) {
+    throw new Error('Inquiry ID is required');
+  }
+
+  const inquiryRef = doc(db, COLLECTIONS.CONTACT_INQUIRIES, inquiryId);
+  await deleteDoc(inquiryRef);
 }

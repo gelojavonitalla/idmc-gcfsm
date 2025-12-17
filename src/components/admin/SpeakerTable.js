@@ -5,6 +5,7 @@
  * @module components/admin/SpeakerTable
  */
 
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { SPEAKER_STATUS } from '../../constants';
 import styles from './SpeakerTable.module.css';
@@ -17,10 +18,82 @@ import styles from './SpeakerTable.module.css';
  * @param {Function} props.onEdit - Callback when edit is clicked
  * @param {Function} props.onDelete - Callback when delete is clicked
  * @param {Function} props.onToggleStatus - Callback to toggle publish status
+ * @param {Function} props.onReorder - Callback when speakers are reordered via drag-and-drop
  * @param {boolean} props.isLoading - Loading state
+ * @param {boolean} props.isReordering - Whether currently saving reorder
  * @returns {JSX.Element} The speaker table
  */
-function SpeakerTable({ speakers, onEdit, onDelete, onToggleStatus, isLoading }) {
+function SpeakerTable({ speakers, onEdit, onDelete, onToggleStatus, onReorder, isLoading, isReordering }) {
+  /**
+   * State for drag and drop
+   */
+  const [draggedId, setDraggedId] = useState(null);
+  const [dragOverId, setDragOverId] = useState(null);
+
+  /**
+   * Handle drag start
+   *
+   * @param {DragEvent} e - Drag event
+   * @param {string} speakerId - Speaker ID being dragged
+   */
+  const handleDragStart = (e, speakerId) => {
+    setDraggedId(speakerId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', speakerId);
+  };
+
+  /**
+   * Handle drag over
+   *
+   * @param {DragEvent} e - Drag event
+   * @param {string} speakerId - Speaker ID being dragged over
+   */
+  const handleDragOver = (e, speakerId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (speakerId !== draggedId) {
+      setDragOverId(speakerId);
+    }
+  };
+
+  /**
+   * Handle drag leave
+   */
+  const handleDragLeave = () => {
+    setDragOverId(null);
+  };
+
+  /**
+   * Handle drop
+   *
+   * @param {DragEvent} e - Drag event
+   * @param {string} targetId - Target speaker ID
+   */
+  const handleDrop = (e, targetId) => {
+    e.preventDefault();
+    if (draggedId && targetId && draggedId !== targetId && onReorder) {
+      const draggedIndex = speakers.findIndex((s) => s.id === draggedId);
+      const targetIndex = speakers.findIndex((s) => s.id === targetId);
+
+      if (draggedIndex !== -1 && targetIndex !== -1) {
+        const newOrder = [...speakers];
+        const [removed] = newOrder.splice(draggedIndex, 1);
+        newOrder.splice(targetIndex, 0, removed);
+        onReorder(newOrder);
+      }
+    }
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  /**
+   * Handle drag end
+   */
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
   /**
    * Gets status badge class
    *
@@ -71,9 +144,33 @@ function SpeakerTable({ speakers, onEdit, onDelete, onToggleStatus, isLoading })
             </tr>
           </thead>
           <tbody>
-            {speakers.map((speaker) => (
-              <tr key={speaker.id}>
-                <td className={styles.orderCell}>{speaker.order || '-'}</td>
+            {speakers.map((speaker, index) => (
+              <tr
+                key={speaker.id}
+                draggable={!isReordering && !!onReorder}
+                onDragStart={(e) => handleDragStart(e, speaker.id)}
+                onDragOver={(e) => handleDragOver(e, speaker.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, speaker.id)}
+                onDragEnd={handleDragEnd}
+                className={`
+                  ${draggedId === speaker.id ? styles.dragging : ''}
+                  ${dragOverId === speaker.id ? styles.dragOver : ''}
+                  ${isReordering ? styles.reordering : ''}
+                `}
+              >
+                <td className={styles.orderCell}>
+                  {onReorder && (
+                    <span className={styles.dragHandle} title="Drag to reorder">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="8" y1="6" x2="16" y2="6" />
+                        <line x1="8" y1="12" x2="16" y2="12" />
+                        <line x1="8" y1="18" x2="16" y2="18" />
+                      </svg>
+                    </span>
+                  )}
+                  {index + 1}
+                </td>
                 <td>
                   <div className={styles.speakerInfo}>
                     <div className={styles.avatar}>
@@ -161,12 +258,16 @@ SpeakerTable.propTypes = {
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onToggleStatus: PropTypes.func.isRequired,
+  onReorder: PropTypes.func,
   isLoading: PropTypes.bool,
+  isReordering: PropTypes.bool,
 };
 
 SpeakerTable.defaultProps = {
   speakers: [],
   isLoading: false,
+  isReordering: false,
+  onReorder: null,
 };
 
 export default SpeakerTable;

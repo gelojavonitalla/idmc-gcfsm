@@ -15,8 +15,13 @@ import {
   getAllRegistrations,
   updateRegistration,
 } from '../../services/maintenance';
-import { REGISTRATION_STATUS } from '../../constants';
-import { extractShortCode, exportRegistrationsToCsv } from '../../utils';
+import { REGISTRATION_STATUS, WORKSHOP_CATEGORY_LABELS } from '../../constants';
+import {
+  extractShortCode,
+  exportRegistrationsToCsv,
+  exportWorkshopAttendanceToCsv,
+  exportAllWorkshopsAttendanceToCsv,
+} from '../../utils';
 import styles from './AdminRegistrationsPage.module.css';
 
 /**
@@ -34,6 +39,7 @@ function AdminRegistrationsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showWorkshopExportMenu, setShowWorkshopExportMenu] = useState(false);
 
   /**
    * Fetches all registrations
@@ -155,6 +161,30 @@ function AdminRegistrationsPage() {
   };
 
   /**
+   * Handles exporting workshop attendance to CSV
+   *
+   * @param {string} workshopCategory - Workshop category to export
+   */
+  const handleWorkshopExport = async (workshopCategory) => {
+    setIsExporting(true);
+    setShowWorkshopExportMenu(false);
+    setError(null);
+
+    try {
+      if (workshopCategory === 'all') {
+        exportAllWorkshopsAttendanceToCsv(registrations);
+      } else {
+        exportWorkshopAttendanceToCsv(registrations, workshopCategory);
+      }
+    } catch (exportError) {
+      console.error('Failed to export workshop attendance:', exportError);
+      setError('Failed to export workshop attendance. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  /**
    * Gets registration statistics
    *
    * @returns {Object} Statistics object
@@ -251,6 +281,42 @@ function AdminRegistrationsPage() {
             </svg>
             {isExporting ? 'Exporting...' : 'Export CSV'}
           </button>
+          <div className={styles.dropdownWrapper}>
+            <button
+              className={styles.workshopExportButton}
+              onClick={() => setShowWorkshopExportMenu((prev) => !prev)}
+              disabled={isExporting || isLoading || registrations.length === 0}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                <path d="M6 12v5c3 3 9 3 12 0v-5" />
+              </svg>
+              Workshop Attendance
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            {showWorkshopExportMenu && (
+              <div className={styles.dropdownMenu}>
+                <button
+                  className={styles.dropdownItem}
+                  onClick={() => handleWorkshopExport('all')}
+                >
+                  Export All Workshops
+                </button>
+                <div className={styles.dropdownDivider} />
+                {Object.entries(WORKSHOP_CATEGORY_LABELS).map(([category, label]) => (
+                  <button
+                    key={category}
+                    className={styles.dropdownItem}
+                    onClick={() => handleWorkshopExport(category)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             className={styles.refreshButton}
             onClick={fetchRegistrations}

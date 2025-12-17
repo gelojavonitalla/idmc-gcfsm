@@ -26,6 +26,9 @@ export {
   convertRegistrationsToCsv,
   downloadCsv,
   exportRegistrationsToCsv,
+  convertWorkshopAttendanceToCsv,
+  exportWorkshopAttendanceToCsv,
+  exportAllWorkshopsAttendanceToCsv,
 } from './exportCsv';
 
 export {
