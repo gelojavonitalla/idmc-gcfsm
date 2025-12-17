@@ -108,7 +108,7 @@ function AdminCheckInPage() {
 
     try {
       await checkInAttendee(selectedRegistration.id, {
-        adminId: admin.uid,
+        adminId: admin.id,
         adminName: admin.displayName || admin.email,
         method: mode === CHECK_IN_MODES.QR ? CHECK_IN_METHODS.QR : CHECK_IN_METHODS.MANUAL,
       });
