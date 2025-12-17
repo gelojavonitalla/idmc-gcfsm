@@ -263,13 +263,24 @@ function QRScanner({ onScan, onError, isActive = true }) {
    */
   useEffect(() => {
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch((err) => {
-          // Log cleanup errors for debugging (common during hot reload)
-          console.debug('Scanner cleanup:', err.message || err);
-        });
+      const cleanup = async () => {
+        if (scannerRef.current) {
+          try {
+            // Only stop if scanner is currently running
+            if (isScanningRef.current) {
+              await scannerRef.current.stop();
+            }
+            // Clear releases all resources (camera, DOM elements, etc.)
+            await scannerRef.current.clear();
+          } catch (err) {
+            // Log cleanup errors for debugging (common during hot reload or navigation)
+            console.debug('Scanner cleanup:', err.message || err);
+          }
+        }
         scannerRef.current = null;
-      }
+        isScanningRef.current = false;
+      };
+      cleanup();
     };
   }, []);
 
