@@ -165,7 +165,7 @@ function RegistrationStatusPage() {
                 </button>
               </div>
               <p className={styles.searchHint}>
-                Examples: REG-2026-A7K3, A7K3, email@example.com, 09171234567
+                Examples: REG-2026-A7K3MN, A7K3MN, K3MN, email@example.com, 09171234567
               </p>
             </form>
           </div>

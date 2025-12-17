@@ -67,6 +67,9 @@ const SAFE_SHORT_CODE_CHARS = 'ACDEFGHJKMNPQRTUVWXY34679';
 // Length of registration short code
 const SHORT_CODE_LENGTH = 6;
 
+// Length of short code suffix (last 4 characters for quick lookup)
+const SHORT_CODE_SUFFIX_LENGTH = 4;
+
 // Sample data for generation
 const FIRST_NAMES = [
   'Juan', 'Maria', 'Jose', 'Ana', 'Pedro', 'Rosa', 'Carlos', 'Elena',
@@ -246,8 +249,11 @@ function generateRegistration(index) {
   const updatedAt = new Date(createdAt.getTime() + randomInt(1, 48) * 60 * 60 * 1000);
 
   const shortCode = generateShortCode();
+  const shortCodeSuffix = shortCode.slice(-SHORT_CODE_SUFFIX_LENGTH);
   const registration = {
     registrationId: `REG-2026-${shortCode}`,
+    shortCode,
+    shortCodeSuffix,
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName,
@@ -312,6 +318,8 @@ function generateRegistration(index) {
 const STATIC_REGISTRATIONS = [
   {
     registrationId: 'REG-2026-A7K3MN',
+    shortCode: 'A7K3MN',
+    shortCodeSuffix: 'K3MN',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Juan',
@@ -338,6 +346,8 @@ const STATIC_REGISTRATIONS = [
   },
   {
     registrationId: 'REG-2026-C9P4TH',
+    shortCode: 'C9P4TH',
+    shortCodeSuffix: 'P4TH',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Maria',
@@ -364,6 +374,8 @@ const STATIC_REGISTRATIONS = [
   },
   {
     registrationId: 'REG-2026-F6R7VJ',
+    shortCode: 'F6R7VJ',
+    shortCodeSuffix: 'R7VJ',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Pedro',
@@ -390,6 +402,8 @@ const STATIC_REGISTRATIONS = [
   },
   {
     registrationId: 'REG-2026-G4Y9WK',
+    shortCode: 'G4Y9WK',
+    shortCodeSuffix: 'Y9WK',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Ana',
@@ -416,6 +430,8 @@ const STATIC_REGISTRATIONS = [
   },
   {
     registrationId: 'REG-2026-H3Q6XM',
+    shortCode: 'H3Q6XM',
+    shortCodeSuffix: 'Q6XM',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Carlos',
@@ -442,6 +458,8 @@ const STATIC_REGISTRATIONS = [
   },
   {
     registrationId: 'REG-2026-J7N4CP',
+    shortCode: 'J7N4CP',
+    shortCodeSuffix: 'N4CP',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Elena',
@@ -468,6 +486,8 @@ const STATIC_REGISTRATIONS = [
   },
   {
     registrationId: 'REG-2026-K9T3DR',
+    shortCode: 'K9T3DR',
+    shortCodeSuffix: 'T3DR',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Roberto',
@@ -494,6 +514,8 @@ const STATIC_REGISTRATIONS = [
   },
   {
     registrationId: 'REG-2026-M6V7FE',
+    shortCode: 'M6V7FE',
+    shortCodeSuffix: 'V7FE',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Sofia',
@@ -528,6 +550,8 @@ const STATIC_REGISTRATIONS = [
   },
   {
     registrationId: 'REG-2026-N4W9GH',
+    shortCode: 'N4W9GH',
+    shortCodeSuffix: 'W9GH',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Isabella',
@@ -554,6 +578,8 @@ const STATIC_REGISTRATIONS = [
   },
   {
     registrationId: 'REG-2026-P7X3JK',
+    shortCode: 'P7X3JK',
+    shortCodeSuffix: 'X3JK',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Antonio',

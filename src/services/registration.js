@@ -14,6 +14,7 @@ import {
   updateDoc,
   query,
   where,
+  limit,
   serverTimestamp,
   runTransaction,
 } from 'firebase/firestore';
@@ -461,6 +462,7 @@ export async function markEmailSent(registrationId, emailType) {
 /**
  * Looks up a registration by various identifiers.
  * Supports: registration ID, 6-char short code, 4-char suffix, email, or phone.
+ * Includes fallback search for partial short code matches.
  *
  * @param {string} identifier - Registration ID, short code (4 or 6 chars), email, or phone
  * @returns {Promise<Object|null>} Registration data or null
@@ -471,17 +473,21 @@ export async function lookupRegistration(identifier) {
   }
 
   const trimmed = identifier.trim();
+  const upperTrimmed = trimmed.toUpperCase();
 
   // Try registration ID format (REG-YYYY-XXXXXX)
-  if (trimmed.toUpperCase().startsWith('REG-')) {
-    const result = await getRegistrationById(trimmed.toUpperCase());
+  if (upperTrimmed.startsWith('REG-')) {
+    const result = await getRegistrationById(upperTrimmed);
     if (result) {
       return result;
     }
   }
 
+  // Check if input looks like a short code (alphanumeric, 4-6 chars)
+  const isAlphanumeric = /^[A-Za-z0-9]+$/.test(trimmed);
+
   // Try 6-character full short code
-  if (trimmed.length === SHORT_CODE_LENGTH && /^[A-Za-z0-9]+$/.test(trimmed)) {
+  if (trimmed.length === SHORT_CODE_LENGTH && isAlphanumeric) {
     const result = await getRegistrationByShortCode(trimmed);
     if (result) {
       return result;
@@ -489,7 +495,7 @@ export async function lookupRegistration(identifier) {
   }
 
   // Try 4-character short code suffix (last 4 digits)
-  if (trimmed.length === SHORT_CODE_SUFFIX_LENGTH && /^[A-Za-z0-9]+$/.test(trimmed)) {
+  if (trimmed.length === SHORT_CODE_SUFFIX_LENGTH && isAlphanumeric) {
     const result = await getRegistrationByShortCodeSuffix(trimmed);
     if (result) {
       return result;
@@ -510,6 +516,58 @@ export async function lookupRegistration(identifier) {
     const result = await getRegistrationByPhone(cleanPhone);
     if (result) {
       return result;
+    }
+  }
+
+  // Fallback: For alphanumeric codes (4-6 chars), search by partial match on shortCode
+  // This handles cases where shortCodeSuffix field might not exist on older registrations
+  if (isAlphanumeric && trimmed.length >= SHORT_CODE_SUFFIX_LENGTH && trimmed.length <= SHORT_CODE_LENGTH) {
+    const result = await findRegistrationByPartialShortCode(upperTrimmed);
+    if (result) {
+      return result;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Fallback search for registrations by partial short code match.
+ * Searches through registrations to find ones where the shortCode ends with or equals the search term.
+ * Used when direct field queries don't find a match.
+ *
+ * @param {string} searchTerm - Uppercase alphanumeric search term (4-6 chars)
+ * @returns {Promise<Object|null>} Registration data or null
+ */
+async function findRegistrationByPartialShortCode(searchTerm) {
+  const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+
+  // Fetch a limited set of registrations to search through
+  // Use status filter to prioritize confirmed registrations
+  const registrationQuery = query(
+    registrationsRef,
+    where('status', 'in', [
+      REGISTRATION_STATUS.CONFIRMED,
+      REGISTRATION_STATUS.PENDING_PAYMENT,
+      REGISTRATION_STATUS.PENDING_VERIFICATION,
+    ]),
+    limit(500)
+  );
+
+  const snapshot = await getDocs(registrationQuery);
+
+  // Client-side search for partial short code match
+  for (const docSnap of snapshot.docs) {
+    const data = docSnap.data();
+    const shortCode = (data.shortCode || '').toUpperCase();
+
+    // Check if shortCode ends with the search term (for 4-char suffix)
+    // or equals the search term (for 6-char full code)
+    if (shortCode.endsWith(searchTerm) || shortCode === searchTerm) {
+      return {
+        id: docSnap.id,
+        ...data,
+      };
     }
   }
 
