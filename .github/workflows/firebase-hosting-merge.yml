@@ -48,13 +48,51 @@ jobs:
           channelId: live
           projectId: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
+      # Authenticate with Google Cloud
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Grant required IAM roles for Cloud Functions with Eventarc triggers
+      - name: Grant IAM roles for Cloud Functions
+        run: |
+          PROJECT_ID="${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}"
+          PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
+
+          echo "Granting IAM roles for project $PROJECT_ID (number: $PROJECT_NUMBER)"
+
+          # Grant Service Account Token Creator to Pub/Sub service account
+          # Required for Eventarc to create authentication tokens
+          gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+            --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-pubsub.iam.gserviceaccount.com" \
+            --role="roles/iam.serviceAccountTokenCreator" \
+            --condition=None \
+            --quiet || echo "Role may already be granted or insufficient permissions"
+
+          # Grant Cloud Run Invoker to default compute service account
+          # Required for Eventarc to invoke Cloud Functions
+          gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+            --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+            --role="roles/run.invoker" \
+            --condition=None \
+            --quiet || echo "Role may already be granted or insufficient permissions"
+
+          # Grant Eventarc Event Receiver to default compute service account
+          # Required for Cloud Functions to receive Firestore trigger events
+          gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+            --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+            --role="roles/eventarc.eventReceiver" \
+            --condition=None \
+            --quiet || echo "Role may already be granted or insufficient permissions"
+
       # Deploy Cloud Functions
       - name: Deploy Cloud Functions
         run: |
-          # Write service account to file for authentication
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > $HOME/gcloud-key.json
-          export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json
-
           # Create .env file for Firebase Functions params
           echo "SENDER_EMAIL=${{ vars.SENDER_EMAIL }}" > functions/.env
           echo "SENDER_NAME=${{ vars.SENDER_NAME }}" >> functions/.env
@@ -65,5 +103,4 @@ jobs:
           firebase deploy --only functions --project ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }} --force
 
           # Clean up
-          rm -f $HOME/gcloud-key.json
           rm -f functions/.env
