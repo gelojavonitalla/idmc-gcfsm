@@ -173,6 +173,11 @@
   color: var(--color-error-700, #b91c1c);
 }
 
+.statusCheckedIn {
+  background: var(--color-info-50, #eff6ff);
+  color: var(--color-info-700, #1d4ed8);
+}
+
 /* Registration Header */
 .regHeader {
   display: flex;

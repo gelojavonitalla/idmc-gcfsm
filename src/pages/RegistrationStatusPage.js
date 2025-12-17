@@ -38,6 +38,14 @@ const STATUS_CONFIG = {
 };
 
 /**
+ * Checked-in status configuration
+ */
+const CHECKED_IN_STATUS_CONFIG = {
+  label: 'Checked In',
+  className: 'statusCheckedIn',
+};
+
+/**
  * RegistrationStatusPage Component
  * Allows users to look up their registration status using various identifiers.
  *
@@ -105,8 +113,16 @@ function RegistrationStatusPage() {
 
   /**
    * Gets the status configuration for display
+   * Prioritizes check-in status over payment status when the attendee has checked in
+   *
+   * @param {string} status - The registration payment status
+   * @param {boolean} checkedIn - Whether the attendee has checked in
+   * @returns {Object} Status configuration with label and className
    */
-  const getStatusConfig = useCallback((status) => {
+  const getStatusConfig = useCallback((status, checkedIn) => {
+    if (checkedIn) {
+      return CHECKED_IN_STATUS_CONFIG;
+    }
     return STATUS_CONFIG[status] || {
       label: status || 'Unknown',
       className: 'statusPending',
@@ -130,7 +146,7 @@ function RegistrationStatusPage() {
     });
   }, []);
 
-  const statusConfig = registration ? getStatusConfig(registration.status) : null;
+  const statusConfig = registration ? getStatusConfig(registration.status, registration.checkedIn) : null;
   const isConfirmed = registration?.status === REGISTRATION_STATUS.CONFIRMED;
 
   return (
