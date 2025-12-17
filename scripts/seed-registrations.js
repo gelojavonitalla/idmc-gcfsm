@@ -61,6 +61,12 @@ const PAYMENT_METHODS = {
   CASH: 'cash',
 };
 
+// Safe characters for short code (avoids confusing chars like 0/O, 1/l/I, 5/S, 2/Z, 8/B)
+const SAFE_SHORT_CODE_CHARS = 'ACDEFGHJKMNPQRTUVWXY34679';
+
+// Length of registration short code
+const SHORT_CODE_LENGTH = 6;
+
 // Sample data for generation
 const FIRST_NAMES = [
   'Juan', 'Maria', 'Jose', 'Ana', 'Pedro', 'Rosa', 'Carlos', 'Elena',
@@ -163,6 +169,21 @@ function randomDate(daysAgo) {
 }
 
 /**
+ * Generates a unique 6-character short code using safe characters.
+ * Safe characters exclude confusing ones like 0/O, 1/l/I, 5/S, 2/Z, 8/B.
+ *
+ * @returns {string} 6-character short code (e.g., "A7K3MN")
+ */
+function generateShortCode() {
+  let code = '';
+  for (let i = 0; i < SHORT_CODE_LENGTH; i += 1) {
+    const randomIndex = Math.floor(Math.random() * SAFE_SHORT_CODE_CHARS.length);
+    code += SAFE_SHORT_CODE_CHARS[randomIndex];
+  }
+  return code;
+}
+
+/**
  * Generates a single mock registration with all fields
  *
  * @param {number} index - Registration index
@@ -224,8 +245,9 @@ function generateRegistration(index) {
   const createdAt = randomDate(30);
   const updatedAt = new Date(createdAt.getTime() + randomInt(1, 48) * 60 * 60 * 1000);
 
+  const shortCode = generateShortCode();
   const registration = {
-    registrationId: `REG-2026-${String(index).padStart(4, '0')}`,
+    registrationId: `REG-2026-${shortCode}`,
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName,
@@ -289,7 +311,7 @@ function generateRegistration(index) {
  */
 const STATIC_REGISTRATIONS = [
   {
-    registrationId: 'REG-2026-0001',
+    registrationId: 'REG-2026-A7K3MN',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Juan',
@@ -315,7 +337,7 @@ const STATIC_REGISTRATIONS = [
     _updatedAt: new Date('2025-01-10T16:45:00'),
   },
   {
-    registrationId: 'REG-2026-0002',
+    registrationId: 'REG-2026-C9P4TH',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Maria',
@@ -341,7 +363,7 @@ const STATIC_REGISTRATIONS = [
     _updatedAt: new Date('2025-01-09T14:30:00'),
   },
   {
-    registrationId: 'REG-2026-0003',
+    registrationId: 'REG-2026-F6R7VJ',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Pedro',
@@ -367,7 +389,7 @@ const STATIC_REGISTRATIONS = [
     _updatedAt: new Date('2025-01-12T09:30:00'),
   },
   {
-    registrationId: 'REG-2026-0004',
+    registrationId: 'REG-2026-G4Y9WK',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Ana',
@@ -393,7 +415,7 @@ const STATIC_REGISTRATIONS = [
     _updatedAt: new Date('2025-01-11T16:20:00'),
   },
   {
-    registrationId: 'REG-2026-0005',
+    registrationId: 'REG-2026-H3Q6XM',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Carlos',
@@ -419,7 +441,7 @@ const STATIC_REGISTRATIONS = [
     _updatedAt: new Date('2025-01-13T11:00:00'),
   },
   {
-    registrationId: 'REG-2026-0006',
+    registrationId: 'REG-2026-J7N4CP',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Elena',
@@ -445,7 +467,7 @@ const STATIC_REGISTRATIONS = [
     _updatedAt: new Date('2025-01-10T09:00:00'),
   },
   {
-    registrationId: 'REG-2026-0007',
+    registrationId: 'REG-2026-K9T3DR',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Roberto',
@@ -471,7 +493,7 @@ const STATIC_REGISTRATIONS = [
     _updatedAt: new Date('2025-01-09T15:00:00'),
   },
   {
-    registrationId: 'REG-2026-0008',
+    registrationId: 'REG-2026-M6V7FE',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Sofia',
@@ -505,7 +527,7 @@ const STATIC_REGISTRATIONS = [
     _updatedAt: new Date('2025-01-06T18:30:00'),
   },
   {
-    registrationId: 'REG-2026-0009',
+    registrationId: 'REG-2026-N4W9GH',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Isabella',
@@ -531,7 +553,7 @@ const STATIC_REGISTRATIONS = [
     _updatedAt: new Date('2025-01-10T10:15:00'),
   },
   {
-    registrationId: 'REG-2026-0010',
+    registrationId: 'REG-2026-P7X3JK',
     conferenceId: CONFERENCE_ID,
     primaryAttendee: {
       firstName: 'Antonio',
