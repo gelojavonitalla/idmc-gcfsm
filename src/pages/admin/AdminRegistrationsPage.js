@@ -12,12 +12,13 @@ import {
   RegistrationDetailModal,
 } from '../../components/admin';
 import {
-  getAllRegistrations,
+  getRegistrations,
+  getRegistrationsCount,
+  searchRegistrations,
   updateRegistration,
 } from '../../services/maintenance';
 import { REGISTRATION_STATUS, WORKSHOP_CATEGORY_LABELS } from '../../constants';
 import {
-  extractShortCode,
   exportRegistrationsToCsv,
   exportWorkshopAttendanceToCsv,
   exportAllWorkshopsAttendanceToCsv,
@@ -29,9 +30,17 @@ import styles from './AdminRegistrationsPage.module.css';
  *
  * @returns {JSX.Element} The admin registrations page
  */
+/**
+ * Default page size for pagination
+ */
+const PAGE_SIZE = 50;
+
 function AdminRegistrationsPage() {
   const [registrations, setRegistrations] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -39,32 +48,113 @@ function AdminRegistrationsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [lastDoc, setLastDoc] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isSearchMode, setIsSearchMode] = useState(false);
   const [showWorkshopExportMenu, setShowWorkshopExportMenu] = useState(false);
 
   /**
-   * Fetches all registrations
+   * Fetches registrations with pagination
+   *
+   * @param {boolean} loadMore - Whether to load more or reset
    */
-  const fetchRegistrations = useCallback(async () => {
-    setIsLoading(true);
+  const fetchRegistrations = useCallback(async (loadMore = false) => {
+    if (loadMore) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
+      setLastDoc(null);
+    }
     setError(null);
 
     try {
-      const data = await getAllRegistrations();
-      setRegistrations(data);
+      const result = await getRegistrations({
+        pageSize: PAGE_SIZE,
+        lastDoc: loadMore ? lastDoc : null,
+        status: statusFilter,
+      });
+
+      if (loadMore) {
+        setRegistrations((prev) => [...prev, ...result.registrations]);
+      } else {
+        setRegistrations(result.registrations);
+      }
+
+      setLastDoc(result.lastDoc);
+      setHasMore(result.hasMore);
+
+      // Fetch total count for stats (only on initial load or filter change)
+      if (!loadMore) {
+        const countResult = await getRegistrationsCount({ status: statusFilter });
+        setTotalCount(countResult.filtered);
+      }
     } catch (fetchError) {
       console.error('Failed to fetch registrations:', fetchError);
       setError('Failed to load registrations. Please try again.');
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
-  }, []);
+  }, [lastDoc, statusFilter]);
 
   /**
-   * Fetch registrations on mount
+   * Handles loading more registrations
+   */
+  const handleLoadMore = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      fetchRegistrations(true);
+    }
+  }, [fetchRegistrations, isLoadingMore, hasMore]);
+
+  /**
+   * Fetch registrations on mount and when status filter changes
    */
   useEffect(() => {
-    fetchRegistrations();
-  }, [fetchRegistrations]);
+    if (!isSearchMode) {
+      fetchRegistrations(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter]);
+
+  /**
+   * Handles server-side search with debounce
+   */
+  useEffect(() => {
+    const trimmedQuery = searchQuery.trim();
+
+    // If search is cleared, exit search mode
+    if (!trimmedQuery) {
+      setIsSearchMode(false);
+      setSearchResults([]);
+      return;
+    }
+
+    // Minimum 2 characters to search
+    if (trimmedQuery.length < 2) {
+      return;
+    }
+
+    // Debounce the search
+    const debounceTimer = setTimeout(async () => {
+      setIsSearchMode(true);
+      setIsSearching(true);
+      setError(null);
+
+      try {
+        const results = await searchRegistrations(trimmedQuery, { status: statusFilter });
+        setSearchResults(results);
+      } catch (searchError) {
+        console.error('Search failed:', searchError);
+        setError('Search failed. Please try again.');
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery, statusFilter]);
 
   /**
    * Handles viewing registration details
@@ -137,20 +227,24 @@ function AdminRegistrationsPage() {
 
   /**
    * Handles exporting registrations to CSV
-   * Exports filtered results if filters are active, otherwise all registrations
+   * Exports current view (search results or loaded registrations)
    */
   const handleExport = async () => {
     setIsExporting(true);
     setError(null);
 
     try {
-      const dataToExport = getFilteredRegistrations();
+      const dataToExport = isSearchMode ? searchResults : registrations;
       if (dataToExport.length === 0) {
         setError('No registrations to export.');
         return;
       }
 
-      const prefix = statusFilter !== 'all' ? `registrations-${statusFilter}` : 'registrations';
+      const prefix = isSearchMode
+        ? `registrations-search-${searchQuery.replace(/[^a-zA-Z0-9]/g, '_')}`
+        : statusFilter !== 'all'
+          ? `registrations-${statusFilter}`
+          : 'registrations';
       exportRegistrationsToCsv(dataToExport, prefix);
     } catch (exportError) {
       console.error('Failed to export registrations:', exportError);
@@ -185,12 +279,13 @@ function AdminRegistrationsPage() {
   };
 
   /**
-   * Gets registration statistics
+   * Gets registration statistics from loaded data
+   * Note: These stats are calculated from currently loaded registrations
    *
    * @returns {Object} Statistics object
    */
   const getStats = () => {
-    const total = registrations.length;
+    const loaded = registrations.length;
     const confirmed = registrations.filter(
       (r) => r.status === REGISTRATION_STATUS.CONFIRMED
     ).length;
@@ -204,59 +299,38 @@ function AdminRegistrationsPage() {
       (r) => r.status === REGISTRATION_STATUS.CANCELLED
     ).length;
 
-    // Calculate total revenue from confirmed registrations
+    // Calculate total revenue from confirmed registrations (loaded data only)
     const totalRevenue = registrations
       .filter((r) => r.status === REGISTRATION_STATUS.CONFIRMED)
       .reduce((sum, r) => sum + (r.totalAmount || 0), 0);
 
-    return { total, confirmed, pendingVerification, pendingPayment, cancelled, totalRevenue };
+    return {
+      total: statusFilter === 'all' ? totalCount : loaded,
+      loaded,
+      confirmed,
+      pendingVerification,
+      pendingPayment,
+      cancelled,
+      totalRevenue,
+    };
   };
 
   /**
-   * Filters registrations based on search query and status filter
+   * Gets the registrations to display based on current mode
+   * In search mode, returns server-side search results
+   * Otherwise returns paginated registrations
    *
-   * @returns {Array} Filtered registrations
+   * @returns {Array} Registrations to display
    */
-  const getFilteredRegistrations = () => {
-    return registrations.filter((registration) => {
-      // Status filter
-      if (statusFilter !== 'all' && registration.status !== statusFilter) {
-        return false;
-      }
-
-      // Search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase().trim();
-        const name =
-          `${registration.primaryAttendee?.firstName || registration.firstName || ''} ${registration.primaryAttendee?.lastName || registration.lastName || ''}`.toLowerCase();
-        const email = (
-          registration.primaryAttendee?.email ||
-          registration.email ||
-          ''
-        ).toLowerCase();
-        const phone = (
-          registration.primaryAttendee?.cellphone ||
-          registration.phone ||
-          ''
-        ).toLowerCase();
-        const id = (registration.id || '').toLowerCase();
-        const shortCode = (extractShortCode(registration.id) || registration.shortCode || '').toLowerCase();
-
-        return (
-          name.includes(query) ||
-          email.includes(query) ||
-          phone.includes(query) ||
-          id.includes(query) ||
-          shortCode.includes(query)
-        );
-      }
-
-      return true;
-    });
+  const getDisplayRegistrations = () => {
+    if (isSearchMode) {
+      return searchResults;
+    }
+    return registrations;
   };
 
   const stats = getStats();
-  const filteredRegistrations = getFilteredRegistrations();
+  const displayRegistrations = getDisplayRegistrations();
 
   return (
     <AdminLayout title="Registrations Management">
@@ -379,7 +453,7 @@ function AdminRegistrationsPage() {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Search by code, name, email, or phone..."
+            placeholder="Search all records by code, name, email, or phone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -416,19 +490,29 @@ function AdminRegistrationsPage() {
       </div>
 
       {/* Results Count */}
-      {(searchQuery || statusFilter !== 'all') && (
+      {isSearchMode && (
         <div className={styles.resultsCount}>
-          Showing {filteredRegistrations.length} of {registrations.length}{' '}
-          registrations
+          {isSearching ? (
+            'Searching...'
+          ) : (
+            <>
+              Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for &quot;{searchQuery}&quot;
+            </>
+          )}
         </div>
       )}
 
       {/* Registrations Table */}
       <RegistrationsTable
-        registrations={filteredRegistrations}
+        registrations={displayRegistrations}
         onViewDetails={handleViewDetails}
         onUpdateStatus={handleUpdateStatus}
-        isLoading={isLoading}
+        isLoading={isLoading || isSearching}
+        hasMore={hasMore && !isSearchMode}
+        onLoadMore={handleLoadMore}
+        isLoadingMore={isLoadingMore}
+        totalCount={isSearchMode ? searchResults.length : totalCount}
+        loadedCount={isSearchMode ? searchResults.length : registrations.length}
       />
 
       {/* Registration Detail Modal */}

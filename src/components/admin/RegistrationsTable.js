@@ -119,6 +119,11 @@ function getAttendeeCount(registration) {
  * @param {Function} props.onViewDetails - Callback when view details is clicked
  * @param {Function} props.onUpdateStatus - Callback when status update is requested
  * @param {boolean} props.isLoading - Loading state
+ * @param {boolean} props.hasMore - Whether there are more registrations to load
+ * @param {Function} props.onLoadMore - Callback to load more registrations
+ * @param {boolean} props.isLoadingMore - Loading more state
+ * @param {number} props.totalCount - Total count of registrations
+ * @param {number} props.loadedCount - Number of loaded registrations
  * @returns {JSX.Element} The registrations table
  */
 function RegistrationsTable({
@@ -126,6 +131,11 @@ function RegistrationsTable({
   onViewDetails,
   onUpdateStatus,
   isLoading,
+  hasMore,
+  onLoadMore,
+  isLoadingMore,
+  totalCount,
+  loadedCount,
 }) {
   if (isLoading) {
     return (
@@ -250,6 +260,32 @@ function RegistrationsTable({
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Info and Load More */}
+      <div className={styles.paginationFooter}>
+        <div className={styles.paginationInfo}>
+          Showing {registrations.length} of {totalCount} registrations
+          {loadedCount > 0 && loadedCount < totalCount && (
+            <span className={styles.loadedInfo}> ({loadedCount} loaded)</span>
+          )}
+        </div>
+        {hasMore && (
+          <button
+            className={styles.loadMoreButton}
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+          >
+            {isLoadingMore ? (
+              <>
+                <span className={styles.loadingSpinner} />
+                Loading...
+              </>
+            ) : (
+              'Load More'
+            )}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -276,11 +312,21 @@ RegistrationsTable.propTypes = {
   onViewDetails: PropTypes.func.isRequired,
   onUpdateStatus: PropTypes.func.isRequired,
   isLoading: PropTypes.bool,
+  hasMore: PropTypes.bool,
+  onLoadMore: PropTypes.func,
+  isLoadingMore: PropTypes.bool,
+  totalCount: PropTypes.number,
+  loadedCount: PropTypes.number,
 };
 
 RegistrationsTable.defaultProps = {
   registrations: [],
   isLoading: false,
+  hasMore: false,
+  onLoadMore: () => {},
+  isLoadingMore: false,
+  totalCount: 0,
+  loadedCount: 0,
 };
 
 export default RegistrationsTable;

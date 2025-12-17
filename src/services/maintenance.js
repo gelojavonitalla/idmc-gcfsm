@@ -17,6 +17,10 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  limit,
+  startAfter,
+  where,
+  getCountFromServer,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { COLLECTIONS } from '../constants';
@@ -294,6 +298,230 @@ export async function getAllRegistrations() {
     id: docSnapshot.id,
     ...docSnapshot.data(),
   }));
+}
+
+/**
+ * Fetches registrations with pagination
+ *
+ * @param {Object} options - Query options
+ * @param {number} [options.pageSize=50] - Number of registrations per page
+ * @param {Object} [options.lastDoc] - Last document for pagination cursor
+ * @param {string} [options.status] - Filter by registration status
+ * @returns {Promise<Object>} { registrations, lastDoc, hasMore }
+ */
+export async function getRegistrations(options = {}) {
+  try {
+    const { pageSize = 50, lastDoc, status } = options;
+
+    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+    const constraints = [orderBy('createdAt', 'desc'), limit(pageSize + 1)];
+
+    // Add status filter if provided
+    if (status && status !== 'all') {
+      constraints.unshift(where('status', '==', status));
+    }
+
+    // Add pagination cursor
+    if (lastDoc) {
+      constraints.push(startAfter(lastDoc));
+    }
+
+    const registrationsQuery = query(registrationsRef, ...constraints);
+    const snapshot = await getDocs(registrationsQuery);
+
+    const docs = snapshot.docs;
+    const hasMore = docs.length > pageSize;
+
+    // Remove the extra document used to check for more
+    const registrations = (hasMore ? docs.slice(0, -1) : docs).map((docSnapshot) => ({
+      id: docSnapshot.id,
+      ...docSnapshot.data(),
+      _doc: docSnapshot, // Keep reference for pagination cursor
+    }));
+
+    return {
+      registrations,
+      lastDoc: registrations.length > 0 ? registrations[registrations.length - 1]._doc : null,
+      hasMore,
+    };
+  } catch (error) {
+    console.error('Failed to fetch registrations:', error);
+    return { registrations: [], lastDoc: null, hasMore: false };
+  }
+}
+
+/**
+ * Gets the total count of registrations with optional status filter
+ *
+ * @param {Object} filters - Optional filters
+ * @param {string} [filters.status] - Filter by registration status
+ * @returns {Promise<Object>} Count object with total and by-status breakdown
+ */
+export async function getRegistrationsCount(filters = {}) {
+  try {
+    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+
+    // Get total count
+    const totalSnapshot = await getCountFromServer(registrationsRef);
+    const total = totalSnapshot.data().count;
+
+    // If a specific status filter is requested, get that count too
+    if (filters.status && filters.status !== 'all') {
+      const statusQuery = query(registrationsRef, where('status', '==', filters.status));
+      const statusSnapshot = await getCountFromServer(statusQuery);
+      return {
+        total,
+        filtered: statusSnapshot.data().count,
+      };
+    }
+
+    return { total, filtered: total };
+  } catch (error) {
+    console.error('Failed to get registrations count:', error);
+    return { total: 0, filtered: 0 };
+  }
+}
+
+/**
+ * Searches registrations by various criteria (server-side search).
+ * Searches across: registration ID, short code, email, phone, and name.
+ *
+ * @param {string} searchQuery - Search query string
+ * @param {Object} options - Search options
+ * @param {string} [options.status] - Optional status filter
+ * @returns {Promise<Array>} Array of matching registrations
+ */
+export async function searchRegistrations(searchQuery, options = {}) {
+  if (!searchQuery || searchQuery.trim().length < 2) {
+    return [];
+  }
+
+  const query_str = searchQuery.trim();
+  const queryLower = query_str.toLowerCase();
+  const queryUpper = query_str.toUpperCase();
+  const results = new Map(); // Use Map to deduplicate by ID
+
+  try {
+    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+
+    // Build base constraints
+    const baseConstraints = [];
+    if (options.status && options.status !== 'all') {
+      baseConstraints.push(where('status', '==', options.status));
+    }
+
+    // Strategy 1: Search by exact short code (6 chars)
+    if (query_str.length === 6 && /^[A-Za-z0-9]+$/.test(query_str)) {
+      const shortCodeQuery = query(
+        registrationsRef,
+        where('shortCode', '==', queryUpper),
+        ...baseConstraints
+      );
+      const snapshot = await getDocs(shortCodeQuery);
+      snapshot.docs.forEach((docSnap) => {
+        results.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
+      });
+    }
+
+    // Strategy 2: Search by short code suffix (4 chars)
+    if (query_str.length === 4 && /^[A-Za-z0-9]+$/.test(query_str)) {
+      const suffixQuery = query(
+        registrationsRef,
+        where('shortCodeSuffix', '==', queryUpper),
+        ...baseConstraints
+      );
+      const snapshot = await getDocs(suffixQuery);
+      snapshot.docs.forEach((docSnap) => {
+        results.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
+      });
+    }
+
+    // Strategy 3: Search by exact email
+    if (query_str.includes('@')) {
+      const emailQuery = query(
+        registrationsRef,
+        where('primaryAttendee.email', '==', queryLower),
+        ...baseConstraints
+      );
+      const snapshot = await getDocs(emailQuery);
+      snapshot.docs.forEach((docSnap) => {
+        results.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
+      });
+    }
+
+    // Strategy 4: Search by phone number
+    const cleanPhone = query_str.replace(/[\s-]/g, '');
+    if (/^\d{10,13}$/.test(cleanPhone) || /^(\+63|0)?9\d{9}$/.test(cleanPhone)) {
+      const phoneQuery = query(
+        registrationsRef,
+        where('primaryAttendee.cellphone', '==', cleanPhone),
+        ...baseConstraints
+      );
+      const snapshot = await getDocs(phoneQuery);
+      snapshot.docs.forEach((docSnap) => {
+        results.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
+      });
+    }
+
+    // Strategy 5: Search by registration ID (exact match)
+    if (queryUpper.startsWith('REG-') || query_str.length >= 4) {
+      const possibleId = queryUpper.startsWith('REG-') ? queryUpper : `REG-2026-${queryUpper}`;
+      const docRef = doc(db, COLLECTIONS.REGISTRATIONS, possibleId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (!options.status || options.status === 'all' || data.status === options.status) {
+          results.set(docSnap.id, { id: docSnap.id, ...data });
+        }
+      }
+    }
+
+    // Strategy 6: For short queries (2-6 chars), do a broader search with client-side filtering
+    // This helps find partial matches on names and codes
+    if (query_str.length >= 2 && query_str.length <= 10 && results.size < 20) {
+      const broadQuery = query(
+        registrationsRef,
+        orderBy('createdAt', 'desc'),
+        limit(500),
+        ...baseConstraints
+      );
+      const snapshot = await getDocs(broadQuery);
+
+      snapshot.docs.forEach((docSnap) => {
+        if (results.has(docSnap.id)) {
+          return; // Skip already found
+        }
+
+        const data = docSnap.data();
+        const firstName = (data.primaryAttendee?.firstName || '').toLowerCase();
+        const lastName = (data.primaryAttendee?.lastName || '').toLowerCase();
+        const email = (data.primaryAttendee?.email || '').toLowerCase();
+        const shortCode = (data.shortCode || '').toLowerCase();
+        const regId = (data.registrationId || docSnap.id).toLowerCase();
+
+        // Check if any field contains the search query
+        if (
+          firstName.includes(queryLower) ||
+          lastName.includes(queryLower) ||
+          email.includes(queryLower) ||
+          shortCode.includes(queryLower) ||
+          regId.includes(queryLower)
+        ) {
+          results.set(docSnap.id, { id: docSnap.id, ...data });
+        }
+      });
+    }
+
+    // Convert Map to array and sort by createdAt desc
+    return Array.from(results.values()).sort((a, b) => {
+      const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+      const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+      return dateB - dateA;
+    });
+  } catch (error) {
+    console.error('Failed to search registrations:', error);
+    return [];
+  }
 }
 
 /**
