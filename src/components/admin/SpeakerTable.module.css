@@ -86,6 +86,54 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+}
+
+/* Drag Handle */
+.dragHandle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: var(--color-text-muted);
+  transition: color 0.2s ease;
+}
+
+.dragHandle:hover {
+  color: var(--color-text-secondary);
+}
+
+.dragHandle svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Drag and Drop States */
+.table tbody tr[draggable="true"] {
+  cursor: grab;
+  user-select: none;
+}
+
+.table tbody tr[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.dragging {
+  opacity: 0.5;
+  background: var(--color-background-secondary);
+}
+
+.dragOver {
+  background: #e0f2fe !important;
+  border-top: 2px solid var(--color-primary);
+}
+
+.reordering {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .speakerInfo {

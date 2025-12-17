@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { SessionCard, SessionDetailModal, TypeFilter } from '../components/schedule';
 import { getPublishedSessions } from '../services/sessions';
 import { getPublishedSpeakers } from '../services/speakers';
+import { downloadSchedulePdf } from '../utils';
 import {
   SCHEDULE,
   CONFERENCE,
@@ -139,6 +140,18 @@ function SchedulePage() {
     setSelectedType(type);
   }, []);
 
+  /**
+   * Handles PDF download
+   */
+  const handleDownloadPdf = useCallback(() => {
+    downloadSchedulePdf(sessions, {
+      title: `IDMC ${CONFERENCE.YEAR}`,
+      date: 'March 28, 2026',
+      venue: 'GCF South Metro',
+      filename: `idmc-${CONFERENCE.YEAR}-schedule`,
+    });
+  }, [sessions]);
+
   return (
     <div className={styles.page}>
       {/* Hero Section */}
@@ -160,6 +173,29 @@ function SchedulePage() {
               selectedType={selectedType}
               onChange={handleTypeChange}
             />
+            <button
+              className={styles.downloadButton}
+              onClick={handleDownloadPdf}
+              disabled={isLoading || sessions.length === 0}
+              title="Download schedule as PDF"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7,10 12,15 17,10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Download PDF
+            </button>
           </div>
 
           {/* Loading State */}

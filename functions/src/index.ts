@@ -15,6 +15,7 @@ import {getAuth} from "firebase-admin/auth";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {SecretManagerServiceClient} from "@google-cloud/secret-manager";
 import * as sgMail from "@sendgrid/mail";
+import * as QRCode from "qrcode";
 
 // Initialize Firebase Admin SDK
 initializeApp();
@@ -32,6 +33,30 @@ const appUrl = defineString("APP_URL", {default: ""});
 
 // Flag to enable/disable SendGrid (set to "true" to use SendGrid)
 const useSendGrid = defineString("USE_SENDGRID", {default: "false"});
+
+/**
+ * Generates a QR code as a base64 data URL
+ *
+ * @param {string} data - The data to encode in the QR code
+ * @returns {Promise<string>} Base64 data URL of the QR code image
+ */
+async function generateQRCodeDataUrl(data: string): Promise<string> {
+  try {
+    const dataUrl = await QRCode.toDataURL(data, {
+      width: 200,
+      margin: 2,
+      color: {
+        dark: "#1f2937",
+        light: "#ffffff",
+      },
+      errorCorrectionLevel: "M",
+    });
+    return dataUrl;
+  } catch (error) {
+    logger.error("Failed to generate QR code:", error);
+    throw error;
+  }
+}
 
 /**
  * Retrieves SendGrid API key from Secret Manager
@@ -589,6 +614,7 @@ function generateRegistrationConfirmationHtml(
  *
  * @param {Object} registration - Registration data
  * @param {Object} settings - Event settings data
+ * @param {string} qrCodeDataUrl - Base64 data URL of the QR code image
  * @return {string} HTML string for the email
  */
 function generateTicketEmailHtml(
@@ -617,7 +643,8 @@ function generateTicketEmailHtml(
       name: string;
       address: string;
     };
-  }
+  },
+  qrCodeDataUrl?: string
 ): string {
   const {
     registrationId,
@@ -634,6 +661,15 @@ function generateTicketEmailHtml(
   });
 
   const attendeeCount = 1 + (additionalAttendees?.length || 0);
+
+  // Generate QR code section HTML if data URL is provided
+  const qrCodeSection = qrCodeDataUrl ? `
+                    <div style="margin: 20px 0;">
+                      <img src="${qrCodeDataUrl}" alt="QR Code for Check-in" width="180" height="180" style="display: block; margin: 0 auto; border: 4px solid #f3f4f6; border-radius: 8px;" />
+                      <p style="margin: 8px 0 0; color: #6b7280; font-size: 12px;">
+                        Scan at check-in
+                      </p>
+                    </div>` : "";
 
   return `
 <!DOCTYPE html>
@@ -673,10 +709,11 @@ function generateTicketEmailHtml(
                 Great news! Your payment has been confirmed and your registration for <strong>${settings.title}</strong> is now complete.
               </p>
 
-              <!-- Ticket Box -->
+              <!-- Ticket Box with QR Code -->
               <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 24px; border: 2px dashed #e5e7eb; border-radius: 12px;">
                 <tr>
                   <td style="padding: 24px; text-align: center;">
+                    ${qrCodeSection}
                     <p style="margin: 0 0 8px; color: #6b7280; font-size: 12px; text-transform: uppercase;">
                       Registration ID
                     </p>
@@ -820,6 +857,16 @@ async function sendTicketEmail(
     return;
   }
 
+  // Generate QR code for the ticket
+  let qrCodeDataUrl: string | undefined;
+  try {
+    const qrData = registration.qrCodeData || registration.registrationId;
+    qrCodeDataUrl = await generateQRCodeDataUrl(qrData);
+    logger.info(`Generated QR code for registration: ${registration.registrationId}`);
+  } catch (qrError) {
+    logger.warn("Failed to generate QR code, sending email without it:", qrError);
+  }
+
   const msg = {
     to,
     from: {
@@ -827,7 +874,7 @@ async function sendTicketEmail(
       name: senderName.value() || "IDMC Registration",
     },
     subject: `Your IDMC 2026 Ticket - ${registration.registrationId}`,
-    html: generateTicketEmailHtml(registration, settings),
+    html: generateTicketEmailHtml(registration, settings, qrCodeDataUrl),
   };
 
   await sgMail.send(msg);
