@@ -38,7 +38,7 @@ const useSendGrid = defineString("USE_SENDGRID", {default: "false"});
  * Generates a QR code as a base64 data URL
  *
  * @param {string} data - The data to encode in the QR code
- * @returns {Promise<string>} Base64 data URL of the QR code image
+ * @return {Promise<string>} Base64 data URL of the QR code image
  */
 async function generateQRCodeDataUrl(data: string): Promise<string> {
   try {
