@@ -511,6 +511,12 @@ export const PAYMENT_METHODS = {
 export const SAFE_SHORT_CODE_CHARS = 'ACDEFGHJKMNPQRTUVWXY34679';
 
 /**
+ * Length of the registration short code.
+ * 6 characters provides ~244 million unique combinations (25^6).
+ */
+export const SHORT_CODE_LENGTH = 6;
+
+/**
  * Payment information for registration
  */
 export const PAYMENT_INFO = {
