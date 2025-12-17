@@ -43,6 +43,7 @@ export const ADMIN_ROUTES = {
   USERS: '/admin/users',
   ACTIVITY: '/admin/activity',
   VENUE: '/admin/venue',
+  INQUIRIES: '/admin/inquiries',
 };
 
 /**
@@ -171,6 +172,7 @@ export const ADMIN_NAV_GROUPS = [
     items: [
       { label: 'Registrations', path: ADMIN_ROUTES.REGISTRATIONS, icon: 'people' },
       { label: 'Check-In', path: ADMIN_ROUTES.CHECKIN, icon: 'checkin' },
+      { label: 'Inquiries', path: ADMIN_ROUTES.INQUIRIES, icon: 'mail' },
     ],
   },
   {

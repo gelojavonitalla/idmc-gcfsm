@@ -188,3 +188,186 @@ export function exportRegistrationsToCsv(registrations, filenamePrefix = 'regist
 
   return { count: registrations.length, filename };
 }
+
+/**
+ * Converts workshop attendance data to CSV string
+ *
+ * @param {Array} registrations - Array of registration objects
+ * @param {string} workshopCategory - Workshop category to filter by
+ * @returns {string} CSV formatted string
+ */
+export function convertWorkshopAttendanceToCsv(registrations, workshopCategory) {
+  // Filter registrations by workshop
+  const workshopAttendees = registrations.filter(
+    (reg) => reg.workshopSelection === workshopCategory &&
+      reg.status === REGISTRATION_STATUS.CONFIRMED
+  );
+
+  const workshopName = WORKSHOP_CATEGORY_LABELS[workshopCategory] || workshopCategory;
+
+  // Define CSV headers
+  const headers = [
+    'No.',
+    'First Name',
+    'Last Name',
+    'Email',
+    'Phone',
+    'Church',
+    'Ministry Role',
+    'Checked In',
+    'Registration Code',
+  ];
+
+  // Convert each attendee to a CSV row
+  const rows = workshopAttendees.map((reg, index) => {
+    const firstName = reg.primaryAttendee?.firstName || reg.firstName || '';
+    const lastName = reg.primaryAttendee?.lastName || reg.lastName || '';
+    const email = reg.primaryAttendee?.email || reg.email || '';
+    const phone = reg.primaryAttendee?.cellphone || reg.primaryAttendee?.phone || reg.phone || '';
+    const church = reg.primaryAttendee?.church || reg.church || '';
+    const ministryRole = reg.primaryAttendee?.ministryRole || reg.ministryRole || '';
+
+    return [
+      index + 1,
+      firstName,
+      lastName,
+      email,
+      phone,
+      church,
+      ministryRole,
+      reg.checkedIn ? 'Yes' : 'No',
+      reg.shortCode || '',
+    ].map(escapeCsvValue);
+  });
+
+  // Add header with workshop name
+  const titleRow = [`Workshop: ${workshopName}`, '', '', '', '', '', '', '', ''];
+  const countRow = [`Total Attendees: ${workshopAttendees.length}`, '', '', '', '', '', '', '', ''];
+  const emptyRow = ['', '', '', '', '', '', '', '', ''];
+
+  // Combine all rows
+  const csvContent = [
+    titleRow.join(','),
+    countRow.join(','),
+    emptyRow.join(','),
+    headers.map(escapeCsvValue).join(','),
+    ...rows.map((row) => row.join(',')),
+  ].join('\n');
+
+  return csvContent;
+}
+
+/**
+ * Exports workshop attendance to a CSV file
+ *
+ * @param {Array} registrations - Array of registration objects
+ * @param {string} workshopCategory - Workshop category to export
+ */
+export function exportWorkshopAttendanceToCsv(registrations, workshopCategory) {
+  if (!registrations || registrations.length === 0) {
+    throw new Error('No registrations to process');
+  }
+
+  const csvContent = convertWorkshopAttendanceToCsv(registrations, workshopCategory);
+  const workshopName = WORKSHOP_CATEGORY_LABELS[workshopCategory] || workshopCategory;
+  const safeName = workshopName.toLowerCase().replace(/\s+/g, '-');
+  const date = new Date().toISOString().split('T')[0];
+  const filename = `workshop-${safeName}-attendance-${date}.csv`;
+
+  downloadCsv(csvContent, filename);
+
+  const attendeeCount = registrations.filter(
+    (reg) => reg.workshopSelection === workshopCategory &&
+      reg.status === REGISTRATION_STATUS.CONFIRMED
+  ).length;
+
+  return { count: attendeeCount, filename };
+}
+
+/**
+ * Exports all workshops attendance to a single CSV file
+ *
+ * @param {Array} registrations - Array of registration objects
+ */
+export function exportAllWorkshopsAttendanceToCsv(registrations) {
+  if (!registrations || registrations.length === 0) {
+    throw new Error('No registrations to process');
+  }
+
+  // Get confirmed registrations only
+  const confirmedRegs = registrations.filter(
+    (reg) => reg.status === REGISTRATION_STATUS.CONFIRMED
+  );
+
+  // Group by workshop
+  const workshopGroups = {};
+  Object.keys(WORKSHOP_CATEGORY_LABELS).forEach((category) => {
+    workshopGroups[category] = confirmedRegs.filter(
+      (reg) => reg.workshopSelection === category
+    );
+  });
+
+  // Define headers
+  const headers = [
+    'Workshop',
+    'No.',
+    'First Name',
+    'Last Name',
+    'Email',
+    'Phone',
+    'Church',
+    'Ministry Role',
+    'Checked In',
+    'Registration Code',
+  ];
+
+  // Build all rows
+  const allRows = [];
+
+  Object.entries(WORKSHOP_CATEGORY_LABELS).forEach(([category, workshopName]) => {
+    const attendees = workshopGroups[category] || [];
+
+    if (attendees.length > 0) {
+      // Add workshop section header
+      allRows.push([`--- ${workshopName} (${attendees.length} attendees) ---`, '', '', '', '', '', '', '', '', '']);
+
+      attendees.forEach((reg, index) => {
+        const firstName = reg.primaryAttendee?.firstName || reg.firstName || '';
+        const lastName = reg.primaryAttendee?.lastName || reg.lastName || '';
+        const email = reg.primaryAttendee?.email || reg.email || '';
+        const phone = reg.primaryAttendee?.cellphone || reg.primaryAttendee?.phone || reg.phone || '';
+        const church = reg.primaryAttendee?.church || reg.church || '';
+        const ministryRole = reg.primaryAttendee?.ministryRole || reg.ministryRole || '';
+
+        allRows.push([
+          workshopName,
+          index + 1,
+          firstName,
+          lastName,
+          email,
+          phone,
+          church,
+          ministryRole,
+          reg.checkedIn ? 'Yes' : 'No',
+          reg.shortCode || '',
+        ].map(escapeCsvValue));
+      });
+
+      // Add empty row between workshops
+      allRows.push(['', '', '', '', '', '', '', '', '', '']);
+    }
+  });
+
+  // Combine headers and rows
+  const csvContent = [
+    headers.map(escapeCsvValue).join(','),
+    ...allRows.map((row) => row.join(',')),
+  ].join('\n');
+
+  const date = new Date().toISOString().split('T')[0];
+  const filename = `all-workshops-attendance-${date}.csv`;
+
+  downloadCsv(csvContent, filename);
+
+  return { count: confirmedRegs.length, filename };
+}

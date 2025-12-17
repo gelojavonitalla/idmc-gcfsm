@@ -32,6 +32,7 @@ function AdminSpeakersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSpeaker, setEditingSpeaker] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isReordering, setIsReordering] = useState(false);
 
   /**
    * Fetches all speakers
@@ -132,6 +133,35 @@ function AdminSpeakersPage() {
       setError('Failed to update speaker status. Please try again.');
     }
   };
+
+  /**
+   * Handles reordering speakers via drag and drop
+   *
+   * @param {Array} newOrder - Speakers in new order
+   */
+  const handleReorder = useCallback(async (newOrder) => {
+    setIsReordering(true);
+    setError(null);
+
+    // Optimistically update UI
+    const previousSpeakers = speakers;
+    setSpeakers(newOrder);
+
+    try {
+      // Update each speaker's order in Firestore
+      const updatePromises = newOrder.map((speaker, index) =>
+        updateSpeaker(speaker.id, { order: index + 1 })
+      );
+      await Promise.all(updatePromises);
+    } catch (err) {
+      console.error('Failed to reorder speakers:', err);
+      setError('Failed to save new order. Please try again.');
+      // Rollback on error
+      setSpeakers(previousSpeakers);
+    } finally {
+      setIsReordering(false);
+    }
+  }, [speakers]);
 
   /**
    * Gets speaker statistics
@@ -259,7 +289,9 @@ function AdminSpeakersPage() {
         onEdit={handleEditSpeaker}
         onDelete={handleDeleteSpeaker}
         onToggleStatus={handleToggleStatus}
+        onReorder={!searchQuery ? handleReorder : null}
         isLoading={isLoading}
+        isReordering={isReordering}
       />
 
       {/* Speaker Form Modal */}

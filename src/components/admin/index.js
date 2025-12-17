@@ -28,3 +28,5 @@ export { default as DownloadsTable } from './DownloadsTable';
 export { default as DownloadFormModal } from './DownloadFormModal';
 export { default as RegistrationsTable } from './RegistrationsTable';
 export { default as RegistrationDetailModal } from './RegistrationDetailModal';
+export { default as InquiriesTable } from './InquiriesTable';
+export { default as InquiryDetailModal } from './InquiryDetailModal';

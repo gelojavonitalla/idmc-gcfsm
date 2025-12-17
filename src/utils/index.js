@@ -26,4 +26,12 @@ export {
   convertRegistrationsToCsv,
   downloadCsv,
   exportRegistrationsToCsv,
+  convertWorkshopAttendanceToCsv,
+  exportWorkshopAttendanceToCsv,
+  exportAllWorkshopsAttendanceToCsv,
 } from './exportCsv';
+
+export {
+  generateSchedulePdf,
+  downloadSchedulePdf,
+} from './exportPdf';

@@ -1,5 +1,5 @@
 /**
- * AdminRegistrationsPage Styles
+ * AdminInquiriesPage Styles
  */
 
 .header {
@@ -59,117 +59,6 @@
   height: 16px;
 }
 
-.exportButton {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--spacing-4);
-  background: var(--color-primary);
-  border: none;
-  border-radius: var(--radius-md);
-  color: white;
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.exportButton:hover:not(:disabled) {
-  background: var(--color-primary-dark);
-}
-
-.exportButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.exportButton svg {
-  width: 16px;
-  height: 16px;
-}
-
-/* Workshop Export Dropdown */
-.dropdownWrapper {
-  position: relative;
-}
-
-.workshopExportButton {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--spacing-4);
-  background: white;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.workshopExportButton:hover:not(:disabled) {
-  background: var(--color-background-secondary);
-  color: var(--color-text);
-}
-
-.workshopExportButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.workshopExportButton svg {
-  width: 16px;
-  height: 16px;
-}
-
-.workshopExportButton .chevron {
-  width: 12px;
-  height: 12px;
-  margin-left: var(--spacing-1);
-}
-
-.dropdownMenu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: var(--spacing-1);
-  min-width: 220px;
-  background: white;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  z-index: 100;
-  overflow: hidden;
-}
-
-.dropdownItem {
-  display: block;
-  width: 100%;
-  padding: var(--spacing-2) var(--spacing-4);
-  background: none;
-  border: none;
-  text-align: left;
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.dropdownItem:hover {
-  background: var(--color-background-secondary);
-}
-
-.dropdownItem:first-child {
-  font-weight: 500;
-}
-
-.dropdownDivider {
-  height: 1px;
-  background: var(--color-border);
-  margin: var(--spacing-1) 0;
-}
-
 .errorBanner {
   display: flex;
   align-items: center;
@@ -193,10 +82,9 @@
   line-height: 1;
 }
 
-/* Stats Grid */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--spacing-4);
   margin-bottom: var(--spacing-6);
 }
@@ -221,24 +109,20 @@
   color: var(--color-text-secondary);
 }
 
-.statConfirmed .statValue {
-  color: #10b981;
+.statNew .statValue {
+  color: #d97706;
 }
 
-.statPending .statValue {
-  color: #f59e0b;
+.statRead .statValue {
+  color: #0284c7;
 }
 
-.statUnpaid .statValue {
-  color: #ef4444;
+.statReplied .statValue {
+  color: #16a34a;
 }
 
-.statRevenue .statValue {
-  color: var(--color-primary);
-}
-
-/* Filters Row */
-.filtersRow {
+/* Filter Container */
+.filterContainer {
   display: flex;
   gap: var(--spacing-4);
   margin-bottom: var(--spacing-4);
@@ -250,8 +134,7 @@
   display: flex;
   align-items: center;
   flex: 1;
-  min-width: 280px;
-  max-width: 500px;
+  min-width: 250px;
 }
 
 .searchWrapper svg {
@@ -302,12 +185,7 @@
   color: var(--color-text);
 }
 
-.filterWrapper {
-  display: flex;
-  align-items: center;
-}
-
-.statusFilter {
+.statusSelect {
   padding: var(--spacing-2) var(--spacing-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -316,27 +194,16 @@
   background: white;
   cursor: pointer;
   min-width: 180px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.statusFilter:focus {
+.statusSelect:focus {
   outline: none;
   border-color: var(--color-primary);
-}
-
-/* Results Count */
-.resultsCount {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-4);
+  box-shadow: 0 0 0 3px rgba(6, 184, 75, 0.1);
 }
 
 /* Responsive */
-@media (max-width: 1200px) {
-  .statsGrid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
@@ -347,42 +214,31 @@
     flex-direction: column;
   }
 
-  .exportButton,
-  .workshopExportButton,
   .refreshButton {
     width: 100%;
     justify-content: center;
-  }
-
-  .dropdownWrapper {
-    width: 100%;
-  }
-
-  .dropdownMenu {
-    left: 0;
-    right: 0;
   }
 
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .filtersRow {
+  .filterContainer {
     flex-direction: column;
   }
 
   .searchWrapper {
-    max-width: 100%;
+    min-width: 100%;
   }
 
-  .statusFilter {
+  .statusSelect {
     width: 100%;
   }
 }
 
 @media (max-width: 480px) {
   .statsGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--spacing-3);
   }
 
