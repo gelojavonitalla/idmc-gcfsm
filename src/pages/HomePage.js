@@ -119,9 +119,17 @@ function HomePage() {
                   <div className={styles.speakersGrid}>
                     {plenarySpeakers.map((speaker) => (
                       <div key={speaker.id} className={styles.speakerCard}>
-                        <div className={styles.speakerImagePlaceholder}>
-                          <span>{speaker.name.charAt(0)}</span>
-                        </div>
+                        {speaker.photoUrl ? (
+                          <img
+                            src={speaker.photoUrl}
+                            alt={speaker.name}
+                            className={styles.speakerImage}
+                          />
+                        ) : (
+                          <div className={styles.speakerImagePlaceholder}>
+                            <span>{speaker.name.charAt(0)}</span>
+                          </div>
+                        )}
                         <h4 className={styles.speakerName}>{speaker.name}</h4>
                         <p className={styles.speakerTitle}>{speaker.title}</p>
                         <p className={styles.speakerOrg}>{speaker.organization}</p>
@@ -138,9 +146,17 @@ function HomePage() {
                   <div className={styles.speakersGrid}>
                     {workshopSpeakers.map((speaker) => (
                       <div key={speaker.id} className={styles.speakerCard}>
-                        <div className={styles.speakerImagePlaceholder}>
-                          <span>{speaker.name.charAt(0)}</span>
-                        </div>
+                        {speaker.photoUrl ? (
+                          <img
+                            src={speaker.photoUrl}
+                            alt={speaker.name}
+                            className={styles.speakerImage}
+                          />
+                        ) : (
+                          <div className={styles.speakerImagePlaceholder}>
+                            <span>{speaker.name.charAt(0)}</span>
+                          </div>
+                        )}
                         <h4 className={styles.speakerName}>{speaker.name}</h4>
                         <p className={styles.speakerTitle}>{speaker.title}</p>
                         <p className={styles.speakerOrg}>{speaker.organization}</p>

@@ -59,6 +59,35 @@
   height: 16px;
 }
 
+.exportButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.exportButton:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.exportButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.exportButton svg {
+  width: 16px;
+  height: 16px;
+}
+
 .errorBanner {
   display: flex;
   align-items: center;

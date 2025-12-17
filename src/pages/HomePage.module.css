@@ -145,6 +145,15 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
+.speakerImage {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto var(--spacing-4);
+  border: 3px solid var(--color-gray-200);
+}
+
 .speakerImagePlaceholder {
   width: 100px;
   height: 100px;
