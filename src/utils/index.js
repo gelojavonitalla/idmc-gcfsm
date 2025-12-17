@@ -27,3 +27,8 @@ export {
   downloadCsv,
   exportRegistrationsToCsv,
 } from './exportCsv';
+
+export {
+  generateSchedulePdf,
+  downloadSchedulePdf,
+} from './exportPdf';
