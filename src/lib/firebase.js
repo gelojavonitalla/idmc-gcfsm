@@ -11,10 +11,11 @@ import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 
 /**
- * Firebase database configuration
+ * Firebase database and storage configuration
  */
 const FIREBASE_CONFIG = {
   DATABASE_ID: 'idmc-2026',
+  STORAGE_BUCKET: 'idmc-2026',
 };
 
 /**
@@ -49,8 +50,9 @@ const auth = getAuth(app);
 
 /**
  * Firebase Storage instance
+ * Uses the named bucket 'idmc-2026' for this project
  */
-const storage = getStorage(app);
+const storage = getStorage(app, `gs://${FIREBASE_CONFIG.STORAGE_BUCKET}`);
 
 /**
  * Connect to emulators in development
