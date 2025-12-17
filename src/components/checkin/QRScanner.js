@@ -176,7 +176,10 @@ function QRScanner({ onScan, onError, isActive = true }) {
 
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
+        scannerRef.current.stop().catch((err) => {
+          // Log cleanup errors for debugging (common during hot reload)
+          console.debug('Scanner cleanup:', err.message || err);
+        });
         scannerRef.current = null;
       }
     };
