@@ -18,3 +18,4 @@ export { default as AdminAboutPage } from './AdminAboutPage';
 export { default as AdminLegalPage } from './AdminLegalPage';
 export { default as AdminRegistrationsPage } from './AdminRegistrationsPage';
 export { default as AdminVenuePage } from './AdminVenuePage';
+export { default as AdminCheckInPage } from './AdminCheckInPage';

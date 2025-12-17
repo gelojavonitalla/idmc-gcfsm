@@ -23,6 +23,9 @@ importers:
       firebase:
         specifier: ^12.6.0
         version: 12.6.0
+      html5-qrcode:
+        specifier: ^2.3.8
+        version: 2.3.8
       qrcode.react:
         specifier: ^4.2.0
         version: 4.2.0(react@19.2.3)
@@ -3443,6 +3446,9 @@ packages:
         optional: true
       webpack:
         optional: true
+
+  html5-qrcode@2.3.8:
+    resolution: {integrity: sha512-jsr4vafJhwoLVEDW3n1KvPnCCXWaQfRng0/EEYk1vNcQGcG/htAdhJX0be8YyqMoSz7+hZvOZSTAepsabiuhiQ==}
 
   htmlparser2@6.1.0:
     resolution: {integrity: sha512-gyyPk6rgonLFEDGoeRgQNaEUvdJ4ktTmmUh/h2t7s+M8oPpIPxgNACWa+6ESR57kXstwqPiCut0V8NRpcwgU7A==}
@@ -10514,6 +10520,8 @@ snapshots:
       tapable: 2.3.0
     optionalDependencies:
       webpack: 5.103.0
+
+  html5-qrcode@2.3.8: {}
 
   htmlparser2@6.1.0:
     dependencies:

@@ -170,7 +170,7 @@ export const ADMIN_NAV_GROUPS = [
     label: 'Operations',
     items: [
       { label: 'Registrations', path: ADMIN_ROUTES.REGISTRATIONS, icon: 'people' },
-      { label: 'Check-In', path: ADMIN_ROUTES.CHECKIN, icon: 'checkin', comingSoon: true },
+      { label: 'Check-In', path: ADMIN_ROUTES.CHECKIN, icon: 'checkin' },
     ],
   },
   {
@@ -205,6 +205,7 @@ export const COLLECTIONS = {
   VENUE_ROOMS: 'venueRooms',
   VENUE_TRANSPORT: 'venueTransport',
   VENUE_AMENITIES: 'venueAmenities',
+  CHECK_IN_LOGS: 'checkInLogs',
 };
 
 /**

@@ -120,3 +120,19 @@ export {
   updateVenueAmenity,
   deleteVenueAmenity,
 } from './venue';
+
+export {
+  CHECK_IN_METHODS,
+  CHECK_IN_ERROR_CODES,
+  validateCheckInEligibility,
+  parseQRCode,
+  getRegistrationForCheckIn,
+  searchRegistrations,
+  checkInAttendee,
+  getCheckInStats,
+  getRecentCheckIns,
+  subscribeToCheckInStats,
+  subscribeToRecentCheckIns,
+  getCheckInsByHour,
+  undoCheckIn,
+} from './checkin';

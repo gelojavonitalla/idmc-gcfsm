@@ -1,0 +1,322 @@
+/**
+ * AttendeeCard Component Styles
+ */
+
+.container {
+  background: var(--color-surface, #1a1a2e);
+  border: 1px solid var(--color-border, #333);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+}
+
+.statusReady {
+  background: rgba(59, 130, 246, 0.1);
+  border-bottom: 2px solid #3b82f6;
+}
+
+.statusCheckedIn {
+  background: rgba(16, 185, 129, 0.1);
+  border-bottom: 2px solid #10b981;
+}
+
+.statusPending {
+  background: rgba(245, 158, 11, 0.1);
+  border-bottom: 2px solid #f59e0b;
+}
+
+.statusCancelled {
+  background: rgba(239, 68, 68, 0.1);
+  border-bottom: 2px solid #ef4444;
+}
+
+.statusIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.statusReady .statusIcon {
+  color: #3b82f6;
+}
+
+.statusCheckedIn .statusIcon {
+  color: #10b981;
+}
+
+.statusPending .statusIcon {
+  color: #f59e0b;
+}
+
+.statusCancelled .statusIcon {
+  color: #ef4444;
+}
+
+.statusIcon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.statusText {
+  display: flex;
+  flex-direction: column;
+}
+
+.statusLabel {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text, #fff);
+}
+
+.checkedInTime {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #a0a0a0);
+}
+
+.content {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.primaryAttendee {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: var(--color-primary, #3b82f6);
+  border-radius: 50%;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+  flex-shrink: 0;
+}
+
+.attendeeInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.attendeeName {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text, #fff);
+  word-wrap: break-word;
+}
+
+.attendeeEmail {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #a0a0a0);
+  word-wrap: break-word;
+}
+
+.attendeePhone {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--color-text-tertiary, #666);
+}
+
+.shortCode {
+  padding: 0.375rem 0.75rem;
+  background: var(--color-surface-elevated, #252540);
+  border: 1px solid var(--color-border, #333);
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-primary, #3b82f6);
+  flex-shrink: 0;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--color-surface-elevated, #252540);
+  border-radius: 8px;
+}
+
+.detailRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #a0a0a0);
+}
+
+.detailRow svg {
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-tertiary, #666);
+  flex-shrink: 0;
+}
+
+.guestList {
+  color: var(--color-text-tertiary, #666);
+}
+
+.registrationId {
+  font-family: monospace;
+  font-size: 0.8125rem;
+  color: var(--color-text-tertiary, #666);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--color-error, #ef4444);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--color-error, #ef4444);
+}
+
+.error svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-surface-elevated, #252540);
+  border-top: 1px solid var(--color-border, #333);
+}
+
+.cancelButton {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  background: transparent;
+  color: var(--color-text, #fff);
+  border: 1px solid var(--color-border, #333);
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: var(--color-surface, #1a1a2e);
+  border-color: var(--color-text-tertiary, #666);
+}
+
+.cancelButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.checkInButton {
+  flex: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.checkInButton:hover:not(:disabled) {
+  background: #059669;
+}
+
+.checkInButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.checkInButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.buttonSpinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.alreadyCheckedIn {
+  flex: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.alreadyCheckedIn svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (max-width: 480px) {
+  .primaryAttendee {
+    flex-wrap: wrap;
+  }
+
+  .shortCode {
+    order: -1;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .cancelButton,
+  .checkInButton,
+  .alreadyCheckedIn {
+    flex: none;
+    width: 100%;
+  }
+}
