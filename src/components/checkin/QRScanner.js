@@ -32,6 +32,7 @@ const SCANNER_CONFIG = {
 function QRScanner({ onScan, onError, isActive = true }) {
   const [hasPermission, setHasPermission] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [cameras, setCameras] = useState([]);
   const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
   const [error, setError] = useState(null);
@@ -287,10 +288,10 @@ function QRScanner({ onScan, onError, isActive = true }) {
   useEffect(() => {
     if (!isActive && isScanning) {
       stopScanning();
-    } else if (isActive && !isScanning && hasPermission && cameras.length > 0 && isReady) {
+    } else if (isActive && !isScanning && !isPaused && hasPermission && cameras.length > 0 && isReady) {
       startScanning(cameras[currentCameraIndex].id);
     }
-  }, [isActive, isScanning, hasPermission, cameras, currentCameraIndex, isReady, startScanning, stopScanning]);
+  }, [isActive, isScanning, isPaused, hasPermission, cameras, currentCameraIndex, isReady, startScanning, stopScanning]);
 
   // Permission pending state
   if (hasPermission === null) {
@@ -366,7 +367,10 @@ function QRScanner({ onScan, onError, isActive = true }) {
         {isScanning && (
           <button
             className={styles.controlButton}
-            onClick={stopScanning}
+            onClick={() => {
+              setIsPaused(true);
+              stopScanning();
+            }}
             title="Pause scanner"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -379,7 +383,10 @@ function QRScanner({ onScan, onError, isActive = true }) {
         {!isScanning && hasPermission && cameras.length > 0 && (
           <button
             className={styles.controlButton}
-            onClick={() => startScanning(cameras[currentCameraIndex].id)}
+            onClick={() => {
+              setIsPaused(false);
+              startScanning(cameras[currentCameraIndex].id);
+            }}
             title="Resume scanner"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
