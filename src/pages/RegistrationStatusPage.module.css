@@ -433,10 +433,40 @@
 }
 
 .qrRegId {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   font-family: monospace;
+  color: var(--color-text-secondary);
+  margin: var(--spacing-4) 0 0;
+}
+
+/* Per-Attendee Ticket Styles */
+.attendeeTicket {
+  display: inline-block;
+  margin: var(--spacing-2);
+  vertical-align: top;
+}
+
+.additionalTickets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.qrAttendeeName {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
+  margin: 0;
+}
+
+.qrAttendeeLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin: 0;
 }
 

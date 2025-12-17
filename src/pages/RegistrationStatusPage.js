@@ -350,23 +350,54 @@ function RegistrationStatusPage() {
                 <p><strong>Address:</strong> {settings.venue?.address}</p>
               </div>
 
-              {/* Confirmed Registration - Download Section */}
+              {/* Confirmed Registration - Download Section with Per-Attendee QR Codes */}
               {isConfirmed && (
                 <div className={styles.downloadSection}>
-                  <h3>Your Ticket</h3>
+                  <h3>Your Tickets</h3>
                   <p>
-                    Show this QR code or your registration ID at check-in.
-                    A confirmation email with your ticket has been sent to {maskEmail(registration.primaryAttendee?.email)}.
+                    Each attendee has their own unique QR code for check-in.
+                    A confirmation email with tickets has been sent to {maskEmail(registration.primaryAttendee?.email)}.
                   </p>
-                  <div className={styles.ticketQR}>
-                    <QRCodeSVG
-                      value={registration.qrCodeData || registration.registrationId}
-                      size={180}
-                      level="M"
-                      includeMargin
-                    />
-                    <p className={styles.qrRegId}>{registration.registrationId}</p>
+
+                  {/* Primary Attendee QR Code */}
+                  <div className={styles.attendeeTicket}>
+                    <div className={styles.ticketQR}>
+                      <QRCodeSVG
+                        value={`${registration.registrationId}-0`}
+                        size={160}
+                        level="M"
+                        includeMargin
+                      />
+                      <p className={styles.qrAttendeeName}>
+                        {maskName(registration.primaryAttendee?.firstName)} {maskName(registration.primaryAttendee?.lastName)}
+                      </p>
+                      <p className={styles.qrAttendeeLabel}>Primary</p>
+                    </div>
                   </div>
+
+                  {/* Additional Attendees QR Codes */}
+                  {registration.additionalAttendees?.length > 0 && (
+                    <div className={styles.additionalTickets}>
+                      {registration.additionalAttendees.map((attendee, index) => (
+                        <div key={index} className={styles.attendeeTicket}>
+                          <div className={styles.ticketQR}>
+                            <QRCodeSVG
+                              value={`${registration.registrationId}-${index + 1}`}
+                              size={160}
+                              level="M"
+                              includeMargin
+                            />
+                            <p className={styles.qrAttendeeName}>
+                              {maskName(attendee.firstName)} {maskName(attendee.lastName)}
+                            </p>
+                            <p className={styles.qrAttendeeLabel}>Guest {index + 1}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <p className={styles.qrRegId}>Registration: {registration.registrationId}</p>
                 </div>
               )}
             </div>

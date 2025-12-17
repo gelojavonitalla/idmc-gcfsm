@@ -610,11 +610,23 @@ function generateRegistrationConfirmationHtml(
 }
 
 /**
- * Generates the HTML email template for ticket/confirmation
+ * Attendee info with QR code for email
+ */
+interface AttendeeWithQR {
+  firstName: string;
+  lastName: string;
+  email?: string;
+  qrCodeDataUrl: string;
+  attendeeIndex: number;
+}
+
+/**
+ * Generates the HTML email template for ticket/confirmation (primary attendee)
+ * Includes all QR codes for the entire group
  *
  * @param {Object} registration - Registration data
  * @param {Object} settings - Event settings data
- * @param {string} qrCodeDataUrl - Base64 data URL of the QR code image
+ * @param {AttendeeWithQR[]} attendeesWithQR - Array of attendees with their QR codes
  * @return {string} HTML string for the email
  */
 function generateTicketEmailHtml(
@@ -634,6 +646,7 @@ function generateTicketEmailHtml(
     additionalAttendees?: Array<{
       firstName: string;
       lastName: string;
+      email?: string;
     }>;
   },
   settings: {
@@ -644,14 +657,13 @@ function generateTicketEmailHtml(
       address: string;
     };
   },
-  qrCodeDataUrl?: string
+  attendeesWithQR: AttendeeWithQR[]
 ): string {
   const {
     registrationId,
     shortCode,
     primaryAttendee,
     church,
-    additionalAttendees,
   } = registration;
   const eventDate = new Date(settings.startDate).toLocaleDateString("en-PH", {
     weekday: "long",
@@ -660,16 +672,23 @@ function generateTicketEmailHtml(
     day: "numeric",
   });
 
-  const attendeeCount = 1 + (additionalAttendees?.length || 0);
+  const attendeeCount = attendeesWithQR.length;
 
-  // Generate QR code section HTML if data URL is provided
-  const qrCodeSection = qrCodeDataUrl ? `
-                    <div style="margin: 20px 0;">
-                      <img src="${qrCodeDataUrl}" alt="QR Code for Check-in" width="180" height="180" style="display: block; margin: 0 auto; border: 4px solid #f3f4f6; border-radius: 8px;" />
-                      <p style="margin: 8px 0 0; color: #6b7280; font-size: 12px;">
-                        Scan at check-in
-                      </p>
-                    </div>` : "";
+  // Generate QR code sections for all attendees
+  const qrCodeSections = attendeesWithQR.map((attendee, index) => {
+    const isAdditional = index > 0;
+    const label = isAdditional ? `Guest ${index}` : "Primary";
+    return `
+      <div style="display: inline-block; margin: 10px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; text-align: center; vertical-align: top; width: 200px;">
+        <img src="${attendee.qrCodeDataUrl}" alt="QR Code for ${attendee.firstName}" width="150" height="150" style="display: block; margin: 0 auto 8px; border: 2px solid #f3f4f6; border-radius: 4px;" />
+        <p style="margin: 0 0 4px; color: #1f2937; font-size: 14px; font-weight: 600;">
+          ${attendee.firstName} ${attendee.lastName}
+        </p>
+        <p style="margin: 0; color: #6b7280; font-size: 12px;">
+          ${label}
+        </p>
+      </div>`;
+  }).join("");
 
   return `
 <!DOCTYPE html>
@@ -677,13 +696,13 @@ function generateTicketEmailHtml(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Ticket - IDMC 2026</title>
+  <title>Your Tickets - IDMC 2026</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <table role="presentation" style="width: 100%; max-width: 700px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
           <tr>
             <td style="padding: 40px 40px 20px; text-align: center; background: linear-gradient(135deg, #15803d 0%, #22c55e 100%); border-radius: 12px 12px 0 0;">
@@ -707,24 +726,197 @@ function generateTicketEmailHtml(
               </p>
               <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
                 Great news! Your payment has been confirmed and your registration for <strong>${settings.title}</strong> is now complete.
+                ${attendeeCount > 1 ? `<br><br><strong>Important:</strong> Each attendee has their own unique QR code below. Please share the appropriate QR code with each member of your group.` : ""}
+              </p>
+
+              <!-- Registration Info -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                <tr>
+                  <td style="padding: 16px; background-color: #f9fafb; border-radius: 8px; text-align: center;">
+                    <p style="margin: 0 0 4px; color: #6b7280; font-size: 12px; text-transform: uppercase;">
+                      Registration ID
+                    </p>
+                    <p style="margin: 0 0 8px; color: #1f2937; font-size: 24px; font-weight: 700; font-family: monospace;">
+                      ${registrationId}
+                    </p>
+                    <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                      Quick Code: <strong style="color: #1e40af; font-family: monospace;">${shortCode}</strong> | ${attendeeCount} Attendee${attendeeCount > 1 ? "s" : ""} from ${church.name}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- QR Codes Section -->
+              <div style="margin: 24px 0; text-align: center;">
+                <h3 style="margin: 0 0 16px; color: #1f2937; font-size: 18px; font-weight: 600;">
+                  ${attendeeCount > 1 ? "Individual Check-in QR Codes" : "Your Check-in QR Code"}
+                </h3>
+                <p style="margin: 0 0 16px; color: #6b7280; font-size: 14px;">
+                  ${attendeeCount > 1 ? "Each person must scan their own QR code at check-in" : "Scan this QR code at check-in"}
+                </p>
+                ${qrCodeSections}
+              </div>
+
+              <!-- Event Details -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f0fdf4; border-radius: 8px; margin-top: 24px;">
+                <tr>
+                  <td style="padding: 16px 20px;">
+                    <p style="margin: 0 0 8px; color: #14532d; font-size: 14px; font-weight: 600;">
+                      Event Details
+                    </p>
+                    <p style="margin: 0 0 4px; color: #166534; font-size: 14px;">
+                      <strong>Date:</strong> ${eventDate}
+                    </p>
+                    <p style="margin: 0 0 4px; color: #166534; font-size: 14px;">
+                      <strong>Venue:</strong> ${settings.venue.name}
+                    </p>
+                    <p style="margin: 0; color: #166534; font-size: 14px;">
+                      <strong>Address:</strong> ${settings.venue.address}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Instructions -->
+              <p style="margin: 24px 0 8px; color: #1f2937; font-size: 14px; font-weight: 600;">
+                What to bring on event day:
+              </p>
+              <ul style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.8;">
+                <li>Your personal QR code (screenshot or printed)</li>
+                <li>Valid ID for verification</li>
+              </ul>
+
+              <!-- View Ticket Link -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse; margin-top: 24px;">
+                <tr>
+                  <td align="center">
+                    <a href="${appUrl.value()}/registration/status?id=${registrationId}"
+                       style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; border-radius: 8px;">
+                      View All Tickets Online
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 12px 12px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; color: #6b7280; font-size: 12px; text-align: center; line-height: 1.5;">
+                ${settings.title}<br>
+                GCF South Metro, Daang Hari Road, Las Piñas City, Philippines
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+}
+
+/**
+ * Generates the HTML email template for individual attendee ticket
+ *
+ * @param {Object} registration - Registration data
+ * @param {Object} settings - Event settings data
+ * @param {AttendeeWithQR} attendee - Attendee info with QR code
+ * @return {string} HTML string for the email
+ */
+function generateIndividualTicketEmailHtml(
+  registration: {
+    registrationId: string;
+    shortCode: string;
+    church: {
+      name: string;
+    };
+    primaryAttendee: {
+      firstName: string;
+      lastName: string;
+    };
+  },
+  settings: {
+    title: string;
+    startDate: string;
+    venue: {
+      name: string;
+      address: string;
+    };
+  },
+  attendee: AttendeeWithQR
+): string {
+  const {
+    registrationId,
+    shortCode,
+    church,
+    primaryAttendee,
+  } = registration;
+  const eventDate = new Date(settings.startDate).toLocaleDateString("en-PH", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Ticket - IDMC 2026</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 20px; text-align: center; background: linear-gradient(135deg, #15803d 0%, #22c55e 100%); border-radius: 12px 12px 0 0;">
+              <div style="width: 64px; height: 64px; margin: 0 auto 16px; background: white; border-radius: 50%; line-height: 64px; font-size: 32px;">
+                ✓
+              </div>
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
+                Your Ticket is Ready!
+              </h1>
+              <p style="margin: 8px 0 0; color: #bbf7d0; font-size: 14px;">
+                Registration confirmed
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                Hi ${attendee.firstName},
+              </p>
+              <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                You've been registered for <strong>${settings.title}</strong> by ${primaryAttendee.firstName} ${primaryAttendee.lastName} from ${church.name}.
               </p>
 
               <!-- Ticket Box with QR Code -->
               <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 24px; border: 2px dashed #e5e7eb; border-radius: 12px;">
                 <tr>
                   <td style="padding: 24px; text-align: center;">
-                    ${qrCodeSection}
-                    <p style="margin: 0 0 8px; color: #6b7280; font-size: 12px; text-transform: uppercase;">
-                      Registration ID
+                    <div style="margin: 20px 0;">
+                      <img src="${attendee.qrCodeDataUrl}" alt="Your Check-in QR Code" width="180" height="180" style="display: block; margin: 0 auto; border: 4px solid #f3f4f6; border-radius: 8px;" />
+                      <p style="margin: 8px 0 0; color: #6b7280; font-size: 12px;">
+                        Your personal check-in QR code
+                      </p>
+                    </div>
+                    <p style="margin: 16px 0 0; color: #1f2937; font-size: 18px; font-weight: 600;">
+                      ${attendee.firstName} ${attendee.lastName}
                     </p>
-                    <p style="margin: 0 0 16px; color: #1f2937; font-size: 28px; font-weight: 700; font-family: monospace;">
-                      ${registrationId}
+                    <p style="margin: 8px 0 0; color: #6b7280; font-size: 14px;">
+                      Registration: <strong style="font-family: monospace;">${registrationId}</strong>
                     </p>
-                    <p style="margin: 0 0 16px; color: #6b7280; font-size: 14px;">
-                      Quick Code: <strong style="color: #1e40af; font-family: monospace; font-size: 20px;">${shortCode}</strong>
-                    </p>
-                    <p style="margin: 0; color: #059669; font-size: 14px; font-weight: 600;">
-                      ${attendeeCount} Attendee${attendeeCount > 1 ? "s" : ""} from ${church.name}
+                    <p style="margin: 4px 0 0; color: #6b7280; font-size: 14px;">
+                      Quick Code: <strong style="color: #1e40af; font-family: monospace;">${shortCode}</strong>
                     </p>
                   </td>
                 </tr>
@@ -755,7 +947,7 @@ function generateTicketEmailHtml(
                 What to bring on event day:
               </p>
               <ul style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.8;">
-                <li>This email or your Registration ID</li>
+                <li>This QR code (screenshot or printed)</li>
                 <li>Valid ID for verification</li>
               </ul>
 
@@ -765,7 +957,7 @@ function generateTicketEmailHtml(
                   <td align="center">
                     <a href="${appUrl.value()}/registration/status?id=${registrationId}"
                        style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; border-radius: 8px;">
-                      View Your Ticket
+                      View Ticket Online
                     </a>
                   </td>
                 </tr>
@@ -831,17 +1023,64 @@ async function sendRegistrationConfirmationEmail(
 }
 
 /**
- * Sends ticket/confirmation email after payment verification
+ * Generates QR codes for all attendees in a registration
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {Object} primaryAttendee - Primary attendee info
+ * @param {Array} additionalAttendees - Additional attendees
+ * @return {Promise<AttendeeWithQR[]>} Array of attendees with their QR codes
+ */
+async function generateAllAttendeeQRCodes(
+  registrationId: string,
+  primaryAttendee: {firstName: string; lastName: string; email: string},
+  additionalAttendees?: Array<{firstName: string; lastName: string; email?: string}>
+): Promise<AttendeeWithQR[]> {
+  const attendeesWithQR: AttendeeWithQR[] = [];
+
+  // Generate QR code for primary attendee
+  const primaryQrData = `${registrationId}-0`;
+  const primaryQrCodeDataUrl = await generateQRCodeDataUrl(primaryQrData);
+  attendeesWithQR.push({
+    firstName: primaryAttendee.firstName,
+    lastName: primaryAttendee.lastName,
+    email: primaryAttendee.email,
+    qrCodeDataUrl: primaryQrCodeDataUrl,
+    attendeeIndex: 0,
+  });
+
+  // Generate QR codes for additional attendees
+  if (additionalAttendees && additionalAttendees.length > 0) {
+    for (let i = 0; i < additionalAttendees.length; i++) {
+      const attendee = additionalAttendees[i];
+      const qrData = `${registrationId}-${i + 1}`;
+      const qrCodeDataUrl = await generateQRCodeDataUrl(qrData);
+      attendeesWithQR.push({
+        firstName: attendee.firstName,
+        lastName: attendee.lastName,
+        email: attendee.email,
+        qrCodeDataUrl,
+        attendeeIndex: i + 1,
+      });
+    }
+  }
+
+  return attendeesWithQR;
+}
+
+/**
+ * Sends ticket/confirmation email to primary attendee with all QR codes
  *
  * @param {string} to - Recipient email address
  * @param {Object} registration - Registration data
  * @param {Object} settings - Event settings data
+ * @param {AttendeeWithQR[]} attendeesWithQR - All attendees with their QR codes
  * @return {Promise<void>} Promise that resolves when email is sent
  */
 async function sendTicketEmail(
   to: string,
   registration: Parameters<typeof generateTicketEmailHtml>[0],
-  settings: Parameters<typeof generateTicketEmailHtml>[1]
+  settings: Parameters<typeof generateTicketEmailHtml>[1],
+  attendeesWithQR: AttendeeWithQR[]
 ): Promise<void> {
   const apiKey = await getSendGridApiKey();
   if (!apiKey) {
@@ -857,14 +1096,52 @@ async function sendTicketEmail(
     return;
   }
 
-  // Generate QR code for the ticket
-  let qrCodeDataUrl: string | undefined;
-  try {
-    const qrData = registration.qrCodeData || registration.registrationId;
-    qrCodeDataUrl = await generateQRCodeDataUrl(qrData);
-    logger.info(`Generated QR code for registration: ${registration.registrationId}`);
-  } catch (qrError) {
-    logger.warn("Failed to generate QR code, sending email without it:", qrError);
+  const msg = {
+    to,
+    from: {
+      email: fromEmail,
+      name: senderName.value() || "IDMC Registration",
+    },
+    subject: `Your IDMC 2026 Ticket${attendeesWithQR.length > 1 ? "s" : ""} - ${registration.registrationId}`,
+    html: generateTicketEmailHtml(registration, settings, attendeesWithQR),
+  };
+
+  await sgMail.send(msg);
+  logger.info(`Ticket email sent to ${to} with ${attendeesWithQR.length} QR code(s)`);
+}
+
+/**
+ * Sends individual ticket email to an additional attendee
+ *
+ * @param {string} to - Recipient email address
+ * @param {Object} registration - Registration data
+ * @param {Object} settings - Event settings data
+ * @param {AttendeeWithQR} attendee - Attendee info with their QR code
+ * @return {Promise<void>} Promise that resolves when email is sent
+ */
+async function sendIndividualTicketEmail(
+  to: string,
+  registration: {
+    registrationId: string;
+    shortCode: string;
+    church: {name: string};
+    primaryAttendee: {firstName: string; lastName: string};
+  },
+  settings: Parameters<typeof generateIndividualTicketEmailHtml>[1],
+  attendee: AttendeeWithQR
+): Promise<void> {
+  const apiKey = await getSendGridApiKey();
+  if (!apiKey) {
+    logger.warn("SendGrid API key not configured, skipping email");
+    return;
+  }
+
+  sgMail.setApiKey(apiKey);
+
+  const fromEmail = senderEmail.value();
+  if (!fromEmail) {
+    logger.warn("SENDER_EMAIL not configured, skipping email");
+    return;
   }
 
   const msg = {
@@ -874,11 +1151,11 @@ async function sendTicketEmail(
       name: senderName.value() || "IDMC Registration",
     },
     subject: `Your IDMC 2026 Ticket - ${registration.registrationId}`,
-    html: generateTicketEmailHtml(registration, settings, qrCodeDataUrl),
+    html: generateIndividualTicketEmailHtml(registration, settings, attendee),
   };
 
   await sgMail.send(msg);
-  logger.info(`Ticket email sent to ${to}`);
+  logger.info(`Individual ticket email sent to ${to} for ${attendee.firstName} ${attendee.lastName}`);
 }
 
 /**
@@ -960,8 +1237,8 @@ export const onPaymentConfirmed = onDocumentUpdated(
       return;
     }
 
-    const email = after.primaryAttendee?.email;
-    if (!email) {
+    const primaryEmail = after.primaryAttendee?.email;
+    if (!primaryEmail) {
       logger.error(`Registration ${registrationId} has no email address`);
       return;
     }
@@ -989,7 +1266,17 @@ export const onPaymentConfirmed = onDocumentUpdated(
     }
 
     try {
-      await sendTicketEmail(email, {
+      // Generate QR codes for all attendees
+      const attendeesWithQR = await generateAllAttendeeQRCodes(
+        after.registrationId,
+        after.primaryAttendee,
+        after.additionalAttendees
+      );
+
+      logger.info(`Generated ${attendeesWithQR.length} QR codes for registration: ${registrationId}`);
+
+      // Send email to primary attendee with ALL QR codes
+      await sendTicketEmail(primaryEmail, {
         registrationId: after.registrationId,
         shortCode: after.shortCode,
         qrCodeData: after.qrCodeData,
@@ -997,12 +1284,46 @@ export const onPaymentConfirmed = onDocumentUpdated(
         totalAmount: after.totalAmount,
         church: after.church,
         additionalAttendees: after.additionalAttendees,
-      }, settings);
+      }, settings, attendeesWithQR);
+
+      // Send individual emails to additional attendees who have email addresses
+      const additionalAttendees = after.additionalAttendees || [];
+      let additionalEmailsSent = 0;
+
+      for (let i = 0; i < additionalAttendees.length; i++) {
+        const attendee = additionalAttendees[i];
+        const attendeeEmail = attendee.email?.trim();
+
+        if (attendeeEmail) {
+          try {
+            const attendeeWithQR = attendeesWithQR.find((a) => a.attendeeIndex === i + 1);
+            if (attendeeWithQR) {
+              await sendIndividualTicketEmail(
+                attendeeEmail,
+                {
+                  registrationId: after.registrationId,
+                  shortCode: after.shortCode,
+                  church: after.church,
+                  primaryAttendee: after.primaryAttendee,
+                },
+                settings,
+                attendeeWithQR
+              );
+              additionalEmailsSent++;
+            }
+          } catch (emailError) {
+            logger.warn(`Failed to send individual email to ${attendeeEmail}:`, emailError);
+          }
+        }
+      }
+
+      logger.info(`Sent ${additionalEmailsSent} additional individual ticket emails for ${registrationId}`);
 
       // Update document to mark ticket email as sent
       await event.data?.after?.ref.update({
         ticketEmailSent: true,
         ticketEmailSentAt: FieldValue.serverTimestamp(),
+        additionalEmailsSent,
       });
     } catch (error) {
       logger.error(`Error sending ticket email for ${registrationId}:`, error);

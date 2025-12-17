@@ -380,6 +380,24 @@ export async function updatePaymentProof(registrationId, paymentProofUrl) {
 }
 
 /**
+ * Generates per-attendee QR code data for a registration
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {number} totalAttendees - Total number of attendees
+ * @returns {Array<Object>} Array of QR code data objects
+ */
+function generateAttendeeQRCodes(registrationId, totalAttendees) {
+  const qrCodes = [];
+  for (let i = 0; i < totalAttendees; i++) {
+    qrCodes.push({
+      attendeeIndex: i,
+      qrData: `${registrationId}-${i}`,
+    });
+  }
+  return qrCodes;
+}
+
+/**
  * Confirms payment for a registration (admin action)
  *
  * @param {string} registrationId - Registration ID
@@ -393,8 +411,15 @@ export async function updatePaymentProof(registrationId, paymentProofUrl) {
 export async function confirmPayment(registrationId, paymentDetails) {
   const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
 
-  // Generate QR code data (the registration ID is sufficient for scanning)
+  // Get current registration to count attendees
+  const registration = await getRegistrationById(registrationId);
+  const totalAttendees = 1 + (registration?.additionalAttendees?.length || 0);
+
+  // Generate legacy QR code data (for backward compatibility)
   const qrCodeData = registrationId;
+
+  // Generate per-attendee QR codes
+  const attendeeQRCodes = generateAttendeeQRCodes(registrationId, totalAttendees);
 
   await updateDoc(docRef, {
     status: REGISTRATION_STATUS.CONFIRMED,
@@ -405,6 +430,7 @@ export async function confirmPayment(registrationId, paymentDetails) {
     'payment.verifiedAt': serverTimestamp(),
     'payment.notes': paymentDetails.notes || null,
     qrCodeData,
+    attendeeQRCodes,
     updatedAt: serverTimestamp(),
   });
 }

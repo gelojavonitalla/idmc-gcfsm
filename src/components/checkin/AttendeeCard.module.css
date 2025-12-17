@@ -36,6 +36,15 @@
   border-bottom: 2px solid #ef4444;
 }
 
+.statusPartial {
+  background: rgba(245, 158, 11, 0.1);
+  border-bottom: 2px solid #f59e0b;
+}
+
+.statusPartial .statusIcon {
+  color: #f59e0b;
+}
+
 .statusIcon {
   display: flex;
   align-items: center;
@@ -100,14 +109,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: 40px;
+  height: 40px;
   background: var(--color-primary, #3b82f6);
   border-radius: 50%;
-  font-size: 1.5rem;
+  font-size: 1rem;
   font-weight: 600;
   color: white;
   flex-shrink: 0;
+}
+
+.attendeeRow.checkedIn .avatar {
+  background: #10b981;
 }
 
 .attendeeInfo {
@@ -176,10 +189,161 @@
   color: #ffffff;
 }
 
+/* Target Attendee Box (when scanning specific QR) */
+.targetAttendeeBox {
+  text-align: center;
+  padding: 1rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+}
+
+.targetAttendeeLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3b82f6;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.targetAttendeeName {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text, #fff);
+}
+
+.targetAttendeeTime {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #a0a0a0);
+  margin-top: 0.25rem;
+}
+
+/* Registration Info */
+.registrationInfo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--color-surface-elevated, #252540);
+  border-radius: 8px;
+}
+
 .registrationId {
   font-family: monospace;
   font-size: 0.8125rem;
   color: #ffffff;
+}
+
+.churchName {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #a0a0a0);
+}
+
+/* Attendee List */
+.attendeeList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.attendeeListHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #a0a0a0);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.attendeeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: var(--color-surface-elevated, #252540);
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.attendeeRow.checkedIn {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.attendeeRow.selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.attendeeRowLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.attendeeRowRight {
+  flex-shrink: 0;
+}
+
+.attendeeRowInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.attendeeRowName {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text, #fff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attendeeRowLabel {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #a0a0a0);
+}
+
+.checkedInBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(16, 185, 129, 0.2);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #10b981;
+}
+
+.checkInSingleBtn {
+  padding: 0.375rem 0.75rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.checkInSingleBtn:hover:not(:disabled) {
+  background: #059669;
+}
+
+.checkInSingleBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .error {
