@@ -100,13 +100,13 @@
   background: var(--color-surface-elevated, #252540);
   border-radius: 8px;
   font-size: 0.875rem;
-  color: var(--color-text-muted, #d1d5db);
+  color: #d1d5db;
 }
 
 .hints p {
   margin: 0 0 0.5rem;
   font-weight: 500;
-  color: var(--color-text, #fff);
+  color: #ffffff;
 }
 
 .hints ul {
@@ -116,6 +116,7 @@
 
 .hints li {
   margin: 0.25rem 0;
+  color: #d1d5db;
 }
 
 .error {
