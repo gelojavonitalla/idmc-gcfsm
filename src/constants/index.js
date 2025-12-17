@@ -517,6 +517,12 @@ export const SAFE_SHORT_CODE_CHARS = 'ACDEFGHJKMNPQRTUVWXY34679';
 export const SHORT_CODE_LENGTH = 6;
 
 /**
+ * Length of the short code suffix used for quick lookups.
+ * Users can search using just the last 4 characters of the 6-char code.
+ */
+export const SHORT_CODE_SUFFIX_LENGTH = 4;
+
+/**
  * Payment information for registration
  */
 export const PAYMENT_INFO = {
