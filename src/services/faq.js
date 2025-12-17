@@ -5,16 +5,9 @@
  * @module services/faq
  */
 
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-} from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { getDocById, mapDocsWithId } from '../lib/firestoreQueries';
 import { COLLECTIONS, FAQ_STATUS } from '../constants';
 
 /**
@@ -33,11 +26,7 @@ export async function getPublishedFAQs() {
   );
 
   const snapshot = await getDocs(publishedQuery);
-
-  return snapshot.docs.map((docSnapshot) => ({
-    id: docSnapshot.id,
-    ...docSnapshot.data(),
-  }));
+  return mapDocsWithId(snapshot);
 }
 
 /**
@@ -61,11 +50,7 @@ export async function getFAQsByCategory(category) {
   );
 
   const snapshot = await getDocs(categoryQuery);
-
-  return snapshot.docs.map((docSnapshot) => ({
-    id: docSnapshot.id,
-    ...docSnapshot.data(),
-  }));
+  return mapDocsWithId(snapshot);
 }
 
 /**
@@ -76,19 +61,5 @@ export async function getFAQsByCategory(category) {
  * @throws {Error} If the Firestore query fails
  */
 export async function getFAQById(faqId) {
-  if (!faqId) {
-    return null;
-  }
-
-  const faqRef = doc(db, COLLECTIONS.FAQ, faqId);
-  const snapshot = await getDoc(faqRef);
-
-  if (!snapshot.exists()) {
-    return null;
-  }
-
-  return {
-    id: snapshot.id,
-    ...snapshot.data(),
-  };
+  return getDocById(COLLECTIONS.FAQ, faqId);
 }

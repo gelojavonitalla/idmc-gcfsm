@@ -7,16 +7,9 @@
  * @module services/workshops
  */
 
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-} from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { getDocById, mapDocsWithId } from '../lib/firestoreQueries';
 import {
   COLLECTIONS,
   SESSION_STATUS,
@@ -40,11 +33,7 @@ export async function getPublishedWorkshops() {
   );
 
   const snapshot = await getDocs(workshopsQuery);
-
-  return snapshot.docs.map((docSnapshot) => ({
-    id: docSnapshot.id,
-    ...docSnapshot.data(),
-  }));
+  return mapDocsWithId(snapshot);
 }
 
 /**
@@ -55,27 +44,17 @@ export async function getPublishedWorkshops() {
  * @throws {Error} If the Firestore query fails
  */
 export async function getWorkshopById(workshopId) {
-  if (!workshopId) {
+  const workshop = await getDocById(COLLECTIONS.SESSIONS, workshopId);
+
+  if (!workshop) {
     return null;
   }
 
-  const workshopRef = doc(db, COLLECTIONS.SESSIONS, workshopId);
-  const snapshot = await getDoc(workshopRef);
-
-  if (!snapshot.exists()) {
+  if (workshop.sessionType !== SESSION_TYPES.WORKSHOP) {
     return null;
   }
 
-  const data = snapshot.data();
-
-  if (data.sessionType !== SESSION_TYPES.WORKSHOP) {
-    return null;
-  }
-
-  return {
-    id: snapshot.id,
-    ...data,
-  };
+  return workshop;
 }
 
 /**
@@ -100,11 +79,7 @@ export async function getWorkshopsByCategory(category) {
   );
 
   const snapshot = await getDocs(categoryQuery);
-
-  return snapshot.docs.map((docSnapshot) => ({
-    id: docSnapshot.id,
-    ...docSnapshot.data(),
-  }));
+  return mapDocsWithId(snapshot);
 }
 
 /**
@@ -130,11 +105,7 @@ export async function getWorkshopsByTimeSlot(timeSlot) {
   );
 
   const snapshot = await getDocs(timeSlotQuery);
-
-  return snapshot.docs.map((docSnapshot) => ({
-    id: docSnapshot.id,
-    ...docSnapshot.data(),
-  }));
+  return mapDocsWithId(snapshot);
 }
 
 /**

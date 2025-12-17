@@ -8,8 +8,10 @@
 import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { SESSION_TYPES, SESSION_TYPE_LABELS, SPEAKER_STATUS } from '../../constants';
+import { generateSlug } from '../../utils';
 import MediaUpload from './MediaUpload';
 import { uploadSpeakerPhoto, deleteFile } from '../../services/storage';
+import BaseFormModal from './BaseFormModal';
 import styles from './SpeakerFormModal.module.css';
 
 /**
@@ -42,7 +44,6 @@ function SpeakerFormModal({ isOpen, onClose, onSave, speaker }) {
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const modalRef = useRef(null);
   const nameInputRef = useRef(null);
 
   // Photo upload states
@@ -84,46 +85,6 @@ function SpeakerFormModal({ isOpen, onClose, onSave, speaker }) {
   }, [isOpen, speaker]);
 
   /**
-   * Handle click outside modal
-   */
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.body.style.overflow = 'hidden';
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.body.style.overflow = '';
-    };
-  }, [isOpen, onClose]);
-
-  /**
-   * Handle escape key
-   */
-  useEffect(() => {
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [isOpen, onClose]);
-
-  /**
    * Handles input changes
    *
    * @param {Event} event - Change event
@@ -147,14 +108,12 @@ function SpeakerFormModal({ isOpen, onClose, onSave, speaker }) {
     setPhotoError(null);
 
     try {
-      // Generate speaker ID from name or use existing
       const speakerId = speaker?.id || generateSlug(formData.name);
 
       if (!speakerId) {
         throw new Error('Please enter a speaker name first');
       }
 
-      // Delete old photo if exists
       if (formData.photoUrl) {
         try {
           await deleteFile(formData.photoUrl);
@@ -188,21 +147,6 @@ function SpeakerFormModal({ isOpen, onClose, onSave, speaker }) {
   };
 
   /**
-   * Generates a slug from the speaker name
-   *
-   * @param {string} name - Speaker name
-   * @returns {string} URL-friendly slug
-   */
-  const generateSlug = (name) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
-  };
-
-  /**
    * Handles form submission
    *
    * @param {Event} event - Submit event
@@ -233,254 +177,193 @@ function SpeakerFormModal({ isOpen, onClose, onSave, speaker }) {
     }
   };
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <div className={styles.overlay}>
-      <div
-        ref={modalRef}
-        className={styles.modal}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="speaker-modal-title"
-      >
-        <div className={styles.header}>
-          <h2 id="speaker-modal-title" className={styles.title}>
-            {isEditing ? 'Edit Speaker' : 'Add New Speaker'}
-          </h2>
-          <button
-            className={styles.closeButton}
-            onClick={onClose}
-            aria-label="Close modal"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+    <BaseFormModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Speaker"
+      modalId="speaker-modal"
+      isEditing={isEditing}
+      onSubmit={handleSubmit}
+      isSubmitting={isSubmitting}
+      error={error}
+    >
+      <div className={styles.formGrid}>
+        {/* Name */}
+        <div className={styles.field}>
+          <label htmlFor="name" className={styles.label}>
+            Full Name <span className={styles.required}>*</span>
+          </label>
+          <input
+            ref={nameInputRef}
+            type="text"
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            className={styles.input}
+            placeholder="e.g., Rev. Dr. John Smith"
+            required
+          />
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className={styles.content}>
-            {error && (
-              <div className={styles.errorMessage} role="alert">
-                {error}
-              </div>
-            )}
+        {/* Title */}
+        <div className={styles.field}>
+          <label htmlFor="title" className={styles.label}>
+            Title/Position
+          </label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            className={styles.input}
+            placeholder="e.g., Senior Pastor"
+          />
+        </div>
 
-            <div className={styles.formGrid}>
-              {/* Name */}
-              <div className={styles.field}>
-                <label htmlFor="name" className={styles.label}>
-                  Full Name <span className={styles.required}>*</span>
-                </label>
-                <input
-                  ref={nameInputRef}
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className={styles.input}
-                  placeholder="e.g., Rev. Dr. John Smith"
-                  required
-                />
-              </div>
+        {/* Organization */}
+        <div className={styles.field}>
+          <label htmlFor="organization" className={styles.label}>
+            Organization
+          </label>
+          <input
+            type="text"
+            id="organization"
+            name="organization"
+            value={formData.organization}
+            onChange={handleChange}
+            className={styles.input}
+            placeholder="e.g., GCF South Metro"
+          />
+        </div>
 
-              {/* Title */}
-              <div className={styles.field}>
-                <label htmlFor="title" className={styles.label}>
-                  Title/Position
-                </label>
-                <input
-                  type="text"
-                  id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  className={styles.input}
-                  placeholder="e.g., Senior Pastor"
-                />
-              </div>
+        {/* Speaker Photo */}
+        <div className={styles.fieldSpan2}>
+          <MediaUpload
+            type="image"
+            label="Speaker Photo"
+            currentUrl={formData.photoUrl}
+            onUpload={handlePhotoUpload}
+            onRemove={handlePhotoRemove}
+            isUploading={photoUploading}
+            uploadProgress={photoProgress}
+            error={photoError}
+            hint="Square photo recommended (at least 400x400 pixels)"
+            disabled={isSubmitting}
+          />
+        </div>
 
-              {/* Organization */}
-              <div className={styles.field}>
-                <label htmlFor="organization" className={styles.label}>
-                  Organization
-                </label>
-                <input
-                  type="text"
-                  id="organization"
-                  name="organization"
-                  value={formData.organization}
-                  onChange={handleChange}
-                  className={styles.input}
-                  placeholder="e.g., GCF South Metro"
-                />
-              </div>
+        {/* Session Type */}
+        <div className={styles.field}>
+          <label htmlFor="sessionType" className={styles.label}>
+            Session Type <span className={styles.required}>*</span>
+          </label>
+          <select
+            id="sessionType"
+            name="sessionType"
+            value={formData.sessionType}
+            onChange={handleChange}
+            className={styles.select}
+            required
+          >
+            <option value={SESSION_TYPES.PLENARY}>
+              {SESSION_TYPE_LABELS[SESSION_TYPES.PLENARY]}
+            </option>
+            <option value={SESSION_TYPES.WORKSHOP}>
+              {SESSION_TYPE_LABELS[SESSION_TYPES.WORKSHOP]}
+            </option>
+          </select>
+        </div>
 
-              {/* Speaker Photo */}
-              <div className={styles.fieldSpan2}>
-                <MediaUpload
-                  type="image"
-                  label="Speaker Photo"
-                  currentUrl={formData.photoUrl}
-                  onUpload={handlePhotoUpload}
-                  onRemove={handlePhotoRemove}
-                  isUploading={photoUploading}
-                  uploadProgress={photoProgress}
-                  error={photoError}
-                  hint="Square photo recommended (at least 400x400 pixels)"
-                  disabled={isSubmitting}
-                />
-              </div>
+        {/* Session Title */}
+        <div className={styles.field}>
+          <label htmlFor="sessionTitle" className={styles.label}>
+            Session Title
+          </label>
+          <input
+            type="text"
+            id="sessionTitle"
+            name="sessionTitle"
+            value={formData.sessionTitle}
+            onChange={handleChange}
+            className={styles.input}
+            placeholder="e.g., Plenary Session or Workshop Title"
+          />
+        </div>
 
-              {/* Session Type */}
-              <div className={styles.field}>
-                <label htmlFor="sessionType" className={styles.label}>
-                  Session Type <span className={styles.required}>*</span>
-                </label>
-                <select
-                  id="sessionType"
-                  name="sessionType"
-                  value={formData.sessionType}
-                  onChange={handleChange}
-                  className={styles.select}
-                  required
-                >
-                  <option value={SESSION_TYPES.PLENARY}>
-                    {SESSION_TYPE_LABELS[SESSION_TYPES.PLENARY]}
-                  </option>
-                  <option value={SESSION_TYPES.WORKSHOP}>
-                    {SESSION_TYPE_LABELS[SESSION_TYPES.WORKSHOP]}
-                  </option>
-                </select>
-              </div>
+        {/* Order */}
+        <div className={styles.field}>
+          <label htmlFor="order" className={styles.label}>
+            Display Order
+          </label>
+          <input
+            type="number"
+            id="order"
+            name="order"
+            value={formData.order}
+            onChange={handleChange}
+            className={styles.input}
+            min="1"
+          />
+          <span className={styles.hint}>
+            Lower numbers appear first
+          </span>
+        </div>
 
-              {/* Session Title */}
-              <div className={styles.field}>
-                <label htmlFor="sessionTitle" className={styles.label}>
-                  Session Title
-                </label>
-                <input
-                  type="text"
-                  id="sessionTitle"
-                  name="sessionTitle"
-                  value={formData.sessionTitle}
-                  onChange={handleChange}
-                  className={styles.input}
-                  placeholder="e.g., Plenary Session or Workshop Title"
-                />
-              </div>
-
-              {/* Order */}
-              <div className={styles.field}>
-                <label htmlFor="order" className={styles.label}>
-                  Display Order
-                </label>
-                <input
-                  type="number"
-                  id="order"
-                  name="order"
-                  value={formData.order}
-                  onChange={handleChange}
-                  className={styles.input}
-                  min="1"
-                />
-                <span className={styles.hint}>
-                  Lower numbers appear first
-                </span>
-              </div>
-
-              {/* Status */}
-              <div className={styles.field}>
-                <label htmlFor="status" className={styles.label}>
-                  Status <span className={styles.required}>*</span>
-                </label>
-                <select
-                  id="status"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  className={styles.select}
-                  required
-                >
-                  <option value={SPEAKER_STATUS.DRAFT}>Draft</option>
-                  <option value={SPEAKER_STATUS.PUBLISHED}>Published</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Bio - Full width */}
-            <div className={styles.field}>
-              <label htmlFor="bio" className={styles.label}>
-                Biography
-              </label>
-              <textarea
-                id="bio"
-                name="bio"
-                value={formData.bio}
-                onChange={handleChange}
-                className={styles.textarea}
-                placeholder="Speaker biography..."
-                rows={5}
-              />
-            </div>
-
-            {/* Featured checkbox */}
-            <div className={styles.checkboxField}>
-              <label className={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  name="featured"
-                  checked={formData.featured}
-                  onChange={handleChange}
-                  className={styles.checkbox}
-                />
-                <span className={styles.checkboxText}>Featured Speaker</span>
-              </label>
-              <span className={styles.hint}>
-                Featured speakers are highlighted on the public speakers page
-              </span>
-            </div>
-          </div>
-
-          <div className={styles.footer}>
-            <button
-              type="button"
-              className={styles.cancelButton}
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={styles.submitButton}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <span className={styles.spinner} />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                    <polyline points="17 21 17 13 7 13 7 21" />
-                    <polyline points="7 3 7 8 15 8" />
-                  </svg>
-                  {isEditing ? 'Update Speaker' : 'Create Speaker'}
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+        {/* Status */}
+        <div className={styles.field}>
+          <label htmlFor="status" className={styles.label}>
+            Status <span className={styles.required}>*</span>
+          </label>
+          <select
+            id="status"
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            className={styles.select}
+            required
+          >
+            <option value={SPEAKER_STATUS.DRAFT}>Draft</option>
+            <option value={SPEAKER_STATUS.PUBLISHED}>Published</option>
+          </select>
+        </div>
       </div>
-    </div>
+
+      {/* Bio - Full width */}
+      <div className={styles.field}>
+        <label htmlFor="bio" className={styles.label}>
+          Biography
+        </label>
+        <textarea
+          id="bio"
+          name="bio"
+          value={formData.bio}
+          onChange={handleChange}
+          className={styles.textarea}
+          placeholder="Speaker biography..."
+          rows={5}
+        />
+      </div>
+
+      {/* Featured checkbox */}
+      <div className={styles.checkboxField}>
+        <label className={styles.checkboxLabel}>
+          <input
+            type="checkbox"
+            name="featured"
+            checked={formData.featured}
+            onChange={handleChange}
+            className={styles.checkbox}
+          />
+          <span className={styles.checkboxText}>Featured Speaker</span>
+        </label>
+        <span className={styles.hint}>
+          Featured speakers are highlighted on the public speakers page
+        </span>
+      </div>
+    </BaseFormModal>
   );
 }
 

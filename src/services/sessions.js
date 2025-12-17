@@ -5,16 +5,9 @@
  * @module services/sessions
  */
 
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-} from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { getDocById, getPublishedItems, mapDocsWithId } from '../lib/firestoreQueries';
 import { COLLECTIONS, SESSION_STATUS } from '../constants';
 
 /**
@@ -28,20 +21,10 @@ export async function getPublishedSessions() {
   console.log('[sessions] Collection:', COLLECTIONS.SESSIONS);
   console.log('[sessions] Filter: status ==', SESSION_STATUS.PUBLISHED);
 
-  const sessionsRef = collection(db, COLLECTIONS.SESSIONS);
-  const publishedQuery = query(
-    sessionsRef,
-    where('status', '==', SESSION_STATUS.PUBLISHED),
-    orderBy('order', 'asc')
-  );
+  const sessions = await getPublishedItems(COLLECTIONS.SESSIONS, SESSION_STATUS.PUBLISHED);
+  console.log('[sessions] Firestore returned', sessions.length, 'documents');
 
-  const snapshot = await getDocs(publishedQuery);
-  console.log('[sessions] Firestore returned', snapshot.docs.length, 'documents');
-
-  return snapshot.docs.map((docSnapshot) => ({
-    id: docSnapshot.id,
-    ...docSnapshot.data(),
-  }));
+  return sessions;
 }
 
 /**
@@ -52,21 +35,7 @@ export async function getPublishedSessions() {
  * @throws {Error} If the Firestore query fails
  */
 export async function getSessionById(sessionId) {
-  if (!sessionId) {
-    return null;
-  }
-
-  const sessionRef = doc(db, COLLECTIONS.SESSIONS, sessionId);
-  const snapshot = await getDoc(sessionRef);
-
-  if (!snapshot.exists()) {
-    return null;
-  }
-
-  return {
-    id: snapshot.id,
-    ...snapshot.data(),
-  };
+  return getDocById(COLLECTIONS.SESSIONS, sessionId);
 }
 
 /**
@@ -90,9 +59,5 @@ export async function getSessionsByType(sessionType) {
   );
 
   const snapshot = await getDocs(typeQuery);
-
-  return snapshot.docs.map((docSnapshot) => ({
-    id: docSnapshot.id,
-    ...docSnapshot.data(),
-  }));
+  return mapDocsWithId(snapshot);
 }

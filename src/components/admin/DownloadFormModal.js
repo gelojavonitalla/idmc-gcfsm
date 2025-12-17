@@ -22,6 +22,8 @@ import {
   validateFile,
 } from '../../services/storage';
 import { formatFileSize } from '../../services/downloads';
+import { generateSlug } from '../../utils';
+import BaseFormModal from './BaseFormModal';
 import styles from './DownloadFormModal.module.css';
 
 /**
@@ -54,7 +56,6 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const modalRef = useRef(null);
   const titleInputRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -108,46 +109,6 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
   }, [isOpen, download]);
 
   /**
-   * Handle click outside modal
-   */
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.body.style.overflow = 'hidden';
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.body.style.overflow = '';
-    };
-  }, [isOpen, onClose]);
-
-  /**
-   * Handle escape key
-   */
-  useEffect(() => {
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [isOpen, onClose]);
-
-  /**
    * Handles input changes
    *
    * @param {Event} event - Change event
@@ -158,21 +119,6 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
       ...prev,
       [name]: type === 'number' ? Number(value) : value,
     }));
-  };
-
-  /**
-   * Generates a slug from the title
-   *
-   * @param {string} title - Download title
-   * @returns {string} URL-friendly slug
-   */
-  const generateSlug = (title) => {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
   };
 
   /**
@@ -454,10 +400,6 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
     }
   };
 
-  if (!isOpen) {
-    return null;
-  }
-
   const maxSizeMB = MAX_FILE_SIZES.DOCUMENT / (1024 * 1024);
   const acceptString = ALLOWED_FILE_TYPES.DOCUMENTS.join(',');
   const displayError = fileError;
@@ -466,39 +408,17 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
   const thumbnailAcceptString = ALLOWED_FILE_TYPES.IMAGES.join(',');
 
   return (
-    <div className={styles.overlay}>
-      <div
-        ref={modalRef}
-        className={styles.modal}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="download-modal-title"
-      >
-        <div className={styles.header}>
-          <h2 id="download-modal-title" className={styles.title}>
-            {isEditing ? 'Edit Download' : 'Add New Download'}
-          </h2>
-          <button
-            className={styles.closeButton}
-            onClick={onClose}
-            aria-label="Close modal"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          <div className={styles.content}>
-            {error && (
-              <div className={styles.errorMessage} role="alert">
-                {error}
-              </div>
-            )}
-
-            <div className={styles.formGrid}>
+    <BaseFormModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Download"
+      modalId="download-modal"
+      isEditing={isEditing}
+      onSubmit={handleSubmit}
+      isSubmitting={isSubmitting}
+      error={error}
+    >
+      <div className={styles.formGrid}>
               {/* Title */}
               <div className={styles.fieldSpan2}>
                 <label htmlFor="title" className={styles.label}>
@@ -791,42 +711,7 @@ function DownloadFormModal({ isOpen, onClose, onSave, download }) {
                 </span>
               </div>
             </div>
-          </div>
-
-          <div className={styles.footer}>
-            <button
-              type="button"
-              className={styles.cancelButton}
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={styles.submitButton}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <span className={styles.spinner} />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                    <polyline points="17 21 17 13 7 13 7 21" />
-                    <polyline points="7 3 7 8 15 8" />
-                  </svg>
-                  {isEditing ? 'Update Download' : 'Create Download'}
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    </BaseFormModal>
   );
 }
 

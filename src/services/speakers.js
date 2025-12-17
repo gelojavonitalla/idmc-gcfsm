@@ -5,16 +5,9 @@
  * @module services/speakers
  */
 
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-} from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { getDocById, getPublishedItems, mapDocsWithId } from '../lib/firestoreQueries';
 import { COLLECTIONS, SPEAKER_STATUS } from '../constants';
 
 /**
@@ -24,19 +17,7 @@ import { COLLECTIONS, SPEAKER_STATUS } from '../constants';
  * @throws {Error} If the Firestore query fails
  */
 export async function getPublishedSpeakers() {
-  const speakersRef = collection(db, COLLECTIONS.SPEAKERS);
-  const publishedQuery = query(
-    speakersRef,
-    where('status', '==', SPEAKER_STATUS.PUBLISHED),
-    orderBy('order', 'asc')
-  );
-
-  const snapshot = await getDocs(publishedQuery);
-
-  return snapshot.docs.map((docSnapshot) => ({
-    id: docSnapshot.id,
-    ...docSnapshot.data(),
-  }));
+  return getPublishedItems(COLLECTIONS.SPEAKERS, SPEAKER_STATUS.PUBLISHED);
 }
 
 /**
@@ -47,21 +28,7 @@ export async function getPublishedSpeakers() {
  * @throws {Error} If the Firestore query fails
  */
 export async function getSpeakerById(speakerId) {
-  if (!speakerId) {
-    return null;
-  }
-
-  const speakerRef = doc(db, COLLECTIONS.SPEAKERS, speakerId);
-  const snapshot = await getDoc(speakerRef);
-
-  if (!snapshot.exists()) {
-    return null;
-  }
-
-  return {
-    id: snapshot.id,
-    ...snapshot.data(),
-  };
+  return getDocById(COLLECTIONS.SPEAKERS, speakerId);
 }
 
 /**
@@ -81,9 +48,5 @@ export async function getFeaturedSpeakers() {
   );
 
   const snapshot = await getDocs(featuredQuery);
-
-  return snapshot.docs.map((docSnapshot) => ({
-    id: docSnapshot.id,
-    ...docSnapshot.data(),
-  }));
+  return mapDocsWithId(snapshot);
 }

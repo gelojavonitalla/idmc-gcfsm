@@ -6,3 +6,11 @@
  */
 
 export { app, db, FIREBASE_CONFIG } from './firebase';
+
+export {
+  mapDocsWithId,
+  getDocById,
+  getPublishedItems,
+  getAllItems,
+  getItemsWithFilters,
+} from './firestoreQueries';

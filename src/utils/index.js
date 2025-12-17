@@ -24,3 +24,5 @@ export {
   downloadCsv,
   exportRegistrationsToCsv,
 } from './exportCsv';
+
+export { generateSlug, formatTime } from './strings';
