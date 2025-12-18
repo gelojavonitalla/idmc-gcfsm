@@ -13,7 +13,7 @@ import { INVOICE_STATUS, INVOICE_STATUS_LABELS, STORAGE_PATHS } from '../../cons
 import { updateInvoiceUpload, generateAndReserveInvoiceNumber } from '../../services';
 import { uploadInvoiceFile } from '../../services/storage';
 import { isValidInvoiceFile, formatInvoiceFileName, getFileExtension } from '../../utils';
-import { useAdminAuth } from '../../context';
+import { useAdminAuth, useToast } from '../../context';
 import styles from './InvoiceDetailModal.module.css';
 
 /**
@@ -87,6 +87,7 @@ function getStatusBadgeClass(status) {
  */
 function InvoiceDetailModal({ isOpen, onClose, registration, onInvoiceUpdated }) {
   const { admin } = useAdminAuth();
+  const { showToast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [uploadError, setUploadError] = useState(null);
@@ -176,8 +177,8 @@ function InvoiceDetailModal({ isOpen, onClose, registration, onInvoiceUpdated })
       setSelectedFile(null);
       setUploadProgress(0);
 
-      // Close modal or show success message
-      alert(`Invoice uploaded successfully! Invoice Number: ${invoiceNumber}`);
+      // Show success toast
+      showToast(`Invoice uploaded successfully! Invoice Number: ${invoiceNumber}`, 'success');
       onClose();
     } catch (error) {
       console.error('Failed to upload invoice:', error);
@@ -216,7 +217,7 @@ function InvoiceDetailModal({ isOpen, onClose, registration, onInvoiceUpdated })
         onInvoiceUpdated();
       }
 
-      alert(`Success! ${result.data.message}`);
+      showToast(`Success! ${result.data.message}`, 'success');
       onClose();
     } catch (error) {
       console.error('Failed to send invoice:', error);
