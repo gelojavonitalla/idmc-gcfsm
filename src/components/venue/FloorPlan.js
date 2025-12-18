@@ -240,6 +240,16 @@ function FloorPlan({ schedule, workshops, showEventRoomsOnly = false, enabledFlo
       <div className={styles.header}>
         <h3 className={styles.title}>Interactive Floor Plan</h3>
         <p className={styles.subtitle}>Select a floor and click on a room to see details</p>
+        <p className={styles.safetyNote}>
+          <span className={styles.safetyIcon}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </span>
+          Please familiarize yourself with the floor layout to easily locate your session rooms, restrooms, and emergency exits.
+        </p>
       </div>
 
       <div className={styles.floorPlanWrapper}>
