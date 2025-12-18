@@ -1,16 +1,40 @@
-// src/features/enrollment/services/ocrCash.ts
-import type { OcrSuggestResult } from "@shared/types";
-import { padZero } from "@shared/utils/formatters";
+/**
+ * Cash receipt OCR parser
+ * Extracts transaction information from cash/official receipt text
+ *
+ * @module tesseract/ocrCash
+ */
 
-type Maybe<T> = T | null;
+/**
+ * @typedef {Object} OcrSuggestResult
+ * @property {string} rawText
+ * @property {number|null} suggestedAmount
+ * @property {string|null} suggestedRef
+ * @property {string|null} suggestedDateTime
+ * @property {string|null} suggestedBank
+ */
 
-const MONTHS: Record<string, number> = {
+/**
+ * Pads a number with leading zero if needed
+ * @param {number} n
+ * @returns {string}
+ */
+const padZero = (n) => String(n).padStart(2, "0");
+
+const MONTHS = {
   jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
   jul: 7, aug: 8, sep: 9, sept: 9, oct: 10, nov: 11, dec: 12,
 };
 const pad2 = padZero;
 
-const to24h = (h: number, m: number, ampm?: string | null) => {
+/**
+ * Converts 12h to 24h format
+ * @param {number} h
+ * @param {number} m
+ * @param {string|null} [ampm]
+ * @returns {string}
+ */
+const to24h = (h, m, ampm) => {
   let hour = h;
   if (ampm) {
     const A = ampm.trim().toUpperCase();
@@ -20,8 +44,12 @@ const to24h = (h: number, m: number, ampm?: string | null) => {
   return `${pad2(hour)}:${pad2(m)}`;
 };
 
-/** Amount: prefer labeled, then with currency, then safe fallback */
-const findAmount = (txt: string): Maybe<number> => {
+/**
+ * Amount: prefer labeled, then with currency, then safe fallback
+ * @param {string} txt
+ * @returns {number|null}
+ */
+const findAmount = (txt) => {
   const byLabelAll = Array.from(
     txt.matchAll(
       /\b(?:transfer\s+amount|amount|amt|sent)\b[^0-9₱p]{0,20}(?:₱|\bPH(?:P|p))?\s*([\d][\d,]*(?:\.\d{1,2})?)/gi
@@ -32,7 +60,7 @@ const findAmount = (txt: string): Maybe<number> => {
       .map((m) => Number((m[1] || "").replace(/,/g, "")))
       .filter((n) => Number.isFinite(n))
       .sort((a, b) => b - a)[0];
-    if (Number.isFinite(best)) return best!;
+    if (Number.isFinite(best)) return best;
   }
 
   const withCurrencyAll = Array.from(
@@ -43,7 +71,7 @@ const findAmount = (txt: string): Maybe<number> => {
       .map((m) => Number((m[1] || "").replace(/,/g, "")))
       .filter((n) => Number.isFinite(n))
       .sort((a, b) => b - a)[0];
-    if (Number.isFinite(best)) return best!;
+    if (Number.isFinite(best)) return best;
   }
 
   const fallbackAll = Array.from(
@@ -58,8 +86,12 @@ const findAmount = (txt: string): Maybe<number> => {
   return null;
 };
 
-/** Date span (same behavior as bank; returns ymd + range) */
-const findDateSpan = (txt: string): Maybe<{ ymd: string; start: number; end: number }> => {
+/**
+ * Date span (same behavior as bank; returns ymd + range)
+ * @param {string} txt
+ * @returns {{ymd: string, start: number, end: number}|null}
+ */
+const findDateSpan = (txt) => {
   const monthName =
     "(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)";
 
@@ -104,8 +136,13 @@ const findDateSpan = (txt: string): Maybe<{ ymd: string; start: number; end: num
   return null;
 };
 
-/** Time near a date (same behavior as bank) */
-const findTimeNear = (txt: string, fromIdx?: number): Maybe<string> => {
+/**
+ * Time near a date (same behavior as bank)
+ * @param {string} txt
+ * @param {number} [fromIdx]
+ * @returns {string|null}
+ */
+const findTimeNear = (txt, fromIdx) => {
   const windowStart = fromIdx != null ? Math.max(0, fromIdx - 80) : 0;
   const windowEnd = fromIdx != null ? Math.min(txt.length, fromIdx + 160) : txt.length;
   const segment = txt.slice(windowStart, windowEnd);
@@ -129,9 +166,13 @@ const findTimeNear = (txt: string, fromIdx?: number): Maybe<string> => {
   return null;
 };
 
-/** Cash-specific reference patterns (OR#, Receipt#…) */
-const findRefCash = (txt: string): Maybe<string> => {
-  const patterns: RegExp[] = [
+/**
+ * Cash-specific reference patterns (OR#, Receipt#…)
+ * @param {string} txt
+ * @returns {string|null}
+ */
+const findRefCash = (txt) => {
+  const patterns = [
     /\b(?:official\s+receipt|o\.?\s*r\.?)\s*(?:no\.?|number)?[-\s:.#]*([A-Z0-9][A-Z0-9-]{4,})\b/i,
     /\breceipt\s*(?:no\.?|number|#)?[-\s:.#]*([A-Z0-9][A-Z0-9-]{4,})\b/i,
     /\bOR[-\s:.#]*([A-Z0-9-]{4,})\b/i,
@@ -144,8 +185,12 @@ const findRefCash = (txt: string): Maybe<string> => {
   return numeric ? numeric[0] : null;
 };
 
-/** 👉 Cash parser from plain text (bank stays untouched elsewhere) */
-export function parseCashText(text: string): OcrSuggestResult {
+/**
+ * Cash parser from plain text (bank stays untouched elsewhere)
+ * @param {string} text
+ * @returns {OcrSuggestResult}
+ */
+export function parseCashText(text) {
   const txt = (text ?? "").replace(/\s+/g, " ").trim();
 
   const amount = findAmount(txt);

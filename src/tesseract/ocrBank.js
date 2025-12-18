@@ -1,24 +1,46 @@
-// src/features/enrollment/services/receiptOcr.ts
-import { OcrSuggestResult } from "@shared/types";
-import { padZero } from "@shared/utils/formatters";
+/**
+ * Bank receipt OCR parser
+ * Extracts bank details and transaction information from receipt text
+ *
+ * @module tesseract/ocrBank
+ */
 
-type Maybe<T> = T | null;
+/**
+ * @typedef {Object} OcrSuggestResult
+ * @property {string} rawText
+ * @property {number|null} suggestedAmount
+ * @property {string|null} suggestedRef
+ * @property {string|null} suggestedDateTime
+ * @property {string|null} suggestedBank
+ */
 
-let _tess: Promise<unknown> | null = null;
+let _tess = null;
+
+/**
+ * Lazy-loads tesseract.js
+ * @returns {Promise<unknown>}
+ */
 async function getTesseract() {
-  if (!_tess) _tess = import("tesseract.js").then((m: unknown) => m.default ?? m);
+  if (!_tess) _tess = import("tesseract.js").then((m) => m.default ?? m);
   return _tess;
 }
 
+/**
+ * Pads a number with leading zero if needed
+ * @param {number} n
+ * @returns {string}
+ */
+const padZero = (n) => String(n).padStart(2, "0");
+
 // ---------- helpers ----------
-const MONTHS: Record<string, number> = {
+const MONTHS = {
   jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
   jul: 7, aug: 8, sep: 9, sept: 9, oct: 10, nov: 11, dec: 12,
 };
 const pad2 = padZero;
 
 // small bank dictionary (expand any time)
-const BANK_PATTERNS: Array<{ name: string; patterns: RegExp[] }> = [
+const BANK_PATTERNS = [
   { name: "GCash", patterns: [/gcash/i] },
   { name: "Maya", patterns: [/maya/i, /pay\s*maya/i] },
   { name: "BDO", patterns: [/\bbdo\b/i, /bdo\s+unibank/i] },
@@ -37,7 +59,14 @@ const BANK_PATTERNS: Array<{ name: string; patterns: RegExp[] }> = [
   { name: "PSBank", patterns: [/\bpsbank\b/i, /\bps\s*bank\b/i, /philippine\s+savings\s+bank/i] },
 ];
 
-const to24h = (h: number, m: number, ampm?: string | null) => {
+/**
+ * Converts 12h to 24h format
+ * @param {number} h
+ * @param {number} m
+ * @param {string|null} [ampm]
+ * @returns {string}
+ */
+const to24h = (h, m, ampm) => {
   let hour = h;
   if (ampm) {
     const A = ampm.trim().toUpperCase();
@@ -48,7 +77,12 @@ const to24h = (h: number, m: number, ampm?: string | null) => {
 };
 
 // ---------- bank inference ----------
-const inferBankNameWholeText = (segment: string): Maybe<string> => {
+/**
+ * Infer bank name from text segment
+ * @param {string} segment
+ * @returns {string|null}
+ */
+const inferBankNameWholeText = (segment) => {
   for (const b of BANK_PATTERNS) {
     if (b.patterns.some((re) => re.test(segment))) return b.name;
   }
@@ -57,15 +91,18 @@ const inferBankNameWholeText = (segment: string): Maybe<string> => {
 
 /**
  * More robust slicer: start AFTER marker, end at earliest boundary keyword.
- * Handles weird OCR noise like “To (eo) …”, “Acct.”, “Account No.”, etc.
+ * Handles weird OCR noise like "To (eo) …", "Acct.", "Account No.", etc.
+ * @param {string} txt
+ * @param {RegExp} markerRe
+ * @returns {string|null}
  */
-const sliceAfterWithBoundaries = (txt: string, markerRe: RegExp): string | null => {
+const sliceAfterWithBoundaries = (txt, markerRe) => {
   const m = txt.match(markerRe);
   if (!m || m.index == null) return null;
   const start = m.index + m[0].length;
   const rest = txt.slice(start, Math.min(txt.length, start + 320));
 
-  const boundaryTokens: RegExp[] = [
+  const boundaryTokens = [
     /\btransfer\s+to\b/i,
     /\bto\b/i,
     /\bbeneficiary\b/i,
@@ -91,7 +128,12 @@ const sliceAfterWithBoundaries = (txt: string, markerRe: RegExp): string | null 
   return rest.slice(0, end);
 };
 
-const inferBankNameByContext = (txt: string): { from: Maybe<string>; to: Maybe<string> } => {
+/**
+ * Infer bank names by context (from/to segments)
+ * @param {string} txt
+ * @returns {{from: string|null, to: string|null}}
+ */
+const inferBankNameByContext = (txt) => {
   const fromSeg =
     sliceAfterWithBoundaries(txt, /\b(?:transfer\s+from|from)\b/i) ||
     sliceAfterWithBoundaries(txt, /\b(?:sender|payer|source\s+account)\b/i);
@@ -107,10 +149,13 @@ const inferBankNameByContext = (txt: string): { from: Maybe<string>; to: Maybe<s
 };
 
 // ---------- extractors ----------
-/** Amount examples: “Transfer amount PHP 9,000.00”, “PHP9,000.00”, “₱9,000” */
-const findAmount = (txt: string): Maybe<number> => {
-  // 1) Prefer lines with a label near the number (also tolerate “Sent”)
-  //    Note: allow PHP without a trailing word boundary so "PHP9,000.00" matches.
+/**
+ * Amount examples: "Transfer amount PHP 9,000.00", "PHP9,000.00", "₱9,000"
+ * @param {string} txt
+ * @returns {number|null}
+ */
+const findAmount = (txt) => {
+  // 1) Prefer lines with a label near the number (also tolerate "Sent")
   const byLabelAll = Array.from(
     txt.matchAll(
       /\b(?:transfer\s+amount|amount|amt|sent)\b[^0-9₱p]{0,20}(?:₱|\bPH(?:P|p))?\s*([\d][\d,]*(?:\.\d{1,2})?)/gi
@@ -121,10 +166,10 @@ const findAmount = (txt: string): Maybe<number> => {
       .map((m) => Number((m[1] || "").replace(/,/g, "")))
       .filter((n) => Number.isFinite(n))
       .sort((a, b) => b - a)[0];
-    if (Number.isFinite(best)) return best!;
+    if (Number.isFinite(best)) return best;
   }
 
-  // 2) Any explicit currency (“₱ …” or “PHP …” with or w/o space)
+  // 2) Any explicit currency ("₱ …" or "PHP …" with or w/o space)
   const withCurrencyAll = Array.from(
     txt.matchAll(/(?:₱\s*|\bPH(?:P|p)\s*)(\d[\d,]*(?:\.\d{1,2})?)/gi)
   );
@@ -133,13 +178,10 @@ const findAmount = (txt: string): Maybe<number> => {
       .map((m) => Number((m[1] || "").replace(/,/g, "")))
       .filter((n) => Number.isFinite(n))
       .sort((a, b) => b - a)[0];
-    if (Number.isFinite(best)) return best!;
+    if (Number.isFinite(best)) return best;
   }
 
   // 3) Fallback: numbers that *look* like money but avoid long unformatted IDs
-  //    - Allow "1,234,567.89"
-  //    - Allow 4–6 digit plain numbers (e.g., 9000, 150000), optional decimals
-  //    - Reject very long plain digit runs (e.g., 006508022882)
   const fallbackAll = Array.from(
     txt.matchAll(/\b(?:\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.\d{1,2})?\b/g)
   );
@@ -153,9 +195,13 @@ const findAmount = (txt: string): Maybe<number> => {
   return null;
 };
 
-/** Prefer explicit labels; tolerate "No." and : . - # separators; fallback to 6–20 digit code */
-const findRef = (txt: string): Maybe<string> => {
-  const patterns: RegExp[] = [
+/**
+ * Prefer explicit labels; tolerate "No." and : . - # separators; fallback to 6–20 digit code
+ * @param {string} txt
+ * @returns {string|null}
+ */
+const findRef = (txt) => {
+  const patterns = [
     /\bref(?:erence)?\b[-\s:.#]*(?:no\.?|number|id)?\s*([A-Z0-9][A-Z0-9-]{5,})\b/i,
     /\bconf(?:irmation)?\b\s*(?:no\.?|number|id)?[-\s:.#]+([A-Z0-9][A-Z0-9-]{5,})\b/i,
     /\b(?:txn|trans(?:action)?)\b\s*(?:id|no|code)?[-\s:.#]+([A-Z0-9][A-Z0-9-]{5,})\b/i,
@@ -176,8 +222,10 @@ const findRef = (txt: string): Maybe<string> => {
  * - "2025-09-21", "09/21/2025"
  * - "21 Sep 2025"
  * - noisy: "Sep 26 Date and 2025"
+ * @param {string} txt
+ * @returns {{ymd: string, start: number, end: number}|null}
  */
-const findDateSpan = (txt: string): Maybe<{ ymd: string; start: number; end: number }> => {
+const findDateSpan = (txt) => {
   const monthName =
     "(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)";
 
@@ -215,7 +263,7 @@ const findDateSpan = (txt: string): Maybe<{ ymd: string; start: number; end: num
     return { ymd: `${y}-${pad2(mon)}-${pad2(d)}`, start: m.index, end: m.index + m[0].length };
   }
 
-  // “21 Sep 2025”
+  // "21 Sep 2025"
   m = txt.match(new RegExp(`\\b(\\d{1,2})\\s+${monthName}[a-z]*,?\\s*(20\\d{2})\\b`, "i"));
   if (m && m.index != null) {
     const d = Number(m[1]);
@@ -227,8 +275,13 @@ const findDateSpan = (txt: string): Maybe<{ ymd: string; start: number; end: num
   return null;
 };
 
-/** TIME: “10:20 AM”, “22:05”, or “11:08:47 PM” → HH:mm (24h). Ignores “(GMT +8)”. */
-const findTimeNear = (txt: string, fromIdx?: number): Maybe<string> => {
+/**
+ * TIME: "10:20 AM", "22:05", or "11:08:47 PM" → HH:mm (24h). Ignores "(GMT +8)".
+ * @param {string} txt
+ * @param {number} [fromIdx]
+ * @returns {string|null}
+ */
+const findTimeNear = (txt, fromIdx) => {
   const windowStart = fromIdx != null ? Math.max(0, fromIdx - 80) : 0;
   const windowEnd = fromIdx != null ? Math.min(txt.length, fromIdx + 160) : txt.length;
   const segment = txt.slice(windowStart, windowEnd);
@@ -253,9 +306,12 @@ const findTimeNear = (txt: string, fromIdx?: number): Maybe<string> => {
 };
 
 // ---------- main ----------
-export default async function ocrSuggest(
-  file: File | Blob | ArrayBuffer | Uint8Array | string
-): Promise<OcrSuggestResult> {
+/**
+ * OCR and parse a bank receipt image
+ * @param {File|Blob|ArrayBuffer|Uint8Array|string} file
+ * @returns {Promise<OcrSuggestResult>}
+ */
+export default async function ocrSuggest(file) {
   if (!file) {
     return {
       rawText: "",
@@ -270,7 +326,7 @@ export default async function ocrSuggest(
   const { data } = await Tesseract.recognize(file, "eng", { logger: () => { } });
 
   // Collapse whitespace; keep original for debugging if you like
-  const txt: string = (data?.text ?? "").replace(/\s+/g, " ").trim();
+  const txt = (data?.text ?? "").replace(/\s+/g, " ").trim();
 
   // Amount / Ref
   const amount = findAmount(txt);
@@ -282,11 +338,10 @@ export default async function ocrSuggest(
   const ymd = d?.ymd ?? null;
   const ymdhm = ymd && time ? `${ymd}T${time}` : null;
 
-  // Bank: prefer “From …” → else “To …” (if you want), else fallback whole text.
+  // Bank: prefer "From …" → else "To …" (if you want), else fallback whole text.
   const banks = inferBankNameByContext(txt);
   const bank =
     banks.from ??
-    // (optionally) if you want to prefer payer only, comment the next line:
     banks.to ??
     inferBankNameWholeText(txt) ??
     null;
@@ -295,30 +350,30 @@ export default async function ocrSuggest(
     rawText: txt,
     suggestedAmount: amount,
     suggestedRef: ref,
-    suggestedDateTime: ymdhm,    // preferred by your UI (datetime-local)
+    suggestedDateTime: ymdhm,
     suggestedBank: bank,
   };
 }
 
-export function parseBankText(text: string): OcrSuggestResult {
-  // Collapse whitespace; keep original for debugging if you like
-  const txt: string = text.replace(/\s+/g, " ").trim();
+/**
+ * Parse bank receipt text (no OCR, text already extracted)
+ * @param {string} text
+ * @returns {OcrSuggestResult}
+ */
+export function parseBankText(text) {
+  const txt = text.replace(/\s+/g, " ").trim();
 
-  // Amount / Ref
   const amount = findAmount(txt);
   const ref = findRef(txt);
 
-  // Date & time (combined)
   const d = findDateSpan(txt);
   const time = findTimeNear(txt, d?.end);
   const ymd = d?.ymd ?? null;
   const ymdhm = ymd && time ? `${ymd}T${time}` : null;
 
-  // Bank: prefer “From …” → else “To …” (if you want), else fallback whole text.
   const banks = inferBankNameByContext(txt);
   const bank =
     banks.from ??
-    // (optionally) if you want to prefer payer only, comment the next line:
     banks.to ??
     inferBankNameWholeText(txt) ??
     null;
@@ -327,7 +382,7 @@ export function parseBankText(text: string): OcrSuggestResult {
     rawText: txt,
     suggestedAmount: amount,
     suggestedRef: ref,
-    suggestedDateTime: ymdhm,    // preferred by your UI (datetime-local)
+    suggestedDateTime: ymdhm,
     suggestedBank: bank,
   };
 }
