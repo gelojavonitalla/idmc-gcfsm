@@ -7,8 +7,10 @@
 
 import { useState } from 'react';
 import PropTypes from 'prop-types';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../lib/firebase';
 import { INVOICE_STATUS, INVOICE_STATUS_LABELS, STORAGE_PATHS } from '../../constants';
-import { updateInvoiceUpload, markInvoiceSent, generateAndReserveInvoiceNumber } from '../../services';
+import { updateInvoiceUpload, generateAndReserveInvoiceNumber } from '../../services';
 import { uploadInvoiceFile } from '../../services/storage';
 import { isValidInvoiceFile, formatInvoiceFileName, getFileExtension } from '../../utils';
 import { useAdminAuth } from '../../context';
@@ -206,19 +208,35 @@ function InvoiceDetailModal({ isOpen, onClose, registration, onInvoiceUpdated })
     setUploadError(null);
 
     try {
-      // TODO: This will be implemented in Phase 3 with Cloud Function
-      // For now, just mark as sent
-      await markInvoiceSent(registration.id, admin.email);
+      // Call Cloud Function to send invoice email
+      const sendInvoiceEmail = httpsCallable(functions, 'sendInvoiceEmail');
+      const result = await sendInvoiceEmail({ registrationId: registration.id });
 
       if (onInvoiceUpdated) {
         onInvoiceUpdated();
       }
 
-      alert('Invoice marked as sent! Email functionality will be implemented in Phase 3.');
+      alert(`Success! ${result.data.message}`);
       onClose();
     } catch (error) {
       console.error('Failed to send invoice:', error);
-      setUploadError(error.message || 'Failed to send invoice. Please try again.');
+
+      let errorMessage = 'Failed to send invoice. Please try again.';
+
+      // Extract error message from Cloud Function error
+      if (error.code === 'functions/unauthenticated') {
+        errorMessage = 'You must be logged in to send invoices.';
+      } else if (error.code === 'functions/permission-denied') {
+        errorMessage = 'You do not have permission to send invoices.';
+      } else if (error.code === 'functions/not-found') {
+        errorMessage = 'Registration not found.';
+      } else if (error.code === 'functions/failed-precondition') {
+        errorMessage = error.message || 'Invoice cannot be sent at this time.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setUploadError(errorMessage);
     } finally {
       setIsSending(false);
     }

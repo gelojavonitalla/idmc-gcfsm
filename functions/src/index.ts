@@ -100,6 +100,16 @@ const REGISTRATION_STATUS = {
 };
 
 /**
+ * Invoice status constants
+ */
+const INVOICE_STATUS = {
+  PENDING: "pending",
+  UPLOADED: "uploaded",
+  SENT: "sent",
+  FAILED: "failed",
+};
+
+/**
  * Role labels for display in emails
  */
 const ROLE_LABELS: Record<string, string> = {
@@ -1495,6 +1505,357 @@ export const ocrReceipt = onCall(
       throw new HttpsError(
         "internal",
         "Failed to process image with Vision API"
+      );
+    }
+  }
+);
+
+/**
+ * Generates the plain text version of invoice email
+ */
+function generateInvoiceEmailText(
+  data: {
+    invoiceName: string;
+    registrationId: string;
+    invoiceNumber: string;
+    amountPaid: number;
+    primaryAttendee: {firstName: string; lastName: string};
+  }
+): string {
+  return `
+Dear ${data.invoiceName},
+
+Thank you for your registration to IDMC GCFSM 2025.
+
+Please find attached your invoice for:
+- Registration ID: ${data.registrationId}
+- Invoice Number: ${data.invoiceNumber}
+- Amount Paid: ₱${data.amountPaid.toLocaleString()}
+- Attendee: ${data.primaryAttendee.firstName} ${data.primaryAttendee.lastName}
+
+If you have any questions regarding your invoice, please contact us at ${senderEmail.value()}.
+
+Best regards,
+IDMC GCFSM Finance Team
+  `.trim();
+}
+
+/**
+ * Generates the HTML version of invoice email
+ */
+function generateInvoiceEmailHtml(
+  data: {
+    invoiceName: string;
+    registrationId: string;
+    invoiceNumber: string;
+    amountPaid: number;
+    primaryAttendee: {firstName: string; lastName: string};
+  }
+): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 10px 10px 0 0;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .content {
+      background: #f9fafb;
+      padding: 30px;
+      border-radius: 0 0 10px 10px;
+    }
+    .info-box {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .info-label {
+      font-weight: 600;
+      color: #6b7280;
+    }
+    .info-value {
+      color: #111827;
+      text-align: right;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .attachment-notice {
+      background: #dbeafe;
+      border-left: 4px solid #3b82f6;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📄 Invoice Attached</h1>
+  </div>
+
+  <div class="content">
+    <p>Dear ${data.invoiceName},</p>
+
+    <p>Thank you for your registration to <strong>IDMC GCFSM 2025</strong>.</p>
+
+    <div class="attachment-notice">
+      <strong>📎 Invoice Attached</strong><br>
+      Your invoice (${data.invoiceNumber}) is attached to this email.
+    </div>
+
+    <div class="info-box">
+      <div class="info-row">
+        <span class="info-label">Registration ID:</span>
+        <span class="info-value">${data.registrationId}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Invoice Number:</span>
+        <span class="info-value">${data.invoiceNumber}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Amount Paid:</span>
+        <span class="info-value">₱${data.amountPaid.toLocaleString()}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Attendee:</span>
+        <span class="info-value">${data.primaryAttendee.firstName} ${data.primaryAttendee.lastName}</span>
+      </div>
+    </div>
+
+    <p>If you have any questions regarding your invoice, please contact us at <a href="mailto:${senderEmail.value()}">${senderEmail.value()}</a>.</p>
+
+    <div class="footer">
+      <p><strong>IDMC GCFSM Finance Team</strong></p>
+      <p>Intentional Disciple-Making Churches Conference</p>
+    </div>
+  </div>
+</body>
+</html>
+  `.trim();
+}
+
+/**
+ * Callable Cloud Function to send invoice email with attachment
+ *
+ * This function:
+ * 1. Validates the registration and invoice request
+ * 2. Downloads the invoice file from Storage
+ * 3. Sends email with invoice attachment via SendGrid
+ * 4. Updates invoice status to 'sent'
+ *
+ * @param request - Contains registrationId
+ * @param context - Auth context
+ */
+export const sendInvoiceEmail = onCall(
+  {cors: true},
+  async (request) => {
+    const {registrationId} = request.data;
+
+    // Validate admin authentication
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "User must be authenticated");
+    }
+
+    logger.info(`Processing invoice email request for registration: ${registrationId}`);
+
+    // Check if SendGrid is enabled
+    if (!isSendGridEnabled()) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Email service is not configured. Please contact support."
+      );
+    }
+
+    const db = getFirestore();
+    const registrationRef = db.collection(COLLECTIONS.REGISTRATIONS).doc(registrationId);
+
+    try {
+      // Get registration document
+      const registrationDoc = await registrationRef.get();
+      if (!registrationDoc.exists) {
+        throw new HttpsError("not-found", "Registration not found");
+      }
+
+      const registration = registrationDoc.data();
+      if (!registration) {
+        throw new HttpsError("not-found", "Registration data is empty");
+      }
+
+      // Validate invoice request
+      if (!registration.invoice?.requested) {
+        throw new HttpsError(
+          "failed-precondition",
+          "No invoice was requested for this registration"
+        );
+      }
+
+      if (!registration.invoice?.invoiceUrl) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Invoice file has not been uploaded yet"
+        );
+      }
+
+      // Validate registration is confirmed
+      if (registration.status !== REGISTRATION_STATUS.CONFIRMED) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Registration must be confirmed before sending invoice"
+        );
+      }
+
+      const primaryEmail = registration.primaryAttendee?.email;
+      if (!primaryEmail) {
+        throw new HttpsError("failed-precondition", "No email address found");
+      }
+
+      // Get SendGrid API key
+      const apiKey = await getSendGridApiKey();
+      if (!apiKey) {
+        throw new HttpsError(
+          "failed-precondition",
+          "SendGrid API key is not configured"
+        );
+      }
+
+      sgMail.setApiKey(apiKey);
+
+      const fromEmail = senderEmail.value();
+      if (!fromEmail) {
+        throw new HttpsError("failed-precondition", "SENDER_EMAIL is not configured");
+      }
+
+      // Download invoice file from Storage
+      const {getStorage} = await import("firebase-admin/storage");
+      const bucket = getStorage().bucket();
+
+      // Extract file path from URL
+      const invoiceUrl = registration.invoice.invoiceUrl;
+      const urlParts = invoiceUrl.split("/o/")[1];
+      const filePath = decodeURIComponent(urlParts.split("?")[0]);
+
+      logger.info(`Downloading invoice file from: ${filePath}`);
+      const file = bucket.file(filePath);
+      const [fileBuffer] = await file.download();
+      const base64Content = fileBuffer.toString("base64");
+
+      // Get file extension for content type
+      const extension = filePath.split(".").pop()?.toLowerCase();
+      let contentType = "application/pdf";
+      if (extension === "jpg" || extension === "jpeg") {
+        contentType = "image/jpeg";
+      } else if (extension === "png") {
+        contentType = "image/png";
+      }
+
+      // Prepare email with attachment
+      const msg = {
+        to: primaryEmail,
+        from: {
+          email: fromEmail,
+          name: senderName.value() || "IDMC Finance Team",
+        },
+        subject: `Invoice ${registration.invoice.invoiceNumber} - IDMC GCFSM 2025`,
+        text: generateInvoiceEmailText({
+          invoiceName: registration.invoice.name,
+          registrationId: registration.registrationId,
+          invoiceNumber: registration.invoice.invoiceNumber,
+          amountPaid: registration.payment?.amountPaid || 0,
+          primaryAttendee: registration.primaryAttendee,
+        }),
+        html: generateInvoiceEmailHtml({
+          invoiceName: registration.invoice.name,
+          registrationId: registration.registrationId,
+          invoiceNumber: registration.invoice.invoiceNumber,
+          amountPaid: registration.payment?.amountPaid || 0,
+          primaryAttendee: registration.primaryAttendee,
+        }),
+        attachments: [
+          {
+            content: base64Content,
+            filename: `${registration.invoice.invoiceNumber}.${extension}`,
+            type: contentType,
+            disposition: "attachment",
+          },
+        ],
+      };
+
+      // Send email
+      await sgMail.send(msg);
+      logger.info(`Invoice email sent successfully to ${primaryEmail}`);
+
+      // Update registration with sent status
+      await registrationRef.update({
+        "invoice.status": INVOICE_STATUS.SENT,
+        "invoice.sentAt": FieldValue.serverTimestamp(),
+        "invoice.sentBy": request.auth.token.email || "unknown",
+        "invoice.emailDeliveryStatus": "sent",
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      return {
+        success: true,
+        message: `Invoice sent successfully to ${primaryEmail}`,
+      };
+    } catch (error) {
+      logger.error(`Error sending invoice email for ${registrationId}:`, error);
+
+      // Update status to failed
+      try {
+        await registrationRef.update({
+          "invoice.status": INVOICE_STATUS.FAILED,
+          "invoice.emailDeliveryStatus": "failed",
+          "invoice.errorMessage": error instanceof Error ? error.message : "Unknown error",
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      } catch (updateError) {
+        logger.error("Failed to update invoice status:", updateError);
+      }
+
+      // Re-throw as HttpsError if not already one
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      throw new HttpsError(
+        "internal",
+        `Failed to send invoice email: ${error instanceof Error ? error.message : "Unknown error"}`
       );
     }
   }
