@@ -47,14 +47,11 @@ function FloorPlan({ schedule, workshops, showEventRoomsOnly = false, enabledFlo
 
   /**
    * Get rooms for the active floor
+   * Always show all rooms for building structure, but renderRoom controls interactivity
    */
   const activeFloorRooms = useMemo(() => {
-    const rooms = getRoomsByFloor(activeFloor);
-    if (showEventRoomsOnly) {
-      return rooms.filter(room => room.isEventRoom);
-    }
-    return rooms;
-  }, [activeFloor, showEventRoomsOnly]);
+    return getRoomsByFloor(activeFloor);
+  }, [activeFloor]);
 
   /**
    * Handles room click to select and show details
@@ -145,6 +142,10 @@ function FloorPlan({ schedule, workshops, showEventRoomsOnly = false, enabledFlo
         return 'url(#adminGradient)';
       case ROOM_TYPES.UTILITY:
         return 'url(#utilityGradient)';
+      case ROOM_TYPES.RESTROOM:
+        return 'url(#restroomGradient)';
+      case ROOM_TYPES.EXIT:
+        return 'url(#exitGradient)';
       default:
         return 'url(#workshopGradient)';
     }
@@ -152,6 +153,7 @@ function FloorPlan({ schedule, workshops, showEventRoomsOnly = false, enabledFlo
 
   /**
    * Render a room group in SVG
+   * Only event rooms, restrooms, and exits are interactive and labeled
    *
    * @param {Object} room - Room data
    * @returns {JSX.Element} SVG group for the room
@@ -163,7 +165,27 @@ function FloorPlan({ schedule, workshops, showEventRoomsOnly = false, enabledFlo
     const centerX = coordinates.x + coordinates.width / 2;
     const centerY = coordinates.y + coordinates.height / 2;
     const isSmall = coordinates.width < 120 || coordinates.height < 80;
+    const isInteractive = room.isEventRoom || room.alwaysShow;
 
+    // Non-interactive rooms: just show the structure without labels or interaction
+    if (!isInteractive) {
+      return (
+        <g key={room.id}>
+          <rect
+            x={coordinates.x}
+            y={coordinates.y}
+            width={coordinates.width}
+            height={coordinates.height}
+            rx="6"
+            fill="#e5e7eb"
+            opacity="0.4"
+            className={styles.roomRect}
+          />
+        </g>
+      );
+    }
+
+    // Interactive rooms: show labels and enable clicking
     return (
       <g
         key={room.id}
@@ -232,6 +254,14 @@ function FloorPlan({ schedule, workshops, showEventRoomsOnly = false, enabledFlo
       <linearGradient id="utilityGradient" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stopColor="#6b7280" />
         <stop offset="100%" stopColor="#4b5563" />
+      </linearGradient>
+      <linearGradient id="restroomGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#06b6d4" />
+        <stop offset="100%" stopColor="#0891b2" />
+      </linearGradient>
+      <linearGradient id="exitGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#ef4444" />
+        <stop offset="100%" stopColor="#dc2626" />
       </linearGradient>
     </defs>
   );

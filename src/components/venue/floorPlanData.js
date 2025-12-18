@@ -15,6 +15,8 @@ export const ROOM_TYPES = Object.freeze({
   SERVICE: 'service',
   ADMIN: 'admin',
   UTILITY: 'utility',
+  RESTROOM: 'restroom',
+  EXIT: 'exit',
 });
 
 /**
@@ -26,6 +28,8 @@ export const ROOM_TYPE_LABELS = {
   [ROOM_TYPES.SERVICE]: 'Service Area',
   [ROOM_TYPES.ADMIN]: 'Administration',
   [ROOM_TYPES.UTILITY]: 'Utility',
+  [ROOM_TYPES.RESTROOM]: 'Restroom',
+  [ROOM_TYPES.EXIT]: 'Exit',
 };
 
 /**
@@ -190,7 +194,7 @@ export const GROUND_FLOOR_ROOMS = [
     features: ['Private', 'Air Conditioning'],
     sessionTypes: ['Counseling'],
     workshopTrack: null,
-    isEventRoom: true,
+    isEventRoom: false,
     coordinates: { x: 140, y: 80, width: 80, height: 60 },
   },
   {
@@ -206,6 +210,51 @@ export const GROUND_FLOOR_ROOMS = [
     workshopTrack: null,
     isEventRoom: true,
     coordinates: { x: 140, y: 480, width: 120, height: 100 },
+  },
+  {
+    id: 'female-restroom-gf',
+    name: 'Female CR',
+    fullName: 'Female Restroom',
+    type: ROOM_TYPES.RESTROOM,
+    floor: FLOORS.GROUND,
+    capacity: 0,
+    description: 'Female restroom facilities.',
+    features: ['Accessible'],
+    sessionTypes: [],
+    workshopTrack: null,
+    isEventRoom: false,
+    alwaysShow: true,
+    coordinates: { x: 80, y: 340, width: 60, height: 50 },
+  },
+  {
+    id: 'male-restroom-gf',
+    name: 'Male CR',
+    fullName: 'Male Restroom',
+    type: ROOM_TYPES.RESTROOM,
+    floor: FLOORS.GROUND,
+    capacity: 0,
+    description: 'Male restroom facilities.',
+    features: ['Accessible'],
+    sessionTypes: [],
+    workshopTrack: null,
+    isEventRoom: false,
+    alwaysShow: true,
+    coordinates: { x: 80, y: 280, width: 60, height: 50 },
+  },
+  {
+    id: 'exit-main-gf',
+    name: 'EXIT',
+    fullName: 'Main Exit',
+    type: ROOM_TYPES.EXIT,
+    floor: FLOORS.GROUND,
+    capacity: 0,
+    description: 'Emergency exit.',
+    features: [],
+    sessionTypes: [],
+    workshopTrack: null,
+    isEventRoom: false,
+    alwaysShow: true,
+    coordinates: { x: 730, y: 520, width: 50, height: 30 },
   },
 ];
 
@@ -307,13 +356,14 @@ export function getRoomsByFloor(floorId) {
 
 /**
  * Get only event-related rooms (rooms used for IDMC conference)
+ * Also includes rooms marked with alwaysShow (restrooms, exits)
  *
  * @param {string} [floorId] - Optional floor filter
- * @returns {Array} Event rooms
+ * @returns {Array} Event rooms plus restrooms and exits
  */
 export function getEventRooms(floorId = null) {
   const allRooms = floorId ? getRoomsByFloor(floorId) : FLOOR_PLAN_ROOMS;
-  return allRooms.filter(room => room.isEventRoom);
+  return allRooms.filter(room => room.isEventRoom || room.alwaysShow);
 }
 
 /**
