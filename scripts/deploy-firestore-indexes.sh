@@ -125,5 +125,12 @@ create_index "registrations" \
     "field-path=createdAt,order=descending" \
     "field-path=__name__,order=descending"
 
+# === BANK ACCOUNTS ===
+# Index 10: bankAccounts (isActive ASC, displayOrder ASC, __name__ ASC)
+create_index "bankAccounts" \
+    "field-path=isActive,order=ascending" \
+    "field-path=displayOrder,order=ascending" \
+    "field-path=__name__,order=ascending"
+
 echo "✅ Firestore index deployment complete!"
 echo "   Note: Indexes are created asynchronously. Check the Firebase console for status."
