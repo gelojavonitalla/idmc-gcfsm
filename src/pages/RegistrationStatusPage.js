@@ -13,6 +13,8 @@ import {
   getAttendeeCheckInStatus,
   areAllAttendeesCheckedIn,
   getCheckedInAttendeeCount,
+  uploadPaymentProof,
+  updatePaymentProof,
 } from '../services';
 import styles from './RegistrationStatusPage.module.css';
 
@@ -65,6 +67,13 @@ function RegistrationStatusPage() {
   const [error, setError] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
 
+  // Payment re-upload states
+  const [paymentFile, setPaymentFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+
   /**
    * Performs the registration lookup
    */
@@ -104,6 +113,82 @@ function RegistrationStatusPage() {
     e.preventDefault();
     handleSearch();
   }, [handleSearch]);
+
+  /**
+   * Handles file selection for payment proof re-upload
+   */
+  const handleFileSelect = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError('Please upload an image file (JPG, PNG, GIF, or WebP)');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      setUploadError('File size must be less than 5MB');
+      return;
+    }
+
+    setPaymentFile(file);
+    setUploadError(null);
+    setUploadSuccess(false);
+  }, []);
+
+  /**
+   * Handles payment proof upload
+   */
+  const handleUploadPayment = useCallback(async () => {
+    if (!paymentFile || !registration) {
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+    setUploadProgress(0);
+
+    try {
+      // Upload file to storage
+      const downloadUrl = await uploadPaymentProof(
+        paymentFile,
+        registration.id,
+        (progress) => setUploadProgress(progress)
+      );
+
+      // Update registration with new payment proof
+      await updatePaymentProof(registration.id, downloadUrl);
+
+      // Update local registration state
+      setRegistration((prev) => ({
+        ...prev,
+        status: REGISTRATION_STATUS.PENDING_VERIFICATION,
+        payment: {
+          ...prev.payment,
+          proofUrl: downloadUrl,
+          uploadedAt: new Date().toISOString(),
+        },
+      }));
+
+      setUploadSuccess(true);
+      setPaymentFile(null);
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setUploadSuccess(false), 5000);
+    } catch (err) {
+      console.error('Upload error:', err);
+      setUploadError(err.message || 'Failed to upload payment proof. Please try again.');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  }, [paymentFile, registration]);
 
   /**
    * Auto-search if ID is provided in URL params
@@ -377,6 +462,20 @@ function RegistrationStatusPage() {
                     <span className={styles.infoLabel}>Total Amount</span>
                     <span className={styles.infoValue}>{formatPrice(registration.totalAmount)}</span>
                   </div>
+                  {registration.payment?.amountPaid !== undefined && registration.payment.amountPaid > 0 && (
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Amount Paid</span>
+                      <span className={styles.infoValue}>{formatPrice(registration.payment.amountPaid)}</span>
+                    </div>
+                  )}
+                  {registration.payment?.balance !== undefined && registration.payment.balance > 0 && (
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Balance Owed</span>
+                      <span className={`${styles.infoValue} ${styles.balanceOwed}`}>
+                        {formatPrice(registration.payment.balance)}
+                      </span>
+                    </div>
+                  )}
                   <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Payment Status</span>
                     <span className={`${styles.infoValue} ${styles[paymentStatusConfig.className]}`}>
@@ -407,9 +506,67 @@ function RegistrationStatusPage() {
                 {registration.status === REGISTRATION_STATUS.PENDING_PAYMENT && (
                   <div className={styles.pendingNote}>
                     <h4>Action Required</h4>
-                    <p>
-                      Please complete your payment and upload proof of payment to confirm your registration.
-                    </p>
+
+                    {/* Show rejection reason if payment was rejected */}
+                    {registration.payment?.rejectionReason && (
+                      <div className={styles.rejectionNotice}>
+                        <strong>Payment Needs Attention:</strong>
+                        <p>{registration.payment.rejectionReason}</p>
+                      </div>
+                    )}
+
+                    {/* Show balance information if partial payment was made */}
+                    {registration.payment?.balance && registration.payment.balance > 0 ? (
+                      <p>
+                        You have a balance of <strong>{formatPrice(registration.payment.balance)}</strong> remaining.
+                        Please upload proof of full payment to confirm your registration.
+                      </p>
+                    ) : (
+                      <p>
+                        Please complete your payment and upload proof of payment to confirm your registration.
+                      </p>
+                    )}
+
+                    {/* File upload section */}
+                    <div className={styles.uploadSection}>
+                      <label htmlFor="payment-proof-file" className={styles.uploadLabel}>
+                        Upload Payment Receipt/Screenshot
+                      </label>
+                      <input
+                        id="payment-proof-file"
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                        onChange={handleFileSelect}
+                        disabled={isUploading}
+                        className={styles.fileInput}
+                      />
+                      {paymentFile && (
+                        <p className={styles.selectedFile}>
+                          Selected: {paymentFile.name}
+                        </p>
+                      )}
+                      <button
+                        onClick={handleUploadPayment}
+                        disabled={!paymentFile || isUploading}
+                        className={styles.uploadButton}
+                      >
+                        {isUploading
+                          ? `Uploading ${uploadProgress}%...`
+                          : 'Upload Payment Proof'}
+                      </button>
+                      {uploadError && (
+                        <p className={styles.uploadError}>{uploadError}</p>
+                      )}
+                      {uploadSuccess && (
+                        <p className={styles.uploadSuccess}>
+                          Payment proof uploaded successfully! Your registration status has been updated to "Payment Under Review".
+                        </p>
+                      )}
+                      <p className={styles.fileHint}>
+                        Accepted formats: JPG, PNG, GIF, WebP (Max 5MB)
+                      </p>
+                    </div>
+
                     {registration.paymentDeadline && (
                       <p className={styles.deadline}>
                         Payment deadline: <strong>{formatDate(registration.paymentDeadline)}</strong>
