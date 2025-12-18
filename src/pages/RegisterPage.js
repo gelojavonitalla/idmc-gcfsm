@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSettings } from '../context';
 import {
   REGISTRATION_STEPS,
@@ -8,6 +8,7 @@ import {
   MINISTRY_ROLES,
   PAYMENT_INFO,
   ROUTES,
+  BANK_LABELS,
 } from '../constants';
 import {
   calculatePrice,
@@ -20,6 +21,7 @@ import {
   createRegistration,
   uploadPaymentProof,
   getRegistrationByEmail,
+  getActiveBankAccounts,
   REGISTRATION_ERROR_CODES,
 } from '../services';
 import styles from './RegisterPage.module.css';
@@ -78,6 +80,10 @@ const INITIAL_FORM_DATA = {
   additionalAttendees: [],
 
   // Payment
+  selectedBankAccountId: '',
+  paymentAmount: '',
+  paymentDate: '',
+  paymentTime: '',
   paymentFile: null,
   paymentFileName: '',
 
@@ -113,9 +119,30 @@ function RegisterPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [duplicateRegistration, setDuplicateRegistration] = useState(null);
   const [isFromGCF, setIsFromGCF] = useState(false);
+  const [bankAccounts, setBankAccounts] = useState([]);
+  const [loadingBankAccounts, setLoadingBankAccounts] = useState(false);
 
   const currentTier = activePricingTier;
   const registrationOpen = settings.registrationOpen !== false;
+
+  /**
+   * Fetches active bank accounts on component mount
+   */
+  useEffect(() => {
+    const fetchBankAccounts = async () => {
+      setLoadingBankAccounts(true);
+      try {
+        const accounts = await getActiveBankAccounts();
+        setBankAccounts(accounts);
+      } catch (error) {
+        console.error('Failed to fetch bank accounts:', error);
+      } finally {
+        setLoadingBankAccounts(false);
+      }
+    };
+
+    fetchBankAccounts();
+  }, []);
 
   /**
    * Updates a form field value
@@ -391,6 +418,22 @@ function RegisterPage() {
   const validatePaymentUpload = useCallback(() => {
     const newErrors = {};
 
+    if (!formData.selectedBankAccountId) {
+      newErrors.selectedBankAccountId = 'Please select a bank account';
+    }
+
+    if (!formData.paymentAmount || parseFloat(formData.paymentAmount) <= 0) {
+      newErrors.paymentAmount = 'Please enter the amount you paid';
+    }
+
+    if (!formData.paymentDate) {
+      newErrors.paymentDate = 'Please enter the payment date';
+    }
+
+    if (!formData.paymentTime) {
+      newErrors.paymentTime = 'Please enter the payment time';
+    }
+
     if (!formData.paymentFile) {
       newErrors.paymentFile = 'Please upload your payment screenshot or receipt';
     }
@@ -509,6 +552,10 @@ function RegisterPage() {
         payment: {
           proofUrl: paymentProofUrl,
           uploadedAt: new Date().toISOString(),
+          bankAccountId: formData.selectedBankAccountId,
+          amountPaid: parseFloat(formData.paymentAmount) || 0,
+          paymentDate: formData.paymentDate,
+          paymentTime: formData.paymentTime,
         },
         invoice: formData.invoiceRequest ? {
           requested: true,
@@ -1198,26 +1245,110 @@ function RegisterPage() {
                 Please make your payment and upload the screenshot or receipt.
               </p>
 
-              <div className={styles.paymentInstructions}>
-                <h3>Payment Options</h3>
-                <div className={styles.paymentMethods}>
-                  <div className={styles.paymentMethod}>
-                    <h4>GCash</h4>
-                    <p><strong>Account Name:</strong> {PAYMENT_INFO.GCASH.NAME}</p>
-                    <p><strong>Number:</strong> {PAYMENT_INFO.GCASH.NUMBER}</p>
-                  </div>
+              <div className={styles.amountBox}>
+                <span>Total Amount to Pay ({getTotalAttendeeCount()} attendee{getTotalAttendeeCount() > 1 ? 's' : ''}):</span>
+                <strong>{formatPrice(calculateTotalPrice())}</strong>
+              </div>
 
-                  <div className={styles.paymentMethod}>
-                    <h4>Bank Transfer</h4>
-                    <p><strong>Account Name:</strong> {PAYMENT_INFO.BANK.NAME}</p>
-                    <p><strong>Bank:</strong> {PAYMENT_INFO.BANK.BANK_NAME}</p>
-                    <p><strong>Account No:</strong> {PAYMENT_INFO.BANK.ACCOUNT_NUMBER}</p>
-                  </div>
+              <div className={styles.sectionDivider}>
+                <span>Select Bank Account</span>
+              </div>
+
+              <p className={styles.sectionHint}>
+                Choose the bank account where you will send your payment
+              </p>
+
+              {loadingBankAccounts ? (
+                <p>Loading bank accounts...</p>
+              ) : (
+                <div className={styles.bankAccountGrid}>
+                  {bankAccounts.map((account) => {
+                    const isSelected = formData.selectedBankAccountId === account.id;
+                    return (
+                      <div
+                        key={account.id}
+                        className={`${styles.bankAccountCard} ${isSelected ? styles.selectedBank : ''}`}
+                        onClick={() => updateField('selectedBankAccountId', account.id)}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <img
+                          src={`/images/banks/${account.bankName}.svg`}
+                          alt={BANK_LABELS[account.bankName]}
+                          className={styles.bankLogo}
+                        />
+                        <div className={styles.bankAccountDetails}>
+                          <h4>{BANK_LABELS[account.bankName]}</h4>
+                          <p><strong>Account Name:</strong> {account.accountName}</p>
+                          <p><strong>Account No:</strong> {account.accountNumber}</p>
+                          {account.branch && <p><strong>Branch:</strong> {account.branch}</p>}
+                        </div>
+                        {isSelected && (
+                          <div className={styles.selectedIndicator}>✓</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {errors.selectedBankAccountId && (
+                <span className={styles.errorMessage}>{errors.selectedBankAccountId}</span>
+              )}
+
+              <div className={styles.sectionDivider}>
+                <span>Payment Details</span>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="paymentAmount" className={styles.label}>
+                    Amount Paid <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    id="paymentAmount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className={`${styles.input} ${errors.paymentAmount ? styles.inputError : ''}`}
+                    value={formData.paymentAmount}
+                    onChange={(e) => updateField('paymentAmount', e.target.value)}
+                    placeholder="0.00"
+                  />
+                  {errors.paymentAmount && (
+                    <span className={styles.errorMessage}>{errors.paymentAmount}</span>
+                  )}
                 </div>
 
-                <div className={styles.amountBox}>
-                  <span>Total Amount to Pay ({getTotalAttendeeCount()} attendee{getTotalAttendeeCount() > 1 ? 's' : ''}):</span>
-                  <strong>{formatPrice(calculateTotalPrice())}</strong>
+                <div className={styles.formGroup}>
+                  <label htmlFor="paymentDate" className={styles.label}>
+                    Payment Date <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    id="paymentDate"
+                    type="date"
+                    className={`${styles.input} ${errors.paymentDate ? styles.inputError : ''}`}
+                    value={formData.paymentDate}
+                    onChange={(e) => updateField('paymentDate', e.target.value)}
+                  />
+                  {errors.paymentDate && (
+                    <span className={styles.errorMessage}>{errors.paymentDate}</span>
+                  )}
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label htmlFor="paymentTime" className={styles.label}>
+                    Payment Time <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    id="paymentTime"
+                    type="time"
+                    className={`${styles.input} ${errors.paymentTime ? styles.inputError : ''}`}
+                    value={formData.paymentTime}
+                    onChange={(e) => updateField('paymentTime', e.target.value)}
+                  />
+                  {errors.paymentTime && (
+                    <span className={styles.errorMessage}>{errors.paymentTime}</span>
+                  )}
                 </div>
               </div>
 
