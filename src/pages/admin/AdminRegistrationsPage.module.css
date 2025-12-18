@@ -88,6 +88,12 @@
   height: 16px;
 }
 
+.exportButton .chevron {
+  width: 12px;
+  height: 12px;
+  margin-left: var(--spacing-1);
+}
+
 /* Workshop Export Dropdown */
 .dropdownWrapper {
   position: relative;

@@ -383,6 +383,76 @@ export async function getRegistrationsCount(filters = {}) {
 }
 
 /**
+ * Gets registration counts broken down by status from the database.
+ * This provides accurate counts from the server, not from loaded data.
+ *
+ * @returns {Promise<Object>} Object with count by status and total
+ */
+export async function getRegistrationsStatusCounts() {
+  try {
+    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+
+    // Get total count
+    const totalSnapshot = await getCountFromServer(registrationsRef);
+    const total = totalSnapshot.data().count;
+
+    // Get counts by status in parallel
+    const statusValues = ['confirmed', 'pending_verification', 'pending_payment', 'cancelled', 'refunded'];
+    const countPromises = statusValues.map(async (status) => {
+      const statusQuery = query(registrationsRef, where('status', '==', status));
+      const snapshot = await getCountFromServer(statusQuery);
+      return { status, count: snapshot.data().count };
+    });
+
+    const statusCounts = await Promise.all(countPromises);
+
+    // Build result object
+    const result = {
+      total,
+      confirmed: 0,
+      pendingVerification: 0,
+      pendingPayment: 0,
+      cancelled: 0,
+      refunded: 0,
+    };
+
+    statusCounts.forEach(({ status, count }) => {
+      switch (status) {
+        case 'confirmed':
+          result.confirmed = count;
+          break;
+        case 'pending_verification':
+          result.pendingVerification = count;
+          break;
+        case 'pending_payment':
+          result.pendingPayment = count;
+          break;
+        case 'cancelled':
+          result.cancelled = count;
+          break;
+        case 'refunded':
+          result.refunded = count;
+          break;
+        default:
+          break;
+      }
+    });
+
+    return result;
+  } catch (error) {
+    console.error('Failed to get registration status counts:', error);
+    return {
+      total: 0,
+      confirmed: 0,
+      pendingVerification: 0,
+      pendingPayment: 0,
+      cancelled: 0,
+      refunded: 0,
+    };
+  }
+}
+
+/**
  * Searches registrations by various criteria (server-side search).
  * Searches across: registration ID, short code, email, phone, and name.
  *
@@ -479,11 +549,12 @@ export async function searchRegistrations(searchQuery, options = {}) {
     // Strategy 6: For short queries (2-6 chars), do a broader search with client-side filtering
     // This helps find partial matches on names and codes
     if (query_str.length >= 2 && query_str.length <= 10 && results.size < 20) {
+      // Build query with correct constraint order: where -> orderBy -> limit
       const broadQuery = query(
         registrationsRef,
+        ...baseConstraints,
         orderBy('createdAt', 'desc'),
-        limit(500),
-        ...baseConstraints
+        limit(500)
       );
       const snapshot = await getDocs(broadQuery);
 
