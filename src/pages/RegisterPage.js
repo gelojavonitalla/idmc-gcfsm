@@ -1951,6 +1951,7 @@ function RegisterPage() {
                   <ul>
                     <li>Monday to Friday: 9:00 AM - 5:00 PM</li>
                     <li>Saturday: 9:00 AM - 12:00 PM</li>
+                    <li>Sunday: During church service</li>
                     <li>Or during the event day at the registration booth</li>
                   </ul>
                   <p className={styles.cashPaymentNote}>
