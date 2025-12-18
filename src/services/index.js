@@ -155,3 +155,15 @@ export {
   toggleBankAccountStatus,
   getRegistrationsByBankAccount,
 } from './bankAccounts';
+
+export {
+  INVOICE_ERROR_CODES,
+  getInvoiceRequests,
+  getRegistrationWithInvoice,
+  updateInvoiceUpload,
+  markInvoiceSent,
+  markInvoiceFailed,
+  generateAndReserveInvoiceNumber,
+  getInvoiceRequestCounts,
+  searchInvoiceRequests,
+} from './invoice';
