@@ -135,10 +135,11 @@ function RegistrationDetailModal({
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
   /**
-   * Sync notes state when registration changes
+   * Sync state when registration changes
    */
   useEffect(() => {
     if (registration) {
+      setSelectedStatus(registration.status || REGISTRATION_STATUS.PENDING_PAYMENT);
       setNotes(registration.notes || '');
       setIsEditingNotes(false);
     }
