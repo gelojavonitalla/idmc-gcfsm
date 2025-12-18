@@ -706,27 +706,33 @@ export async function searchRegistrations(searchQuery, options = {}) {
       );
       const snapshot = await getDocs(broadQuery);
 
+      // Normalize search query: trim and collapse multiple spaces
+      const normalizedQueryLower = queryLower.trim().replace(/\s+/g, ' ');
+
       snapshot.docs.forEach((docSnap) => {
         if (results.has(docSnap.id)) {
           return; // Skip already found
         }
 
         const data = docSnap.data();
-        const firstName = (data.primaryAttendee?.firstName || '').toLowerCase();
-        const lastName = (data.primaryAttendee?.lastName || '').toLowerCase();
-        const fullName = `${firstName} ${lastName}`.trim();
+        const firstNameRaw = (data.primaryAttendee?.firstName || '').trim();
+        const lastNameRaw = (data.primaryAttendee?.lastName || '').trim();
+        const firstName = firstNameRaw.toLowerCase();
+        const lastName = lastNameRaw.toLowerCase();
+        // Normalize full name: trim and collapse multiple spaces
+        const fullName = `${firstName} ${lastName}`.trim().replace(/\s+/g, ' ');
         const email = (data.primaryAttendee?.email || '').toLowerCase();
         const shortCode = (data.shortCode || '').toLowerCase();
         const regId = (data.registrationId || docSnap.id).toLowerCase();
 
         // Check if any field contains the search query
         if (
-          firstName.includes(queryLower) ||
-          lastName.includes(queryLower) ||
-          fullName.includes(queryLower) ||
-          email.includes(queryLower) ||
-          shortCode.includes(queryLower) ||
-          regId.includes(queryLower)
+          firstName.includes(normalizedQueryLower) ||
+          lastName.includes(normalizedQueryLower) ||
+          fullName.includes(normalizedQueryLower) ||
+          email.includes(normalizedQueryLower) ||
+          shortCode.includes(normalizedQueryLower) ||
+          regId.includes(normalizedQueryLower)
         ) {
           results.set(docSnap.id, { id: docSnap.id, ...data });
         }
