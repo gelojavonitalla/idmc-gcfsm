@@ -45,6 +45,7 @@ export const ADMIN_ROUTES = {
   ACTIVITY: '/admin/activity',
   VENUE: '/admin/venue',
   INQUIRIES: '/admin/inquiries',
+  BANK_ACCOUNTS: '/admin/bank-accounts',
 };
 
 /**
@@ -175,6 +176,7 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Check-In', path: ADMIN_ROUTES.CHECKIN, icon: 'checkin' },
       { label: 'Check-In Monitor', path: ADMIN_ROUTES.CHECKIN_MONITOR, icon: 'dashboard' },
       { label: 'Inquiries', path: ADMIN_ROUTES.INQUIRIES, icon: 'mail' },
+      { label: 'Bank Accounts', path: ADMIN_ROUTES.BANK_ACCOUNTS, icon: 'bank' },
     ],
   },
   {
@@ -210,6 +212,7 @@ export const COLLECTIONS = {
   VENUE_TRANSPORT: 'venueTransport',
   VENUE_AMENITIES: 'venueAmenities',
   CHECK_IN_LOGS: 'checkInLogs',
+  BANK_ACCOUNTS: 'bankAccounts',
 };
 
 /**
@@ -508,6 +511,68 @@ export const PAYMENT_METHODS = {
   PAYMAYA: 'paymaya',
   BANK_TRANSFER: 'bank_transfer',
   CASH: 'cash',
+};
+
+/**
+ * Bank names matching logo files in /public/images/banks/
+ */
+export const BANK_NAMES = Object.freeze({
+  BDO: 'bdo',
+  BPI: 'bpi',
+  METROBANK: 'metrobank',
+  UNIONBANK: 'unionbank',
+  CHINABANK: 'chinabank',
+  LANDBANK: 'landbank',
+  PNB: 'pnb',
+  RCBC: 'rcbc',
+  SECURITYBANK: 'securitybank',
+  PSBANK: 'psbank',
+  EASTWEST: 'eastwest',
+  GCASH: 'gcash',
+  MAYA: 'maya',
+  CIMB: 'cimb',
+  TONIK: 'tonik',
+  MARIBANK: 'maribank',
+});
+
+/**
+ * Bank display labels
+ */
+export const BANK_LABELS = {
+  [BANK_NAMES.BDO]: 'BDO (Banco de Oro)',
+  [BANK_NAMES.BPI]: 'Bank of the Philippine Islands (BPI)',
+  [BANK_NAMES.METROBANK]: 'Metrobank',
+  [BANK_NAMES.UNIONBANK]: 'UnionBank',
+  [BANK_NAMES.CHINABANK]: 'China Bank',
+  [BANK_NAMES.LANDBANK]: 'Land Bank of the Philippines',
+  [BANK_NAMES.PNB]: 'Philippine National Bank (PNB)',
+  [BANK_NAMES.RCBC]: 'RCBC (Rizal Commercial Banking Corporation)',
+  [BANK_NAMES.SECURITYBANK]: 'Security Bank',
+  [BANK_NAMES.PSBANK]: 'PS Bank',
+  [BANK_NAMES.EASTWEST]: 'EastWest Bank',
+  [BANK_NAMES.GCASH]: 'GCash',
+  [BANK_NAMES.MAYA]: 'Maya',
+  [BANK_NAMES.CIMB]: 'CIMB Bank',
+  [BANK_NAMES.TONIK]: 'Tonik Digital Bank',
+  [BANK_NAMES.MARIBANK]: 'Mari Bank',
+};
+
+/**
+ * Bank account types
+ */
+export const BANK_ACCOUNT_TYPES = Object.freeze({
+  SAVINGS: 'savings',
+  CHECKING: 'checking',
+  EWALLET: 'ewallet',
+});
+
+/**
+ * Bank account type labels
+ */
+export const BANK_ACCOUNT_TYPE_LABELS = {
+  [BANK_ACCOUNT_TYPES.SAVINGS]: 'Savings Account',
+  [BANK_ACCOUNT_TYPES.CHECKING]: 'Checking Account',
+  [BANK_ACCOUNT_TYPES.EWALLET]: 'E-Wallet',
 };
 
 /**

@@ -1376,3 +1376,83 @@
   border-radius: 4px;
   transition: width 0.3s ease;
 }
+
+/* Bank Account Selection */
+.bankAccountGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-4, 1rem);
+  margin-bottom: var(--spacing-4, 1rem);
+}
+
+.bankAccountCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3, 0.75rem);
+  padding: var(--spacing-4, 1rem);
+  border: 2px solid var(--color-gray-200, #e5e7eb);
+  border-radius: var(--radius-lg, 8px);
+  background: var(--color-white, #fff);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bankAccountCard:hover {
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bankAccountCard.selectedBank {
+  border-color: var(--color-primary, #3b82f6);
+  background: var(--color-primary-50, #eff6ff);
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.2);
+}
+
+.bankLogo {
+  width: 80px;
+  height: 40px;
+  object-fit: contain;
+  margin-bottom: var(--spacing-2, 0.5rem);
+}
+
+.bankAccountDetails h4 {
+  font-size: var(--font-size-base, 1rem);
+  font-weight: 600;
+  color: var(--color-text, #1f2937);
+  margin-bottom: var(--spacing-2, 0.5rem);
+}
+
+.bankAccountDetails p {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary, #6b7280);
+  margin: var(--spacing-1, 0.25rem) 0;
+  line-height: 1.5;
+}
+
+.bankAccountDetails strong {
+  color: var(--color-text, #1f2937);
+  font-weight: 600;
+}
+
+.selectedIndicator {
+  position: absolute;
+  top: var(--spacing-3, 0.75rem);
+  right: var(--spacing-3, 0.75rem);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary, #3b82f6);
+  color: white;
+  border-radius: 50%;
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .bankAccountGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -143,3 +143,15 @@ export {
   areAllAttendeesCheckedIn,
   getCheckedInAttendeeCount,
 } from './checkin';
+
+export {
+  BANK_ACCOUNT_ERROR_CODES,
+  getAllBankAccounts,
+  getBankAccountById,
+  getActiveBankAccounts,
+  createBankAccount,
+  updateBankAccount,
+  deleteBankAccount,
+  toggleBankAccountStatus,
+  getRegistrationsByBankAccount,
+} from './bankAccounts';
