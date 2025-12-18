@@ -457,6 +457,7 @@ export async function searchRegistrations(searchTerm) {
  * @param {Object} checkInData - Check-in details
  * @param {string} checkInData.adminId - Admin user ID performing check-in
  * @param {string} checkInData.adminName - Admin display name
+ * @param {string} checkInData.adminEmail - Admin email for activity logging
  * @param {string} checkInData.method - Check-in method (qr or manual)
  * @param {string} [checkInData.stationId] - Optional check-in station identifier
  * @param {number|null} [checkInData.attendeeIndex] - Optional attendee index for selective check-in
@@ -464,7 +465,7 @@ export async function searchRegistrations(searchTerm) {
  * @throws {Error} If check-in fails
  */
 export async function checkInAttendee(registrationId, checkInData) {
-  const { adminId, adminName, method, stationId, attendeeIndex } = checkInData;
+  const { adminId, adminName, adminEmail, method, stationId, attendeeIndex } = checkInData;
 
   if (!registrationId || !adminId) {
     const error = new Error('Registration ID and admin ID are required');
@@ -480,6 +481,7 @@ export async function checkInAttendee(registrationId, checkInData) {
     return checkInSingleAttendee(registration, attendeeIndex, {
       adminId,
       adminName,
+      adminEmail,
       method,
       stationId,
     });
@@ -571,7 +573,7 @@ export async function checkInAttendee(registrationId, checkInData) {
     entityId: registrationId,
     description: `Checked in ${totalAttendees} attendee(s): ${registration.primaryAttendee?.firstName || ''} ${registration.primaryAttendee?.lastName || ''}`,
     adminId,
-    adminEmail: registration.primaryAttendee?.email || 'Unknown',
+    adminEmail: adminEmail || 'Unknown',
   });
 
   return {
@@ -593,13 +595,14 @@ export async function checkInAttendee(registrationId, checkInData) {
  * @param {Object} checkInData - Check-in details
  * @param {string} checkInData.adminId - Admin user ID performing check-in
  * @param {string} checkInData.adminName - Admin display name
+ * @param {string} checkInData.adminEmail - Admin email for activity logging
  * @param {string} checkInData.method - Check-in method (qr or manual)
  * @param {string} [checkInData.stationId] - Optional check-in station identifier
  * @returns {Promise<Object>} Updated registration data with check-in info
  * @throws {Error} If check-in fails
  */
 export async function checkInSingleAttendee(registration, attendeeIndex, checkInData) {
-  const { adminId, adminName, method, stationId } = checkInData;
+  const { adminId, adminName, adminEmail, method, stationId } = checkInData;
 
   // Validate attendee eligibility
   const validation = validateAttendeeCheckInEligibility(registration, attendeeIndex);
@@ -688,7 +691,7 @@ export async function checkInSingleAttendee(registration, attendeeIndex, checkIn
     entityId: registration.id || registration.registrationId,
     description: `Checked in attendee: ${attendeeName}`,
     adminId,
-    adminEmail: attendeeInfo?.email || 'Unknown',
+    adminEmail: adminEmail || 'Unknown',
   });
 
   return {
