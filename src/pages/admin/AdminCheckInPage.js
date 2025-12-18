@@ -44,6 +44,7 @@ function AdminCheckInPage() {
   const { admin } = useAdminAuth();
   const [mode, setMode] = useState(CHECK_IN_MODES.QR);
   const [selectedRegistration, setSelectedRegistration] = useState(null);
+  const [selectedAttendeeIndex, setSelectedAttendeeIndex] = useState(null);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [checkInError, setCheckInError] = useState(null);
   const [checkInSuccess, setCheckInSuccess] = useState(null);
@@ -55,7 +56,7 @@ function AdminCheckInPage() {
    * Handles QR code scan
    */
   const handleQRScan = useCallback(async (qrData) => {
-    const { valid, registrationId } = parseQRCode(qrData);
+    const { valid, registrationId, attendeeIndex } = parseQRCode(qrData);
 
     if (!valid || !registrationId) {
       setCheckInError({
@@ -77,6 +78,7 @@ function AdminCheckInPage() {
       }
 
       setSelectedRegistration(registration);
+      setSelectedAttendeeIndex(attendeeIndex);
       setCheckInError(null);
     } catch (err) {
       console.error('Failed to fetch registration:', err);
@@ -92,36 +94,56 @@ function AdminCheckInPage() {
    */
   const handleSearchSelect = useCallback((registration) => {
     setSelectedRegistration(registration);
+    setSelectedAttendeeIndex(null);
     setCheckInError(null);
   }, []);
 
   /**
-   * Performs the check-in
+   * Performs the check-in for a specific attendee or all attendees
+   *
+   * @param {number|null} attendeeIndex - Index of specific attendee to check in, or null for all
    */
-  const handleCheckIn = useCallback(async () => {
+  const handleCheckIn = useCallback(async (attendeeIndex = null) => {
     if (!selectedRegistration || !admin) {
       return;
     }
+
+    // Use passed attendeeIndex, or fall back to selectedAttendeeIndex from QR scan
+    const indexToCheckIn = typeof attendeeIndex === 'number' ? attendeeIndex : selectedAttendeeIndex;
 
     setIsCheckingIn(true);
     setCheckInError(null);
 
     try {
-      await checkInAttendee(selectedRegistration.id, {
+      const result = await checkInAttendee(selectedRegistration.id, {
         adminId: admin.id,
         adminName: admin.displayName || admin.email,
         method: mode === CHECK_IN_MODES.QR ? CHECK_IN_METHODS.QR : CHECK_IN_METHODS.MANUAL,
+        attendeeIndex: indexToCheckIn,
       });
 
       // Show success message
-      const attendeeName = `${selectedRegistration.primaryAttendee?.firstName || ''} ${selectedRegistration.primaryAttendee?.lastName || ''}`.trim();
+      let attendeeName;
+      let count;
+
+      if (typeof indexToCheckIn === 'number') {
+        // Single attendee check-in
+        attendeeName = result.lastCheckedInAttendee?.name || 'Attendee';
+        count = 1;
+      } else {
+        // All attendees check-in
+        attendeeName = `${selectedRegistration.primaryAttendee?.firstName || ''} ${selectedRegistration.primaryAttendee?.lastName || ''}`.trim();
+        count = 1 + (selectedRegistration.additionalAttendees?.length || 0);
+      }
+
       setCheckInSuccess({
         name: attendeeName,
-        count: 1 + (selectedRegistration.additionalAttendees?.length || 0),
+        count,
       });
 
       // Clear selection after success
       setSelectedRegistration(null);
+      setSelectedAttendeeIndex(null);
 
       // Auto-hide success after 3 seconds
       setTimeout(() => {
@@ -135,19 +157,21 @@ function AdminCheckInPage() {
       });
 
       // If already checked in, update the registration data
-      if (err.code === CHECK_IN_ERROR_CODES.ALREADY_CHECKED_IN && err.registration) {
+      if ((err.code === CHECK_IN_ERROR_CODES.ALREADY_CHECKED_IN ||
+           err.code === CHECK_IN_ERROR_CODES.ATTENDEE_ALREADY_CHECKED_IN) && err.registration) {
         setSelectedRegistration(err.registration);
       }
     } finally {
       setIsCheckingIn(false);
     }
-  }, [selectedRegistration, admin, mode]);
+  }, [selectedRegistration, admin, mode, selectedAttendeeIndex]);
 
   /**
    * Cancels the current selection
    */
   const handleCancel = useCallback(() => {
     setSelectedRegistration(null);
+    setSelectedAttendeeIndex(null);
     setCheckInError(null);
   }, []);
 
@@ -220,6 +244,7 @@ function AdminCheckInPage() {
               onCancel={handleCancel}
               isLoading={isCheckingIn}
               error={checkInError}
+              selectedAttendeeIndex={selectedAttendeeIndex}
             />
           ) : (
             <>

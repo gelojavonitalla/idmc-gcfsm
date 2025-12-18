@@ -8,7 +8,12 @@ import {
   ROUTES,
 } from '../constants';
 import { formatPrice, maskEmail, maskName, maskPhone } from '../utils';
-import { lookupRegistration } from '../services';
+import {
+  lookupRegistration,
+  getAttendeeCheckInStatus,
+  areAllAttendeesCheckedIn,
+  getCheckedInAttendeeCount,
+} from '../services';
 import styles from './RegistrationStatusPage.module.css';
 
 /**
@@ -146,7 +151,39 @@ function RegistrationStatusPage() {
     });
   }, []);
 
-  const statusConfig = registration ? getStatusConfig(registration.status, registration.checkedIn) : null;
+  /**
+   * Formats check-in time for display
+   */
+  const formatCheckInTime = useCallback((timestamp) => {
+    if (!timestamp) return '';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleTimeString('en-PH', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }, []);
+
+  /**
+   * Gets check-in status for an attendee
+   */
+  const getCheckInInfo = useCallback((attendeeIndex) => {
+    if (!registration) return { checkedIn: false };
+    return getAttendeeCheckInStatus(registration, attendeeIndex) || { checkedIn: false };
+  }, [registration]);
+
+  // Check-in status tracking
+  const totalAttendees = registration
+    ? 1 + (registration.additionalAttendees?.length || 0)
+    : 0;
+  const checkedInCount = registration
+    ? getCheckedInAttendeeCount(registration)
+    : 0;
+  const allCheckedIn = registration
+    ? areAllAttendeesCheckedIn(registration)
+    : false;
+
+  // Use allCheckedIn for status config to show "Checked In" banner when all attendees are checked in
+  const statusConfig = registration ? getStatusConfig(registration.status, allCheckedIn) : null;
   const isConfirmed = registration?.status === REGISTRATION_STATUS.CONFIRMED;
 
   return (
@@ -204,6 +241,20 @@ function RegistrationStatusPage() {
                 <span className={styles.statusLabel}>{statusConfig.label}</span>
               </div>
 
+              {/* Check-in Status Banner (for confirmed registrations) */}
+              {isConfirmed && checkedInCount > 0 && (
+                <div className={`${styles.checkInBanner} ${allCheckedIn ? styles.checkInComplete : styles.checkInPartial}`}>
+                  <span className={styles.checkInIcon}>
+                    {allCheckedIn ? '✓' : '○'}
+                  </span>
+                  <span className={styles.checkInLabel}>
+                    {allCheckedIn
+                      ? 'All Attendees Checked In'
+                      : `${checkedInCount} of ${totalAttendees} Checked In`}
+                  </span>
+                </div>
+              )}
+
               {/* Registration Header */}
               <div className={styles.regHeader}>
                 <div className={styles.regIdSection}>
@@ -248,7 +299,7 @@ function RegistrationStatusPage() {
               {/* Primary Attendee */}
               <div className={styles.infoSection}>
                 <h3>Primary Contact</h3>
-                <div className={styles.attendeeCard}>
+                <div className={`${styles.attendeeCard} ${getCheckInInfo(0).checkedIn ? styles.attendeeCheckedIn : ''}`}>
                   <div className={styles.attendeeBadge}>Primary</div>
                   <div className={styles.attendeeInfo}>
                     <p className={styles.attendeeName}>
@@ -260,6 +311,11 @@ function RegistrationStatusPage() {
                     <p className={styles.attendeeMeta}>
                       {registration.primaryAttendee?.ministryRole} | {REGISTRATION_CATEGORY_LABELS[registration.primaryAttendee?.category]}
                     </p>
+                    {isConfirmed && getCheckInInfo(0).checkedIn && (
+                      <p className={styles.attendeeCheckInStatus}>
+                        ✓ Checked in at {formatCheckInTime(getCheckInInfo(0).checkedInAt)}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -268,22 +324,31 @@ function RegistrationStatusPage() {
               {registration.additionalAttendees?.length > 0 && (
                 <div className={styles.infoSection}>
                   <h3>Additional Attendees ({registration.additionalAttendees.length})</h3>
-                  {registration.additionalAttendees.map((attendee, index) => (
-                    <div key={index} className={styles.attendeeCard}>
-                      <div className={styles.attendeeNumber}>#{index + 2}</div>
-                      <div className={styles.attendeeInfo}>
-                        <p className={styles.attendeeName}>
-                          {maskName(attendee.lastName)}, {maskName(attendee.firstName)} {maskName(attendee.middleName)}
-                        </p>
-                        <p className={styles.attendeeContact}>
-                          {attendee.email ? maskEmail(attendee.email) : '(No email)'} | {maskPhone(attendee.cellphone)}
-                        </p>
-                        <p className={styles.attendeeMeta}>
-                          {attendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[attendee.category]}
-                        </p>
+                  {registration.additionalAttendees.map((attendee, index) => {
+                    const attendeeIndex = index + 1;
+                    const checkInInfo = getCheckInInfo(attendeeIndex);
+                    return (
+                      <div key={index} className={`${styles.attendeeCard} ${checkInInfo.checkedIn ? styles.attendeeCheckedIn : ''}`}>
+                        <div className={styles.attendeeNumber}>#{index + 2}</div>
+                        <div className={styles.attendeeInfo}>
+                          <p className={styles.attendeeName}>
+                            {maskName(attendee.lastName)}, {maskName(attendee.firstName)} {maskName(attendee.middleName)}
+                          </p>
+                          <p className={styles.attendeeContact}>
+                            {attendee.email ? maskEmail(attendee.email) : '(No email)'} | {maskPhone(attendee.cellphone)}
+                          </p>
+                          <p className={styles.attendeeMeta}>
+                            {attendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[attendee.category]}
+                          </p>
+                          {isConfirmed && checkInInfo.checkedIn && (
+                            <p className={styles.attendeeCheckInStatus}>
+                              ✓ Checked in at {formatCheckInTime(checkInInfo.checkedInAt)}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -366,23 +431,64 @@ function RegistrationStatusPage() {
                 <p><strong>Address:</strong> {settings.venue?.address}</p>
               </div>
 
-              {/* Confirmed Registration - Download Section */}
+              {/* Confirmed Registration - Download Section with Per-Attendee QR Codes */}
               {isConfirmed && (
                 <div className={styles.downloadSection}>
-                  <h3>Your Ticket</h3>
+                  <h3>Your Tickets</h3>
                   <p>
-                    Show this QR code or your registration ID at check-in.
-                    A confirmation email with your ticket has been sent to {maskEmail(registration.primaryAttendee?.email)}.
+                    Each attendee has their own unique QR code for check-in.
+                    A confirmation email with tickets has been sent to {maskEmail(registration.primaryAttendee?.email)}.
                   </p>
-                  <div className={styles.ticketQR}>
-                    <QRCodeSVG
-                      value={registration.qrCodeData || registration.registrationId}
-                      size={180}
-                      level="M"
-                      includeMargin
-                    />
-                    <p className={styles.qrRegId}>{registration.registrationId}</p>
+
+                  {/* Primary Attendee QR Code */}
+                  <div className={styles.attendeeTicket}>
+                    <div className={`${styles.ticketQR} ${getCheckInInfo(0).checkedIn ? styles.ticketUsed : ''}`}>
+                      <QRCodeSVG
+                        value={`${registration.registrationId}-0`}
+                        size={160}
+                        level="M"
+                        includeMargin
+                      />
+                      <p className={styles.qrAttendeeName}>
+                        {maskName(registration.primaryAttendee?.firstName)} {maskName(registration.primaryAttendee?.lastName)}
+                      </p>
+                      <p className={styles.qrAttendeeLabel}>Primary</p>
+                      {getCheckInInfo(0).checkedIn && (
+                        <p className={styles.qrCheckedIn}>✓ Checked In</p>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Additional Attendees QR Codes */}
+                  {registration.additionalAttendees?.length > 0 && (
+                    <div className={styles.additionalTickets}>
+                      {registration.additionalAttendees.map((attendee, index) => {
+                        const attendeeIndex = index + 1;
+                        const checkInInfo = getCheckInInfo(attendeeIndex);
+                        return (
+                          <div key={index} className={styles.attendeeTicket}>
+                            <div className={`${styles.ticketQR} ${checkInInfo.checkedIn ? styles.ticketUsed : ''}`}>
+                              <QRCodeSVG
+                                value={`${registration.registrationId}-${attendeeIndex}`}
+                                size={160}
+                                level="M"
+                                includeMargin
+                              />
+                              <p className={styles.qrAttendeeName}>
+                                {maskName(attendee.firstName)} {maskName(attendee.lastName)}
+                              </p>
+                              <p className={styles.qrAttendeeLabel}>Guest {index + 1}</p>
+                              {checkInInfo.checkedIn && (
+                                <p className={styles.qrCheckedIn}>✓ Checked In</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <p className={styles.qrRegId}>Registration: {registration.registrationId}</p>
                 </div>
               )}
             </div>

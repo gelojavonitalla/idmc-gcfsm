@@ -38,6 +38,8 @@ export const CHECK_IN_METHODS = Object.freeze({
 export const CHECK_IN_ERROR_CODES = Object.freeze({
   REGISTRATION_NOT_FOUND: 'REGISTRATION_NOT_FOUND',
   ALREADY_CHECKED_IN: 'ALREADY_CHECKED_IN',
+  ATTENDEE_ALREADY_CHECKED_IN: 'ATTENDEE_ALREADY_CHECKED_IN',
+  ATTENDEE_NOT_FOUND: 'ATTENDEE_NOT_FOUND',
   NOT_CONFIRMED: 'NOT_CONFIRMED',
   CANCELLED: 'CANCELLED',
   INVALID_QR_CODE: 'INVALID_QR_CODE',
@@ -45,7 +47,7 @@ export const CHECK_IN_ERROR_CODES = Object.freeze({
 });
 
 /**
- * Validates a registration for check-in eligibility
+ * Validates a registration for check-in eligibility (legacy - checks entire registration)
  *
  * @param {Object} registration - Registration document
  * @returns {{ valid: boolean, errorCode: string|null, message: string }}
@@ -59,7 +61,9 @@ export function validateCheckInEligibility(registration) {
     };
   }
 
-  if (registration.checkedIn) {
+  // Check if ALL attendees are checked in (legacy behavior)
+  const allCheckedIn = areAllAttendeesCheckedIn(registration);
+  if (allCheckedIn) {
     const checkedInAt = registration.checkedInAt?.toDate?.() || registration.checkedInAt;
     const timeString = checkedInAt
       ? new Date(checkedInAt).toLocaleTimeString('en-PH', {
@@ -94,34 +98,221 @@ export function validateCheckInEligibility(registration) {
 }
 
 /**
- * Parses QR code data to extract registration ID
+ * Validates a specific attendee for check-in eligibility
+ *
+ * @param {Object} registration - Registration document
+ * @param {number} attendeeIndex - Index of the attendee (0 for primary, 1+ for additional)
+ * @returns {{ valid: boolean, errorCode: string|null, message: string, attendeeName: string|null }}
+ */
+export function validateAttendeeCheckInEligibility(registration, attendeeIndex) {
+  if (!registration) {
+    return {
+      valid: false,
+      errorCode: CHECK_IN_ERROR_CODES.REGISTRATION_NOT_FOUND,
+      message: 'Registration not found',
+      attendeeName: null,
+    };
+  }
+
+  if (registration.status === REGISTRATION_STATUS.CANCELLED) {
+    return {
+      valid: false,
+      errorCode: CHECK_IN_ERROR_CODES.CANCELLED,
+      message: 'Registration has been cancelled',
+      attendeeName: null,
+    };
+  }
+
+  if (registration.status !== REGISTRATION_STATUS.CONFIRMED) {
+    return {
+      valid: false,
+      errorCode: CHECK_IN_ERROR_CODES.NOT_CONFIRMED,
+      message: 'Payment not yet confirmed',
+      attendeeName: null,
+    };
+  }
+
+  // Get attendee info
+  const attendeeInfo = getAttendeeByIndex(registration, attendeeIndex);
+  if (!attendeeInfo) {
+    return {
+      valid: false,
+      errorCode: CHECK_IN_ERROR_CODES.ATTENDEE_NOT_FOUND,
+      message: `Attendee #${attendeeIndex + 1} not found in this registration`,
+      attendeeName: null,
+    };
+  }
+
+  const attendeeName = `${attendeeInfo.firstName || ''} ${attendeeInfo.lastName || ''}`.trim();
+
+  // Check if this specific attendee is already checked in
+  const checkInStatus = getAttendeeCheckInStatus(registration, attendeeIndex);
+  if (checkInStatus?.checkedIn) {
+    const checkedInAt = checkInStatus.checkedInAt?.toDate?.() || checkInStatus.checkedInAt;
+    const timeString = checkedInAt
+      ? new Date(checkedInAt).toLocaleTimeString('en-PH', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : 'earlier';
+    return {
+      valid: false,
+      errorCode: CHECK_IN_ERROR_CODES.ATTENDEE_ALREADY_CHECKED_IN,
+      message: `${attendeeName} already checked in at ${timeString}`,
+      attendeeName,
+    };
+  }
+
+  return { valid: true, errorCode: null, message: 'Eligible for check-in', attendeeName };
+}
+
+/**
+ * Gets attendee information by index
+ *
+ * @param {Object} registration - Registration document
+ * @param {number} attendeeIndex - Index of the attendee (0 for primary, 1+ for additional)
+ * @returns {Object|null} Attendee data or null if not found
+ */
+export function getAttendeeByIndex(registration, attendeeIndex) {
+  if (!registration) {
+    return null;
+  }
+
+  if (attendeeIndex === 0) {
+    return registration.primaryAttendee || null;
+  }
+
+  const additionalIndex = attendeeIndex - 1;
+  return registration.additionalAttendees?.[additionalIndex] || null;
+}
+
+/**
+ * Gets the check-in status for a specific attendee
+ *
+ * @param {Object} registration - Registration document
+ * @param {number} attendeeIndex - Index of the attendee (0 for primary, 1+ for additional)
+ * @returns {Object|null} Check-in status object or null
+ */
+export function getAttendeeCheckInStatus(registration, attendeeIndex) {
+  if (!registration) {
+    return null;
+  }
+
+  // If attendeeCheckIns array exists, use it (new per-attendee tracking)
+  if (registration.attendeeCheckIns && Array.isArray(registration.attendeeCheckIns)) {
+    return registration.attendeeCheckIns[attendeeIndex] || null;
+  }
+
+  // Fallback to legacy behavior: if checkedIn is true, all attendees are considered checked in
+  if (registration.checkedIn) {
+    return {
+      checkedIn: true,
+      checkedInAt: registration.checkedInAt,
+      checkedInBy: registration.checkedInBy,
+      checkInMethod: registration.checkInMethod,
+    };
+  }
+
+  return { checkedIn: false };
+}
+
+/**
+ * Checks if all attendees in a registration are checked in
+ *
+ * @param {Object} registration - Registration document
+ * @returns {boolean} True if all attendees are checked in
+ */
+export function areAllAttendeesCheckedIn(registration) {
+  if (!registration) {
+    return false;
+  }
+
+  const totalAttendees = 1 + (registration.additionalAttendees?.length || 0);
+
+  // If attendeeCheckIns array exists, check each attendee
+  if (registration.attendeeCheckIns && Array.isArray(registration.attendeeCheckIns)) {
+    if (registration.attendeeCheckIns.length < totalAttendees) {
+      return false;
+    }
+    return registration.attendeeCheckIns.every((checkIn) => checkIn?.checkedIn === true);
+  }
+
+  // Fallback to legacy behavior
+  return registration.checkedIn === true;
+}
+
+/**
+ * Gets the count of checked-in attendees for a registration
+ *
+ * @param {Object} registration - Registration document
+ * @returns {number} Number of checked-in attendees
+ */
+export function getCheckedInAttendeeCount(registration) {
+  if (!registration) {
+    return 0;
+  }
+
+  const totalAttendees = 1 + (registration.additionalAttendees?.length || 0);
+
+  // If attendeeCheckIns array exists, count checked-in attendees
+  if (registration.attendeeCheckIns && Array.isArray(registration.attendeeCheckIns)) {
+    return registration.attendeeCheckIns.filter((checkIn) => checkIn?.checkedIn === true).length;
+  }
+
+  // Fallback to legacy behavior
+  return registration.checkedIn ? totalAttendees : 0;
+}
+
+/**
+ * Parses QR code data to extract registration ID and attendee index
+ *
+ * Supports formats:
+ * - REG-2026-XXXXXX (legacy - no attendee index, defaults to null)
+ * - REG-2026-XXXXXX-0 (new - primary attendee)
+ * - REG-2026-XXXXXX-1 (new - additional attendee 1)
  *
  * @param {string} qrData - Raw QR code data
- * @returns {{ valid: boolean, registrationId: string|null }}
+ * @returns {{ valid: boolean, registrationId: string|null, attendeeIndex: number|null }}
  */
 export function parseQRCode(qrData) {
   if (!qrData || typeof qrData !== 'string') {
-    return { valid: false, registrationId: null };
+    return { valid: false, registrationId: null, attendeeIndex: null };
   }
 
   const trimmed = qrData.trim().toUpperCase();
 
-  // QR code should contain the registration ID directly (e.g., REG-2026-A7K3)
+  // QR code format: REG-YYYY-XXXXXX or REG-YYYY-XXXXXX-N
   if (trimmed.startsWith('REG-')) {
-    return { valid: true, registrationId: trimmed };
+    // Check for new format with attendee index: REG-2026-XXXXXX-N
+    const partsWithIndex = trimmed.match(/^(REG-\d{4}-[A-Z0-9]+)-(\d+)$/);
+    if (partsWithIndex) {
+      const registrationId = partsWithIndex[1];
+      const attendeeIndex = parseInt(partsWithIndex[2], 10);
+      return { valid: true, registrationId, attendeeIndex };
+    }
+
+    // Legacy format without attendee index: REG-2026-XXXXXX
+    const legacyMatch = trimmed.match(/^(REG-\d{4}-[A-Z0-9]+)$/);
+    if (legacyMatch) {
+      return { valid: true, registrationId: legacyMatch[1], attendeeIndex: null };
+    }
   }
 
   // Try parsing as JSON (in case QR contains structured data)
   try {
     const parsed = JSON.parse(qrData);
     if (parsed.registrationId) {
-      return { valid: true, registrationId: parsed.registrationId.toUpperCase() };
+      return {
+        valid: true,
+        registrationId: parsed.registrationId.toUpperCase(),
+        attendeeIndex: typeof parsed.attendeeIndex === 'number' ? parsed.attendeeIndex : null,
+      };
     }
   } catch {
     // Not JSON, continue
   }
 
-  return { valid: false, registrationId: null };
+  return { valid: false, registrationId: null, attendeeIndex: null };
 }
 
 /**
@@ -253,7 +444,7 @@ export async function searchRegistrations(searchTerm) {
 }
 
 /**
- * Checks in an attendee
+ * Checks in an attendee (legacy - checks in all attendees or a specific attendee)
  *
  * @param {string} registrationId - Registration ID to check in
  * @param {Object} checkInData - Check-in details
@@ -261,11 +452,12 @@ export async function searchRegistrations(searchTerm) {
  * @param {string} checkInData.adminName - Admin display name
  * @param {string} checkInData.method - Check-in method (qr or manual)
  * @param {string} [checkInData.stationId] - Optional check-in station identifier
+ * @param {number|null} [checkInData.attendeeIndex] - Optional attendee index for selective check-in
  * @returns {Promise<Object>} Updated registration data
  * @throws {Error} If check-in fails
  */
 export async function checkInAttendee(registrationId, checkInData) {
-  const { adminId, adminName, method, stationId } = checkInData;
+  const { adminId, adminName, method, stationId, attendeeIndex } = checkInData;
 
   if (!registrationId || !adminId) {
     const error = new Error('Registration ID and admin ID are required');
@@ -276,6 +468,17 @@ export async function checkInAttendee(registrationId, checkInData) {
   // Get registration
   const registration = await getRegistrationForCheckIn(registrationId);
 
+  // If attendeeIndex is provided, do per-attendee check-in
+  if (typeof attendeeIndex === 'number') {
+    return checkInSingleAttendee(registration, attendeeIndex, {
+      adminId,
+      adminName,
+      method,
+      stationId,
+    });
+  }
+
+  // Legacy behavior: check in all attendees at once
   // Validate eligibility
   const validation = validateCheckInEligibility(registration);
   if (!validation.valid) {
@@ -285,9 +488,23 @@ export async function checkInAttendee(registrationId, checkInData) {
     throw error;
   }
 
+  // Create attendeeCheckIns array for all attendees
+  const totalAttendees = 1 + (registration.additionalAttendees?.length || 0);
+  const checkInTimestamp = serverTimestamp();
+  const attendeeCheckIns = [];
+
+  for (let i = 0; i < totalAttendees; i++) {
+    attendeeCheckIns.push({
+      checkedIn: true,
+      checkedInAt: checkInTimestamp,
+      checkedInBy: adminId,
+      checkedInByName: adminName || null,
+      checkInMethod: method || CHECK_IN_METHODS.MANUAL,
+    });
+  }
+
   // Perform check-in update
   const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
-  const checkInTimestamp = serverTimestamp();
 
   await updateDoc(docRef, {
     checkedIn: true,
@@ -295,13 +512,17 @@ export async function checkInAttendee(registrationId, checkInData) {
     checkedInBy: adminId,
     checkedInByName: adminName || null,
     checkInMethod: method || CHECK_IN_METHODS.MANUAL,
+    attendeeCheckIns,
     updatedAt: checkInTimestamp,
   });
 
-  // Create check-in log entry
+  // Create check-in log entry for each attendee
   const logRef = collection(db, COLLECTIONS.CHECK_IN_LOGS);
+
+  // Log primary attendee
   await addDoc(logRef, {
     registrationId,
+    attendeeIndex: 0,
     attendeeName: `${registration.primaryAttendee?.firstName || ''} ${registration.primaryAttendee?.lastName || ''}`.trim(),
     attendeeEmail: registration.primaryAttendee?.email || '',
     category: registration.pricingTier || 'standard',
@@ -311,9 +532,29 @@ export async function checkInAttendee(registrationId, checkInData) {
     checkedInByName: adminName || null,
     checkInMethod: method || CHECK_IN_METHODS.MANUAL,
     stationId: stationId || null,
-    attendeeCount: 1 + (registration.additionalAttendees?.length || 0),
+    attendeeCount: 1,
     createdAt: checkInTimestamp,
   });
+
+  // Log additional attendees
+  for (let i = 0; i < (registration.additionalAttendees?.length || 0); i++) {
+    const attendee = registration.additionalAttendees[i];
+    await addDoc(logRef, {
+      registrationId,
+      attendeeIndex: i + 1,
+      attendeeName: `${attendee?.firstName || ''} ${attendee?.lastName || ''}`.trim(),
+      attendeeEmail: attendee?.email || '',
+      category: registration.pricingTier || 'standard',
+      church: registration.church?.name || null,
+      checkedInAt: checkInTimestamp,
+      checkedInBy: adminId,
+      checkedInByName: adminName || null,
+      checkInMethod: method || CHECK_IN_METHODS.MANUAL,
+      stationId: stationId || null,
+      attendeeCount: 1,
+      createdAt: checkInTimestamp,
+    });
+  }
 
   return {
     ...registration,
@@ -322,6 +563,117 @@ export async function checkInAttendee(registrationId, checkInData) {
     checkedInBy: adminId,
     checkedInByName: adminName,
     checkInMethod: method,
+    attendeeCheckIns,
+  };
+}
+
+/**
+ * Checks in a single attendee by index
+ *
+ * @param {Object} registration - Registration document
+ * @param {number} attendeeIndex - Index of the attendee (0 for primary, 1+ for additional)
+ * @param {Object} checkInData - Check-in details
+ * @param {string} checkInData.adminId - Admin user ID performing check-in
+ * @param {string} checkInData.adminName - Admin display name
+ * @param {string} checkInData.method - Check-in method (qr or manual)
+ * @param {string} [checkInData.stationId] - Optional check-in station identifier
+ * @returns {Promise<Object>} Updated registration data with check-in info
+ * @throws {Error} If check-in fails
+ */
+export async function checkInSingleAttendee(registration, attendeeIndex, checkInData) {
+  const { adminId, adminName, method, stationId } = checkInData;
+
+  // Validate attendee eligibility
+  const validation = validateAttendeeCheckInEligibility(registration, attendeeIndex);
+  if (!validation.valid) {
+    const error = new Error(validation.message);
+    error.code = validation.errorCode;
+    error.registration = registration;
+    throw error;
+  }
+
+  const attendeeInfo = getAttendeeByIndex(registration, attendeeIndex);
+  const attendeeName = `${attendeeInfo?.firstName || ''} ${attendeeInfo?.lastName || ''}`.trim();
+
+  // Get or initialize attendeeCheckIns array
+  const totalAttendees = 1 + (registration.additionalAttendees?.length || 0);
+  const existingCheckIns = registration.attendeeCheckIns || [];
+  const attendeeCheckIns = [];
+
+  // Initialize array with existing or empty check-in status
+  for (let i = 0; i < totalAttendees; i++) {
+    if (i === attendeeIndex) {
+      // This is the attendee we're checking in
+      attendeeCheckIns.push({
+        checkedIn: true,
+        checkedInAt: serverTimestamp(),
+        checkedInBy: adminId,
+        checkedInByName: adminName || null,
+        checkInMethod: method || CHECK_IN_METHODS.MANUAL,
+      });
+    } else if (existingCheckIns[i]) {
+      // Preserve existing check-in status
+      attendeeCheckIns.push(existingCheckIns[i]);
+    } else {
+      // Not checked in yet
+      attendeeCheckIns.push({ checkedIn: false });
+    }
+  }
+
+  // Check if all attendees are now checked in
+  const allCheckedIn = attendeeCheckIns.every((ci) => ci.checkedIn === true);
+
+  // Perform check-in update
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registration.id || registration.registrationId);
+  const checkInTimestamp = serverTimestamp();
+
+  const updateData = {
+    attendeeCheckIns,
+    updatedAt: checkInTimestamp,
+  };
+
+  // Also set legacy fields if all attendees are checked in
+  if (allCheckedIn) {
+    updateData.checkedIn = true;
+    updateData.checkedInAt = checkInTimestamp;
+    updateData.checkedInBy = adminId;
+    updateData.checkedInByName = adminName || null;
+    updateData.checkInMethod = method || CHECK_IN_METHODS.MANUAL;
+  }
+
+  await updateDoc(docRef, updateData);
+
+  // Create check-in log entry
+  const logRef = collection(db, COLLECTIONS.CHECK_IN_LOGS);
+  await addDoc(logRef, {
+    registrationId: registration.id || registration.registrationId,
+    attendeeIndex,
+    attendeeName,
+    attendeeEmail: attendeeInfo?.email || '',
+    category: registration.pricingTier || 'standard',
+    church: registration.church?.name || null,
+    checkedInAt: checkInTimestamp,
+    checkedInBy: adminId,
+    checkedInByName: adminName || null,
+    checkInMethod: method || CHECK_IN_METHODS.MANUAL,
+    stationId: stationId || null,
+    attendeeCount: 1,
+    createdAt: checkInTimestamp,
+  });
+
+  return {
+    ...registration,
+    attendeeCheckIns,
+    checkedIn: allCheckedIn,
+    checkedInAt: allCheckedIn ? new Date() : registration.checkedInAt,
+    checkedInBy: allCheckedIn ? adminId : registration.checkedInBy,
+    checkedInByName: allCheckedIn ? adminName : registration.checkedInByName,
+    checkInMethod: allCheckedIn ? method : registration.checkInMethod,
+    // Include info about the attendee that was just checked in
+    lastCheckedInAttendee: {
+      index: attendeeIndex,
+      name: attendeeName,
+    },
   };
 }
 
@@ -341,7 +693,8 @@ export async function getCheckInStats() {
   const confirmedSnapshot = await getDocs(confirmedQuery);
 
   let totalConfirmed = 0;
-  let checkedIn = 0;
+  let fullyCheckedIn = 0;
+  let partiallyCheckedIn = 0;
   let totalAttendees = 0;
   let checkedInAttendees = 0;
 
@@ -351,19 +704,25 @@ export async function getCheckInStats() {
     const attendeeCount = 1 + (data.additionalAttendees?.length || 0);
     totalAttendees += attendeeCount;
 
-    if (data.checkedIn) {
-      checkedIn++;
-      checkedInAttendees += attendeeCount;
+    // Count checked-in attendees using the new per-attendee tracking
+    const checkedInCount = getCheckedInAttendeeCount(data);
+    checkedInAttendees += checkedInCount;
+
+    if (checkedInCount === attendeeCount) {
+      fullyCheckedIn++;
+    } else if (checkedInCount > 0) {
+      partiallyCheckedIn++;
     }
   });
 
-  const percentage = totalConfirmed > 0 ? Math.round((checkedIn / totalConfirmed) * 100) : 0;
+  const percentage = totalConfirmed > 0 ? Math.round((fullyCheckedIn / totalConfirmed) * 100) : 0;
   const attendeePercentage = totalAttendees > 0 ? Math.round((checkedInAttendees / totalAttendees) * 100) : 0;
 
   return {
     totalConfirmed,
-    checkedIn,
-    pending: totalConfirmed - checkedIn,
+    checkedIn: fullyCheckedIn,
+    partiallyCheckedIn,
+    pending: totalConfirmed - fullyCheckedIn - partiallyCheckedIn,
     percentage,
     totalAttendees,
     checkedInAttendees,
@@ -416,7 +775,8 @@ export function subscribeToCheckInStats(callback) {
 
   return onSnapshot(confirmedQuery, (snapshot) => {
     let totalConfirmed = 0;
-    let checkedIn = 0;
+    let fullyCheckedIn = 0;
+    let partiallyCheckedIn = 0;
     let totalAttendees = 0;
     let checkedInAttendees = 0;
 
@@ -426,19 +786,25 @@ export function subscribeToCheckInStats(callback) {
       const attendeeCount = 1 + (data.additionalAttendees?.length || 0);
       totalAttendees += attendeeCount;
 
-      if (data.checkedIn) {
-        checkedIn++;
-        checkedInAttendees += attendeeCount;
+      // Count checked-in attendees using the new per-attendee tracking
+      const checkedInCount = getCheckedInAttendeeCount(data);
+      checkedInAttendees += checkedInCount;
+
+      if (checkedInCount === attendeeCount) {
+        fullyCheckedIn++;
+      } else if (checkedInCount > 0) {
+        partiallyCheckedIn++;
       }
     });
 
-    const percentage = totalConfirmed > 0 ? Math.round((checkedIn / totalConfirmed) * 100) : 0;
+    const percentage = totalConfirmed > 0 ? Math.round((fullyCheckedIn / totalConfirmed) * 100) : 0;
     const attendeePercentage = totalAttendees > 0 ? Math.round((checkedInAttendees / totalAttendees) * 100) : 0;
 
     callback({
       totalConfirmed,
-      checkedIn,
-      pending: totalConfirmed - checkedIn,
+      checkedIn: fullyCheckedIn,
+      partiallyCheckedIn,
+      pending: totalConfirmed - fullyCheckedIn - partiallyCheckedIn,
       percentage,
       totalAttendees,
       checkedInAttendees,
@@ -527,24 +893,62 @@ export async function getCheckInsByHour() {
  * @param {string} registrationId - Registration ID
  * @param {string} adminId - Admin user ID performing the undo
  * @param {string} reason - Reason for undoing check-in
+ * @param {number|null} [attendeeIndex] - Optional attendee index to undo specific attendee
  * @returns {Promise<void>}
  */
-export async function undoCheckIn(registrationId, adminId, reason) {
+export async function undoCheckIn(registrationId, adminId, reason, attendeeIndex = null) {
   if (!registrationId || !adminId) {
     throw new Error('Registration ID and admin ID are required');
   }
 
   const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
 
-  await updateDoc(docRef, {
-    checkedIn: false,
-    checkedInAt: null,
-    checkedInBy: null,
-    checkedInByName: null,
-    checkInMethod: null,
-    checkInUndoneAt: serverTimestamp(),
-    checkInUndoneBy: adminId,
-    checkInUndoReason: reason || null,
-    updatedAt: serverTimestamp(),
-  });
+  // If attendeeIndex is provided, undo only that attendee
+  if (typeof attendeeIndex === 'number') {
+    const registration = await getRegistrationForCheckIn(registrationId);
+    if (!registration) {
+      throw new Error('Registration not found');
+    }
+
+    const totalAttendees = 1 + (registration.additionalAttendees?.length || 0);
+    const existingCheckIns = registration.attendeeCheckIns || [];
+    const attendeeCheckIns = [];
+
+    for (let i = 0; i < totalAttendees; i++) {
+      if (i === attendeeIndex) {
+        // Reset this attendee's check-in
+        attendeeCheckIns.push({ checkedIn: false });
+      } else if (existingCheckIns[i]) {
+        attendeeCheckIns.push(existingCheckIns[i]);
+      } else {
+        attendeeCheckIns.push({ checkedIn: false });
+      }
+    }
+
+    const legacyCheckedIn = attendeeCheckIns.some((attendee) => attendee.checkedIn);
+
+    await updateDoc(docRef, {
+      attendeeCheckIns,
+      checkedIn: legacyCheckedIn,
+      checkInUndoneAt: serverTimestamp(),
+      checkInUndoneBy: adminId,
+      checkInUndoReason: reason || null,
+      checkInUndoAttendeeIndex: attendeeIndex,
+      updatedAt: serverTimestamp(),
+    });
+  } else {
+    // Undo all attendees (legacy behavior)
+    await updateDoc(docRef, {
+      checkedIn: false,
+      checkedInAt: null,
+      checkedInBy: null,
+      checkedInByName: null,
+      checkInMethod: null,
+      attendeeCheckIns: null,
+      checkInUndoneAt: serverTimestamp(),
+      checkInUndoneBy: adminId,
+      checkInUndoReason: reason || null,
+      updatedAt: serverTimestamp(),
+    });
+  }
 }
