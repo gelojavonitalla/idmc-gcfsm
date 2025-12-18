@@ -90,6 +90,25 @@ function QRScanner({ onScan, onError, isActive = true }) {
   }, []);
 
   /**
+   * Checks if camera permission is already granted using the Permissions API.
+   * This allows skipping the "requesting" UI when permission was previously granted.
+   *
+   * @returns {Promise<string|null>} Permission state ('granted', 'denied', 'prompt') or null if API unavailable
+   */
+  const checkExistingPermission = useCallback(async () => {
+    try {
+      if (navigator.permissions && navigator.permissions.query) {
+        const result = await navigator.permissions.query({ name: 'camera' });
+        return result.state;
+      }
+    } catch (err) {
+      // Permissions API not supported or query failed - proceed with normal flow
+      console.debug('Permissions API not available:', err.message);
+    }
+    return null;
+  }, []);
+
+  /**
    * Requests camera permission and gets available cameras.
    * This is separated from scanner creation to avoid DOM timing issues.
    */
@@ -99,7 +118,22 @@ function QRScanner({ onScan, onError, isActive = true }) {
     }
 
     try {
-      // Get available cameras (this triggers permission prompt)
+      // Check if permission is already granted to avoid showing "requesting" UI
+      const existingPermission = await checkExistingPermission();
+
+      if (existingPermission === 'denied') {
+        // Permission was explicitly denied - show error immediately
+        setHasPermission(false);
+        setError('Camera access denied. Please allow camera access in your browser settings.');
+        return;
+      }
+
+      if (existingPermission === 'granted') {
+        // Permission already granted - set hasPermission immediately to skip "requesting" UI
+        setHasPermission(true);
+      }
+
+      // Get available cameras (this triggers permission prompt only if not already granted)
       const devices = await Html5Qrcode.getCameras();
 
       if (devices && devices.length > 0) {
@@ -128,7 +162,7 @@ function QRScanner({ onScan, onError, isActive = true }) {
         onError(err);
       }
     }
-  }, [isActive, onError]);
+  }, [isActive, onError, checkExistingPermission]);
 
   /**
    * Creates scanner instance and starts scanning.

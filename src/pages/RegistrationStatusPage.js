@@ -43,6 +43,14 @@ const STATUS_CONFIG = {
 };
 
 /**
+ * Checked-in status configuration
+ */
+const CHECKED_IN_STATUS_CONFIG = {
+  label: 'Checked In',
+  className: 'statusCheckedIn',
+};
+
+/**
  * RegistrationStatusPage Component
  * Allows users to look up their registration status using various identifiers.
  *
@@ -110,8 +118,16 @@ function RegistrationStatusPage() {
 
   /**
    * Gets the status configuration for display
+   * Prioritizes check-in status over payment status when the attendee has checked in
+   *
+   * @param {string} status - The registration payment status
+   * @param {boolean} checkedIn - Whether the attendee has checked in
+   * @returns {Object} Status configuration with label and className
    */
-  const getStatusConfig = useCallback((status) => {
+  const getStatusConfig = useCallback((status, checkedIn) => {
+    if (checkedIn) {
+      return CHECKED_IN_STATUS_CONFIG;
+    }
     return STATUS_CONFIG[status] || {
       label: status || 'Unknown',
       className: 'statusPending',
@@ -155,9 +171,6 @@ function RegistrationStatusPage() {
     return getAttendeeCheckInStatus(registration, attendeeIndex) || { checkedIn: false };
   }, [registration]);
 
-  const statusConfig = registration ? getStatusConfig(registration.status) : null;
-  const isConfirmed = registration?.status === REGISTRATION_STATUS.CONFIRMED;
-
   // Check-in status tracking
   const totalAttendees = registration
     ? 1 + (registration.additionalAttendees?.length || 0)
@@ -168,6 +181,10 @@ function RegistrationStatusPage() {
   const allCheckedIn = registration
     ? areAllAttendeesCheckedIn(registration)
     : false;
+
+  // Use allCheckedIn for status config to show "Checked In" banner when all attendees are checked in
+  const statusConfig = registration ? getStatusConfig(registration.status, allCheckedIn) : null;
+  const isConfirmed = registration?.status === REGISTRATION_STATUS.CONFIRMED;
 
   return (
     <div className={styles.page}>
