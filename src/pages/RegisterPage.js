@@ -1424,7 +1424,7 @@ function RegisterPage() {
                   role="button"
                   tabIndex={0}
                 >
-                  <div className={styles.paymentMethodIcon}>💵</div>
+                  <div className={styles.paymentMethodIcon}>🎟️</div>
                   <h3 className={styles.paymentMethodTitle}>Cash at Registration Booth</h3>
                   <p className={styles.paymentMethodDescription}>
                     Pay in cash when you arrive at the event registration booth
