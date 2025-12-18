@@ -9,7 +9,9 @@ import {setGlobalOptions} from "firebase-functions";
 import {defineString} from "firebase-functions/params";
 import {onDocumentCreated, onDocumentUpdated} from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
+import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+import {ImageAnnotatorClient} from "@google-cloud/vision";
 import {initializeApp} from "firebase-admin/app";
 import {getAuth} from "firebase-admin/auth";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
@@ -1062,6 +1064,105 @@ export const cancelExpiredRegistrations = onSchedule(
     } catch (error) {
       logger.error("Error cancelling expired registrations:", error);
       throw error;
+    }
+  }
+);
+
+// Lazy-initialized Vision client
+let visionClient: ImageAnnotatorClient | null = null;
+
+/**
+ * Gets or creates the Vision API client
+ * @returns {ImageAnnotatorClient} The Vision client instance
+ */
+function getVisionClient(): ImageAnnotatorClient {
+  if (!visionClient) {
+    visionClient = new ImageAnnotatorClient();
+  }
+  return visionClient;
+}
+
+/**
+ * Cloud Vision OCR function for receipt text extraction
+ * Called as fallback when Tesseract.js confidence is low
+ *
+ * @param {Object} data - Request data
+ * @param {string} data.image - Base64 encoded image data (without data URL prefix)
+ * @returns {Promise<{text: string, confidence: number}>} Extracted text and confidence
+ *
+ * @example
+ * // From frontend:
+ * const { data } = await httpsCallable(functions, 'ocrReceipt')({
+ *   image: base64ImageData
+ * });
+ * console.log(data.text, data.confidence);
+ */
+export const ocrReceipt = onCall(
+  {
+    region: "asia-southeast1",
+    maxInstances: 10,
+    memory: "512MiB",
+    timeoutSeconds: 60,
+  },
+  async (request) => {
+    const {image} = request.data as {image?: string};
+
+    if (!image) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Missing required parameter: image (base64 encoded)"
+      );
+    }
+
+    logger.info("Processing receipt OCR request");
+
+    try {
+      const client = getVisionClient();
+
+      // Decode base64 image
+      const imageBuffer = Buffer.from(image, "base64");
+
+      // Call Vision API for text detection
+      const [result] = await client.textDetection({
+        image: {content: imageBuffer},
+      });
+
+      const detections = result.textAnnotations;
+
+      if (!detections || detections.length === 0) {
+        logger.info("No text detected in image");
+        return {
+          text: "",
+          confidence: 0,
+          rawAnnotations: [],
+        };
+      }
+
+      // First annotation contains the full text
+      const fullText = detections[0].description || "";
+
+      // Calculate average confidence from word-level detections
+      // Vision API doesn't return confidence directly for TEXT_DETECTION,
+      // but we can estimate based on detection quality
+      const wordCount = detections.length - 1; // Exclude first (full text)
+      const hasGoodDetection = wordCount > 5 && fullText.length > 20;
+      const estimatedConfidence = hasGoodDetection ? 85 : 50;
+
+      logger.info(
+        `OCR completed: ${fullText.length} chars, ${wordCount} words detected`
+      );
+
+      return {
+        text: fullText.replace(/\s+/g, " ").trim(),
+        confidence: estimatedConfidence,
+        wordCount,
+      };
+    } catch (error) {
+      logger.error("Vision API error:", error);
+      throw new HttpsError(
+        "internal",
+        "Failed to process image with Vision API"
+      );
     }
   }
 );

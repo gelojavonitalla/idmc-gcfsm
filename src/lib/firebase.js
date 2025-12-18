@@ -9,6 +9,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
 /**
  * Firebase database and storage configuration
@@ -55,11 +56,18 @@ const auth = getAuth(app);
 const storage = getStorage(app, `gs://${FIREBASE_CONFIG.STORAGE_BUCKET}`);
 
 /**
+ * Firebase Functions instance
+ * Region set to asia-southeast1 to match Cloud Functions deployment
+ */
+const functions = getFunctions(app, 'asia-southeast1');
+
+/**
  * Connect to emulators in development
  */
 if (process.env.REACT_APP_USE_EMULATORS === 'true') {
   connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
   connectStorageEmulator(storage, 'localhost', 9199);
+  connectFunctionsEmulator(functions, 'localhost', 5001);
 }
 
-export { app, db, auth, storage, FIREBASE_CONFIG };
+export { app, db, auth, storage, functions, FIREBASE_CONFIG };
