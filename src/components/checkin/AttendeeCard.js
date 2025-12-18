@@ -34,6 +34,10 @@ function AttendeeCard({ registration, onCheckIn, onCancel, isLoading = false, er
 
   const { primaryAttendee, additionalAttendees = [], church, status, shortCode } = registration;
 
+  // Calculate total attendees upfront (needed by getStatusInfo)
+  const totalAttendees = 1 + additionalAttendees.length;
+  const checkedInCount = getCheckedInAttendeeCount(registration);
+
   /**
    * Formats attendee name
    */
@@ -161,8 +165,6 @@ function AttendeeCard({ registration, onCheckIn, onCancel, isLoading = false, er
   };
 
   const statusInfo = getStatusInfo();
-  const totalAttendees = 1 + additionalAttendees.length;
-  const checkedInCount = getCheckedInAttendeeCount(registration);
   const pendingCount = totalAttendees - checkedInCount;
 
   // Determine if we're checking in a specific attendee from QR
