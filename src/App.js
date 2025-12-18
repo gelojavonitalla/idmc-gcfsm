@@ -47,6 +47,7 @@ const AdminInquiriesPage = lazy(() => import('./pages/admin/AdminInquiriesPage')
 const AdminBankAccountsPage = lazy(() => import('./pages/admin/AdminBankAccountsPage'));
 const AdminInvoicesPage = lazy(() => import('./pages/admin/AdminInvoicesPage'));
 const AdminFinanceDashboardPage = lazy(() => import('./pages/admin/AdminFinanceDashboardPage'));
+const AdminWorkshopsPage = lazy(() => import('./pages/admin/AdminWorkshopsPage'));
 
 /**
  * App Component
@@ -130,6 +131,16 @@ function App() {
                 <AdminProtectedRoute>
                   <Suspense fallback={<AdminLoadingFallback />}>
                     <AdminSchedulePage />
+                  </Suspense>
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path={ADMIN_ROUTES.WORKSHOPS}
+              element={
+                <AdminProtectedRoute>
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminWorkshopsPage />
                   </Suspense>
                 </AdminProtectedRoute>
               }

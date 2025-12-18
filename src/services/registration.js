@@ -401,6 +401,23 @@ export async function createRegistration(registrationData) {
 
   await setDoc(docRef, registrationDoc);
 
+  // Increment workshop counts for all selected workshops
+  const allWorkshopSelections = [
+    ...(normalizedPrimaryAttendee.workshopSelections || []),
+    ...(normalizedAdditionalAttendees || []).flatMap((attendee) => attendee.workshopSelections || []),
+  ];
+
+  // Increment each workshop's registered count
+  for (const selection of allWorkshopSelections) {
+    if (selection.sessionId) {
+      try {
+        await incrementWorkshopCount(selection.sessionId);
+      } catch (error) {
+        console.error(`Failed to increment workshop count for ${selection.sessionId}:`, error);
+      }
+    }
+  }
+
   return {
     id: registrationId,
     ...registrationDoc,

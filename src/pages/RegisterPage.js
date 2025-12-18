@@ -27,7 +27,9 @@ import {
   getActiveBankAccounts,
   REGISTRATION_ERROR_CODES,
 } from '../services';
+import { getPublishedWorkshops } from '../services/workshops';
 import { processReceipt } from '../tesseract';
+import WorkshopSelector from '../components/workshops/WorkshopSelector';
 import styles from './RegisterPage.module.css';
 
 /**
@@ -53,6 +55,7 @@ const createEmptyAdditionalAttendee = () => {
     email: '', // Optional for additional attendees
     ministryRole: '',
     category: REGISTRATION_CATEGORIES.REGULAR,
+    workshopSelections: [], // Array of { sessionId, sessionTitle, timeSlot }
   };
 };
 
@@ -77,7 +80,7 @@ const INITIAL_FORM_DATA = {
     emailConfirm: '',
     ministryRole: '',
     category: REGISTRATION_CATEGORIES.REGULAR,
-    workshopSelection: '',
+    workshopSelections: [], // Array of { sessionId, sessionTitle, timeSlot }
   },
 
   // Additional attendees (required: phone; optional: email)
@@ -148,6 +151,8 @@ function RegisterPage() {
   const [isFromGCF, setIsFromGCF] = useState(false);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [loadingBankAccounts, setLoadingBankAccounts] = useState(false);
+  const [workshops, setWorkshops] = useState([]);
+  const [loadingWorkshops, setLoadingWorkshops] = useState(false);
 
   // OCR-related state
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
@@ -185,6 +190,25 @@ function RegisterPage() {
     };
 
     fetchBankAccounts();
+  }, []);
+
+  /**
+   * Fetches published workshops on component mount
+   */
+  useEffect(() => {
+    const fetchWorkshops = async () => {
+      setLoadingWorkshops(true);
+      try {
+        const publishedWorkshops = await getPublishedWorkshops();
+        setWorkshops(publishedWorkshops);
+      } catch (error) {
+        console.error('Failed to fetch workshops:', error);
+      } finally {
+        setLoadingWorkshops(false);
+      }
+    };
+
+    fetchWorkshops();
   }, []);
 
   /**
@@ -288,6 +312,33 @@ function RegisterPage() {
       delete newErrors[index];
       return newErrors;
     });
+  }, []);
+
+  /**
+   * Updates primary attendee workshop selections
+   *
+   * @param {Array} selections - Array of { sessionId, sessionTitle, timeSlot }
+   */
+  const updatePrimaryWorkshopSelections = useCallback((selections) => {
+    setFormData((prev) => ({
+      ...prev,
+      primaryAttendee: { ...prev.primaryAttendee, workshopSelections: selections },
+    }));
+  }, []);
+
+  /**
+   * Updates additional attendee workshop selections
+   *
+   * @param {number} index - The attendee index
+   * @param {Array} selections - Array of { sessionId, sessionTitle, timeSlot }
+   */
+  const updateAdditionalWorkshopSelections = useCallback((index, selections) => {
+    setFormData((prev) => ({
+      ...prev,
+      additionalAttendees: (prev.additionalAttendees || []).map((attendee, i) =>
+        i === index ? { ...attendee, workshopSelections: selections } : attendee
+      ),
+    }));
   }, []);
 
   /**
@@ -1161,6 +1212,18 @@ function RegisterPage() {
                     </select>
                   </div>
                 </div>
+
+                {/* Workshop Selection for Primary Attendee */}
+                {workshops.length > 0 && (
+                  <div className={styles.workshopSection}>
+                    <WorkshopSelector
+                      workshops={workshops}
+                      selections={formData.primaryAttendee.workshopSelections || []}
+                      onSelectionChange={updatePrimaryWorkshopSelections}
+                      disabled={loadingWorkshops}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Additional Attendees Section */}
@@ -1308,6 +1371,18 @@ function RegisterPage() {
                       </select>
                     </div>
                   </div>
+
+                  {/* Workshop Selection for Additional Attendee */}
+                  {workshops.length > 0 && (
+                    <div className={styles.workshopSection}>
+                      <WorkshopSelector
+                        workshops={workshops}
+                        selections={attendee.workshopSelections || []}
+                        onSelectionChange={(selections) => updateAdditionalWorkshopSelections(index, selections)}
+                        disabled={loadingWorkshops}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
 
