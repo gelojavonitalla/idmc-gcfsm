@@ -56,6 +56,66 @@ firebase login
 firebase use idmc-gcfsm-dev
 ```
 
+### Google Cloud APIs
+
+The following Google Cloud APIs must be enabled in your GCP project for full functionality:
+
+| API | Purpose | Required |
+|-----|---------|----------|
+| **Cloud Firestore API** | NoSQL database for storing event data, registrations, speakers, sessions, etc. | ✅ Yes |
+| **Firebase Authentication API** | User authentication for admin dashboard access | ✅ Yes |
+| **Cloud Storage API** | File storage for images, videos, and payment proof uploads | ✅ Yes |
+| **Cloud Functions API** | Serverless backend for email notifications, OCR, and scheduled tasks | ✅ Yes |
+| **Cloud Vision API** | OCR processing for payment receipt verification | ✅ Yes |
+| **Secret Manager API** | Secure storage for sensitive API keys (e.g., SendGrid) | ✅ Yes |
+| **Cloud Scheduler API** | Scheduled execution of cleanup tasks (auto-cancel expired registrations) | ✅ Yes |
+| **Cloud Build API** | Required for deploying Cloud Functions | ✅ Yes |
+| **Artifact Registry API** | Required for Cloud Functions deployment | ✅ Yes |
+
+#### Enabling APIs via gcloud CLI
+
+```bash
+# Set your project
+gcloud config set project idmc-gcfsm-dev
+
+# Enable all required APIs
+gcloud services enable \
+  firestore.googleapis.com \
+  identitytoolkit.googleapis.com \
+  storage.googleapis.com \
+  cloudfunctions.googleapis.com \
+  vision.googleapis.com \
+  secretmanager.googleapis.com \
+  cloudscheduler.googleapis.com \
+  cloudbuild.googleapis.com \
+  artifactregistry.googleapis.com
+```
+
+#### Enabling APIs via Google Cloud Console
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Select your project (`idmc-gcfsm-dev`)
+3. Navigate to **APIs & Services** > **Library**
+4. Search for and enable each API listed above
+
+#### Secret Manager Setup
+
+The following secrets must be configured in Secret Manager:
+
+| Secret Name | Description |
+|-------------|-------------|
+| `SENDGRID_API_KEY` | SendGrid API key for sending registration and ticket confirmation emails |
+
+```bash
+# Create the SendGrid API key secret
+echo -n "your-sendgrid-api-key" | gcloud secrets create SENDGRID_API_KEY --data-file=-
+
+# Grant Cloud Functions access to the secret
+gcloud secrets add-iam-policy-binding SENDGRID_API_KEY \
+  --member="serviceAccount:idmc-gcfsm-dev@appspot.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+```
+
 ## Project Structure
 
 ```
