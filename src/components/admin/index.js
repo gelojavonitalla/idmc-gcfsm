@@ -30,3 +30,4 @@ export { default as RegistrationsTable } from './RegistrationsTable';
 export { default as RegistrationDetailModal } from './RegistrationDetailModal';
 export { default as InquiriesTable } from './InquiriesTable';
 export { default as InquiryDetailModal } from './InquiryDetailModal';
+export { default as AdminLoadingFallback } from './AdminLoadingFallback';
