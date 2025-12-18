@@ -32,6 +32,7 @@ export const ADMIN_ROUTES = {
   DASHBOARD: '/admin/dashboard',
   REGISTRATIONS: '/admin/registrations',
   CHECKIN: '/admin/check-in',
+  CHECKIN_MONITOR: '/admin/check-in-monitor',
   SPEAKERS: '/admin/speakers',
   SCHEDULE: '/admin/schedule',
   WORKSHOPS: '/admin/workshops',
@@ -172,6 +173,7 @@ export const ADMIN_NAV_GROUPS = [
     items: [
       { label: 'Registrations', path: ADMIN_ROUTES.REGISTRATIONS, icon: 'people' },
       { label: 'Check-In', path: ADMIN_ROUTES.CHECKIN, icon: 'checkin' },
+      { label: 'Check-In Monitor', path: ADMIN_ROUTES.CHECKIN_MONITOR, icon: 'dashboard' },
       { label: 'Inquiries', path: ADMIN_ROUTES.INQUIRIES, icon: 'mail' },
     ],
   },

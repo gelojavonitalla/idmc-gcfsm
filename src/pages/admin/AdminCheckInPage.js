@@ -6,25 +6,23 @@
  * @module pages/admin/AdminCheckInPage
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '../../components/admin';
 import {
   QRScanner,
   ManualSearch,
   AttendeeCard,
-  CheckInStats,
-  RecentCheckIns,
 } from '../../components/checkin';
 import { useAdminAuth } from '../../context';
 import {
   parseQRCode,
   getRegistrationForCheckIn,
   checkInAttendee,
-  subscribeToCheckInStats,
-  subscribeToRecentCheckIns,
   CHECK_IN_METHODS,
   CHECK_IN_ERROR_CODES,
 } from '../../services';
+import { ADMIN_ROUTES } from '../../constants';
 import styles from './AdminCheckInPage.module.css';
 
 /**
@@ -42,15 +40,13 @@ const CHECK_IN_MODES = {
  */
 function AdminCheckInPage() {
   const { admin } = useAdminAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState(CHECK_IN_MODES.QR);
   const [selectedRegistration, setSelectedRegistration] = useState(null);
   const [selectedAttendeeIndex, setSelectedAttendeeIndex] = useState(null);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [checkInError, setCheckInError] = useState(null);
   const [checkInSuccess, setCheckInSuccess] = useState(null);
-  const [stats, setStats] = useState(null);
-  const [recentCheckIns, setRecentCheckIns] = useState([]);
-  const [isStatsLoading, setIsStatsLoading] = useState(true);
 
   /**
    * Handles QR code scan
@@ -176,31 +172,26 @@ function AdminCheckInPage() {
     setCheckInError(null);
   }, []);
 
-  /**
-   * Subscribe to real-time stats
-   */
-  useEffect(() => {
-    setIsStatsLoading(true);
-
-    const unsubscribeStats = subscribeToCheckInStats((newStats) => {
-      setStats(newStats);
-      setIsStatsLoading(false);
-    });
-
-    const unsubscribeCheckIns = subscribeToRecentCheckIns(10, (checkIns) => {
-      setRecentCheckIns(checkIns);
-    });
-
-    return () => {
-      unsubscribeStats();
-      unsubscribeCheckIns();
-    };
-  }, []);
-
   return (
     <AdminLayout title="Check-In">
       <div className={styles.container}>
-        {/* Left Column - Scanner/Search */}
+        {/* Header with Monitor Link */}
+        <div className={styles.header}>
+          <h1 className={styles.title}>Check-In</h1>
+          <button
+            className={styles.monitorButton}
+            onClick={() => navigate(ADMIN_ROUTES.CHECKIN_MONITOR)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+            View Monitor
+          </button>
+        </div>
+
+        {/* Main Column - Scanner/Search */}
         <div className={styles.mainColumn}>
           {/* Success Banner */}
           {checkInSuccess && (
@@ -300,19 +291,6 @@ function AdminCheckInPage() {
               </div>
             </>
           )}
-        </div>
-
-        {/* Right Column - Stats & Recent */}
-        <div className={styles.sideColumn}>
-          <CheckInStats
-            stats={stats}
-            isLoading={isStatsLoading}
-          />
-          <RecentCheckIns
-            checkIns={recentCheckIns}
-            isLoading={isStatsLoading}
-            limit={10}
-          />
         </div>
       </div>
     </AdminLayout>
