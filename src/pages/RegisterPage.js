@@ -9,6 +9,7 @@ import {
   MINISTRY_ROLES,
   ROUTES,
   BANK_LABELS,
+  PAYMENT_METHODS,
 } from '../constants';
 import {
   calculatePrice,
@@ -81,6 +82,7 @@ const INITIAL_FORM_DATA = {
   additionalAttendees: [],
 
   // Payment
+  paymentMethod: PAYMENT_METHODS.BANK_TRANSFER, // Default to bank transfer
   selectedBankAccountId: '',
   paymentAmount: '',
   paymentDate: '',
@@ -538,27 +540,32 @@ function RegisterPage() {
   const validatePaymentUpload = useCallback(() => {
     const newErrors = {};
 
-    if (!formData.selectedBankAccountId) {
-      newErrors.selectedBankAccountId = 'Please select a bank account';
-    }
+    // Validation depends on payment method
+    if (formData.paymentMethod === PAYMENT_METHODS.BANK_TRANSFER) {
+      // Bank transfer requires bank selection and payment proof
+      if (!formData.selectedBankAccountId) {
+        newErrors.selectedBankAccountId = 'Please select a bank account';
+      }
 
-    if (!formData.paymentFile) {
-      newErrors.paymentFile = 'Please upload your payment screenshot or receipt';
-    }
+      if (!formData.paymentFile) {
+        newErrors.paymentFile = 'Please upload your payment screenshot or receipt';
+      }
 
-    if (!formData.paymentAmount || parseFloat(formData.paymentAmount) <= 0) {
-      newErrors.paymentAmount = 'Please enter the amount you paid';
-    }
+      if (!formData.paymentAmount || parseFloat(formData.paymentAmount) <= 0) {
+        newErrors.paymentAmount = 'Please enter the amount you paid';
+      }
 
-    if (!formData.paymentDate) {
-      newErrors.paymentDate = 'Please enter the payment date';
-    }
+      if (!formData.paymentDate) {
+        newErrors.paymentDate = 'Please enter the payment date';
+      }
 
-    if (!formData.paymentTime) {
-      newErrors.paymentTime = 'Please enter the payment time';
-    }
+      if (!formData.paymentTime) {
+        newErrors.paymentTime = 'Please enter the payment time';
+      }
 
-    // Reference number is optional but recommended
+      // Reference number is optional but recommended
+    }
+    // For CASH payment, no immediate validation needed - payment happens at booth
 
     if (formData.invoiceRequest) {
       if (!formData.invoiceName.trim()) {
@@ -672,12 +679,13 @@ function RegisterPage() {
           province: formData.churchProvince,
         },
         payment: {
+          method: formData.paymentMethod,
           proofUrl: paymentProofUrl,
-          uploadedAt: new Date().toISOString(),
-          bankAccountId: formData.selectedBankAccountId,
+          uploadedAt: paymentProofUrl ? new Date().toISOString() : null,
+          bankAccountId: formData.selectedBankAccountId || null,
           amountPaid: parseFloat(formData.paymentAmount) || 0,
-          paymentDate: formData.paymentDate,
-          paymentTime: formData.paymentTime,
+          paymentDate: formData.paymentDate || null,
+          paymentTime: formData.paymentTime || null,
           referenceNumber: formData.paymentReferenceNumber || '',
           // OCR metadata for tracking accuracy
           ocrData: ocrResult ? {
@@ -1371,9 +1379,9 @@ function RegisterPage() {
           {/* Step 3: Payment Upload */}
           {currentStep === REGISTRATION_STEPS.PAYMENT_UPLOAD && (
             <div className={styles.formStep}>
-              <h2>Payment Upload</h2>
+              <h2>Payment Information</h2>
               <p className={styles.stepDescription}>
-                Please make your payment and upload the screenshot or receipt.
+                Choose your payment method and provide payment details.
               </p>
 
               <div className={styles.amountBox}>
@@ -1382,12 +1390,61 @@ function RegisterPage() {
               </div>
 
               <div className={styles.sectionDivider}>
-                <span>Select Bank Account</span>
+                <span>Select Payment Method</span>
               </div>
 
               <p className={styles.sectionHint}>
-                Choose the bank account where you will send your payment
+                Choose how you would like to pay for your registration
               </p>
+
+              <div className={styles.paymentMethodGrid}>
+                <div
+                  className={`${styles.paymentMethodCard} ${
+                    formData.paymentMethod === PAYMENT_METHODS.BANK_TRANSFER ? styles.selectedPaymentMethod : ''
+                  }`}
+                  onClick={() => updateField('paymentMethod', PAYMENT_METHODS.BANK_TRANSFER)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className={styles.paymentMethodIcon}>🏦</div>
+                  <h3 className={styles.paymentMethodTitle}>Online Bank Transfer</h3>
+                  <p className={styles.paymentMethodDescription}>
+                    Transfer to our bank account and upload your proof of payment
+                  </p>
+                  {formData.paymentMethod === PAYMENT_METHODS.BANK_TRANSFER && (
+                    <div className={styles.selectedIndicator}>✓</div>
+                  )}
+                </div>
+
+                <div
+                  className={`${styles.paymentMethodCard} ${
+                    formData.paymentMethod === PAYMENT_METHODS.CASH ? styles.selectedPaymentMethod : ''
+                  }`}
+                  onClick={() => updateField('paymentMethod', PAYMENT_METHODS.CASH)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className={styles.paymentMethodIcon}>💵</div>
+                  <h3 className={styles.paymentMethodTitle}>Cash at Registration Booth</h3>
+                  <p className={styles.paymentMethodDescription}>
+                    Pay in cash when you arrive at the event registration booth
+                  </p>
+                  {formData.paymentMethod === PAYMENT_METHODS.CASH && (
+                    <div className={styles.selectedIndicator}>✓</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Bank Account Selection - Only for Bank Transfer */}
+              {formData.paymentMethod === PAYMENT_METHODS.BANK_TRANSFER && (
+                <>
+                  <div className={styles.sectionDivider}>
+                    <span>Select Bank Account</span>
+                  </div>
+
+                  <p className={styles.sectionHint}>
+                    Choose the bank account where you will send your payment
+                  </p>
 
               {loadingBankAccounts ? (
                 <p>Loading bank accounts...</p>
@@ -1541,6 +1598,24 @@ function RegisterPage() {
                     </div>
                   </div>
                 </>
+              )}
+                </>
+              )}
+
+              {/* Cash Payment Info Message */}
+              {formData.paymentMethod === PAYMENT_METHODS.CASH && (
+                <div className={styles.cashPaymentInfo}>
+                  <p className={styles.cashPaymentMessage}>
+                    <strong>Payment at Registration Booth</strong>
+                  </p>
+                  <p>
+                    You have chosen to pay in cash at the registration booth. Please bring the exact amount
+                    of <strong>{formatPrice(calculateTotalPrice())}</strong> when you arrive at the event.
+                  </p>
+                  <p className={styles.cashPaymentNote}>
+                    Note: Your registration will be confirmed after payment is received at the booth.
+                  </p>
+                </div>
               )}
 
               <div className={styles.sectionDivider}>

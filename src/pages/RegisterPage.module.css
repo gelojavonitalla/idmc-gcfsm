@@ -1456,3 +1456,96 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Payment Method Selection */
+.paymentMethodGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-4, 1rem);
+  margin-bottom: var(--spacing-6, 1.5rem);
+}
+
+.paymentMethodCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--spacing-6, 1.5rem);
+  border: 2px solid var(--color-gray-200, #e5e7eb);
+  border-radius: var(--radius-lg, 8px);
+  background: var(--color-white, #fff);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 200px;
+  justify-content: flex-start;
+}
+
+.paymentMethodCard:hover {
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.paymentMethodCard.selectedPaymentMethod {
+  border-color: var(--color-primary, #3b82f6);
+  background: var(--color-primary-50, #eff6ff);
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.2);
+}
+
+.paymentMethodIcon {
+  font-size: 3rem;
+  margin-bottom: var(--spacing-3, 0.75rem);
+}
+
+.paymentMethodTitle {
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: 600;
+  color: var(--color-text, #1f2937);
+  margin-bottom: var(--spacing-2, 0.5rem);
+}
+
+.paymentMethodDescription {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary, #6b7280);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Cash Payment Info Message */
+.cashPaymentInfo {
+  background: var(--color-info-50, #e0f2fe);
+  border: 1px solid var(--color-info-200, #bae6fd);
+  border-radius: var(--radius-md, 6px);
+  padding: var(--spacing-4, 1rem);
+  margin-bottom: var(--spacing-6, 1.5rem);
+}
+
+.cashPaymentMessage {
+  font-size: var(--font-size-base, 1rem);
+  font-weight: 600;
+  color: var(--color-info-700, #0369a1);
+  margin-bottom: var(--spacing-2, 0.5rem);
+}
+
+.cashPaymentInfo p {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text, #1f2937);
+  margin-bottom: var(--spacing-2, 0.5rem);
+  line-height: 1.5;
+}
+
+.cashPaymentInfo p:last-child {
+  margin-bottom: 0;
+}
+
+.cashPaymentNote {
+  font-style: italic;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+@media (max-width: 768px) {
+  .paymentMethodGrid {
+    grid-template-columns: 1fr;
+  }
+}
