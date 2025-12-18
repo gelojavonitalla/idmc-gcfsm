@@ -293,6 +293,31 @@ async function uploadFile(storageRef, file, onProgress) {
 }
 
 /**
+ * Uploads an invoice file (PDF or image)
+ *
+ * @param {File} file - Invoice file to upload
+ * @param {string} storagePath - Full storage path for the file
+ * @param {Function} onProgress - Progress callback (0-100)
+ * @returns {Promise<string>} Download URL of uploaded invoice
+ */
+export async function uploadInvoiceFile(file, storagePath, onProgress) {
+  // Validate file is PDF or image
+  const allowedTypes = ALLOWED_FILE_TYPES.INVOICES;
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Invalid file type. Please upload a PDF, JPEG, or PNG file.');
+  }
+
+  // Check file size (10MB max)
+  const maxSize = MAX_FILE_SIZES.IMAGE;
+  if (file.size > maxSize) {
+    throw new Error(`File size exceeds ${maxSize / (1024 * 1024)}MB limit.`);
+  }
+
+  const storageRef = ref(storage, storagePath);
+  return uploadFile(storageRef, file, onProgress);
+}
+
+/**
  * Deletes a file from Firebase Storage
  *
  * @param {string} fileUrl - Full URL of the file to delete
