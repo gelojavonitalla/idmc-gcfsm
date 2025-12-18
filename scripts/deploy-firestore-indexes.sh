@@ -118,5 +118,12 @@ create_index "faq" \
     "field-path=order,order=ascending" \
     "field-path=__name__,order=ascending"
 
+# === REGISTRATIONS ===
+# Index 9: registrations (status ASC, createdAt DESC, __name__ DESC)
+create_index "registrations" \
+    "field-path=status,order=ascending" \
+    "field-path=createdAt,order=descending" \
+    "field-path=__name__,order=descending"
+
 echo "✅ Firestore index deployment complete!"
 echo "   Note: Indexes are created asynchronously. Check the Firebase console for status."
