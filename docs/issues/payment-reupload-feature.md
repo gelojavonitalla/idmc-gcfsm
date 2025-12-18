@@ -1,6 +1,22 @@
-# Payment Re-upload Feature - Missing Critical Functionality
+# Payment Re-upload Feature
 
-## Problem Statement
+## Status: ✅ PARTIALLY IMPLEMENTED (Commit: 55d1771)
+
+**Completed:**
+- ✅ Payment amount tracking (`verifyPayment` function)
+- ✅ Re-upload UI on RegistrationStatusPage
+- ✅ Rejection reason display to users
+- ✅ Balance calculation and display
+- ✅ File upload with validation
+
+**Pending:**
+- ⏳ Admin modal UI for entering amount paid
+- ⏳ Email notifications for payment rejection
+- ⏳ Payment history timeline
+
+---
+
+## Original Problem Statement
 
 When an admin rejects a payment (e.g., partial payment, unclear receipt, wrong amount), the registration status is set back to `PENDING_PAYMENT`, but users have **no way to re-upload a corrected payment receipt**. This creates a critical UX gap where honest mistakes cannot be corrected, leading to automatic cancellation.
 
@@ -204,3 +220,209 @@ This is a **critical UX gap** that prevents users from correcting honest mistake
 - Fixed in commit 0be9c68: Status handling and cancellation logic
 - Depends on: Existing `uploadPaymentProof()` and `updatePaymentProof()` services
 - Enhancement: Could add file validation feedback (size, type, clarity)
+
+---
+
+## Follow-up Task: Admin Modal Enhancement
+
+### What's Needed
+
+The admin modal (`src/components/admin/RegistrationDetailModal.js`) currently uses a simple status dropdown. It should be enhanced to provide a dedicated payment verification interface.
+
+### Implementation Plan
+
+**File:** `src/components/admin/RegistrationDetailModal.js`
+
+#### 1. Add Payment Verification Section
+
+Show this section when `registration.status === PENDING_VERIFICATION`:
+
+```jsx
+{registration.status === REGISTRATION_STATUS.PENDING_VERIFICATION && (
+  <div className={styles.paymentVerification}>
+    <h4>Verify Payment</h4>
+    
+    {/* Payment proof image */}
+    {registration.payment?.proofUrl && (
+      <div className={styles.paymentProof}>
+        <img src={registration.payment.proofUrl} alt="Payment proof" />
+      </div>
+    )}
+    
+    <div className={styles.verificationForm}>
+      {/* Total amount (read-only) */}
+      <div className={styles.formGroup}>
+        <label>Total Amount Required</label>
+        <input type="text" value={`₱${registration.totalAmount}`} disabled />
+      </div>
+      
+      {/* Amount paid input */}
+      <div className={styles.formGroup}>
+        <label>Amount Received *</label>
+        <input
+          type="number"
+          value={amountPaid}
+          onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
+          placeholder="0.00"
+          min="0"
+          max={registration.totalAmount}
+        />
+      </div>
+      
+      {/* Calculated balance (auto-calculated) */}
+      <div className={styles.formGroup}>
+        <label>Balance</label>
+        <input
+          type="text"
+          value={`₱${Math.max(0, registration.totalAmount - amountPaid).toFixed(2)}`}
+          disabled
+          className={amountPaid < registration.totalAmount ? styles.balanceOwed : ''}
+        />
+      </div>
+      
+      {/* Payment method */}
+      <div className={styles.formGroup}>
+        <label>Payment Method</label>
+        <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+          <option value="">Select method</option>
+          <option value="gcash">GCash</option>
+          <option value="bank_transfer">Bank Transfer</option>
+          <option value="cash">Cash</option>
+        </select>
+      </div>
+      
+      {/* Reference number */}
+      <div className={styles.formGroup}>
+        <label>Reference Number</label>
+        <input
+          type="text"
+          value={referenceNumber}
+          onChange={(e) => setReferenceNumber(e.target.value)}
+          placeholder="Transaction reference"
+        />
+      </div>
+      
+      {/* Rejection reason (only shown if partial payment or issues) */}
+      {amountPaid < registration.totalAmount && (
+        <div className={styles.formGroup}>
+          <label>Message to User (shown on status page)</label>
+          <textarea
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            placeholder="E.g., 'Partial payment received. Please upload proof of full ₱500 payment.'"
+            rows={3}
+          />
+        </div>
+      )}
+      
+      {/* Action buttons */}
+      <div className={styles.actions}>
+        <button
+          onClick={handleVerifyPayment}
+          className={styles.verifyButton}
+          disabled={!amountPaid || !paymentMethod}
+        >
+          {amountPaid >= registration.totalAmount
+            ? 'Confirm Payment'
+            : 'Mark as Partial Payment'}
+        </button>
+        <button
+          onClick={handleRejectPayment}
+          className={styles.rejectButton}
+        >
+          Reject Payment
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+```
+
+#### 2. Add Handler Functions
+
+```javascript
+const [amountPaid, setAmountPaid] = useState(registration?.totalAmount || 0);
+const [paymentMethod, setPaymentMethod] = useState('');
+const [referenceNumber, setReferenceNumber] = useState('');
+const [rejectionReason, setRejectionReason] = useState('');
+const [isVerifying, setIsVerifying] = useState(false);
+
+const handleVerifyPayment = async () => {
+  if (!amountPaid || !paymentMethod) return;
+  
+  setIsVerifying(true);
+  try {
+    await verifyPayment(
+      registration.id,
+      {
+        amountPaid,
+        method: paymentMethod,
+        referenceNumber,
+        verifiedBy: admin.email,
+        notes: '',
+        rejectionReason: amountPaid < registration.totalAmount ? rejectionReason : null,
+      },
+      admin.uid,
+      admin.email
+    );
+    
+    // Refresh registration data
+    onRefresh();
+    onClose();
+  } catch (error) {
+    console.error('Verification error:', error);
+    setError('Failed to verify payment');
+  } finally {
+    setIsVerifying(false);
+  }
+};
+
+const handleRejectPayment = async () => {
+  const reason = prompt('Enter rejection reason (shown to user):');
+  if (!reason) return;
+  
+  await updateRegistration(registration.id, {
+    status: REGISTRATION_STATUS.PENDING_PAYMENT,
+    'payment.rejectionReason': reason,
+    'payment.rejectedAt': serverTimestamp(),
+    'payment.rejectedBy': admin.email,
+  });
+  
+  onRefresh();
+  onClose();
+};
+```
+
+#### 3. Import Required Functions
+
+```javascript
+import { verifyPayment } from '../../services';
+import { useAdminAuth } from '../../context';
+```
+
+### Benefits of Admin Modal Enhancement
+
+- ✅ Streamlined payment verification workflow
+- ✅ Visual confirmation of amount vs balance
+- ✅ Automatic status updates based on payment completeness
+- ✅ Clear messaging to users for partial payments
+- ✅ Audit trail with admin ID and timestamp
+
+### Testing Checklist
+
+- [ ] Full payment verification (amount === total)
+- [ ] Partial payment verification (amount < total)
+- [ ] Payment rejection with custom reason
+- [ ] Form validation (required fields)
+- [ ] Balance calculation accuracy
+- [ ] Status updates correctly applied
+- [ ] Activity log entries created
+
+### Current Workaround
+
+Until this enhancement is implemented, admins can:
+1. Use the status dropdown to manually change statuses
+2. Add notes in the notes field for rejection reasons
+3. Users can still re-upload via the status page (already implemented)
+
+The core functionality works, but the admin UX can be improved with this dedicated interface.
