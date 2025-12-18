@@ -775,22 +775,6 @@ function RegisterPage() {
                 <div className={styles.formRow3}>
                   <div className={styles.formGroup}>
                     <label className={styles.label}>
-                      Last Name <span className={styles.required}>*</span>
-                    </label>
-                    <input
-                      type="text"
-                      className={`${styles.input} ${primaryErrors.lastName ? styles.inputError : ''}`}
-                      value={formData.primaryAttendee.lastName}
-                      onChange={(e) => updatePrimaryAttendee('lastName', e.target.value)}
-                      placeholder="Dela Cruz"
-                    />
-                    {primaryErrors.lastName && (
-                      <span className={styles.errorMessage}>{primaryErrors.lastName}</span>
-                    )}
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>
                       First Name <span className={styles.required}>*</span>
                     </label>
                     <input
@@ -814,6 +798,22 @@ function RegisterPage() {
                       onChange={(e) => updatePrimaryAttendee('middleName', e.target.value)}
                       placeholder="Santos"
                     />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>
+                      Last Name <span className={styles.required}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className={`${styles.input} ${primaryErrors.lastName ? styles.inputError : ''}`}
+                      value={formData.primaryAttendee.lastName}
+                      onChange={(e) => updatePrimaryAttendee('lastName', e.target.value)}
+                      placeholder="Dela Cruz"
+                    />
+                    {primaryErrors.lastName && (
+                      <span className={styles.errorMessage}>{primaryErrors.lastName}</span>
+                    )}
                   </div>
                 </div>
 
@@ -932,22 +932,6 @@ function RegisterPage() {
                   <div className={styles.formRow3}>
                     <div className={styles.formGroup}>
                       <label className={styles.label}>
-                        Last Name <span className={styles.required}>*</span>
-                      </label>
-                      <input
-                        type="text"
-                        className={`${styles.input} ${additionalErrors[index]?.lastName ? styles.inputError : ''}`}
-                        value={attendee.lastName}
-                        onChange={(e) => updateAdditionalAttendee(index, 'lastName', e.target.value)}
-                        placeholder="Dela Cruz"
-                      />
-                      {additionalErrors[index]?.lastName && (
-                        <span className={styles.errorMessage}>{additionalErrors[index].lastName}</span>
-                      )}
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <label className={styles.label}>
                         First Name <span className={styles.required}>*</span>
                       </label>
                       <input
@@ -971,6 +955,22 @@ function RegisterPage() {
                         onChange={(e) => updateAdditionalAttendee(index, 'middleName', e.target.value)}
                         placeholder="Santos"
                       />
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>
+                        Last Name <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className={`${styles.input} ${additionalErrors[index]?.lastName ? styles.inputError : ''}`}
+                        value={attendee.lastName}
+                        onChange={(e) => updateAdditionalAttendee(index, 'lastName', e.target.value)}
+                        placeholder="Dela Cruz"
+                      />
+                      {additionalErrors[index]?.lastName && (
+                        <span className={styles.errorMessage}>{additionalErrors[index].lastName}</span>
+                      )}
                     </div>
                   </div>
 
