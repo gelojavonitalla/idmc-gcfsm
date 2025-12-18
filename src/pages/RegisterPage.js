@@ -740,7 +740,7 @@ function RegisterPage() {
                       onChange={(e) => handleGCFCheckbox(e.target.checked)}
                       className={styles.checkbox}
                     />
-                    <span>From GCF</span>
+                    <span>From GCF South Metro</span>
                   </label>
                 </div>
               </div>
