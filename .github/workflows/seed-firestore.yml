@@ -68,6 +68,16 @@ on:
         required: false
         default: false
         type: boolean
+      seed_invoice_requests:
+        description: 'Seed invoice requests (for testing)'
+        required: false
+        default: false
+        type: boolean
+      seed_bank_transactions:
+        description: 'Seed bank transactions (for testing)'
+        required: false
+        default: false
+        type: boolean
       seed_all:
         description: 'Seed ALL data (overrides individual options)'
         required: false
@@ -105,7 +115,7 @@ jobs:
           echo "✅ Firestore indexes deployed successfully!"
 
   seed_data:
-    if: ${{ inputs.seed_speakers || inputs.seed_sessions || inputs.seed_workshops || inputs.seed_schedule || inputs.seed_faq || inputs.seed_settings || inputs.seed_about || inputs.seed_downloads || inputs.seed_legal || inputs.seed_registrations || inputs.seed_venue || inputs.seed_bank_accounts || inputs.seed_all }}
+    if: ${{ inputs.seed_speakers || inputs.seed_sessions || inputs.seed_workshops || inputs.seed_schedule || inputs.seed_faq || inputs.seed_settings || inputs.seed_about || inputs.seed_downloads || inputs.seed_legal || inputs.seed_registrations || inputs.seed_venue || inputs.seed_bank_accounts || inputs.seed_invoice_requests || inputs.seed_bank_transactions || inputs.seed_all }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -281,8 +291,34 @@ jobs:
         env:
           GCLOUD_PROJECT: idmc-gcfsm-dev
 
+      - name: Seed Invoice Requests (Testing)
+        if: ${{ inputs.seed_invoice_requests }}
+        run: |
+          if [ "${{ inputs.clear_existing }}" == "true" ]; then
+            echo "Clearing and re-seeding invoice requests..."
+            node scripts/seed-invoice-requests.js --clear
+          else
+            echo "Seeding invoice requests (preserving existing)..."
+            node scripts/seed-invoice-requests.js
+          fi
+        env:
+          GCLOUD_PROJECT: idmc-gcfsm-dev
+
+      - name: Seed Bank Transactions (Testing)
+        if: ${{ inputs.seed_bank_transactions }}
+        run: |
+          if [ "${{ inputs.clear_existing }}" == "true" ]; then
+            echo "Clearing and re-seeding bank transactions..."
+            node scripts/seed-bank-transactions.js --clear
+          else
+            echo "Seeding bank transactions (preserving existing)..."
+            node scripts/seed-bank-transactions.js
+          fi
+        env:
+          GCLOUD_PROJECT: idmc-gcfsm-dev
+
       - name: Seed Complete
         run: |
           echo "✅ Firestore seeding complete!"
-          echo "Seeded: speakers=${{ inputs.seed_speakers || inputs.seed_all }}, sessions=${{ inputs.seed_sessions || inputs.seed_all }}, workshops=${{ inputs.seed_workshops || inputs.seed_all }}, schedule=${{ inputs.seed_schedule || inputs.seed_all }}, faq=${{ inputs.seed_faq || inputs.seed_all }}, settings=${{ inputs.seed_settings || inputs.seed_all }}, about=${{ inputs.seed_about || inputs.seed_all }}, downloads=${{ inputs.seed_downloads || inputs.seed_all }}, legal=${{ inputs.seed_legal || inputs.seed_all }}, registrations=${{ inputs.seed_registrations }}, venue=${{ inputs.seed_venue || inputs.seed_all }}, bank_accounts=${{ inputs.seed_bank_accounts || inputs.seed_all }}"
+          echo "Seeded: speakers=${{ inputs.seed_speakers || inputs.seed_all }}, sessions=${{ inputs.seed_sessions || inputs.seed_all }}, workshops=${{ inputs.seed_workshops || inputs.seed_all }}, schedule=${{ inputs.seed_schedule || inputs.seed_all }}, faq=${{ inputs.seed_faq || inputs.seed_all }}, settings=${{ inputs.seed_settings || inputs.seed_all }}, about=${{ inputs.seed_about || inputs.seed_all }}, downloads=${{ inputs.seed_downloads || inputs.seed_all }}, legal=${{ inputs.seed_legal || inputs.seed_all }}, registrations=${{ inputs.seed_registrations }}, venue=${{ inputs.seed_venue || inputs.seed_all }}, bank_accounts=${{ inputs.seed_bank_accounts || inputs.seed_all }}, invoice_requests=${{ inputs.seed_invoice_requests }}, bank_transactions=${{ inputs.seed_bank_transactions }}"
           echo "Cleared existing: ${{ inputs.clear_existing }}"
