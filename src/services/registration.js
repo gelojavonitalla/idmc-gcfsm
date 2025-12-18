@@ -358,6 +358,14 @@ export async function createRegistration(registrationData) {
   // Extract last 4 characters for quick lookup
   const shortCodeSuffix = shortCode.slice(-SHORT_CODE_SUFFIX_LENGTH);
 
+  // Determine initial status based on whether payment proof was uploaded
+  // If payment proof is provided, set to PENDING_VERIFICATION
+  // Otherwise, set to PENDING_PAYMENT (for manual/admin registrations)
+  const hasPaymentProof = payment && payment.proofUrl;
+  const initialStatus = hasPaymentProof
+    ? REGISTRATION_STATUS.PENDING_VERIFICATION
+    : REGISTRATION_STATUS.PENDING_PAYMENT;
+
   const registrationDoc = {
     registrationId,
     shortCode,
@@ -367,12 +375,12 @@ export async function createRegistration(registrationData) {
     church,
     payment: {
       ...payment,
-      status: REGISTRATION_STATUS.PENDING_PAYMENT,
+      status: initialStatus,
     },
     invoice: invoice || null,
     totalAmount,
     pricingTier,
-    status: REGISTRATION_STATUS.PENDING_PAYMENT,
+    status: initialStatus,
     paymentDeadline: paymentDeadline.toISOString(),
     // Communication tracking
     confirmationEmailSent: false,
