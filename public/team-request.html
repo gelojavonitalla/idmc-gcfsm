@@ -154,6 +154,79 @@
       font-family: monospace;
     }
 
+    .dns-value-cell {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .dns-value {
+      font-family: monospace;
+      font-size: 0.875rem;
+      word-break: break-all;
+      flex: 1;
+      background: #f1f5f9;
+      padding: 8px 12px;
+      border-radius: 6px;
+    }
+
+    .copy-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .copy-btn:hover {
+      background: #f1f5f9;
+      border-color: var(--primary);
+    }
+
+    .copy-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--text-muted);
+      transition: stroke 0.2s ease;
+    }
+
+    .copy-btn:hover svg {
+      stroke: var(--primary);
+    }
+
+    .copy-btn.copied {
+      background: #dcfce7;
+      border-color: var(--success);
+    }
+
+    .copy-btn.copied svg {
+      stroke: var(--success);
+    }
+
+    .sendgrid-table td {
+      vertical-align: middle;
+    }
+
+    .type-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      background: #e0f2fe;
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 4px;
+      letter-spacing: 0.02em;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -993,6 +1066,153 @@
       </div>
     </div>
 
+    <!-- Section 13: SendGrid DNS Authentication -->
+    <div class="section">
+      <h2>
+        <span>13. SendGrid Domain Authentication (DNS)</span>
+        <span class="badge badge-required">Action Required</span>
+      </h2>
+      <p>
+        To enable email sending for registration confirmations and notifications, we need to authenticate the domain
+        with <strong>SendGrid</strong>. Please add all of these records to your DNS provider (Namecheap).
+      </p>
+
+      <div class="subsection">
+        <h3>DNS Records to ADD:</h3>
+        <p style="margin-bottom: 12px;">Add the following records to authenticate your domain with SendGrid:</p>
+        <table class="sendgrid-table">
+          <thead>
+            <tr>
+              <th style="width: 80px;">Type</th>
+              <th>Host</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="type-badge">CNAME</span></td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">em7984.idmc-gcfsm.org</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 'em7984.idmc-gcfsm.org')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">u56746353.wl104.sendgrid.net</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 'u56746353.wl104.sendgrid.net')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="type-badge">CNAME</span></td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">s1._domainkey.idmc-gcfsm.org</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 's1._domainkey.idmc-gcfsm.org')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">s1.domainkey.u56746353.wl104.sendgrid.net</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 's1.domainkey.u56746353.wl104.sendgrid.net')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="type-badge">CNAME</span></td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">s2._domainkey.idmc-gcfsm.org</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 's2._domainkey.idmc-gcfsm.org')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">s2.domainkey.u56746353.wl104.sendgrid.net</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 's2.domainkey.u56746353.wl104.sendgrid.net')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="type-badge">TXT</span></td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">_dmarc.idmc-gcfsm.org</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, '_dmarc.idmc-gcfsm.org')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">v=DMARC1; p=none;</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 'v=DMARC1; p=none;')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="highlight">
+        <strong>Why is this needed?</strong>
+        <ul style="margin-top: 8px;">
+          <li>These records authenticate your domain with SendGrid for email sending</li>
+          <li><strong>CNAME records</strong> enable DKIM signing to verify email authenticity</li>
+          <li><strong>DMARC record</strong> helps prevent email spoofing and improves deliverability</li>
+          <li>Without these records, emails may go to spam or be rejected by recipients</li>
+        </ul>
+      </div>
+
+      <div class="specs">
+        <h4>Important Notes:</h4>
+        <ul>
+          <li>DNS propagation may take up to <strong>48 hours</strong></li>
+          <li>After adding the records, verification will be done in the SendGrid dashboard</li>
+          <li>Click the copy button next to each value to easily copy it to your clipboard</li>
+        </ul>
+      </div>
+    </div>
+
     <!-- Summary Checklist -->
     <div class="section" style="border: 2px solid var(--primary);">
       <h2>Summary Checklist</h2>
@@ -1043,10 +1263,20 @@
       </div>
 
       <div class="subsection">
-        <h3>Action Required (DNS):</h3>
+        <h3>Action Required (DNS - Firebase Hosting):</h3>
         <ul>
           <li>&#9744; Add A record: <code>idmc-gcfsm.org</code> → <code>199.36.158.100</code></li>
           <li>&#9744; Add TXT record: <code>idmc-gcfsm.org</code> → <code>hosting-site=idmc-gcfsm</code></li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>Action Required (DNS - SendGrid Email Authentication):</h3>
+        <ul>
+          <li>&#9744; Add CNAME: <code>em7984.idmc-gcfsm.org</code> → <code>u56746353.wl104.sendgrid.net</code></li>
+          <li>&#9744; Add CNAME: <code>s1._domainkey.idmc-gcfsm.org</code> → <code>s1.domainkey.u56746353.wl104.sendgrid.net</code></li>
+          <li>&#9744; Add CNAME: <code>s2._domainkey.idmc-gcfsm.org</code> → <code>s2.domainkey.u56746353.wl104.sendgrid.net</code></li>
+          <li>&#9744; Add TXT: <code>_dmarc.idmc-gcfsm.org</code> → <code>v=DMARC1; p=none;</code></li>
         </ul>
       </div>
     </div>
@@ -1056,5 +1286,30 @@
       <p>Prepared by Gelo</p>
     </footer>
   </div>
+
+  <script>
+    /**
+     * Copies text to clipboard and shows visual feedback
+     * @param {HTMLElement} button - The copy button element
+     * @param {string} text - The text to copy
+     */
+    function copyToClipboard(button, text) {
+      navigator.clipboard.writeText(text).then(function() {
+        // Add copied class for visual feedback
+        button.classList.add('copied');
+
+        // Change icon to checkmark
+        button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+        // Reset after 2 seconds
+        setTimeout(function() {
+          button.classList.remove('copied');
+          button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+        }, 2000);
+      }).catch(function(err) {
+        console.error('Failed to copy: ', err);
+      });
+    }
+  </script>
 </body>
 </html>
