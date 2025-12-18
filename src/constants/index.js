@@ -47,6 +47,7 @@ export const ADMIN_ROUTES = {
   INQUIRIES: '/admin/inquiries',
   BANK_ACCOUNTS: '/admin/bank-accounts',
   INVOICES: '/admin/invoices',
+  FINANCE_DASHBOARD: '/admin/finance-dashboard',
 };
 
 /**
@@ -183,6 +184,7 @@ export const ADMIN_NAV_GROUPS = [
     id: 'finance',
     label: 'Finance',
     items: [
+      { label: 'Finance Dashboard', path: ADMIN_ROUTES.FINANCE_DASHBOARD, icon: 'dollar' },
       { label: 'Invoices', path: ADMIN_ROUTES.INVOICES, icon: 'document' },
       { label: 'Bank Accounts', path: ADMIN_ROUTES.BANK_ACCOUNTS, icon: 'bank' },
     ],

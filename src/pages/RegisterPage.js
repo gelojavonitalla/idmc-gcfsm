@@ -10,6 +10,8 @@ import {
   ROUTES,
   BANK_LABELS,
   PAYMENT_METHODS,
+  BANK_ACCOUNT_TYPES,
+  BANK_NAMES,
 } from '../constants';
 import {
   calculatePrice,
@@ -541,10 +543,14 @@ function RegisterPage() {
     const newErrors = {};
 
     // Validation depends on payment method
-    if (formData.paymentMethod === PAYMENT_METHODS.BANK_TRANSFER) {
-      // Bank transfer requires bank selection and payment proof
+    if (formData.paymentMethod === PAYMENT_METHODS.BANK_TRANSFER ||
+        formData.paymentMethod === PAYMENT_METHODS.GCASH ||
+        formData.paymentMethod === PAYMENT_METHODS.PAYMAYA) {
+      // Bank transfer and e-wallet require account selection and payment proof
       if (!formData.selectedBankAccountId) {
-        newErrors.selectedBankAccountId = 'Please select a bank account';
+        newErrors.selectedBankAccountId = formData.paymentMethod === PAYMENT_METHODS.BANK_TRANSFER
+          ? 'Please select a bank account'
+          : 'Please select an e-wallet account';
       }
 
       if (!formData.paymentFile) {
@@ -1400,6 +1406,29 @@ function RegisterPage() {
               <div className={styles.paymentMethodGrid}>
                 <div
                   className={`${styles.paymentMethodCard} ${
+                    formData.paymentMethod === PAYMENT_METHODS.CASH ? styles.selectedPaymentMethod : ''
+                  }`}
+                  onClick={() => updateField('paymentMethod', PAYMENT_METHODS.CASH)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className={styles.paymentMethodIcon}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                      <polyline points="9 22 9 12 15 12 15 22" />
+                    </svg>
+                  </div>
+                  <h3 className={styles.paymentMethodTitle}>Cash at Registration Booth</h3>
+                  <p className={styles.paymentMethodDescription}>
+                    Pay in cash when you arrive at the event registration booth
+                  </p>
+                  {formData.paymentMethod === PAYMENT_METHODS.CASH && (
+                    <div className={styles.selectedIndicator}>✓</div>
+                  )}
+                </div>
+
+                <div
+                  className={`${styles.paymentMethodCard} ${
                     formData.paymentMethod === PAYMENT_METHODS.BANK_TRANSFER ? styles.selectedPaymentMethod : ''
                   }`}
                   onClick={() => updateField('paymentMethod', PAYMENT_METHODS.BANK_TRANSFER)}
@@ -1427,24 +1456,23 @@ function RegisterPage() {
 
                 <div
                   className={`${styles.paymentMethodCard} ${
-                    formData.paymentMethod === PAYMENT_METHODS.CASH ? styles.selectedPaymentMethod : ''
+                    (formData.paymentMethod === PAYMENT_METHODS.GCASH || formData.paymentMethod === PAYMENT_METHODS.PAYMAYA) ? styles.selectedPaymentMethod : ''
                   }`}
-                  onClick={() => updateField('paymentMethod', PAYMENT_METHODS.CASH)}
+                  onClick={() => updateField('paymentMethod', PAYMENT_METHODS.GCASH)}
                   role="button"
                   tabIndex={0}
                 >
                   <div className={styles.paymentMethodIcon}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                      <polyline points="9 22 9 12 15 12 15 22" />
-                      <path d="M3 9h18" />
+                      <rect x="2" y="5" width="20" height="14" rx="2" />
+                      <path d="M2 10h20" />
                     </svg>
                   </div>
-                  <h3 className={styles.paymentMethodTitle}>Cash at Registration Booth</h3>
+                  <h3 className={styles.paymentMethodTitle}>E-Wallet (GCash/Maya)</h3>
                   <p className={styles.paymentMethodDescription}>
-                    Pay in cash when you arrive at the event registration booth
+                    Send payment via GCash or Maya and upload your proof of payment
                   </p>
-                  {formData.paymentMethod === PAYMENT_METHODS.CASH && (
+                  {(formData.paymentMethod === PAYMENT_METHODS.GCASH || formData.paymentMethod === PAYMENT_METHODS.PAYMAYA) && (
                     <div className={styles.selectedIndicator}>✓</div>
                   )}
                 </div>
@@ -1465,33 +1493,217 @@ function RegisterPage() {
                 <p>Loading bank accounts...</p>
               ) : (
                 <div className={styles.bankAccountGrid}>
-                  {bankAccounts.map((account) => {
-                    const isSelected = formData.selectedBankAccountId === account.id;
-                    return (
-                      <div
-                        key={account.id}
-                        className={`${styles.bankAccountCard} ${isSelected ? styles.selectedBank : ''}`}
-                        onClick={() => updateField('selectedBankAccountId', account.id)}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        <img
-                          src={`/images/banks/${account.bankName}.svg`}
-                          alt={BANK_LABELS[account.bankName]}
-                          className={styles.bankLogo}
-                        />
-                        <div className={styles.bankAccountDetails}>
-                          <h4>{BANK_LABELS[account.bankName]}</h4>
-                          <p><strong>Account Name:</strong> {account.accountName}</p>
-                          <p><strong>Account No:</strong> {account.accountNumber}</p>
-                          {account.branch && <p><strong>Branch:</strong> {account.branch}</p>}
+                  {bankAccounts
+                    .filter((account) =>
+                      account.accountType === BANK_ACCOUNT_TYPES.SAVINGS ||
+                      account.accountType === BANK_ACCOUNT_TYPES.CHECKING
+                    )
+                    .map((account) => {
+                      const isSelected = formData.selectedBankAccountId === account.id;
+                      return (
+                        <div
+                          key={account.id}
+                          className={`${styles.bankAccountCard} ${isSelected ? styles.selectedBank : ''}`}
+                          onClick={() => updateField('selectedBankAccountId', account.id)}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <img
+                            src={`/images/banks/${account.bankName}.svg`}
+                            alt={BANK_LABELS[account.bankName]}
+                            className={styles.bankLogo}
+                          />
+                          <div className={styles.bankAccountDetails}>
+                            <h4>{BANK_LABELS[account.bankName]}</h4>
+                            <p><strong>Account Name:</strong> {account.accountName}</p>
+                            <p><strong>Account No:</strong> {account.accountNumber}</p>
+                            {account.branch && <p><strong>Branch:</strong> {account.branch}</p>}
+                          </div>
+                          {isSelected && (
+                            <div className={styles.selectedIndicator}>✓</div>
+                          )}
                         </div>
-                        {isSelected && (
-                          <div className={styles.selectedIndicator}>✓</div>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                </div>
+              )}
+              {errors.selectedBankAccountId && (
+                <span className={styles.errorMessage}>{errors.selectedBankAccountId}</span>
+              )}
+
+              <div className={styles.sectionDivider}>
+                <span>Upload Payment Receipt</span>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="paymentFile" className={styles.label}>
+                  Upload Payment Screenshot/Receipt <span className={styles.required}>*</span>
+                </label>
+                <div className={styles.fileUpload}>
+                  <input
+                    id="paymentFile"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className={styles.fileInput}
+                    disabled={isOcrProcessing}
+                  />
+                  <div className={styles.fileUploadButton}>
+                    {formData.paymentFileName ? (
+                      <span className={styles.fileName}>{formData.paymentFileName}</span>
+                    ) : (
+                      <span>Click to select file (JPG, PNG, GIF, or WebP)</span>
+                    )}
+                  </div>
+                </div>
+                {errors.paymentFile && (
+                  <span className={styles.errorMessage}>{errors.paymentFile}</span>
+                )}
+                <p className={styles.fileHint}>Maximum file size: 5MB</p>
+                {isOcrProcessing && (
+                  <p className={styles.ocrProcessing}>Processing receipt... Please wait.</p>
+                )}
+              </div>
+
+              {formData.paymentFile && !isOcrProcessing && (
+                <>
+                  <div className={styles.sectionDivider}>
+                    <span>Payment Details</span>
+                  </div>
+
+                  {ocrResult && ocrParsedFields.amount && (
+                    <p className={styles.verificationHint}>
+                      We&apos;ve auto-filled the details below from your receipt. Please verify they are correct.
+                    </p>
+                  )}
+
+                  <div className={styles.formRow}>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="paymentAmount" className={styles.label}>
+                        Amount Paid <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        id="paymentAmount"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className={`${styles.input} ${errors.paymentAmount ? styles.inputError : ''}`}
+                        value={formData.paymentAmount}
+                        onChange={(e) => updatePaymentField('paymentAmount', e.target.value)}
+                        placeholder="0.00"
+                      />
+                      {errors.paymentAmount && (
+                        <span className={styles.errorMessage}>{errors.paymentAmount}</span>
+                      )}
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label htmlFor="paymentDate" className={styles.label}>
+                        Payment Date <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        id="paymentDate"
+                        type="date"
+                        className={`${styles.input} ${errors.paymentDate ? styles.inputError : ''}`}
+                        value={formData.paymentDate}
+                        onChange={(e) => updatePaymentField('paymentDate', e.target.value)}
+                      />
+                      {errors.paymentDate && (
+                        <span className={styles.errorMessage}>{errors.paymentDate}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={styles.formRow}>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="paymentTime" className={styles.label}>
+                        Payment Time <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        id="paymentTime"
+                        type="time"
+                        className={`${styles.input} ${errors.paymentTime ? styles.inputError : ''}`}
+                        value={formData.paymentTime}
+                        onChange={(e) => updatePaymentField('paymentTime', e.target.value)}
+                      />
+                      {errors.paymentTime && (
+                        <span className={styles.errorMessage}>{errors.paymentTime}</span>
+                      )}
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label htmlFor="paymentReferenceNumber" className={styles.label}>
+                        Reference Number
+                      </label>
+                      <input
+                        id="paymentReferenceNumber"
+                        type="text"
+                        className={styles.input}
+                        value={formData.paymentReferenceNumber}
+                        onChange={(e) => updatePaymentField('paymentReferenceNumber', e.target.value)}
+                        placeholder="Transaction reference number"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+                </>
+              )}
+
+              {/* E-Wallet Account Selection - Only for GCash/Maya */}
+              {(formData.paymentMethod === PAYMENT_METHODS.GCASH || formData.paymentMethod === PAYMENT_METHODS.PAYMAYA) && (
+                <>
+                  <div className={styles.sectionDivider}>
+                    <span>Select E-Wallet Account</span>
+                  </div>
+
+                  <p className={styles.sectionHint}>
+                    Choose the GCash or Maya account where you will send your payment
+                  </p>
+
+              {loadingBankAccounts ? (
+                <p>Loading e-wallet accounts...</p>
+              ) : (
+                <div className={styles.bankAccountGrid}>
+                  {bankAccounts
+                    .filter((account) =>
+                      account.accountType === BANK_ACCOUNT_TYPES.EWALLET &&
+                      (account.bankName === BANK_NAMES.GCASH || account.bankName === BANK_NAMES.MAYA)
+                    )
+                    .map((account) => {
+                      const isSelected = formData.selectedBankAccountId === account.id;
+                      return (
+                        <div
+                          key={account.id}
+                          className={`${styles.bankAccountCard} ${isSelected ? styles.selectedBank : ''}`}
+                          onClick={() => {
+                            updateField('selectedBankAccountId', account.id);
+                            // Update payment method to match selected e-wallet
+                            if (account.bankName === BANK_NAMES.GCASH) {
+                              updateField('paymentMethod', PAYMENT_METHODS.GCASH);
+                            } else if (account.bankName === BANK_NAMES.MAYA) {
+                              updateField('paymentMethod', PAYMENT_METHODS.PAYMAYA);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <img
+                            src={`/images/banks/${account.bankName}.svg`}
+                            alt={BANK_LABELS[account.bankName]}
+                            className={styles.bankLogo}
+                          />
+                          <div className={styles.bankAccountDetails}>
+                            <h4>{BANK_LABELS[account.bankName]}</h4>
+                            <p><strong>Account Name:</strong> {account.accountName}</p>
+                            <p><strong>Number:</strong> {account.accountNumber}</p>
+                          </div>
+                          {isSelected && (
+                            <div className={styles.selectedIndicator}>✓</div>
+                          )}
+                        </div>
+                      );
+                    })}
                 </div>
               )}
               {errors.selectedBankAccountId && (
@@ -1621,12 +1833,20 @@ function RegisterPage() {
               {formData.paymentMethod === PAYMENT_METHODS.CASH && (
                 <div className={styles.cashPaymentInfo}>
                   <p className={styles.cashPaymentMessage}>
-                    <strong>Payment at Registration Booth</strong>
+                    <strong>Cash Payment at Registration Booth</strong>
                   </p>
                   <p>
-                    You have chosen to pay in cash at the registration booth. Please bring the exact amount
-                    of <strong>{formatPrice(calculateTotalPrice())}</strong> when you arrive at the event.
+                    You have chosen to pay in cash. Please bring the exact amount
+                    of <strong>{formatPrice(calculateTotalPrice())}</strong> to the registration booth.
                   </p>
+                  <p>
+                    <strong>Office Hours:</strong>
+                  </p>
+                  <ul>
+                    <li>Monday to Friday: 9:00 AM - 5:00 PM</li>
+                    <li>Saturday: 9:00 AM - 12:00 PM</li>
+                    <li>Or during the event day at the registration booth</li>
+                  </ul>
                   <p className={styles.cashPaymentNote}>
                     Note: Your registration will be confirmed after payment is received at the booth.
                   </p>
