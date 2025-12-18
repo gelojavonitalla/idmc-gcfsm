@@ -42,6 +42,7 @@ const AdminLegalPage = lazy(() => import('./pages/admin/AdminLegalPage'));
 const AdminRegistrationsPage = lazy(() => import('./pages/admin/AdminRegistrationsPage'));
 const AdminVenuePage = lazy(() => import('./pages/admin/AdminVenuePage'));
 const AdminCheckInPage = lazy(() => import('./pages/admin/AdminCheckInPage'));
+const AdminCheckInMonitorPage = lazy(() => import('./pages/admin/AdminCheckInMonitorPage'));
 const AdminInquiriesPage = lazy(() => import('./pages/admin/AdminInquiriesPage'));
 
 /**
@@ -196,6 +197,16 @@ function App() {
                 <AdminProtectedRoute>
                   <Suspense fallback={<AdminLoadingFallback />}>
                     <AdminCheckInPage />
+                  </Suspense>
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path={ADMIN_ROUTES.CHECKIN_MONITOR}
+              element={
+                <AdminProtectedRoute>
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminCheckInMonitorPage />
                   </Suspense>
                 </AdminProtectedRoute>
               }

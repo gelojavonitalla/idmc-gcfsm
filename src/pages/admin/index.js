@@ -19,4 +19,5 @@ export { default as AdminLegalPage } from './AdminLegalPage';
 export { default as AdminRegistrationsPage } from './AdminRegistrationsPage';
 export { default as AdminVenuePage } from './AdminVenuePage';
 export { default as AdminCheckInPage } from './AdminCheckInPage';
+export { default as AdminCheckInMonitorPage } from './AdminCheckInMonitorPage';
 export { default as AdminInquiriesPage } from './AdminInquiriesPage';
