@@ -204,12 +204,11 @@ function RegisterPage() {
         'image/png',
         'image/gif',
         'image/webp',
-        'application/pdf',
       ];
       if (!allowedTypes.includes(file.type)) {
         setErrors((prev) => ({
           ...prev,
-          paymentFile: 'Please upload an image (JPG, PNG, GIF, WebP) or PDF file',
+          paymentFile: 'Please upload an image (JPG, PNG, GIF, or WebP)',
         }));
         return;
       }
@@ -1220,7 +1219,7 @@ function RegisterPage() {
                   <input
                     id="paymentFile"
                     type="file"
-                    accept="image/*,.pdf"
+                    accept="image/*"
                     onChange={handleFileChange}
                     className={styles.fileInput}
                   />
@@ -1228,7 +1227,7 @@ function RegisterPage() {
                     {formData.paymentFileName ? (
                       <span className={styles.fileName}>{formData.paymentFileName}</span>
                     ) : (
-                      <span>Click to select file (JPG, PNG, GIF, or PDF)</span>
+                      <span>Click to select file (JPG, PNG, GIF, or WebP)</span>
                     )}
                   </div>
                 </div>
