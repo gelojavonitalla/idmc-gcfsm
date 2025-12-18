@@ -628,7 +628,7 @@ interface AttendeeWithQR {
  *
  * @param {Object} registration - Registration data
  * @param {Object} settings - Event settings data
- * @param {AttendeeWithQR[]} attendeesWithQR - Array of attendees with their QR codes
+ * @param {AttendeeWithQR[]} attendeesWithQR - Array of attendees with QR codes
  * @return {string} HTML string for the email
  */
 function generateTicketEmailHtml(
@@ -728,7 +728,7 @@ function generateTicketEmailHtml(
               </p>
               <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
                 Great news! Your payment has been confirmed and your registration for <strong>${settings.title}</strong> is now complete.
-                ${attendeeCount > 1 ? `<br><br><strong>Important:</strong> Each attendee has their own unique QR code below. Please share the appropriate QR code with each member of your group.` : ""}
+                ${attendeeCount > 1 ? "<br><br><strong>Important:</strong> Each attendee has their own unique QR code below. Please share the appropriate QR code with each member of your group." : ""}
               </p>
 
               <!-- Registration Info -->
@@ -1035,7 +1035,11 @@ async function sendRegistrationConfirmationEmail(
 async function generateAllAttendeeQRCodes(
   registrationId: string,
   primaryAttendee: {firstName: string; lastName: string; email: string},
-  additionalAttendees?: Array<{firstName: string; lastName: string; email?: string}>
+  additionalAttendees?: Array<{
+    firstName: string;
+    lastName: string;
+    email?: string;
+  }>
 ): Promise<AttendeeWithQR[]> {
   const attendeesWithQR: AttendeeWithQR[] = [];
 
@@ -1298,7 +1302,9 @@ export const onPaymentConfirmed = onDocumentUpdated(
 
         if (attendeeEmail) {
           try {
-            const attendeeWithQR = attendeesWithQR.find((a) => a.attendeeIndex === i + 1);
+            const attendeeWithQR = attendeesWithQR.find(
+              (a) => a.attendeeIndex === i + 1
+            );
             if (attendeeWithQR) {
               await sendIndividualTicketEmail(
                 attendeeEmail,
@@ -1394,7 +1400,7 @@ let visionClient: ImageAnnotatorClient | null = null;
 
 /**
  * Gets or creates the Vision API client
- * @returns {ImageAnnotatorClient} The Vision client instance
+ * @return {ImageAnnotatorClient} The Vision client instance
  */
 function getVisionClient(): ImageAnnotatorClient {
   if (!visionClient) {
@@ -1408,8 +1414,8 @@ function getVisionClient(): ImageAnnotatorClient {
  * Called as fallback when Tesseract.js confidence is low
  *
  * @param {Object} data - Request data
- * @param {string} data.image - Base64 encoded image data (without data URL prefix)
- * @returns {Promise<{text: string, confidence: number}>} Extracted text and confidence
+ * @param {string} data.image - Base64 encoded image data (no data URL prefix)
+ * @return {Promise<{text: string, confidence: number}>} Extracted text
  *
  * @example
  * // From frontend:
