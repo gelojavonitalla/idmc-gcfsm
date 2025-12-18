@@ -125,8 +125,15 @@ create_index "registrations" \
     "field-path=createdAt,order=descending" \
     "field-path=__name__,order=descending"
 
+# Index 10: registrations (invoice.requested ASC, status ASC, payment.verifiedAt DESC, __name__ DESC)
+create_index "registrations" \
+    "field-path=invoice.requested,order=ascending" \
+    "field-path=status,order=ascending" \
+    "field-path=payment.verifiedAt,order=descending" \
+    "field-path=__name__,order=descending"
+
 # === BANK ACCOUNTS ===
-# Index 10: bankAccounts (isActive ASC, displayOrder ASC, __name__ ASC)
+# Index 11: bankAccounts (isActive ASC, displayOrder ASC, __name__ ASC)
 create_index "bankAccounts" \
     "field-path=isActive,order=ascending" \
     "field-path=displayOrder,order=ascending" \
