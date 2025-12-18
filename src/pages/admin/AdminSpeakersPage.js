@@ -17,6 +17,7 @@ import {
   updateSpeaker,
   deleteSpeaker,
 } from '../../services/maintenance';
+import { useAdminAuth } from '../../context';
 import { SPEAKER_STATUS } from '../../constants';
 import styles from './AdminSpeakersPage.module.css';
 
@@ -26,6 +27,7 @@ import styles from './AdminSpeakersPage.module.css';
  * @returns {JSX.Element} The admin speakers page
  */
 function AdminSpeakersPage() {
+  const { admin } = useAdminAuth();
   const [speakers, setSpeakers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -84,7 +86,7 @@ function AdminSpeakersPage() {
    * @param {Object} speakerData - Speaker data
    */
   const handleSaveSpeaker = async (speakerId, speakerData) => {
-    await saveSpeaker(speakerId, speakerData);
+    await saveSpeaker(speakerId, speakerData, admin?.id, admin?.email);
     await fetchSpeakers();
   };
 
@@ -99,7 +101,7 @@ function AdminSpeakersPage() {
     }
 
     try {
-      await deleteSpeaker(speakerId);
+      await deleteSpeaker(speakerId, admin?.id, admin?.email);
       setSpeakers((prev) => prev.filter((s) => s.id !== speakerId));
     } catch (err) {
       console.error('Failed to delete speaker:', err);
@@ -122,7 +124,7 @@ function AdminSpeakersPage() {
         : SPEAKER_STATUS.PUBLISHED;
 
     try {
-      await updateSpeaker(speakerId, { status: newStatus });
+      await updateSpeaker(speakerId, { status: newStatus }, admin?.id, admin?.email);
       setSpeakers((prev) =>
         prev.map((s) =>
           s.id === speakerId ? { ...s, status: newStatus } : s
@@ -150,7 +152,7 @@ function AdminSpeakersPage() {
     try {
       // Update each speaker's order in Firestore
       const updatePromises = newOrder.map((speaker, index) =>
-        updateSpeaker(speaker.id, { order: index + 1 })
+        updateSpeaker(speaker.id, { order: index + 1 }, admin?.id, admin?.email)
       );
       await Promise.all(updatePromises);
     } catch (err) {
@@ -161,7 +163,7 @@ function AdminSpeakersPage() {
     } finally {
       setIsReordering(false);
     }
-  }, [speakers]);
+  }, [speakers, admin]);
 
   /**
    * Gets speaker statistics

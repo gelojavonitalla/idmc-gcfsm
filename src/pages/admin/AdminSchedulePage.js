@@ -17,6 +17,7 @@ import {
   updateSession,
   deleteSession,
 } from '../../services/maintenance';
+import { useAdminAuth } from '../../context';
 import { SESSION_STATUS, SESSION_TYPES, SESSION_TYPE_LABELS } from '../../constants';
 import styles from './AdminSchedulePage.module.css';
 
@@ -26,6 +27,7 @@ import styles from './AdminSchedulePage.module.css';
  * @returns {JSX.Element} The admin schedule page
  */
 function AdminSchedulePage() {
+  const { admin } = useAdminAuth();
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -84,7 +86,7 @@ function AdminSchedulePage() {
    * @param {Object} sessionData - Session data
    */
   const handleSaveSession = async (sessionId, sessionData) => {
-    await saveSession(sessionId, sessionData);
+    await saveSession(sessionId, sessionData, admin?.id, admin?.email);
     await fetchSessions();
   };
 
@@ -99,7 +101,7 @@ function AdminSchedulePage() {
     }
 
     try {
-      await deleteSession(sessionId);
+      await deleteSession(sessionId, admin?.id, admin?.email);
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     } catch (err) {
       console.error('Failed to delete session:', err);
@@ -122,7 +124,7 @@ function AdminSchedulePage() {
         : SESSION_STATUS.PUBLISHED;
 
     try {
-      await updateSession(sessionId, { status: newStatus });
+      await updateSession(sessionId, { status: newStatus }, admin?.id, admin?.email);
       setSessions((prev) =>
         prev.map((s) =>
           s.id === sessionId ? { ...s, status: newStatus } : s

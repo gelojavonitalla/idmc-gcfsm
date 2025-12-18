@@ -19,6 +19,8 @@ import {
   searchRegistrations,
   updateRegistration,
 } from '../../services/maintenance';
+import { useAdminAuth } from '../../context';
+import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from '../../services/activityLog';
 import { REGISTRATION_STATUS, WORKSHOP_CATEGORY_LABELS } from '../../constants';
 import {
   exportRegistrationsToCsv,
@@ -38,6 +40,7 @@ import styles from './AdminRegistrationsPage.module.css';
 const PAGE_SIZE = 50;
 
 function AdminRegistrationsPage() {
+  const { admin } = useAdminAuth();
   const [registrations, setRegistrations] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -271,7 +274,19 @@ function AdminRegistrationsPage() {
         : statusFilter !== 'all'
           ? `registrations-${statusFilter}-current-view`
           : 'registrations-current-view';
-      exportRegistrationsToCsv(dataToExport, prefix);
+      const result = exportRegistrationsToCsv(dataToExport, prefix);
+
+      // Log the export activity
+      if (admin?.id && admin?.email) {
+        await logActivity({
+          type: ACTIVITY_TYPES.EXPORT,
+          entityType: ENTITY_TYPES.REGISTRATION,
+          entityId: `export-${Date.now()}`,
+          description: `Exported ${result.count} registration(s) to CSV (current view)`,
+          adminId: admin.id,
+          adminEmail: admin.email,
+        });
+      }
     } catch (exportError) {
       console.error('Failed to export registrations:', exportError);
       setError('Failed to export registrations. Please try again.');
@@ -312,7 +327,19 @@ function AdminRegistrationsPage() {
       const prefix = statusFilter !== 'all'
         ? `registrations-${statusFilter}-all`
         : 'registrations-all';
-      exportRegistrationsToCsv(dataToExport, prefix);
+      const result = exportRegistrationsToCsv(dataToExport, prefix);
+
+      // Log the export activity
+      if (admin?.id && admin?.email) {
+        await logActivity({
+          type: ACTIVITY_TYPES.EXPORT,
+          entityType: ENTITY_TYPES.REGISTRATION,
+          entityId: `export-${Date.now()}`,
+          description: `Exported ${result.count} registration(s) to CSV (all records)`,
+          adminId: admin.id,
+          adminEmail: admin.email,
+        });
+      }
     } catch (exportError) {
       console.error('Failed to export all registrations:', exportError);
       setError('Failed to export registrations. Please try again.');
@@ -332,10 +359,26 @@ function AdminRegistrationsPage() {
     setError(null);
 
     try {
+      let result;
       if (workshopCategory === 'all') {
-        exportAllWorkshopsAttendanceToCsv(registrations);
+        result = exportAllWorkshopsAttendanceToCsv(registrations);
       } else {
-        exportWorkshopAttendanceToCsv(registrations, workshopCategory);
+        result = exportWorkshopAttendanceToCsv(registrations, workshopCategory);
+      }
+
+      // Log the export activity
+      if (admin?.id && admin?.email) {
+        const workshopName = workshopCategory === 'all'
+          ? 'all workshops'
+          : WORKSHOP_CATEGORY_LABELS[workshopCategory] || workshopCategory;
+        await logActivity({
+          type: ACTIVITY_TYPES.EXPORT,
+          entityType: ENTITY_TYPES.WORKSHOP,
+          entityId: `export-${Date.now()}`,
+          description: `Exported workshop attendance for ${workshopName} (${result.count} attendee(s))`,
+          adminId: admin.id,
+          adminEmail: admin.email,
+        });
       }
     } catch (exportError) {
       console.error('Failed to export workshop attendance:', exportError);
