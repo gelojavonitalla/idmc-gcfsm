@@ -44,7 +44,7 @@ export function getCurrentPricingTier() {
 /**
  * Calculates the registration price based on category and pricing tier.
  *
- * @param {string} category - The registration category (regular, student_senior)
+ * @param {string} category - The registration category (regular, student_senior, volunteer, speaker)
  * @param {Object} tier - The pricing tier object (optional, defaults to current tier)
  * @returns {number} The calculated price
  */
@@ -54,6 +54,9 @@ export function calculatePrice(category, tier = null) {
   switch (category) {
     case REGISTRATION_CATEGORIES.STUDENT_SENIOR:
       return pricingTier.studentPrice;
+    case REGISTRATION_CATEGORIES.VOLUNTEER:
+    case REGISTRATION_CATEGORIES.SPEAKER:
+      return 0; // Free registration for volunteers and speakers
     case REGISTRATION_CATEGORIES.REGULAR:
     default:
       return pricingTier.regularPrice;
