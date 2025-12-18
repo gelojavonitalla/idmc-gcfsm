@@ -18,15 +18,26 @@ async function getTesseract() {
 }
 
 /**
- * Recognize text from receipt image
+ * @typedef {Object} RecognitionResult
+ * @property {string} text - Recognized text
+ * @property {number} confidence - Confidence level (0-100)
+ */
+
+/**
+ * Recognize text from receipt image with confidence
  * @param {File|Blob|ArrayBuffer|Uint8Array|string} input
- * @returns {Promise<string>}
+ * @returns {Promise<RecognitionResult>}
  */
 export async function recognizeReceiptText(input) {
-  if (typeof input === "string") return input.trim();
+  if (typeof input === "string") {
+    return { text: input.trim(), confidence: 100 };
+  }
   const Tesseract = await getTesseract();
   const { data } = await Tesseract.recognize(input, "eng", { logger: () => {} });
-  return (data?.text ?? "").replace(/\s+/g, " ").trim();
+  return {
+    text: (data?.text ?? "").replace(/\s+/g, " ").trim(),
+    confidence: data?.confidence ?? 0,
+  };
 }
 
 const isBrowser = typeof window !== "undefined";
@@ -117,16 +128,19 @@ async function rotateBlob90s(blob, angle) {
  * Recognize text once with optional PSM
  * @param {File|Blob|ArrayBuffer|Uint8Array|string} src
  * @param {number} [psm]
- * @returns {Promise<string>}
+ * @returns {Promise<{text: string, confidence: number}>}
  */
 async function recognizeOnce(src, psm) {
   try {
     const Tesseract = await getTesseract();
     const opts = psm ? { tessedit_pageseg_mode: psm } : {};
     const { data } = await Tesseract.recognize(src, "eng", opts);
-    return collapseWhitespace(data?.text ?? "");
+    return {
+      text: collapseWhitespace(data?.text ?? ""),
+      confidence: data?.confidence ?? 0,
+    };
   } catch {
-    return "";
+    return { text: "", confidence: 0 };
   }
 }
 
@@ -136,7 +150,7 @@ async function recognizeOnce(src, psm) {
  * - PSM: 6 (single block), 11 (sparse text)
  * Picks the text with the best score.
  * @param {File|Blob|ArrayBuffer|Uint8Array|string} file
- * @returns {Promise<string>}
+ * @returns {Promise<RecognitionResult>}
  */
 export async function recognizeBestText(file) {
   const angles = [0, 90, 180, 270];
@@ -157,17 +171,17 @@ export async function recognizeBestText(file) {
 
   if (variants.length === 0) variants.push({ src: file, label: "fallback" });
 
-  let bestText = "";
+  let bestResult = { text: "", confidence: 0 };
   let bestScore = -Infinity;
 
   // sequential to avoid pegging CPU; change to Promise.allSettled if you prefer speed over thermals
   for (const v of variants) {
-    const txt = await recognizeOnce(v.src, v.psm);
-    const s = scoreReceiptText(txt);
+    const result = await recognizeOnce(v.src, v.psm);
+    const s = scoreReceiptText(result.text);
     if (s > bestScore) {
       bestScore = s;
-      bestText = txt;
+      bestResult = result;
     }
   }
-  return bestText;
+  return bestResult;
 }

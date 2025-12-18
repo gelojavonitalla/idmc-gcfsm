@@ -1,6 +1,7 @@
 /**
  * Receipt suggestion service
  * Combines OCR with bank/cash parsing to suggest payment details
+ * Supports hybrid approach: Tesseract first, Cloud Vision fallback if low confidence
  *
  * @module tesseract/receiptSuggest
  */
@@ -17,6 +18,20 @@ import { parseCashText } from "./ocrCash";
  * @property {string|null} suggestedDateTime
  * @property {string|null} suggestedBank
  */
+
+/**
+ * @typedef {Object} ReceiptSuggestion
+ * @property {string} rawText - Raw OCR text
+ * @property {number} confidence - Tesseract confidence (0-100)
+ * @property {OcrSuggestResult} bank - Bank receipt parsing result
+ * @property {OcrSuggestResult} cash - Cash receipt parsing result
+ * @property {OcrSuggestResult} winner - Best parsing result
+ * @property {boolean} shouldManual - Whether manual entry is recommended
+ * @property {boolean} shouldFallback - Whether to fallback to Cloud Vision (confidence < threshold)
+ */
+
+/** Confidence threshold below which Cloud Vision fallback is recommended */
+export const CONFIDENCE_THRESHOLD = 60;
 
 /**
  * Light signal of "is this text worth trusting?"
@@ -43,14 +58,58 @@ const scoreSuggestion = (s) =>
   (s.suggestedBank ? 1 : 0);
 
 /**
- * Process a receipt image and suggest payment details
+ * Process a receipt image and suggest payment details using Tesseract
+ * Returns confidence level so caller can decide to fallback to Cloud Vision
+ *
  * @param {File|Blob|ArrayBuffer|Uint8Array|string} file
- * @returns {Promise<{rawText: string, bank: OcrSuggestResult, cash: OcrSuggestResult, winner: OcrSuggestResult, shouldManual: boolean}>}
+ * @param {number} [confidenceThreshold=CONFIDENCE_THRESHOLD] - Threshold for fallback recommendation
+ * @returns {Promise<ReceiptSuggestion>}
+ *
+ * @example
+ * const result = await suggestFromReceipt(file);
+ * if (result.shouldFallback) {
+ *   // Call Cloud Vision API
+ *   const visionText = await callCloudVision(file);
+ *   // Re-parse with better text
+ *   const betterResult = suggestFromText(visionText);
+ * }
  */
-export async function suggestFromReceipt(file) {
-  const raw = await recognizeReceiptText(file); // OCR once
-  const bank = parseBankText(raw);              // text -> bank fields
-  const cash = parseCashText(raw);              // text -> cash fields
+export async function suggestFromReceipt(file, confidenceThreshold = CONFIDENCE_THRESHOLD) {
+  const { text: raw, confidence } = await recognizeReceiptText(file);
+  const bank = parseBankText(raw);
+  const cash = parseCashText(raw);
+
+  const winner = scoreSuggestion(bank) >= scoreSuggestion(cash) ? bank : cash;
+
+  const hasAny =
+    !!(bank.suggestedAmount || bank.suggestedRef || bank.suggestedDateTime) ||
+    !!(cash.suggestedAmount || cash.suggestedRef || cash.suggestedDateTime);
+
+  const shouldManual = scoreReceiptText(raw) < 30 || !hasAny;
+  const shouldFallback = confidence < confidenceThreshold;
+
+  return {
+    rawText: raw,
+    confidence,
+    bank,
+    cash,
+    winner,
+    shouldManual,
+    shouldFallback,
+  };
+}
+
+/**
+ * Parse already-extracted text (e.g., from Cloud Vision)
+ * Use this when you have text from an external OCR source
+ *
+ * @param {string} text - Pre-extracted text from Cloud Vision or other source
+ * @returns {ReceiptSuggestion}
+ */
+export function suggestFromText(text) {
+  const raw = (text ?? "").replace(/\s+/g, " ").trim();
+  const bank = parseBankText(raw);
+  const cash = parseCashText(raw);
 
   const winner = scoreSuggestion(bank) >= scoreSuggestion(cash) ? bank : cash;
 
@@ -60,5 +119,13 @@ export async function suggestFromReceipt(file) {
 
   const shouldManual = scoreReceiptText(raw) < 30 || !hasAny;
 
-  return { rawText: raw, bank, cash, winner, shouldManual };
+  return {
+    rawText: raw,
+    confidence: 100, // External source assumed high confidence
+    bank,
+    cash,
+    winner,
+    shouldManual,
+    shouldFallback: false,
+  };
 }
