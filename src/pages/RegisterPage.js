@@ -718,7 +718,7 @@ function RegisterPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [formData, currentTier, calculateTotalPrice]);
+  }, [formData, currentTier, calculateTotalPrice, ocrModifiedFields, ocrParsedFields, ocrResult]);
 
   // Registration closed state
   if (!registrationOpen) {

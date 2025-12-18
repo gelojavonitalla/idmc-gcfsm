@@ -115,6 +115,9 @@ async function rotateBlob90s(blob, angle) {
       ctx.translate(0, ch);
       ctx.rotate((3 * Math.PI) / 2);
       break;
+    default:
+      // No rotation needed for 0 or invalid angles
+      break;
   }
   ctx.drawImage(img, 0, 0);
   ctx.restore();
