@@ -46,6 +46,7 @@ export const ADMIN_ROUTES = {
   VENUE: '/admin/venue',
   INQUIRIES: '/admin/inquiries',
   BANK_ACCOUNTS: '/admin/bank-accounts',
+  INVOICES: '/admin/invoices',
 };
 
 /**
@@ -176,6 +177,13 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Check-In', path: ADMIN_ROUTES.CHECKIN, icon: 'checkin' },
       { label: 'Check-In Monitor', path: ADMIN_ROUTES.CHECKIN_MONITOR, icon: 'dashboard' },
       { label: 'Inquiries', path: ADMIN_ROUTES.INQUIRIES, icon: 'mail' },
+    ],
+  },
+  {
+    id: 'finance',
+    label: 'Finance',
+    items: [
+      { label: 'Invoices', path: ADMIN_ROUTES.INVOICES, icon: 'document' },
       { label: 'Bank Accounts', path: ADMIN_ROUTES.BANK_ACCOUNTS, icon: 'bank' },
     ],
   },
@@ -226,6 +234,7 @@ export const STORAGE_PATHS = {
   DOWNLOAD_FILES: 'downloads/files',
   DOWNLOAD_THUMBNAILS: 'downloads/thumbnails',
   PAYMENT_PROOFS: 'registrations/payment-proofs',
+  INVOICES: 'registrations/invoices',
 };
 
 /**
@@ -235,6 +244,7 @@ export const ALLOWED_FILE_TYPES = {
   IMAGES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
   VIDEOS: ['video/mp4', 'video/webm', 'video/quicktime'],
   DOCUMENTS: ['application/pdf'],
+  INVOICES: ['application/pdf', 'image/jpeg', 'image/png'],
 };
 
 /**
@@ -511,6 +521,26 @@ export const PAYMENT_METHODS = {
   PAYMAYA: 'paymaya',
   BANK_TRANSFER: 'bank_transfer',
   CASH: 'cash',
+};
+
+/**
+ * Invoice status values for tracking invoice requests and delivery
+ */
+export const INVOICE_STATUS = {
+  PENDING: 'pending',
+  UPLOADED: 'uploaded',
+  SENT: 'sent',
+  FAILED: 'failed',
+};
+
+/**
+ * Invoice status labels for display
+ */
+export const INVOICE_STATUS_LABELS = {
+  [INVOICE_STATUS.PENDING]: 'Pending',
+  [INVOICE_STATUS.UPLOADED]: 'Uploaded',
+  [INVOICE_STATUS.SENT]: 'Sent',
+  [INVOICE_STATUS.FAILED]: 'Failed',
 };
 
 /**
