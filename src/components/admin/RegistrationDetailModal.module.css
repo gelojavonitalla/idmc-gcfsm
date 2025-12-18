@@ -430,6 +430,106 @@
   background: var(--color-border);
 }
 
+/* Payment Verification Styles */
+.paymentProofContainer {
+  margin-bottom: var(--spacing-4);
+}
+
+.paymentProofImage {
+  max-width: 100%;
+  max-height: 400px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: block;
+  margin-top: var(--spacing-2);
+}
+
+.paymentProofLink {
+  display: inline-block;
+}
+
+.verificationForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.balanceOwed {
+  color: var(--color-warning-700, #c2410c);
+  font-weight: var(--font-weight-semibold);
+}
+
+.warningText {
+  color: var(--color-warning-700, #c2410c);
+  font-size: var(--font-size-sm);
+  margin: var(--spacing-1) 0 0;
+}
+
+.verificationActions {
+  display: flex;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-2);
+}
+
+.verifyButton {
+  flex: 1;
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-success-600, #16a34a);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.verifyButton:hover:not(:disabled) {
+  background-color: var(--color-success-700, #15803d);
+}
+
+.verifyButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rejectButton {
+  flex: 1;
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-error-600, #dc2626);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.rejectButton:hover:not(:disabled) {
+  background-color: var(--color-error-700, #b91c1c);
+}
+
+.rejectButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.required {
+  color: var(--color-error-600, #dc2626);
+}
+
+.hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-1);
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .modal {
