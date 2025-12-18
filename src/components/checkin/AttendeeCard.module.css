@@ -277,6 +277,14 @@
   border-color: rgba(16, 185, 129, 0.3);
 }
 
+.attendeeRow.checkedIn .attendeeRowName {
+  color: #1f2937;
+}
+
+.attendeeRow.checkedIn .attendeeRowLabel {
+  color: #4b5563;
+}
+
 .attendeeRow.selected {
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
