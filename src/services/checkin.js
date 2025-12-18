@@ -424,13 +424,19 @@ export async function searchRegistrations(searchTerm) {
     );
     const confirmedSnapshot = await getDocs(confirmedQuery);
 
+    // Normalize search term: trim and collapse multiple spaces
+    const normalizedSearchTerm = normalizedTerm.trim().replace(/\s+/g, ' ');
+
     confirmedSnapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      const fullName = `${data.primaryAttendee?.firstName || ''} ${data.primaryAttendee?.lastName || ''}`.toLowerCase();
+      // Normalize full name: trim each part, concatenate, collapse spaces
+      const firstName = (data.primaryAttendee?.firstName || '').trim();
+      const lastName = (data.primaryAttendee?.lastName || '').trim();
+      const fullName = `${firstName} ${lastName}`.toLowerCase().trim().replace(/\s+/g, ' ');
       const phone = (data.primaryAttendee?.cellphone || '').replace(/[\s-]/g, '');
 
       if (
-        fullName.includes(normalizedTerm) ||
+        fullName.includes(normalizedSearchTerm) ||
         phone.includes(normalizedTerm.replace(/[\s-]/g, ''))
       ) {
         if (!seenIds.has(docSnap.id)) {
