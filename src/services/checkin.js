@@ -489,14 +489,15 @@ export async function checkInAttendee(registrationId, checkInData) {
   }
 
   // Create attendeeCheckIns array for all attendees
+  // Note: Use Timestamp.now() for array items since serverTimestamp() is not supported inside arrays
   const totalAttendees = 1 + (registration.additionalAttendees?.length || 0);
-  const checkInTimestamp = serverTimestamp();
+  const arrayTimestamp = Timestamp.now();
   const attendeeCheckIns = [];
 
   for (let i = 0; i < totalAttendees; i++) {
     attendeeCheckIns.push({
       checkedIn: true,
-      checkedInAt: checkInTimestamp,
+      checkedInAt: arrayTimestamp,
       checkedInBy: adminId,
       checkedInByName: adminName || null,
       checkInMethod: method || CHECK_IN_METHODS.MANUAL,
@@ -508,12 +509,12 @@ export async function checkInAttendee(registrationId, checkInData) {
 
   await updateDoc(docRef, {
     checkedIn: true,
-    checkedInAt: checkInTimestamp,
+    checkedInAt: serverTimestamp(),
     checkedInBy: adminId,
     checkedInByName: adminName || null,
     checkInMethod: method || CHECK_IN_METHODS.MANUAL,
     attendeeCheckIns,
-    updatedAt: checkInTimestamp,
+    updatedAt: serverTimestamp(),
   });
 
   // Create check-in log entry for each attendee
@@ -527,13 +528,13 @@ export async function checkInAttendee(registrationId, checkInData) {
     attendeeEmail: registration.primaryAttendee?.email || '',
     category: registration.pricingTier || 'standard',
     church: registration.church?.name || null,
-    checkedInAt: checkInTimestamp,
+    checkedInAt: serverTimestamp(),
     checkedInBy: adminId,
     checkedInByName: adminName || null,
     checkInMethod: method || CHECK_IN_METHODS.MANUAL,
     stationId: stationId || null,
     attendeeCount: 1,
-    createdAt: checkInTimestamp,
+    createdAt: serverTimestamp(),
   });
 
   // Log additional attendees
@@ -546,13 +547,13 @@ export async function checkInAttendee(registrationId, checkInData) {
       attendeeEmail: attendee?.email || '',
       category: registration.pricingTier || 'standard',
       church: registration.church?.name || null,
-      checkedInAt: checkInTimestamp,
+      checkedInAt: serverTimestamp(),
       checkedInBy: adminId,
       checkedInByName: adminName || null,
       checkInMethod: method || CHECK_IN_METHODS.MANUAL,
       stationId: stationId || null,
       attendeeCount: 1,
-      createdAt: checkInTimestamp,
+      createdAt: serverTimestamp(),
     });
   }
 
@@ -596,8 +597,10 @@ export async function checkInSingleAttendee(registration, attendeeIndex, checkIn
   const attendeeName = `${attendeeInfo?.firstName || ''} ${attendeeInfo?.lastName || ''}`.trim();
 
   // Get or initialize attendeeCheckIns array
+  // Note: Use Timestamp.now() for array items since serverTimestamp() is not supported inside arrays
   const totalAttendees = 1 + (registration.additionalAttendees?.length || 0);
   const existingCheckIns = registration.attendeeCheckIns || [];
+  const arrayTimestamp = Timestamp.now();
   const attendeeCheckIns = [];
 
   // Initialize array with existing or empty check-in status
@@ -606,7 +609,7 @@ export async function checkInSingleAttendee(registration, attendeeIndex, checkIn
       // This is the attendee we're checking in
       attendeeCheckIns.push({
         checkedIn: true,
-        checkedInAt: serverTimestamp(),
+        checkedInAt: arrayTimestamp,
         checkedInBy: adminId,
         checkedInByName: adminName || null,
         checkInMethod: method || CHECK_IN_METHODS.MANUAL,
