@@ -16,6 +16,7 @@ import {
   updateContactInquiryStatus,
   deleteContactInquiry,
 } from '../../services/contactInquiries';
+import { useAdminAuth } from '../../context';
 import { CONTACT_INQUIRY_STATUS } from '../../constants';
 import styles from './AdminInquiriesPage.module.css';
 
@@ -25,6 +26,7 @@ import styles from './AdminInquiriesPage.module.css';
  * @returns {JSX.Element} The admin inquiries page
  */
 function AdminInquiriesPage() {
+  const { admin } = useAdminAuth();
   const [inquiries, setInquiries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -70,7 +72,7 @@ function AdminInquiriesPage() {
     // Auto-mark as read if it's new
     if (inquiry.status === CONTACT_INQUIRY_STATUS.NEW) {
       try {
-        await updateContactInquiryStatus(inquiry.id, CONTACT_INQUIRY_STATUS.READ);
+        await updateContactInquiryStatus(inquiry.id, CONTACT_INQUIRY_STATUS.READ, admin?.id, admin?.email);
         setInquiries((prev) =>
           prev.map((inq) =>
             inq.id === inquiry.id
@@ -85,7 +87,7 @@ function AdminInquiriesPage() {
         console.error('Failed to update inquiry status:', err);
       }
     }
-  }, []);
+  }, [admin]);
 
   /**
    * Handles updating inquiry status
@@ -95,7 +97,7 @@ function AdminInquiriesPage() {
    */
   const handleUpdateStatus = useCallback(async (inquiryId, status) => {
     try {
-      await updateContactInquiryStatus(inquiryId, status);
+      await updateContactInquiryStatus(inquiryId, status, admin?.id, admin?.email);
       setInquiries((prev) =>
         prev.map((inq) =>
           inq.id === inquiryId ? { ...inq, status } : inq
@@ -109,7 +111,7 @@ function AdminInquiriesPage() {
       console.error('Failed to update inquiry status:', err);
       setError('Failed to update status. Please try again.');
     }
-  }, []);
+  }, [admin]);
 
   /**
    * Handles deleting an inquiry
@@ -123,13 +125,13 @@ function AdminInquiriesPage() {
     }
 
     try {
-      await deleteContactInquiry(inquiryId);
+      await deleteContactInquiry(inquiryId, admin?.id, admin?.email);
       setInquiries((prev) => prev.filter((inq) => inq.id !== inquiryId));
     } catch (err) {
       console.error('Failed to delete inquiry:', err);
       setError('Failed to delete inquiry. Please try again.');
     }
-  }, []);
+  }, [admin]);
 
   /**
    * Closes the detail modal

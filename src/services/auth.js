@@ -14,6 +14,7 @@ import {
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { COLLECTIONS } from '../constants';
+import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from './activityLog';
 
 /**
  * Signs in an admin user with email and password
@@ -45,6 +46,16 @@ export async function signInAdmin(email, password) {
     lastLoginAt: serverTimestamp(),
   });
 
+  // Log the login activity
+  await logActivity({
+    type: ACTIVITY_TYPES.LOGIN,
+    entityType: ENTITY_TYPES.USER,
+    entityId: user.uid,
+    description: 'Admin user logged in',
+    adminId: user.uid,
+    adminEmail: user.email,
+  });
+
   return {
     user,
     admin: {
@@ -58,9 +69,22 @@ export async function signInAdmin(email, password) {
 /**
  * Signs out the current user
  *
+ * @param {Object} user - Current user object (optional, for activity logging)
  * @returns {Promise<void>}
  */
-export async function signOutAdmin() {
+export async function signOutAdmin(user = null) {
+  // Log the logout activity before signing out
+  if (user) {
+    await logActivity({
+      type: ACTIVITY_TYPES.LOGOUT,
+      entityType: ENTITY_TYPES.USER,
+      entityId: user.uid,
+      description: 'Admin user logged out',
+      adminId: user.uid,
+      adminEmail: user.email,
+    });
+  }
+
   await firebaseSignOut(auth);
 }
 

@@ -81,7 +81,7 @@ export function AdminAuthProvider({ children }) {
     setError(null);
 
     try {
-      await signOutAdmin();
+      await signOutAdmin(user);
       setUser(null);
       setAdmin(null);
     } catch (signOutError) {
@@ -90,7 +90,7 @@ export function AdminAuthProvider({ children }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user]);
 
   /**
    * Sends a password reset email

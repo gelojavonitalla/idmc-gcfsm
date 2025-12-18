@@ -20,6 +20,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { COLLECTIONS, ADMIN_ROLES, ADMIN_ROLE_PERMISSIONS } from '../constants';
+import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from './activityLog';
 
 /**
  * Error codes for admin operations
@@ -118,10 +119,11 @@ export async function isEmailRegistered(email) {
  * @param {string} adminData.displayName - Admin display name
  * @param {string} adminData.role - Admin role
  * @param {string} invitedBy - UID of the admin who created this user
+ * @param {string} invitedByEmail - Email of the admin who created this user
  * @returns {Promise<Object>} Created admin data
  * @throws {Error} If email is already registered or role is invalid
  */
-export async function createAdmin(adminId, adminData, invitedBy) {
+export async function createAdmin(adminId, adminData, invitedBy, invitedByEmail = null) {
   const { email, role = ADMIN_ROLES.ADMIN } = adminData;
 
   // Validate email is provided
@@ -169,6 +171,16 @@ export async function createAdmin(adminId, adminData, invitedBy) {
   };
 
   await setDoc(docRef, data);
+
+  // Log the activity
+  await logActivity({
+    type: ACTIVITY_TYPES.CREATE,
+    entityType: ENTITY_TYPES.USER,
+    entityId: adminId,
+    description: `Created admin user: ${normalizedEmail} with role ${role}`,
+    adminId: invitedBy,
+    adminEmail: invitedByEmail || 'Unknown',
+  });
 
   return {
     id: adminId,
@@ -236,9 +248,11 @@ export async function resendInvitation(adminId, resendBy) {
  *
  * @param {string} adminId - Admin user ID
  * @param {Object} updates - Fields to update
+ * @param {string} updatedBy - UID of the admin performing the update
+ * @param {string} updatedByEmail - Email of the admin performing the update
  * @returns {Promise<void>}
  */
-export async function updateAdmin(adminId, updates) {
+export async function updateAdmin(adminId, updates, updatedBy = null, updatedByEmail = null) {
   const docRef = doc(db, COLLECTIONS.ADMINS, adminId);
 
   const updateData = {
@@ -251,6 +265,21 @@ export async function updateAdmin(adminId, updates) {
   }
 
   await updateDoc(docRef, updateData);
+
+  // Log the activity if we have the updater information
+  if (updatedBy && updatedByEmail) {
+    const admin = await getAdmin(adminId);
+    const updatedFields = Object.keys(updates).filter((key) => key !== 'updatedAt').join(', ');
+
+    await logActivity({
+      type: ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.USER,
+      entityId: adminId,
+      description: `Updated admin user: ${admin?.email || adminId} (fields: ${updatedFields})`,
+      adminId: updatedBy,
+      adminEmail: updatedByEmail,
+    });
+  }
 }
 
 /**
@@ -258,35 +287,75 @@ export async function updateAdmin(adminId, updates) {
  *
  * @param {string} adminId - Admin user ID
  * @param {string} newRole - New role from ADMIN_ROLES
+ * @param {string} updatedBy - UID of the admin performing the update
+ * @param {string} updatedByEmail - Email of the admin performing the update
  * @returns {Promise<void>}
  */
-export async function updateAdminRole(adminId, newRole) {
+export async function updateAdminRole(adminId, newRole, updatedBy = null, updatedByEmail = null) {
   const permissions = ADMIN_ROLE_PERMISSIONS[newRole] || ADMIN_ROLE_PERMISSIONS[ADMIN_ROLES.ADMIN];
 
   await updateAdmin(adminId, {
     role: newRole,
     permissions,
-  });
+  }, updatedBy, updatedByEmail);
 }
 
 /**
  * Activates an admin user
  *
  * @param {string} adminId - Admin user ID
+ * @param {string} activatedBy - UID of the admin performing the activation
+ * @param {string} activatedByEmail - Email of the admin performing the activation
  * @returns {Promise<void>}
  */
-export async function activateAdmin(adminId) {
-  await updateAdmin(adminId, { status: 'active' });
+export async function activateAdmin(adminId, activatedBy = null, activatedByEmail = null) {
+  const docRef = doc(db, COLLECTIONS.ADMINS, adminId);
+  await updateDoc(docRef, {
+    status: 'active',
+    updatedAt: serverTimestamp(),
+  });
+
+  // Log the activity
+  if (activatedBy && activatedByEmail) {
+    const admin = await getAdmin(adminId);
+    await logActivity({
+      type: ACTIVITY_TYPES.APPROVE,
+      entityType: ENTITY_TYPES.USER,
+      entityId: adminId,
+      description: `Activated admin user: ${admin?.email || adminId}`,
+      adminId: activatedBy,
+      adminEmail: activatedByEmail,
+    });
+  }
 }
 
 /**
  * Deactivates an admin user
  *
  * @param {string} adminId - Admin user ID
+ * @param {string} deactivatedBy - UID of the admin performing the deactivation
+ * @param {string} deactivatedByEmail - Email of the admin performing the deactivation
  * @returns {Promise<void>}
  */
-export async function deactivateAdmin(adminId) {
-  await updateAdmin(adminId, { status: 'inactive' });
+export async function deactivateAdmin(adminId, deactivatedBy = null, deactivatedByEmail = null) {
+  const docRef = doc(db, COLLECTIONS.ADMINS, adminId);
+  await updateDoc(docRef, {
+    status: 'inactive',
+    updatedAt: serverTimestamp(),
+  });
+
+  // Log the activity
+  if (deactivatedBy && deactivatedByEmail) {
+    const admin = await getAdmin(adminId);
+    await logActivity({
+      type: ACTIVITY_TYPES.REJECT,
+      entityType: ENTITY_TYPES.USER,
+      entityId: adminId,
+      description: `Deactivated admin user: ${admin?.email || adminId}`,
+      adminId: deactivatedBy,
+      adminEmail: deactivatedByEmail,
+    });
+  }
 }
 
 /**

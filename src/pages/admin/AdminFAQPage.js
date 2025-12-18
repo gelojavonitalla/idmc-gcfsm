@@ -17,6 +17,7 @@ import {
   updateFAQ,
   deleteFAQ,
 } from '../../services/maintenance';
+import { useAdminAuth } from '../../context';
 import { FAQ_STATUS, FAQ_CATEGORIES, FAQ_CATEGORY_LABELS } from '../../constants';
 import styles from './AdminFAQPage.module.css';
 
@@ -26,6 +27,7 @@ import styles from './AdminFAQPage.module.css';
  * @returns {JSX.Element} The admin FAQ page
  */
 function AdminFAQPage() {
+  const { admin } = useAdminAuth();
   const [faqs, setFaqs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -84,7 +86,7 @@ function AdminFAQPage() {
    * @param {Object} faqData - FAQ data
    */
   const handleSaveFaq = async (faqId, faqData) => {
-    await saveFAQ(faqId, faqData);
+    await saveFAQ(faqId, faqData, admin?.id, admin?.email);
     await fetchFaqs();
   };
 
@@ -99,7 +101,7 @@ function AdminFAQPage() {
     }
 
     try {
-      await deleteFAQ(faqId);
+      await deleteFAQ(faqId, admin?.id, admin?.email);
       setFaqs((prev) => prev.filter((f) => f.id !== faqId));
     } catch (err) {
       console.error('Failed to delete FAQ:', err);
@@ -122,7 +124,7 @@ function AdminFAQPage() {
         : FAQ_STATUS.PUBLISHED;
 
     try {
-      await updateFAQ(faqId, { status: newStatus });
+      await updateFAQ(faqId, { status: newStatus }, admin?.id, admin?.email);
       setFaqs((prev) =>
         prev.map((f) =>
           f.id === faqId ? { ...f, status: newStatus } : f

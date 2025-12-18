@@ -32,6 +32,7 @@ import {
   SHORT_CODE_LENGTH,
   SHORT_CODE_SUFFIX_LENGTH,
 } from '../constants';
+import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from './activityLog';
 
 /**
  * Error codes for registration operations
@@ -443,9 +444,11 @@ function generateAttendeeQRCodes(registrationId, totalAttendees) {
  * @param {string} paymentDetails.referenceNumber - Payment reference number
  * @param {string} paymentDetails.verifiedBy - Admin who verified
  * @param {string} paymentDetails.notes - Additional notes
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<void>}
  */
-export async function confirmPayment(registrationId, paymentDetails) {
+export async function confirmPayment(registrationId, paymentDetails, adminId = null, adminEmail = null) {
   const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
 
   // Get current registration to count attendees
@@ -470,6 +473,18 @@ export async function confirmPayment(registrationId, paymentDetails) {
     attendeeQRCodes,
     updatedAt: serverTimestamp(),
   });
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.APPROVE,
+      entityType: ENTITY_TYPES.REGISTRATION,
+      entityId: registrationId,
+      description: `Confirmed payment for registration: ${registration?.primaryAttendee?.firstName || ''} ${registration?.primaryAttendee?.lastName || registrationId}`,
+      adminId,
+      adminEmail,
+    });
+  }
 }
 
 /**
@@ -478,9 +493,12 @@ export async function confirmPayment(registrationId, paymentDetails) {
  * @param {string} registrationId - Registration ID
  * @param {string} reason - Cancellation reason
  * @param {string} cancelledBy - Admin who cancelled (or 'system' for auto-cancel)
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<void>}
  */
-export async function cancelRegistration(registrationId, reason, cancelledBy) {
+export async function cancelRegistration(registrationId, reason, cancelledBy, adminId = null, adminEmail = null) {
+  const registration = await getRegistrationById(registrationId);
   const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
 
   await updateDoc(docRef, {
@@ -493,6 +511,18 @@ export async function cancelRegistration(registrationId, reason, cancelledBy) {
     },
     updatedAt: serverTimestamp(),
   });
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.REJECT,
+      entityType: ENTITY_TYPES.REGISTRATION,
+      entityId: registrationId,
+      description: `Cancelled registration: ${registration?.primaryAttendee?.firstName || ''} ${registration?.primaryAttendee?.lastName || registrationId}`,
+      adminId,
+      adminEmail,
+    });
+  }
 }
 
 /**

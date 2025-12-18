@@ -18,6 +18,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { COLLECTIONS, CONTACT_INQUIRY_STATUS } from '../constants';
+import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from './activityLog';
 
 /**
  * Validates an email address using a comprehensive regex pattern.
@@ -107,10 +108,12 @@ export async function getAllContactInquiries() {
  *
  * @param {string} inquiryId - The ID of the inquiry to update
  * @param {string} status - The new status (from CONTACT_INQUIRY_STATUS)
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<void>}
  * @throws {Error} If the Firestore operation fails or invalid status
  */
-export async function updateContactInquiryStatus(inquiryId, status) {
+export async function updateContactInquiryStatus(inquiryId, status, adminId = null, adminEmail = null) {
   if (!inquiryId) {
     throw new Error('Inquiry ID is required');
   }
@@ -121,24 +124,60 @@ export async function updateContactInquiryStatus(inquiryId, status) {
   }
 
   const inquiryRef = doc(db, COLLECTIONS.CONTACT_INQUIRIES, inquiryId);
+
+  // Get inquiry data before updating for logging
+  const inquiries = await getAllContactInquiries();
+  const inquiry = inquiries.find((inq) => inq.id === inquiryId);
+
   await updateDoc(inquiryRef, {
     status,
     updatedAt: serverTimestamp(),
   });
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    const statusLabel = status === 'read' ? 'marked as read' : `status changed to ${status}`;
+    await logActivity({
+      type: ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.CONTACT_INQUIRY,
+      entityId: inquiryId,
+      description: `Contact inquiry ${statusLabel}: ${inquiry?.subject?.substring(0, 50) || inquiryId}`,
+      adminId,
+      adminEmail,
+    });
+  }
 }
 
 /**
  * Deletes a contact inquiry from Firestore.
  *
  * @param {string} inquiryId - The ID of the inquiry to delete
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<void>}
  * @throws {Error} If the Firestore operation fails
  */
-export async function deleteContactInquiry(inquiryId) {
+export async function deleteContactInquiry(inquiryId, adminId = null, adminEmail = null) {
   if (!inquiryId) {
     throw new Error('Inquiry ID is required');
   }
 
+  // Get inquiry data before deleting for logging
+  const inquiries = await getAllContactInquiries();
+  const inquiry = inquiries.find((inq) => inq.id === inquiryId);
+
   const inquiryRef = doc(db, COLLECTIONS.CONTACT_INQUIRIES, inquiryId);
   await deleteDoc(inquiryRef);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.DELETE,
+      entityType: ENTITY_TYPES.CONTACT_INQUIRY,
+      entityId: inquiryId,
+      description: `Deleted contact inquiry: ${inquiry?.subject?.substring(0, 50) || inquiryId}`,
+      adminId,
+      adminEmail,
+    });
+  }
 }

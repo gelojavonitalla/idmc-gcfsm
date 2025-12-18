@@ -19,6 +19,7 @@ import {
   updatePricingTier,
   deletePricingTier,
 } from '../../services';
+import { useAdminAuth } from '../../context';
 import styles from './AdminSettingsPage.module.css';
 
 /**
@@ -27,6 +28,7 @@ import styles from './AdminSettingsPage.module.css';
  * @returns {JSX.Element} The admin settings page
  */
 function AdminSettingsPage() {
+  const { admin } = useAdminAuth();
   const [settings, setSettings] = useState(null);
   const [pricingTiers, setPricingTiers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,7 +71,7 @@ function AdminSettingsPage() {
    * @param {Object} data - Settings data to save
    */
   const handleSaveSettings = async (data) => {
-    const updated = await updateConferenceSettings(data);
+    const updated = await updateConferenceSettings(data, admin?.id, admin?.email);
     setSettings(updated);
   };
 
@@ -79,7 +81,7 @@ function AdminSettingsPage() {
    * @param {Object} tierData - Tier data to create
    */
   const handleCreateTier = async (tierData) => {
-    const newTier = await createPricingTier(tierData);
+    const newTier = await createPricingTier(tierData, admin?.id, admin?.email);
     setPricingTiers((prev) => [...prev, newTier]);
   };
 
@@ -90,9 +92,9 @@ function AdminSettingsPage() {
    * @param {Object} tierData - Updated tier data
    */
   const handleUpdateTier = async (tierId, tierData) => {
-    const updated = await updatePricingTier(tierId, tierData);
+    const updated = await updatePricingTier(tierId, tierData, admin?.id, admin?.email);
     setPricingTiers((prev) =>
-      prev.map((tier) => (tier.id === tierId ? { ...tier, ...updated } : tier))
+      prev.map((tier) => (tier.id === tierId ? { ...tier, ...updated} : tier))
     );
   };
 
@@ -102,7 +104,7 @@ function AdminSettingsPage() {
    * @param {string} tierId - Tier ID to delete
    */
   const handleDeleteTier = async (tierId) => {
-    await deletePricingTier(tierId);
+    await deletePricingTier(tierId, admin?.id, admin?.email);
     setPricingTiers((prev) => prev.filter((tier) => tier.id !== tierId));
   };
 
