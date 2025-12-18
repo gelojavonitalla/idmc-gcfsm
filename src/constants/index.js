@@ -177,8 +177,14 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Check-In', path: ADMIN_ROUTES.CHECKIN, icon: 'checkin' },
       { label: 'Check-In Monitor', path: ADMIN_ROUTES.CHECKIN_MONITOR, icon: 'dashboard' },
       { label: 'Inquiries', path: ADMIN_ROUTES.INQUIRIES, icon: 'mail' },
-      { label: 'Bank Accounts', path: ADMIN_ROUTES.BANK_ACCOUNTS, icon: 'bank' },
+    ],
+  },
+  {
+    id: 'finance',
+    label: 'Finance',
+    items: [
       { label: 'Invoices', path: ADMIN_ROUTES.INVOICES, icon: 'document' },
+      { label: 'Bank Accounts', path: ADMIN_ROUTES.BANK_ACCOUNTS, icon: 'bank' },
     ],
   },
   {
