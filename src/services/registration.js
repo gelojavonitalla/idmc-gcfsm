@@ -176,7 +176,40 @@ export async function getRegistrationByShortCodeSuffix(suffix) {
 }
 
 /**
- * Gets a registration by phone number
+ * Normalizes a Philippine phone number to possible storage formats.
+ * Returns an array of formats to search: local (09XX) and international (+639XX).
+ *
+ * @param {string} phone - Phone number to normalize
+ * @returns {string[]} Array of possible phone formats to search
+ */
+function getPhoneSearchVariants(phone) {
+  const cleanPhone = phone.replace(/[\s-]/g, '');
+  const variants = new Set();
+
+  // Add the cleaned input as-is
+  variants.add(cleanPhone);
+
+  // Convert to local format (09XXXXXXXXX)
+  if (cleanPhone.startsWith('+63')) {
+    variants.add('0' + cleanPhone.slice(3));
+  } else if (cleanPhone.startsWith('63')) {
+    variants.add('0' + cleanPhone.slice(2));
+  }
+
+  // Convert to international format (+639XXXXXXXXX)
+  if (cleanPhone.startsWith('0')) {
+    variants.add('+63' + cleanPhone.slice(1));
+  } else if (cleanPhone.startsWith('9') && cleanPhone.length === 10) {
+    variants.add('+63' + cleanPhone);
+    variants.add('0' + cleanPhone);
+  }
+
+  return Array.from(variants);
+}
+
+/**
+ * Gets a registration by phone number.
+ * Searches multiple phone format variants to handle different storage formats.
  *
  * @param {string} phone - Phone number to search
  * @returns {Promise<Object|null>} Registration data or null
@@ -186,24 +219,28 @@ export async function getRegistrationByPhone(phone) {
     return null;
   }
 
-  const cleanPhone = phone.replace(/[\s-]/g, '');
+  const phoneVariants = getPhoneSearchVariants(phone);
   const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
-  const phoneQuery = query(
-    registrationsRef,
-    where('primaryAttendee.cellphone', '==', cleanPhone)
-  );
 
-  const snapshot = await getDocs(phoneQuery);
+  // Try each phone variant
+  for (const variant of phoneVariants) {
+    const phoneQuery = query(
+      registrationsRef,
+      where('primaryAttendee.cellphone', '==', variant)
+    );
 
-  if (snapshot.empty) {
-    return null;
+    const snapshot = await getDocs(phoneQuery);
+
+    if (!snapshot.empty) {
+      const docData = snapshot.docs[0];
+      return {
+        id: docData.id,
+        ...docData.data(),
+      };
+    }
   }
 
-  const docData = snapshot.docs[0];
-  return {
-    id: docData.id,
-    ...docData.data(),
-  };
+  return null;
 }
 
 /**
