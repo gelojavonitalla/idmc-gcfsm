@@ -51,6 +51,10 @@
     "seed:venue:clear": "node scripts/seed-venue.js --clear",
     "seed:activity-logs": "node scripts/seed-activity-logs.js",
     "seed:activity-logs:clear": "node scripts/seed-activity-logs.js --clear",
+    "seed:invoice-requests": "node scripts/seed-invoice-requests.js",
+    "seed:invoice-requests:clear": "node scripts/seed-invoice-requests.js --clear",
+    "seed:bank-transactions": "node scripts/seed-bank-transactions.js",
+    "seed:bank-transactions:clear": "node scripts/seed-bank-transactions.js --clear",
     "emulators": "firebase emulators:start",
     "seed:emulator": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-speakers.js --clear",
     "seed:emulator:sessions": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-sessions.js --clear",
@@ -61,7 +65,9 @@
     "seed:emulator:about": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-about.js --clear",
     "seed:emulator:legal": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-legal.js --clear",
     "seed:emulator:registrations": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-registrations.js --clear",
-    "seed:emulator:venue": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-venue.js --clear"
+    "seed:emulator:venue": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-venue.js --clear",
+    "seed:emulator:invoice-requests": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-invoice-requests.js --clear",
+    "seed:emulator:bank-transactions": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-bank-transactions.js --clear"
   },
   "eslintConfig": {
     "extends": [
