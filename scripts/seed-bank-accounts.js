@@ -106,7 +106,7 @@ const BANK_ACCOUNT_DATA = [
     branch: '',
     notes: 'GCash e-wallet for quick online payments',
     displayOrder: 5,
-    isActive: true,
+    isActive: false,
   },
   {
     accountId: 'gcfsm-maya-001',
@@ -117,7 +117,7 @@ const BANK_ACCOUNT_DATA = [
     branch: '',
     notes: 'Maya (PayMaya) e-wallet for online payments',
     displayOrder: 6,
-    isActive: true,
+    isActive: false,
   },
 ];
 
