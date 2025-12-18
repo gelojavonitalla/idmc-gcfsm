@@ -558,7 +558,7 @@ function AdminRegistrationsPage() {
           <div className={styles.statValue}>
             ₱{stats.totalRevenue.toLocaleString()}
           </div>
-          <div className={styles.statLabel}>Total Revenue</div>
+          <div className={styles.statLabel}>Total Payments</div>
         </div>
       </div>
 
