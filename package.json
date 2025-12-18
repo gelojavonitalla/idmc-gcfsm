@@ -48,6 +48,8 @@
     "seed:registrations:clear": "node scripts/seed-registrations.js --clear",
     "seed:venue": "node scripts/seed-venue.js",
     "seed:venue:clear": "node scripts/seed-venue.js --clear",
+    "seed:activity-logs": "node scripts/seed-activity-logs.js",
+    "seed:activity-logs:clear": "node scripts/seed-activity-logs.js --clear",
     "emulators": "firebase emulators:start",
     "seed:emulator": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-speakers.js --clear",
     "seed:emulator:sessions": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-sessions.js --clear",
