@@ -112,6 +112,7 @@ function RegisterPage() {
   const [submitError, setSubmitError] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [duplicateRegistration, setDuplicateRegistration] = useState(null);
+  const [isFromGCF, setIsFromGCF] = useState(false);
 
   const currentTier = activePricingTier;
   const registrationOpen = settings.registrationOpen !== false;
@@ -256,22 +257,27 @@ function RegisterPage() {
   }, [formData.additionalAttendees?.length]);
 
   /**
-   * Easter egg: Auto-fills church information with GCF details
+   * Handles GCF checkbox toggle - Auto-fills church information with GCF details
    * Used for booth registrations to speed up the process
+   *
+   * @param {boolean} checked - Whether the checkbox is checked
    */
-  const handleEasterEggClick = useCallback(() => {
-    setFormData((prev) => ({
-      ...prev,
-      churchName: 'GCF',
-      churchCity: 'Las Piñas City',
-      churchProvince: 'Metro Manila / NCR',
-    }));
-    setErrors((prev) => ({
-      ...prev,
-      churchName: null,
-      churchCity: null,
-      churchProvince: null,
-    }));
+  const handleGCFCheckbox = useCallback((checked) => {
+    setIsFromGCF(checked);
+    if (checked) {
+      setFormData((prev) => ({
+        ...prev,
+        churchName: 'GCF South Metro',
+        churchCity: 'Las Piñas City',
+        churchProvince: 'Metro Manila / NCR',
+      }));
+      setErrors((prev) => ({
+        ...prev,
+        churchName: null,
+        churchCity: null,
+        churchProvince: null,
+      }));
+    }
   }, []);
 
   /**
@@ -690,16 +696,6 @@ function RegisterPage() {
         <p className={styles.heroSubtitle}>
           {settings.theme} | {new Date(settings.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
         </p>
-        <span
-          onClick={handleEasterEggClick}
-          style={{
-            fontSize: '0.7rem',
-            opacity: 0.3,
-            userSelect: 'none',
-          }}
-        >
-          Jesus
-        </span>
       </section>
 
       <section className={styles.contentSection}>
@@ -733,6 +729,20 @@ function RegisterPage() {
 
               <div className={styles.sectionDivider}>
                 <span>Church Information</span>
+              </div>
+
+              <div className={styles.formGroup}>
+                <div className={styles.checkboxGroup}>
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={isFromGCF}
+                      onChange={(e) => handleGCFCheckbox(e.target.checked)}
+                      className={styles.checkbox}
+                    />
+                    <span>From GCF</span>
+                  </label>
+                </div>
               </div>
 
               <div className={styles.formGroup}>
