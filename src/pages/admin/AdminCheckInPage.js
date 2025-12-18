@@ -118,6 +118,7 @@ function AdminCheckInPage() {
       const result = await checkInAttendee(selectedRegistration.id, {
         adminId: admin.id,
         adminName: admin.displayName || admin.email,
+        adminEmail: admin.email,
         method: mode === CHECK_IN_MODES.QR ? CHECK_IN_METHODS.QR : CHECK_IN_METHODS.MANUAL,
         attendeeIndex: indexToCheckIn,
       });
