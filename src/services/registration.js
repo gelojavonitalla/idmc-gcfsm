@@ -358,6 +358,14 @@ export async function createRegistration(registrationData) {
   // Extract last 4 characters for quick lookup
   const shortCodeSuffix = shortCode.slice(-SHORT_CODE_SUFFIX_LENGTH);
 
+  // Determine initial status based on whether payment proof was uploaded
+  // If payment proof is provided, set to PENDING_VERIFICATION
+  // Otherwise, set to PENDING_PAYMENT (for manual/admin registrations)
+  const hasPaymentProof = payment && payment.proofUrl;
+  const initialStatus = hasPaymentProof
+    ? REGISTRATION_STATUS.PENDING_VERIFICATION
+    : REGISTRATION_STATUS.PENDING_PAYMENT;
+
   const registrationDoc = {
     registrationId,
     shortCode,
@@ -367,12 +375,12 @@ export async function createRegistration(registrationData) {
     church,
     payment: {
       ...payment,
-      status: REGISTRATION_STATUS.PENDING_PAYMENT,
+      status: initialStatus,
     },
     invoice: invoice || null,
     totalAmount,
     pricingTier,
-    status: REGISTRATION_STATUS.PENDING_PAYMENT,
+    status: initialStatus,
     paymentDeadline: paymentDeadline.toISOString(),
     // Communication tracking
     confirmationEmailSent: false,
@@ -436,7 +444,89 @@ function generateAttendeeQRCodes(registrationId, totalAttendees) {
 }
 
 /**
+ * Verifies payment and updates registration with payment tracking
+ * Handles both full and partial payments
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {Object} verificationDetails - Payment verification details
+ * @param {number} verificationDetails.amountPaid - Amount received from user
+ * @param {string} verificationDetails.method - Payment method used
+ * @param {string} verificationDetails.referenceNumber - Payment reference number
+ * @param {string} verificationDetails.verifiedBy - Admin who verified
+ * @param {string} verificationDetails.notes - Additional notes
+ * @param {string} verificationDetails.rejectionReason - Reason if payment rejected (optional)
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
+ * @returns {Promise<void>}
+ */
+export async function verifyPayment(registrationId, verificationDetails, adminId = null, adminEmail = null) {
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  // Get current registration to check total amount and count attendees
+  const registration = await getRegistrationById(registrationId);
+  const totalAmount = registration?.totalAmount || 0;
+  const amountPaid = verificationDetails.amountPaid || 0;
+  const balance = totalAmount - amountPaid;
+
+  // Determine if payment is fully paid
+  const isFullyPaid = balance <= 0;
+
+  let updateData = {
+    'payment.amountPaid': amountPaid,
+    'payment.balance': Math.max(0, balance),
+    'payment.method': verificationDetails.method,
+    'payment.referenceNumber': verificationDetails.referenceNumber,
+    'payment.verifiedBy': verificationDetails.verifiedBy,
+    'payment.verifiedAt': serverTimestamp(),
+    'payment.notes': verificationDetails.notes || null,
+    updatedAt: serverTimestamp(),
+  };
+
+  if (isFullyPaid) {
+    // Full payment confirmed
+    const totalAttendees = 1 + (registration?.additionalAttendees?.length || 0);
+    const qrCodeData = registrationId;
+    const attendeeQRCodes = generateAttendeeQRCodes(registrationId, totalAttendees);
+
+    updateData = {
+      ...updateData,
+      status: REGISTRATION_STATUS.CONFIRMED,
+      'payment.status': REGISTRATION_STATUS.CONFIRMED,
+      qrCodeData,
+      attendeeQRCodes,
+    };
+  } else {
+    // Partial payment or rejected - set back to PENDING_PAYMENT
+    updateData = {
+      ...updateData,
+      status: REGISTRATION_STATUS.PENDING_PAYMENT,
+      'payment.status': REGISTRATION_STATUS.PENDING_PAYMENT,
+      'payment.rejectionReason': verificationDetails.rejectionReason || `Partial payment received. Balance: ₱${balance.toFixed(2)}`,
+      'payment.rejectedAt': serverTimestamp(),
+      'payment.rejectedBy': verificationDetails.verifiedBy,
+    };
+  }
+
+  await updateDoc(docRef, updateData);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: isFullyPaid ? ACTIVITY_TYPES.APPROVE : ACTIVITY_TYPES.REJECT,
+      entityType: ENTITY_TYPES.REGISTRATION,
+      entityId: registrationId,
+      description: isFullyPaid
+        ? `Confirmed full payment (₱${amountPaid}) for registration: ${registration?.primaryAttendee?.firstName || ''} ${registration?.primaryAttendee?.lastName || registrationId}`
+        : `Partial payment verified (₱${amountPaid} of ₱${totalAmount}) for registration: ${registration?.primaryAttendee?.firstName || ''} ${registration?.primaryAttendee?.lastName || registrationId}`,
+      adminId,
+      adminEmail,
+    });
+  }
+}
+
+/**
  * Confirms payment for a registration (admin action)
+ * Legacy function - consider using verifyPayment instead for better tracking
  *
  * @param {string} registrationId - Registration ID
  * @param {Object} paymentDetails - Payment verification details
@@ -469,6 +559,8 @@ export async function confirmPayment(registrationId, paymentDetails, adminId = n
     'payment.verifiedBy': paymentDetails.verifiedBy,
     'payment.verifiedAt': serverTimestamp(),
     'payment.notes': paymentDetails.notes || null,
+    'payment.amountPaid': registration?.totalAmount || 0,
+    'payment.balance': 0,
     qrCodeData,
     attendeeQRCodes,
     updatedAt: serverTimestamp(),

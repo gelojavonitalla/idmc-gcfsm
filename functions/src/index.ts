@@ -1372,6 +1372,12 @@ export const cancelExpiredRegistrations = onSchedule(
       const batch = db.batch();
       let cancelCount = 0;
 
+      // Cancel all registrations with PENDING_PAYMENT status past deadline
+      // Status is the source of truth:
+      // - PENDING_PAYMENT = payment not submitted or rejected by admin
+      // - PENDING_VERIFICATION = payment uploaded, awaiting verification
+      // If admin rejects payment and sets status back to PENDING_PAYMENT,
+      // the registration should be cancelled if deadline passes
       expiredQuery.forEach((doc) => {
         batch.update(doc.ref, {
           "status": REGISTRATION_STATUS.CANCELLED,

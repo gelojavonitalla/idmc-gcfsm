@@ -96,6 +96,7 @@ export {
   uploadPaymentProof,
   createRegistration,
   updatePaymentProof,
+  verifyPayment,
   confirmPayment,
   cancelRegistration,
   markEmailSent,

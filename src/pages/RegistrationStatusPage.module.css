@@ -556,6 +556,112 @@
   margin: var(--spacing-1) 0 0;
 }
 
+/* Balance Owed Styling */
+.balanceOwed {
+  color: var(--color-warning-700, #c2410c);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Payment Rejection Notice */
+.rejectionNotice {
+  background-color: var(--color-warning-50, #fffbeb);
+  border-left: 4px solid var(--color-warning-500, #f59e0b);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+  border-radius: var(--radius-md);
+}
+
+.rejectionNotice strong {
+  color: var(--color-warning-700, #c2410c);
+  display: block;
+  margin-bottom: var(--spacing-2);
+}
+
+.rejectionNotice p {
+  margin: 0;
+  color: var(--color-warning-900, #78350f);
+}
+
+/* Upload Section */
+.uploadSection {
+  background-color: var(--color-background-secondary, #f9fafb);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-md);
+  margin: var(--spacing-4) 0;
+}
+
+.uploadLabel {
+  display: block;
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-2);
+  color: var(--color-text);
+}
+
+.fileInput {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-3);
+  font-size: var(--font-size-sm);
+}
+
+.fileInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.selectedFile {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: var(--spacing-2) 0;
+}
+
+.uploadButton {
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.uploadButton:hover:not(:disabled) {
+  background-color: var(--color-primary-dark, #1e40af);
+}
+
+.uploadButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.uploadError {
+  color: var(--color-error-700, #b91c1c);
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-2);
+}
+
+.uploadSuccess {
+  color: var(--color-success-700, #15803d);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-3);
+  background-color: var(--color-success-50, #f0fdf4);
+  border-radius: var(--radius-md);
+}
+
+.fileHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-2);
+  margin-bottom: 0;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .heroTitle {
