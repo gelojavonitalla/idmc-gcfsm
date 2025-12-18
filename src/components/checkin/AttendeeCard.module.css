@@ -302,7 +302,7 @@
 .attendeeRowName {
   font-size: 0.9375rem;
   font-weight: 500;
-  color: var(--color-text, #fff);
+  color: #ffffff;
   word-break: break-word;
 }
 
