@@ -1406,7 +1406,16 @@ function RegisterPage() {
                   role="button"
                   tabIndex={0}
                 >
-                  <div className={styles.paymentMethodIcon}>🏦</div>
+                  <div className={styles.paymentMethodIcon}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="6" width="20" height="12" rx="2" />
+                      <path d="M12 6V2" />
+                      <path d="M6 10h.01" />
+                      <path d="M10 10h.01" />
+                      <path d="M14 10h.01" />
+                      <path d="M18 10h.01" />
+                    </svg>
+                  </div>
                   <h3 className={styles.paymentMethodTitle}>Online Bank Transfer</h3>
                   <p className={styles.paymentMethodDescription}>
                     Transfer to our bank account and upload your proof of payment
@@ -1424,7 +1433,13 @@ function RegisterPage() {
                   role="button"
                   tabIndex={0}
                 >
-                  <div className={styles.paymentMethodIcon}>🎟️</div>
+                  <div className={styles.paymentMethodIcon}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                      <polyline points="9 22 9 12 15 12 15 22" />
+                      <path d="M3 9h18" />
+                    </svg>
+                  </div>
                   <h3 className={styles.paymentMethodTitle}>Cash at Registration Booth</h3>
                   <p className={styles.paymentMethodDescription}>
                     Pay in cash when you arrive at the event registration booth

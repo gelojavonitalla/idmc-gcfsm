@@ -1494,8 +1494,15 @@
 }
 
 .paymentMethodIcon {
-  font-size: 3rem;
+  width: 48px;
+  height: 48px;
   margin-bottom: var(--spacing-3, 0.75rem);
+  color: var(--color-primary, #3b82f6);
+}
+
+.paymentMethodIcon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .paymentMethodTitle {
