@@ -15,7 +15,7 @@ import {
   toggleBankAccountStatus,
 } from '../../services/bankAccounts';
 import { useAdminAuth } from '../../context';
-import { BANK_NAMES, BANK_LABELS, BANK_ACCOUNT_TYPES, BANK_ACCOUNT_TYPE_LABELS } from '../../constants';
+import { BANK_LABELS, BANK_ACCOUNT_TYPES, BANK_ACCOUNT_TYPE_LABELS } from '../../constants';
 import styles from './AdminBankAccountsPage.module.css';
 
 /**
