@@ -236,7 +236,8 @@ function RegistrationDetailModal({
    * Handles payment verification (approve or partial payment)
    */
   const handleVerifyPayment = async () => {
-    if (!amountPaid || !paymentMethod) {
+    // For paid registrations, validate payment fields
+    if (registration.totalAmount > 0 && (!amountPaid || !paymentMethod)) {
       alert('Please enter amount received and payment method');
       return;
     }
@@ -246,11 +247,11 @@ function RegistrationDetailModal({
       await verifyPayment(
         registration.id,
         {
-          amountPaid,
-          method: paymentMethod,
+          amountPaid: registration.totalAmount === 0 ? 0 : amountPaid,
+          method: registration.totalAmount === 0 ? 'N/A' : paymentMethod,
           referenceNumber,
           verifiedBy: admin.email,
-          notes: '',
+          notes: rejectionReason || '',
           rejectionReason: amountPaid < registration.totalAmount ? rejectionReason : null,
         },
         admin.uid,
@@ -523,11 +524,25 @@ function RegistrationDetailModal({
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Verify Payment
+                {registration.totalAmount === 0 ? 'Verify Registration' : 'Verify Payment'}
               </h3>
 
-              {/* Payment Proof Image */}
-              {registration.payment?.proofUrl && (
+              {/* For free registrations (volunteers/speakers) - Show info message */}
+              {registration.totalAmount === 0 && (
+                <div className={styles.infoMessage}>
+                  <p>
+                    This is a free registration for a{' '}
+                    {registration.primaryAttendee?.category === 'volunteer' ? 'Volunteer' : 'Speaker'}.
+                    Please verify the details and approve or reject this registration.
+                  </p>
+                  <p className={styles.hint}>
+                    Note: No payment required. No QR codes will be generated.
+                  </p>
+                </div>
+              )}
+
+              {/* Payment Proof Image - Only for paid registrations */}
+              {registration.totalAmount > 0 && registration.payment?.proofUrl && (
                 <div className={styles.paymentProofContainer}>
                   <label className={styles.label}>Payment Proof:</label>
                   <a
@@ -547,94 +562,114 @@ function RegistrationDetailModal({
               )}
 
               <div className={styles.verificationForm}>
-                {/* Total Amount (read-only) */}
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Total Amount Required</label>
-                  <input
-                    type="text"
-                    value={formatCurrency(registration.totalAmount)}
-                    disabled
-                    className={styles.input}
-                  />
-                </div>
+                {/* Payment-specific fields - Only shown for paid registrations */}
+                {registration.totalAmount > 0 && (
+                  <>
+                    {/* Total Amount (read-only) */}
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Total Amount Required</label>
+                      <input
+                        type="text"
+                        value={formatCurrency(registration.totalAmount)}
+                        disabled
+                        className={styles.input}
+                      />
+                    </div>
 
-                {/* Amount Received Input */}
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>
-                    Amount Received <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={amountPaid}
-                    onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
-                    placeholder="0.00"
-                    min="0"
-                    max={registration.totalAmount}
-                    step="0.01"
-                    className={styles.input}
-                    disabled={isVerifying}
-                  />
-                </div>
+                    {/* Amount Received Input */}
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>
+                        Amount Received <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        type="number"
+                        value={amountPaid}
+                        onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
+                        placeholder="0.00"
+                        min="0"
+                        max={registration.totalAmount}
+                        step="0.01"
+                        className={styles.input}
+                        disabled={isVerifying}
+                      />
+                    </div>
 
-                {/* Calculated Balance (auto-calculated) */}
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Balance</label>
-                  <input
-                    type="text"
-                    value={formatCurrency(Math.max(0, registration.totalAmount - amountPaid))}
-                    disabled
-                    className={`${styles.input} ${
-                      amountPaid < registration.totalAmount ? styles.balanceOwed : ''
-                    }`}
-                  />
-                  {amountPaid < registration.totalAmount && (
-                    <p className={styles.warningText}>
-                      ⚠️ Partial payment - user will need to upload additional proof
-                    </p>
-                  )}
-                </div>
+                    {/* Calculated Balance (auto-calculated) */}
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Balance</label>
+                      <input
+                        type="text"
+                        value={formatCurrency(Math.max(0, registration.totalAmount - amountPaid))}
+                        disabled
+                        className={`${styles.input} ${
+                          amountPaid < registration.totalAmount ? styles.balanceOwed : ''
+                        }`}
+                      />
+                      {amountPaid < registration.totalAmount && (
+                        <p className={styles.warningText}>
+                          ⚠️ Partial payment - user will need to upload additional proof
+                        </p>
+                      )}
+                    </div>
 
-                {/* Payment Method */}
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>
-                    Payment Method <span className={styles.required}>*</span>
-                  </label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className={styles.input}
-                    disabled={isVerifying}
-                  >
-                    <option value="">Select method</option>
-                    <option value="gcash">GCash</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                    <option value="cash">Cash</option>
-                  </select>
-                </div>
+                    {/* Payment Method */}
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>
+                        Payment Method <span className={styles.required}>*</span>
+                      </label>
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className={styles.input}
+                        disabled={isVerifying}
+                      >
+                        <option value="">Select method</option>
+                        <option value="gcash">GCash</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="cash">Cash</option>
+                      </select>
+                    </div>
 
-                {/* Reference Number */}
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Reference Number</label>
-                  <input
-                    type="text"
-                    value={referenceNumber}
-                    onChange={(e) => setReferenceNumber(e.target.value)}
-                    placeholder="Transaction reference (optional)"
-                    className={styles.input}
-                    disabled={isVerifying}
-                  />
-                </div>
+                    {/* Reference Number */}
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Reference Number</label>
+                      <input
+                        type="text"
+                        value={referenceNumber}
+                        onChange={(e) => setReferenceNumber(e.target.value)}
+                        placeholder="Transaction reference (optional)"
+                        className={styles.input}
+                        disabled={isVerifying}
+                      />
+                    </div>
 
-                {/* Rejection Reason (only shown if partial payment) */}
-                {amountPaid > 0 && amountPaid < registration.totalAmount && (
+                    {/* Rejection Reason (only shown if partial payment) */}
+                    {amountPaid > 0 && amountPaid < registration.totalAmount && (
+                      <div className={styles.formGroup}>
+                        <label className={styles.label}>
+                          Message to User (shown on status page)
+                        </label>
+                        <textarea
+                          value={rejectionReason}
+                          onChange={(e) => setRejectionReason(e.target.value)}
+                          placeholder={`E.g., 'Partial payment of ₱${amountPaid} received. Please upload proof of remaining ₱${(registration.totalAmount - amountPaid).toFixed(2)}'`}
+                          rows={3}
+                          className={styles.textarea}
+                          disabled={isVerifying}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Notes field - shown for all registrations */}
+                {registration.totalAmount === 0 && (
                   <div className={styles.formGroup}>
-                    <label className={styles.label}>
-                      Message to User (shown on status page)
-                    </label>
+                    <label className={styles.label}>Notes (Optional)</label>
                     <textarea
                       value={rejectionReason}
                       onChange={(e) => setRejectionReason(e.target.value)}
-                      placeholder={`E.g., 'Partial payment of ₱${amountPaid} received. Please upload proof of remaining ₱${(registration.totalAmount - amountPaid).toFixed(2)}'`}
+                      placeholder="Add any notes about this registration..."
                       rows={3}
                       className={styles.textarea}
                       disabled={isVerifying}
@@ -646,11 +681,17 @@ function RegistrationDetailModal({
                 <div className={styles.verificationActions}>
                   <button
                     onClick={handleVerifyPayment}
-                    disabled={!amountPaid || !paymentMethod || isVerifying}
+                    disabled={
+                      registration.totalAmount > 0
+                        ? !amountPaid || !paymentMethod || isVerifying
+                        : isVerifying
+                    }
                     className={styles.verifyButton}
                   >
                     {isVerifying
                       ? 'Processing...'
+                      : registration.totalAmount === 0
+                      ? '✓ Approve Registration'
                       : amountPaid >= registration.totalAmount
                       ? '✓ Confirm Full Payment'
                       : '⚠ Mark as Partial Payment'}
@@ -660,7 +701,7 @@ function RegistrationDetailModal({
                     disabled={isVerifying}
                     className={styles.rejectButton}
                   >
-                    ✗ Reject Payment
+                    {registration.totalAmount === 0 ? '✗ Reject Registration' : '✗ Reject Payment'}
                   </button>
                 </div>
               </div>

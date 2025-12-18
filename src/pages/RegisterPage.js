@@ -396,6 +396,16 @@ function RegisterPage() {
   }, [formData.primaryAttendee.category, formData.additionalAttendees, currentTier]);
 
   /**
+   * Checks if payment is required based on total amount
+   * Payment is NOT required if total amount is 0 (all attendees are volunteers/speakers)
+   *
+   * @returns {boolean} True if payment is required
+   */
+  const isPaymentRequired = useCallback(() => {
+    return calculateTotalPrice() > 0;
+  }, [calculateTotalPrice]);
+
+  /**
    * Gets total attendee count (primary + additional)
    *
    * @returns {number} Total attendee count
@@ -595,6 +605,12 @@ function RegisterPage() {
         break;
       case REGISTRATION_STEPS.TICKET_SELECTION:
         isValid = validateTicketSelection();
+        // Skip payment step if no payment required (volunteers/speakers)
+        if (isValid && !isPaymentRequired()) {
+          setCurrentStep(REGISTRATION_STEPS.CONFIRMATION);
+          window.scrollTo(0, 0);
+          return;
+        }
         break;
       case REGISTRATION_STEPS.PAYMENT_UPLOAD:
         isValid = validatePaymentUpload();
@@ -607,17 +623,22 @@ function RegisterPage() {
       setCurrentStep((prev) => prev + 1);
       window.scrollTo(0, 0);
     }
-  }, [currentStep, validatePersonalInfo, validateTicketSelection, validatePaymentUpload]);
+  }, [currentStep, validatePersonalInfo, validateTicketSelection, validatePaymentUpload, isPaymentRequired]);
 
   /**
    * Handles moving to the previous step
    */
   const handleBack = useCallback(() => {
     if (currentStep > REGISTRATION_STEPS.PERSONAL_INFO) {
-      setCurrentStep((prev) => prev - 1);
+      // If on confirmation and payment was skipped, go back to ticket selection
+      if (currentStep === REGISTRATION_STEPS.CONFIRMATION && !isPaymentRequired()) {
+        setCurrentStep(REGISTRATION_STEPS.TICKET_SELECTION);
+      } else {
+        setCurrentStep((prev) => prev - 1);
+      }
       window.scrollTo(0, 0);
     }
-  }, [currentStep]);
+  }, [currentStep, isPaymentRequired]);
 
   /**
    * Handles form submission - saves to Firestore with payment proof upload
@@ -1121,11 +1142,16 @@ function RegisterPage() {
                       value={formData.primaryAttendee.category}
                       onChange={(e) => updatePrimaryAttendee('category', e.target.value)}
                     >
-                      {Object.entries(REGISTRATION_CATEGORIES).map(([key, value]) => (
-                        <option key={key} value={value}>
-                          {REGISTRATION_CATEGORY_LABELS[value]} - {formatPrice(calculatePrice(value, currentTier))}
-                        </option>
-                      ))}
+                      {Object.entries(REGISTRATION_CATEGORIES)
+                        .filter(([, value]) =>
+                          value !== REGISTRATION_CATEGORIES.SPEAKER &&
+                          value !== REGISTRATION_CATEGORIES.VOLUNTEER
+                        ) // Hide SPEAKER and VOLUNTEER from public registration (admin-only)
+                        .map(([key, value]) => (
+                          <option key={key} value={value}>
+                            {REGISTRATION_CATEGORY_LABELS[value]} - {formatPrice(calculatePrice(value, currentTier))}
+                          </option>
+                        ))}
                     </select>
                   </div>
                 </div>
@@ -1263,11 +1289,16 @@ function RegisterPage() {
                         value={attendee.category}
                         onChange={(e) => updateAdditionalAttendee(index, 'category', e.target.value)}
                       >
-                        {Object.entries(REGISTRATION_CATEGORIES).map(([key, value]) => (
-                          <option key={key} value={value}>
-                            {REGISTRATION_CATEGORY_LABELS[value]} - {formatPrice(calculatePrice(value, currentTier))}
-                          </option>
-                        ))}
+                        {Object.entries(REGISTRATION_CATEGORIES)
+                          .filter(([, value]) =>
+                            value !== REGISTRATION_CATEGORIES.SPEAKER &&
+                            value !== REGISTRATION_CATEGORIES.VOLUNTEER
+                          ) // Hide SPEAKER and VOLUNTEER from public registration (admin-only)
+                          .map(([key, value]) => (
+                            <option key={key} value={value}>
+                              {REGISTRATION_CATEGORY_LABELS[value]} - {formatPrice(calculatePrice(value, currentTier))}
+                            </option>
+                          ))}
                       </select>
                     </div>
                   </div>

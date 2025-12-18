@@ -359,10 +359,12 @@ export async function createRegistration(registrationData) {
   const shortCodeSuffix = shortCode.slice(-SHORT_CODE_SUFFIX_LENGTH);
 
   // Determine initial status based on whether payment proof was uploaded
+  // If totalAmount is 0 (volunteers/speakers), set to PENDING_VERIFICATION for admin approval
   // If payment proof is provided, set to PENDING_VERIFICATION
   // Otherwise, set to PENDING_PAYMENT (for manual/admin registrations)
   const hasPaymentProof = payment && payment.proofUrl;
-  const initialStatus = hasPaymentProof
+  const isFreeRegistration = totalAmount === 0;
+  const initialStatus = isFreeRegistration || hasPaymentProof
     ? REGISTRATION_STATUS.PENDING_VERIFICATION
     : REGISTRATION_STATUS.PENDING_PAYMENT;
 
@@ -483,18 +485,23 @@ export async function verifyPayment(registrationId, verificationDetails, adminId
   };
 
   if (isFullyPaid) {
-    // Full payment confirmed
+    // Full payment confirmed or free registration (volunteers/speakers)
+    const isFreeRegistration = totalAmount === 0;
     const totalAttendees = 1 + (registration?.additionalAttendees?.length || 0);
-    const qrCodeData = registrationId;
-    const attendeeQRCodes = generateAttendeeQRCodes(registrationId, totalAttendees);
 
     updateData = {
       ...updateData,
       status: REGISTRATION_STATUS.CONFIRMED,
       'payment.status': REGISTRATION_STATUS.CONFIRMED,
-      qrCodeData,
-      attendeeQRCodes,
     };
+
+    // Only generate QR codes for paid registrations (not for volunteers/speakers)
+    if (!isFreeRegistration) {
+      const qrCodeData = registrationId;
+      const attendeeQRCodes = generateAttendeeQRCodes(registrationId, totalAttendees);
+      updateData.qrCodeData = qrCodeData;
+      updateData.attendeeQRCodes = attendeeQRCodes;
+    }
   } else {
     // Partial payment or rejected - set back to PENDING_PAYMENT
     updateData = {
@@ -544,14 +551,9 @@ export async function confirmPayment(registrationId, paymentDetails, adminId = n
   // Get current registration to count attendees
   const registration = await getRegistrationById(registrationId);
   const totalAttendees = 1 + (registration?.additionalAttendees?.length || 0);
+  const isFreeRegistration = (registration?.totalAmount || 0) === 0;
 
-  // Generate legacy QR code data (for backward compatibility)
-  const qrCodeData = registrationId;
-
-  // Generate per-attendee QR codes
-  const attendeeQRCodes = generateAttendeeQRCodes(registrationId, totalAttendees);
-
-  await updateDoc(docRef, {
+  const updateData = {
     status: REGISTRATION_STATUS.CONFIRMED,
     'payment.status': REGISTRATION_STATUS.CONFIRMED,
     'payment.method': paymentDetails.method,
@@ -561,10 +563,18 @@ export async function confirmPayment(registrationId, paymentDetails, adminId = n
     'payment.notes': paymentDetails.notes || null,
     'payment.amountPaid': registration?.totalAmount || 0,
     'payment.balance': 0,
-    qrCodeData,
-    attendeeQRCodes,
     updatedAt: serverTimestamp(),
-  });
+  };
+
+  // Only generate QR codes for paid registrations (not for volunteers/speakers)
+  if (!isFreeRegistration) {
+    const qrCodeData = registrationId;
+    const attendeeQRCodes = generateAttendeeQRCodes(registrationId, totalAttendees);
+    updateData.qrCodeData = qrCodeData;
+    updateData.attendeeQRCodes = attendeeQRCodes;
+  }
+
+  await updateDoc(docRef, updateData);
 
   // Log the activity
   if (adminId && adminEmail) {
