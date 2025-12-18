@@ -13,6 +13,8 @@ import {
   WORKSHOP_CATEGORY_LABELS,
   PAYMENT_METHODS,
 } from '../../constants';
+import { verifyPayment } from '../../services';
+import { useAdminAuth } from '../../context';
 import styles from './RegistrationDetailModal.module.css';
 
 /**
@@ -125,14 +127,24 @@ function RegistrationDetailModal({
   registration,
   onUpdateStatus,
   onUpdateNotes,
+  onRefresh,
   isUpdating,
 }) {
+  const { admin } = useAdminAuth();
+
   const [selectedStatus, setSelectedStatus] = useState(
     registration?.status || REGISTRATION_STATUS.PENDING_PAYMENT
   );
   const [notes, setNotes] = useState(registration?.notes || '');
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+
+  // Payment verification states
+  const [amountPaid, setAmountPaid] = useState(registration?.totalAmount || 0);
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [referenceNumber, setReferenceNumber] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
 
   /**
    * Sync state when registration changes
@@ -142,6 +154,11 @@ function RegistrationDetailModal({
       setSelectedStatus(registration.status || REGISTRATION_STATUS.PENDING_PAYMENT);
       setNotes(registration.notes || '');
       setIsEditingNotes(false);
+      // Reset payment verification states
+      setAmountPaid(registration.totalAmount || 0);
+      setPaymentMethod('');
+      setReferenceNumber('');
+      setRejectionReason('');
     }
   }, [registration]);
 
@@ -181,6 +198,84 @@ function RegistrationDetailModal({
   const handleStatusChange = async () => {
     if (selectedStatus !== registration.status) {
       await onUpdateStatus(registration.id, selectedStatus);
+    }
+  };
+
+  /**
+   * Handles payment verification (approve or partial payment)
+   */
+  const handleVerifyPayment = async () => {
+    if (!amountPaid || !paymentMethod) {
+      alert('Please enter amount received and payment method');
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      await verifyPayment(
+        registration.id,
+        {
+          amountPaid,
+          method: paymentMethod,
+          referenceNumber,
+          verifiedBy: admin.email,
+          notes: '',
+          rejectionReason: amountPaid < registration.totalAmount ? rejectionReason : null,
+        },
+        admin.uid,
+        admin.email
+      );
+
+      // Refresh registration data by calling parent's refresh
+      if (onRefresh) {
+        await onRefresh();
+      }
+
+      onClose();
+    } catch (error) {
+      console.error('Verification error:', error);
+      alert('Failed to verify payment: ' + error.message);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  /**
+   * Handles payment rejection with reason
+   */
+  const handleRejectPayment = async () => {
+    const reason = prompt('Enter rejection reason (shown to user):');
+    if (!reason || !reason.trim()) {
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      // Use verifyPayment with 0 amount to reject
+      await verifyPayment(
+        registration.id,
+        {
+          amountPaid: 0,
+          method: paymentMethod || 'unknown',
+          referenceNumber: '',
+          verifiedBy: admin.email,
+          notes: '',
+          rejectionReason: reason,
+        },
+        admin.uid,
+        admin.email
+      );
+
+      if (onRefresh) {
+        await onRefresh();
+      }
+
+      onClose();
+    } catch (error) {
+      console.error('Rejection error:', error);
+      alert('Failed to reject payment: ' + error.message);
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -390,6 +485,157 @@ function RegistrationDetailModal({
             )}
           </div>
 
+          {/* Payment Verification Section - Only shown for PENDING_VERIFICATION status */}
+          {registration.status === REGISTRATION_STATUS.PENDING_VERIFICATION && (
+            <div className={styles.section}>
+              <h3 className={styles.sectionTitle}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Verify Payment
+              </h3>
+
+              {/* Payment Proof Image */}
+              {registration.payment?.proofUrl && (
+                <div className={styles.paymentProofContainer}>
+                  <label className={styles.label}>Payment Proof:</label>
+                  <a
+                    href={registration.payment.proofUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.paymentProofLink}
+                  >
+                    <img
+                      src={registration.payment.proofUrl}
+                      alt="Payment proof"
+                      className={styles.paymentProofImage}
+                    />
+                  </a>
+                  <p className={styles.hint}>Click image to view full size</p>
+                </div>
+              )}
+
+              <div className={styles.verificationForm}>
+                {/* Total Amount (read-only) */}
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Total Amount Required</label>
+                  <input
+                    type="text"
+                    value={formatCurrency(registration.totalAmount)}
+                    disabled
+                    className={styles.input}
+                  />
+                </div>
+
+                {/* Amount Received Input */}
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>
+                    Amount Received <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={amountPaid}
+                    onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                    min="0"
+                    max={registration.totalAmount}
+                    step="0.01"
+                    className={styles.input}
+                    disabled={isVerifying}
+                  />
+                </div>
+
+                {/* Calculated Balance (auto-calculated) */}
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Balance</label>
+                  <input
+                    type="text"
+                    value={formatCurrency(Math.max(0, registration.totalAmount - amountPaid))}
+                    disabled
+                    className={`${styles.input} ${
+                      amountPaid < registration.totalAmount ? styles.balanceOwed : ''
+                    }`}
+                  />
+                  {amountPaid < registration.totalAmount && (
+                    <p className={styles.warningText}>
+                      ⚠️ Partial payment - user will need to upload additional proof
+                    </p>
+                  )}
+                </div>
+
+                {/* Payment Method */}
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>
+                    Payment Method <span className={styles.required}>*</span>
+                  </label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className={styles.input}
+                    disabled={isVerifying}
+                  >
+                    <option value="">Select method</option>
+                    <option value="gcash">GCash</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="cash">Cash</option>
+                  </select>
+                </div>
+
+                {/* Reference Number */}
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Reference Number</label>
+                  <input
+                    type="text"
+                    value={referenceNumber}
+                    onChange={(e) => setReferenceNumber(e.target.value)}
+                    placeholder="Transaction reference (optional)"
+                    className={styles.input}
+                    disabled={isVerifying}
+                  />
+                </div>
+
+                {/* Rejection Reason (only shown if partial payment) */}
+                {amountPaid > 0 && amountPaid < registration.totalAmount && (
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>
+                      Message to User (shown on status page)
+                    </label>
+                    <textarea
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      placeholder={`E.g., 'Partial payment of ₱${amountPaid} received. Please upload proof of remaining ₱${(registration.totalAmount - amountPaid).toFixed(2)}'`}
+                      rows={3}
+                      className={styles.textarea}
+                      disabled={isVerifying}
+                    />
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className={styles.verificationActions}>
+                  <button
+                    onClick={handleVerifyPayment}
+                    disabled={!amountPaid || !paymentMethod || isVerifying}
+                    className={styles.verifyButton}
+                  >
+                    {isVerifying
+                      ? 'Processing...'
+                      : amountPaid >= registration.totalAmount
+                      ? '✓ Confirm Full Payment'
+                      : '⚠ Mark as Partial Payment'}
+                  </button>
+                  <button
+                    onClick={handleRejectPayment}
+                    disabled={isVerifying}
+                    className={styles.rejectButton}
+                  >
+                    ✗ Reject Payment
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Additional Attendees (if group registration) */}
           {registration.additionalAttendees?.length > 0 && (
               <div className={styles.section}>
@@ -495,6 +741,7 @@ RegistrationDetailModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onUpdateNotes: PropTypes.func,
+  onRefresh: PropTypes.func,
   registration: PropTypes.shape({
     id: PropTypes.string.isRequired,
     primaryAttendee: PropTypes.shape({
@@ -538,6 +785,7 @@ RegistrationDetailModal.defaultProps = {
   registration: null,
   isUpdating: false,
   onUpdateNotes: null,
+  onRefresh: null,
 };
 
 export default RegistrationDetailModal;
