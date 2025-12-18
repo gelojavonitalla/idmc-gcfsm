@@ -98,6 +98,7 @@ function FloorPlan({ schedule, workshops, showEventRoomsOnly = false, enabledFlo
 
   /**
    * Gets sessions/workshops for a specific room
+   * Deduplicates sessions based on ID to prevent duplicate entries
    *
    * @param {string} roomId - The room identifier
    * @returns {Array} Sessions in this room
@@ -118,7 +119,12 @@ function FloorPlan({ schedule, workshops, showEventRoomsOnly = false, enabledFlo
       roomSessions.push(...workshopSessions);
     }
 
-    return roomSessions;
+    // Deduplicate sessions based on ID
+    const uniqueSessions = roomSessions.filter((session, index, self) =>
+      index === self.findIndex((s) => s.id === session.id)
+    );
+
+    return uniqueSessions;
   }, [schedule, workshops]);
 
   /**
