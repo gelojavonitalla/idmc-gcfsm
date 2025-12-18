@@ -300,12 +300,14 @@ function RegistrationStatusPage() {
                 <div className={styles.infoGrid}>
                   <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Church</span>
-                    <span className={styles.infoValue}>{registration.church?.name}</span>
+                    <span className={styles.infoValue}>{registration.church?.name || '—'}</span>
                   </div>
                   <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Location</span>
                     <span className={styles.infoValue}>
-                      {registration.church?.city}, {registration.church?.province}
+                      {registration.church?.city && registration.church?.province
+                        ? `${registration.church.city}, ${registration.church.province}`
+                        : '—'}
                     </span>
                   </div>
                 </div>
