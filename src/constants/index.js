@@ -486,6 +486,8 @@ export const WORKSHOP_TRACKS = [
 export const REGISTRATION_CATEGORIES = {
   REGULAR: 'regular',
   STUDENT_SENIOR: 'student_senior',
+  VOLUNTEER: 'volunteer',
+  SPEAKER: 'speaker',
 };
 
 /**
@@ -494,6 +496,8 @@ export const REGISTRATION_CATEGORIES = {
 export const REGISTRATION_CATEGORY_LABELS = {
   [REGISTRATION_CATEGORIES.REGULAR]: 'Regular',
   [REGISTRATION_CATEGORIES.STUDENT_SENIOR]: 'Student / Senior Citizen',
+  [REGISTRATION_CATEGORIES.VOLUNTEER]: 'Volunteer',
+  [REGISTRATION_CATEGORIES.SPEAKER]: 'Speaker',
 };
 
 /**
@@ -502,6 +506,8 @@ export const REGISTRATION_CATEGORY_LABELS = {
 export const REGISTRATION_CATEGORY_DESCRIPTIONS = {
   [REGISTRATION_CATEGORIES.REGULAR]: 'For working professionals and general attendees',
   [REGISTRATION_CATEGORIES.STUDENT_SENIOR]: 'For students with valid ID and senior citizens (60+)',
+  [REGISTRATION_CATEGORIES.VOLUNTEER]: 'For event volunteers (ushers, coordinators, etc.) - No payment required, subject to verification',
+  [REGISTRATION_CATEGORIES.SPEAKER]: 'For event speakers - Admin registration only',
 };
 
 /**

@@ -529,17 +529,50 @@ function RegistrationStatusPage() {
 
                     {/* File upload section */}
                     <div className={styles.uploadSection}>
-                      <label htmlFor="payment-proof-file" className={styles.uploadLabel}>
+                      <label className={styles.uploadLabel}>
                         Upload Payment Receipt/Screenshot
                       </label>
-                      <input
-                        id="payment-proof-file"
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                        onChange={handleFileSelect}
-                        disabled={isUploading}
-                        className={styles.fileInput}
-                      />
+
+                      {/* Upload options */}
+                      <div className={styles.uploadOptions}>
+                        <div className={styles.uploadOption}>
+                          <input
+                            id="payment-proof-file"
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                            onChange={handleFileSelect}
+                            disabled={isUploading}
+                            className={styles.fileInputHidden}
+                          />
+                          <label
+                            htmlFor="payment-proof-file"
+                            className={`${styles.uploadOptionButton} ${isUploading ? styles.disabled : ''}`}
+                          >
+                            <span className={styles.uploadIcon}>📁</span>
+                            <span>Upload File</span>
+                          </label>
+                        </div>
+
+                        <div className={styles.uploadOption}>
+                          <input
+                            id="payment-proof-camera"
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleFileSelect}
+                            disabled={isUploading}
+                            className={styles.fileInputHidden}
+                          />
+                          <label
+                            htmlFor="payment-proof-camera"
+                            className={`${styles.uploadOptionButton} ${isUploading ? styles.disabled : ''}`}
+                          >
+                            <span className={styles.uploadIcon}>📷</span>
+                            <span>Take Photo</span>
+                          </label>
+                        </div>
+                      </div>
+
                       {paymentFile && (
                         <p className={styles.selectedFile}>
                           Selected: {paymentFile.name}
