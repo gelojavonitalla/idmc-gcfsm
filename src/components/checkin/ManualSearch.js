@@ -207,7 +207,7 @@ function ManualSearch({ onSelect, autoFocus = false }) {
             <li>Name (3+ characters, e.g., "Juan")</li>
             <li>Email address (exact match)</li>
             <li>Phone number (3+ digits)</li>
-            <li>Quick code - last 4 characters (e.g., "UUW7")</li>
+            <li>Quick code - last 4 characters (e.g., "UUW7" or "UUW7-0")</li>
             <li>Registration ID (e.g., "REG-2026-RMUUW7" or "REG-2026-RMUUW7-0")</li>
           </ul>
         </div>
