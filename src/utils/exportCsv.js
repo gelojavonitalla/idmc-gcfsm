@@ -70,6 +70,37 @@ function formatDateForCsv(date) {
 }
 
 /**
+ * Formats church info for CSV export
+ *
+ * @param {Object} registration - Registration object
+ * @returns {string} Formatted church string
+ */
+function getChurchForCsv(registration) {
+  // Check if church is an object (new format)
+  if (registration.church && typeof registration.church === 'object') {
+    const { name, city, province } = registration.church;
+    if (name && city && province) {
+      return `${name} - ${city}, ${province}`;
+    }
+    if (name) {
+      return name;
+    }
+  }
+
+  // Check for legacy string format in primaryAttendee
+  if (registration.primaryAttendee?.church && typeof registration.primaryAttendee.church === 'string') {
+    return registration.primaryAttendee.church;
+  }
+
+  // Check for legacy string format at top level
+  if (registration.church && typeof registration.church === 'string') {
+    return registration.church;
+  }
+
+  return '';
+}
+
+/**
  * Converts registrations array to CSV string
  *
  * @param {Array} registrations - Array of registration objects
@@ -104,7 +135,7 @@ export function convertRegistrationsToCsv(registrations) {
     const lastName = reg.primaryAttendee?.lastName || reg.lastName || '';
     const email = reg.primaryAttendee?.email || reg.email || '';
     const phone = reg.primaryAttendee?.cellphone || reg.primaryAttendee?.phone || reg.phone || '';
-    const church = reg.primaryAttendee?.church || reg.church || '';
+    const church = getChurchForCsv(reg);
     const ministryRole = reg.primaryAttendee?.ministryRole || reg.ministryRole || '';
     const category = REGISTRATION_CATEGORY_LABELS[reg.category] || reg.category || '';
     const workshop = WORKSHOP_CATEGORY_LABELS[reg.workshopSelection] || reg.workshopSelection || '';
@@ -224,7 +255,7 @@ export function convertWorkshopAttendanceToCsv(registrations, workshopCategory) 
     const lastName = reg.primaryAttendee?.lastName || reg.lastName || '';
     const email = reg.primaryAttendee?.email || reg.email || '';
     const phone = reg.primaryAttendee?.cellphone || reg.primaryAttendee?.phone || reg.phone || '';
-    const church = reg.primaryAttendee?.church || reg.church || '';
+    const church = getChurchForCsv(reg);
     const ministryRole = reg.primaryAttendee?.ministryRole || reg.ministryRole || '';
 
     return [
@@ -336,7 +367,7 @@ export function exportAllWorkshopsAttendanceToCsv(registrations) {
         const lastName = reg.primaryAttendee?.lastName || reg.lastName || '';
         const email = reg.primaryAttendee?.email || reg.email || '';
         const phone = reg.primaryAttendee?.cellphone || reg.primaryAttendee?.phone || reg.phone || '';
-        const church = reg.primaryAttendee?.church || reg.church || '';
+        const church = getChurchForCsv(reg);
         const ministryRole = reg.primaryAttendee?.ministryRole || reg.ministryRole || '';
 
         allRows.push([

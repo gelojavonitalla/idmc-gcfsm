@@ -109,6 +109,37 @@ function getAttendeePhone(registration) {
 }
 
 /**
+ * Gets formatted church info from registration
+ *
+ * @param {Object} registration - Registration object
+ * @returns {string} Formatted church info
+ */
+function getChurchInfo(registration) {
+  // Check if church is an object (new format)
+  if (registration.church && typeof registration.church === 'object') {
+    const { name, city, province } = registration.church;
+    if (name && city && province) {
+      return `${name} - ${city}, ${province}`;
+    }
+    if (name) {
+      return name;
+    }
+  }
+
+  // Check for legacy string format in primaryAttendee
+  if (registration.primaryAttendee?.church && typeof registration.primaryAttendee.church === 'string') {
+    return registration.primaryAttendee.church;
+  }
+
+  // Check for legacy string format at top level
+  if (registration.church && typeof registration.church === 'string') {
+    return registration.church;
+  }
+
+  return '—';
+}
+
+/**
  * RegistrationDetailModal Component
  *
  * @param {Object} props - Component props
@@ -281,7 +312,7 @@ function RegistrationDetailModal({
               <div className={styles.infoItem}>
                 <span className={styles.label}>Church</span>
                 <span className={styles.value}>
-                  {registration.primaryAttendee?.church || registration.church || '—'}
+                  {getChurchInfo(registration)}
                 </span>
               </div>
               <div className={styles.infoItem}>
@@ -502,14 +533,21 @@ RegistrationDetailModal.propTypes = {
       lastName: PropTypes.string,
       email: PropTypes.string,
       phone: PropTypes.string,
-      church: PropTypes.string,
+      church: PropTypes.string, // Legacy format
       ministryRole: PropTypes.string,
     }),
     firstName: PropTypes.string,
     lastName: PropTypes.string,
     email: PropTypes.string,
     phone: PropTypes.string,
-    church: PropTypes.string,
+    church: PropTypes.oneOfType([
+      PropTypes.string, // Legacy format
+      PropTypes.shape({
+        name: PropTypes.string,
+        city: PropTypes.string,
+        province: PropTypes.string,
+      }),
+    ]),
     ministryRole: PropTypes.string,
     category: PropTypes.string,
     workshopSelection: PropTypes.string,
