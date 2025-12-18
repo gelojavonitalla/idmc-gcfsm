@@ -92,6 +92,7 @@ function InvoiceDetailModal({ isOpen, onClose, registration, onInvoiceUpdated })
   const [uploadError, setUploadError] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [showSendConfirmation, setShowSendConfirmation] = useState(false);
 
   if (!isOpen || !registration) {
     return null;
@@ -188,22 +189,28 @@ function InvoiceDetailModal({ isOpen, onClose, registration, onInvoiceUpdated })
   };
 
   /**
-   * Handles sending invoice email
+   * Shows confirmation prompt for sending invoice
    */
-  const handleSendInvoice = async () => {
+  const handleSendInvoice = () => {
     if (!hasInvoiceUploaded) {
       setUploadError('Please upload an invoice first.');
       return;
     }
+    setShowSendConfirmation(true);
+  };
 
-    const confirmed = window.confirm(
-      `Send invoice to ${registration.primaryAttendee.email}?`
-    );
+  /**
+   * Cancels the send confirmation
+   */
+  const handleCancelSend = () => {
+    setShowSendConfirmation(false);
+  };
 
-    if (!confirmed) {
-      return;
-    }
-
+  /**
+   * Confirms and sends invoice email
+   */
+  const handleConfirmSendInvoice = async () => {
+    setShowSendConfirmation(false);
     setIsSending(true);
     setUploadError(null);
 
@@ -350,7 +357,7 @@ function InvoiceDetailModal({ isOpen, onClose, registration, onInvoiceUpdated })
                   View Invoice
                 </a>
 
-                {invoiceStatus !== INVOICE_STATUS.SENT && (
+                {invoiceStatus !== INVOICE_STATUS.SENT && !showSendConfirmation && (
                   <button
                     type="button"
                     onClick={handleSendInvoice}
@@ -359,6 +366,32 @@ function InvoiceDetailModal({ isOpen, onClose, registration, onInvoiceUpdated })
                   >
                     {isSending ? 'Sending...' : 'Send Invoice via Email'}
                   </button>
+                )}
+
+                {showSendConfirmation && (
+                  <div className={styles.confirmationPrompt}>
+                    <p className={styles.confirmationMessage}>
+                      Send invoice to {registration.primaryAttendee.email}?
+                    </p>
+                    <div className={styles.confirmationActions}>
+                      <button
+                        type="button"
+                        onClick={handleCancelSend}
+                        className={styles.cancelButton}
+                        disabled={isSending}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleConfirmSendInvoice}
+                        className={styles.confirmButton}
+                        disabled={isSending}
+                      >
+                        {isSending ? 'Sending...' : 'OK'}
+                      </button>
+                    </div>
+                  </div>
                 )}
 
                 {invoiceStatus === INVOICE_STATUS.SENT && (
