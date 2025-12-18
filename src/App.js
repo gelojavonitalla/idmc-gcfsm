@@ -1,7 +1,8 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout, ScrollToTop } from './components/layout';
 import { ProtectedRoute } from './components/auth';
-import { AdminProtectedRoute } from './components/admin';
+import { AdminProtectedRoute, AdminLoadingFallback } from './components/admin';
 import { AuthProvider, AdminAuthProvider, SettingsProvider } from './context';
 import {
   HomePage,
@@ -19,9 +20,29 @@ import {
   IDMC2025Page,
   MaintenancePage,
 } from './pages';
-import { AdminLoginPage, AdminDashboardPage, AdminSettingsPage, AdminUsersPage, AdminActivityPage, AdminSpeakersPage, AdminSchedulePage, AdminFAQPage, AdminDownloadsPage, AdminAboutPage, AdminLegalPage, AdminRegistrationsPage, AdminVenuePage, AdminCheckInPage, AdminInquiriesPage } from './pages/admin';
 import { ROUTES, ADMIN_ROUTES, IDMC_TEAM_ROLES } from './constants';
 import './index.css';
+
+/**
+ * Lazy-loaded admin pages for code splitting.
+ * These pages are only loaded when the user navigates to admin routes,
+ * reducing initial bundle size for public website visitors.
+ */
+const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'));
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
+const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
+const AdminActivityPage = lazy(() => import('./pages/admin/AdminActivityPage'));
+const AdminSpeakersPage = lazy(() => import('./pages/admin/AdminSpeakersPage'));
+const AdminSchedulePage = lazy(() => import('./pages/admin/AdminSchedulePage'));
+const AdminFAQPage = lazy(() => import('./pages/admin/AdminFAQPage'));
+const AdminDownloadsPage = lazy(() => import('./pages/admin/AdminDownloadsPage'));
+const AdminAboutPage = lazy(() => import('./pages/admin/AdminAboutPage'));
+const AdminLegalPage = lazy(() => import('./pages/admin/AdminLegalPage'));
+const AdminRegistrationsPage = lazy(() => import('./pages/admin/AdminRegistrationsPage'));
+const AdminVenuePage = lazy(() => import('./pages/admin/AdminVenuePage'));
+const AdminCheckInPage = lazy(() => import('./pages/admin/AdminCheckInPage'));
+const AdminInquiriesPage = lazy(() => import('./pages/admin/AdminInquiriesPage'));
 
 /**
  * App Component
@@ -36,8 +57,15 @@ function App() {
         <BrowserRouter>
           <ScrollToTop />
           <Routes>
-            {/* Admin Routes - No public layout */}
-            <Route path={ADMIN_ROUTES.LOGIN} element={<AdminLoginPage />} />
+            {/* Admin Routes - Lazy loaded for code splitting */}
+            <Route
+              path={ADMIN_ROUTES.LOGIN}
+              element={
+                <Suspense fallback={<AdminLoadingFallback />}>
+                  <AdminLoginPage />
+                </Suspense>
+              }
+            />
             <Route
               path={ADMIN_ROUTES.ROOT}
               element={<Navigate to={ADMIN_ROUTES.DASHBOARD} replace />}
@@ -46,7 +74,9 @@ function App() {
               path={ADMIN_ROUTES.DASHBOARD}
               element={
                 <AdminProtectedRoute>
-                  <AdminDashboardPage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminDashboardPage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
@@ -54,7 +84,9 @@ function App() {
               path={ADMIN_ROUTES.SETTINGS}
               element={
                 <AdminProtectedRoute>
-                  <AdminSettingsPage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminSettingsPage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
@@ -62,7 +94,9 @@ function App() {
               path={ADMIN_ROUTES.USERS}
               element={
                 <AdminProtectedRoute requiredRole="superadmin">
-                  <AdminUsersPage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminUsersPage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
@@ -70,7 +104,9 @@ function App() {
               path={ADMIN_ROUTES.ACTIVITY}
               element={
                 <AdminProtectedRoute>
-                  <AdminActivityPage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminActivityPage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
@@ -78,7 +114,9 @@ function App() {
               path={ADMIN_ROUTES.SPEAKERS}
               element={
                 <AdminProtectedRoute>
-                  <AdminSpeakersPage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminSpeakersPage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
@@ -86,7 +124,9 @@ function App() {
               path={ADMIN_ROUTES.SCHEDULE}
               element={
                 <AdminProtectedRoute>
-                  <AdminSchedulePage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminSchedulePage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
@@ -94,7 +134,9 @@ function App() {
               path={ADMIN_ROUTES.FAQ}
               element={
                 <AdminProtectedRoute>
-                  <AdminFAQPage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminFAQPage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
@@ -102,7 +144,9 @@ function App() {
               path={ADMIN_ROUTES.DOWNLOADS}
               element={
                 <AdminProtectedRoute>
-                  <AdminDownloadsPage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminDownloadsPage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
@@ -110,7 +154,9 @@ function App() {
               path={ADMIN_ROUTES.ABOUT_CONTENT}
               element={
                 <AdminProtectedRoute>
-                  <AdminAboutPage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminAboutPage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
@@ -118,7 +164,9 @@ function App() {
               path={ADMIN_ROUTES.LEGAL}
               element={
                 <AdminProtectedRoute>
-                  <AdminLegalPage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminLegalPage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
@@ -126,7 +174,9 @@ function App() {
               path={ADMIN_ROUTES.REGISTRATIONS}
               element={
                 <AdminProtectedRoute>
-                  <AdminRegistrationsPage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminRegistrationsPage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
@@ -134,7 +184,9 @@ function App() {
               path={ADMIN_ROUTES.VENUE}
               element={
                 <AdminProtectedRoute>
-                  <AdminVenuePage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminVenuePage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
@@ -142,7 +194,9 @@ function App() {
               path={ADMIN_ROUTES.CHECKIN}
               element={
                 <AdminProtectedRoute>
-                  <AdminCheckInPage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminCheckInPage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
@@ -150,16 +204,20 @@ function App() {
               path={ADMIN_ROUTES.INQUIRIES}
               element={
                 <AdminProtectedRoute>
-                  <AdminInquiriesPage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminInquiriesPage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
-            {/* Placeholder admin routes - to be implemented in later phases */}
+            {/* Fallback admin route */}
             <Route
               path={`${ADMIN_ROUTES.ROOT}/*`}
               element={
                 <AdminProtectedRoute>
-                  <AdminDashboardPage />
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminDashboardPage />
+                  </Suspense>
                 </AdminProtectedRoute>
               }
             />
