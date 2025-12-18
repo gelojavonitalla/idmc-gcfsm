@@ -14,6 +14,8 @@ import {
 import {
   getRegistrations,
   getRegistrationsCount,
+  getRegistrationsStatusCounts,
+  getAllRegistrations,
   searchRegistrations,
   updateRegistration,
 } from '../../services/maintenance';
@@ -53,6 +55,27 @@ function AdminRegistrationsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [showWorkshopExportMenu, setShowWorkshopExportMenu] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [statusCounts, setStatusCounts] = useState({
+    total: 0,
+    confirmed: 0,
+    pendingVerification: 0,
+    pendingPayment: 0,
+    cancelled: 0,
+    refunded: 0,
+  });
+
+  /**
+   * Fetches status counts from the database
+   */
+  const fetchStatusCounts = useCallback(async () => {
+    try {
+      const counts = await getRegistrationsStatusCounts();
+      setStatusCounts(counts);
+    } catch (err) {
+      console.error('Failed to fetch status counts:', err);
+    }
+  }, []);
 
   /**
    * Fetches registrations with pagination
@@ -88,6 +111,8 @@ function AdminRegistrationsPage() {
       if (!loadMore) {
         const countResult = await getRegistrationsCount({ status: statusFilter });
         setTotalCount(countResult.filtered);
+        // Also fetch status counts for accurate stats display
+        fetchStatusCounts();
       }
     } catch (fetchError) {
       console.error('Failed to fetch registrations:', fetchError);
@@ -96,7 +121,7 @@ function AdminRegistrationsPage() {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  }, [lastDoc, statusFilter]);
+  }, [lastDoc, statusFilter, fetchStatusCounts]);
 
   /**
    * Handles loading more registrations
@@ -226,11 +251,12 @@ function AdminRegistrationsPage() {
   };
 
   /**
-   * Handles exporting registrations to CSV
-   * Exports current view (search results or loaded registrations)
+   * Handles exporting current view registrations to CSV
+   * Exports search results or currently loaded registrations
    */
-  const handleExport = async () => {
+  const handleExportCurrentView = async () => {
     setIsExporting(true);
+    setShowExportMenu(false);
     setError(null);
 
     try {
@@ -243,11 +269,52 @@ function AdminRegistrationsPage() {
       const prefix = isSearchMode
         ? `registrations-search-${searchQuery.replace(/[^a-zA-Z0-9]/g, '_')}`
         : statusFilter !== 'all'
-          ? `registrations-${statusFilter}`
-          : 'registrations';
+          ? `registrations-${statusFilter}-current-view`
+          : 'registrations-current-view';
       exportRegistrationsToCsv(dataToExport, prefix);
     } catch (exportError) {
       console.error('Failed to export registrations:', exportError);
+      setError('Failed to export registrations. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  /**
+   * Handles exporting all registrations from database to CSV
+   * Fetches all records from the database and exports them
+   */
+  const handleExportAll = async () => {
+    setIsExporting(true);
+    setShowExportMenu(false);
+    setError(null);
+
+    try {
+      // Fetch all registrations from database
+      const allRegistrations = await getAllRegistrations();
+
+      if (allRegistrations.length === 0) {
+        setError('No registrations to export.');
+        return;
+      }
+
+      // Apply status filter if one is selected
+      let dataToExport = allRegistrations;
+      if (statusFilter !== 'all') {
+        dataToExport = allRegistrations.filter((reg) => reg.status === statusFilter);
+      }
+
+      if (dataToExport.length === 0) {
+        setError(`No registrations with status "${statusFilter}" to export.`);
+        return;
+      }
+
+      const prefix = statusFilter !== 'all'
+        ? `registrations-${statusFilter}-all`
+        : 'registrations-all';
+      exportRegistrationsToCsv(dataToExport, prefix);
+    } catch (exportError) {
+      console.error('Failed to export all registrations:', exportError);
       setError('Failed to export registrations. Please try again.');
     } finally {
       setIsExporting(false);
@@ -279,38 +346,25 @@ function AdminRegistrationsPage() {
   };
 
   /**
-   * Gets registration statistics from loaded data
-   * Note: These stats are calculated from currently loaded registrations
+   * Gets registration statistics from database counts
+   * Uses server-side counts for accurate totals
    *
    * @returns {Object} Statistics object
    */
   const getStats = () => {
-    const loaded = registrations.length;
-    const confirmed = registrations.filter(
-      (r) => r.status === REGISTRATION_STATUS.CONFIRMED
-    ).length;
-    const pendingVerification = registrations.filter(
-      (r) => r.status === REGISTRATION_STATUS.PENDING_VERIFICATION
-    ).length;
-    const pendingPayment = registrations.filter(
-      (r) => r.status === REGISTRATION_STATUS.PENDING_PAYMENT
-    ).length;
-    const cancelled = registrations.filter(
-      (r) => r.status === REGISTRATION_STATUS.CANCELLED
-    ).length;
-
-    // Calculate total revenue from confirmed registrations (loaded data only)
+    // Calculate total revenue from loaded confirmed registrations
+    // Note: Revenue is calculated from loaded data as it requires summing amounts
     const totalRevenue = registrations
       .filter((r) => r.status === REGISTRATION_STATUS.CONFIRMED)
       .reduce((sum, r) => sum + (r.totalAmount || 0), 0);
 
     return {
-      total: statusFilter === 'all' ? totalCount : loaded,
-      loaded,
-      confirmed,
-      pendingVerification,
-      pendingPayment,
-      cancelled,
+      total: statusCounts.total,
+      loaded: registrations.length,
+      confirmed: statusCounts.confirmed,
+      pendingVerification: statusCounts.pendingVerification,
+      pendingPayment: statusCounts.pendingPayment,
+      cancelled: statusCounts.cancelled,
       totalRevenue,
     };
   };
@@ -343,18 +397,41 @@ function AdminRegistrationsPage() {
           </p>
         </div>
         <div className={styles.headerActions}>
-          <button
-            className={styles.exportButton}
-            onClick={handleExport}
-            disabled={isExporting || isLoading || registrations.length === 0}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            {isExporting ? 'Exporting...' : 'Export CSV'}
-          </button>
+          <div className={styles.dropdownWrapper}>
+            <button
+              className={styles.exportButton}
+              onClick={() => setShowExportMenu((prev) => !prev)}
+              disabled={isExporting || isLoading}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {isExporting ? 'Exporting...' : 'Export CSV'}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            {showExportMenu && (
+              <div className={styles.dropdownMenu}>
+                <button
+                  className={styles.dropdownItem}
+                  onClick={handleExportAll}
+                  disabled={isExporting}
+                >
+                  Export All Records ({statusFilter !== 'all' ? `${statusFilter} - ` : ''}{statusCounts.total} total)
+                </button>
+                <button
+                  className={styles.dropdownItem}
+                  onClick={handleExportCurrentView}
+                  disabled={isExporting || registrations.length === 0}
+                >
+                  Export Current View ({isSearchMode ? searchResults.length : registrations.length} loaded)
+                </button>
+              </div>
+            )}
+          </div>
           <div className={styles.dropdownWrapper}>
             <button
               className={styles.workshopExportButton}
