@@ -256,6 +256,25 @@ function RegisterPage() {
   }, [formData.additionalAttendees?.length]);
 
   /**
+   * Easter egg: Auto-fills church information with GCF details
+   * Used for booth registrations to speed up the process
+   */
+  const handleEasterEggClick = useCallback(() => {
+    setFormData((prev) => ({
+      ...prev,
+      churchName: 'GCF',
+      churchCity: 'Las Piñas City',
+      churchProvince: 'Metro Manila / NCR',
+    }));
+    setErrors((prev) => ({
+      ...prev,
+      churchName: null,
+      churchCity: null,
+      churchProvince: null,
+    }));
+  }, []);
+
+  /**
    * Validates the personal information step (church info + primary + additional attendees)
    *
    * @returns {boolean} True if valid
@@ -671,6 +690,16 @@ function RegisterPage() {
         <p className={styles.heroSubtitle}>
           {settings.theme} | {new Date(settings.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
         </p>
+        <span
+          onClick={handleEasterEggClick}
+          style={{
+            fontSize: '0.7rem',
+            opacity: 0.3,
+            userSelect: 'none',
+          }}
+        >
+          Jesus
+        </span>
       </section>
 
       <section className={styles.contentSection}>
