@@ -24,6 +24,7 @@ import {
   getActiveBankAccounts,
   REGISTRATION_ERROR_CODES,
 } from '../services';
+import { processReceipt } from '../tesseract';
 import styles from './RegisterPage.module.css';
 
 /**
@@ -84,6 +85,7 @@ const INITIAL_FORM_DATA = {
   paymentAmount: '',
   paymentDate: '',
   paymentTime: '',
+  paymentReferenceNumber: '',
   paymentFile: null,
   paymentFileName: '',
 
@@ -143,6 +145,22 @@ function RegisterPage() {
   const [bankAccounts, setBankAccounts] = useState([]);
   const [loadingBankAccounts, setLoadingBankAccounts] = useState(false);
 
+  // OCR-related state
+  const [isOcrProcessing, setIsOcrProcessing] = useState(false);
+  const [ocrResult, setOcrResult] = useState(null);
+  const [ocrParsedFields, setOcrParsedFields] = useState({
+    amount: null,
+    date: null,
+    time: null,
+    referenceNumber: null,
+  });
+  const [ocrModifiedFields, setOcrModifiedFields] = useState({
+    amount: false,
+    date: false,
+    time: false,
+    referenceNumber: false,
+  });
+
   const currentTier = activePricingTier;
   const registrationOpen = settings.registrationOpen !== false;
 
@@ -175,6 +193,37 @@ function RegisterPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: null }));
   }, []);
+
+  /**
+   * Updates a payment field and tracks OCR modifications
+   *
+   * @param {string} field - The field name (paymentAmount, paymentDate, paymentTime, paymentReferenceNumber)
+   * @param {*} value - The new value
+   */
+  const updatePaymentField = useCallback((field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: null }));
+
+    // Track if user modified OCR-parsed field
+    const fieldMap = {
+      paymentAmount: 'amount',
+      paymentDate: 'date',
+      paymentTime: 'time',
+      paymentReferenceNumber: 'referenceNumber',
+    };
+
+    const ocrFieldKey = fieldMap[field];
+    if (ocrFieldKey && ocrParsedFields[ocrFieldKey] !== null) {
+      // Check if value differs from OCR parsed value
+      const ocrValue = ocrFieldKey === 'amount'
+        ? String(ocrParsedFields[ocrFieldKey])
+        : ocrParsedFields[ocrFieldKey];
+
+      if (String(value) !== String(ocrValue)) {
+        setOcrModifiedFields((prev) => ({ ...prev, [ocrFieldKey]: true }));
+      }
+    }
+  }, [ocrParsedFields]);
 
   /**
    * Updates primary attendee field value
@@ -239,12 +288,13 @@ function RegisterPage() {
 
   /**
    * Handles file selection for payment upload.
+   * Processes OCR to auto-populate payment details.
    * Note: Server-side validation should also verify actual file content,
    * as client-side MIME type checking can be bypassed.
    *
    * @param {Event} e - The file input change event
    */
-  const handleFileChange = useCallback((e) => {
+  const handleFileChange = useCallback(async (e) => {
     const file = e.target.files[0];
     if (file) {
       const allowedTypes = [
@@ -268,12 +318,61 @@ function RegisterPage() {
         }));
         return;
       }
+
       setFormData((prev) => ({
         ...prev,
         paymentFile: file,
         paymentFileName: file.name,
       }));
       setErrors((prev) => ({ ...prev, paymentFile: null }));
+
+      // Process OCR
+      setIsOcrProcessing(true);
+      try {
+        const result = await processReceipt(file);
+        setOcrResult(result);
+
+        // Parse date and time from suggestedDateTime
+        let parsedDate = '';
+        let parsedTime = '';
+        if (result.winner?.suggestedDateTime) {
+          // Try to parse ISO format: YYYY-MM-DDTHH:MM
+          const dateTimeMatch = result.winner.suggestedDateTime.match(/(\d{4}-\d{2}-\d{2})(?:T|\s)?(\d{2}:\d{2})/);
+          if (dateTimeMatch) {
+            parsedDate = dateTimeMatch[1];
+            parsedTime = dateTimeMatch[2];
+          } else {
+            // Try other common formats
+            const dateMatch = result.winner.suggestedDateTime.match(/\d{4}-\d{2}-\d{2}/);
+            const timeMatch = result.winner.suggestedDateTime.match(/\d{2}:\d{2}/);
+            if (dateMatch) parsedDate = dateMatch[0];
+            if (timeMatch) parsedTime = timeMatch[0];
+          }
+        }
+
+        // Store OCR parsed values
+        const parsedFields = {
+          amount: result.winner?.suggestedAmount || null,
+          date: parsedDate || null,
+          time: parsedTime || null,
+          referenceNumber: result.winner?.suggestedRef || null,
+        };
+        setOcrParsedFields(parsedFields);
+
+        // Auto-populate form fields only if OCR found values
+        setFormData((prev) => ({
+          ...prev,
+          paymentAmount: parsedFields.amount ? String(parsedFields.amount) : prev.paymentAmount,
+          paymentDate: parsedFields.date || prev.paymentDate,
+          paymentTime: parsedFields.time || prev.paymentTime,
+          paymentReferenceNumber: parsedFields.referenceNumber || prev.paymentReferenceNumber,
+        }));
+      } catch (error) {
+        console.error('OCR processing error:', error);
+        // Continue without OCR - user can enter manually
+      } finally {
+        setIsOcrProcessing(false);
+      }
     }
   }, []);
 
@@ -443,6 +542,10 @@ function RegisterPage() {
       newErrors.selectedBankAccountId = 'Please select a bank account';
     }
 
+    if (!formData.paymentFile) {
+      newErrors.paymentFile = 'Please upload your payment screenshot or receipt';
+    }
+
     if (!formData.paymentAmount || parseFloat(formData.paymentAmount) <= 0) {
       newErrors.paymentAmount = 'Please enter the amount you paid';
     }
@@ -455,9 +558,7 @@ function RegisterPage() {
       newErrors.paymentTime = 'Please enter the payment time';
     }
 
-    if (!formData.paymentFile) {
-      newErrors.paymentFile = 'Please upload your payment screenshot or receipt';
-    }
+    // Reference number is optional but recommended
 
     if (formData.invoiceRequest) {
       if (!formData.invoiceName.trim()) {
@@ -577,6 +678,15 @@ function RegisterPage() {
           amountPaid: parseFloat(formData.paymentAmount) || 0,
           paymentDate: formData.paymentDate,
           paymentTime: formData.paymentTime,
+          referenceNumber: formData.paymentReferenceNumber || '',
+          // OCR metadata for tracking accuracy
+          ocrData: ocrResult ? {
+            confidence: ocrResult.confidence,
+            source: ocrResult.source || 'tesseract',
+            parsedFields: ocrParsedFields,
+            modifiedFields: ocrModifiedFields,
+            rawText: ocrResult.rawText,
+          } : null,
         },
         invoice: formData.invoiceRequest ? {
           requested: true,
@@ -1317,60 +1427,7 @@ function RegisterPage() {
               )}
 
               <div className={styles.sectionDivider}>
-                <span>Payment Details</span>
-              </div>
-
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="paymentAmount" className={styles.label}>
-                    Amount Paid <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    id="paymentAmount"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className={`${styles.input} ${errors.paymentAmount ? styles.inputError : ''}`}
-                    value={formData.paymentAmount}
-                    onChange={(e) => updateField('paymentAmount', e.target.value)}
-                    placeholder="0.00"
-                  />
-                  {errors.paymentAmount && (
-                    <span className={styles.errorMessage}>{errors.paymentAmount}</span>
-                  )}
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor="paymentDate" className={styles.label}>
-                    Payment Date <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    id="paymentDate"
-                    type="date"
-                    className={`${styles.input} ${errors.paymentDate ? styles.inputError : ''}`}
-                    value={formData.paymentDate}
-                    onChange={(e) => updateField('paymentDate', e.target.value)}
-                  />
-                  {errors.paymentDate && (
-                    <span className={styles.errorMessage}>{errors.paymentDate}</span>
-                  )}
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor="paymentTime" className={styles.label}>
-                    Payment Time <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    id="paymentTime"
-                    type="time"
-                    className={`${styles.input} ${errors.paymentTime ? styles.inputError : ''}`}
-                    value={formData.paymentTime}
-                    onChange={(e) => updateField('paymentTime', e.target.value)}
-                  />
-                  {errors.paymentTime && (
-                    <span className={styles.errorMessage}>{errors.paymentTime}</span>
-                  )}
-                </div>
+                <span>Upload Payment Receipt</span>
               </div>
 
               <div className={styles.formGroup}>
@@ -1384,6 +1441,7 @@ function RegisterPage() {
                     accept="image/*"
                     onChange={handleFileChange}
                     className={styles.fileInput}
+                    disabled={isOcrProcessing}
                   />
                   <div className={styles.fileUploadButton}>
                     {formData.paymentFileName ? (
@@ -1397,7 +1455,93 @@ function RegisterPage() {
                   <span className={styles.errorMessage}>{errors.paymentFile}</span>
                 )}
                 <p className={styles.fileHint}>Maximum file size: 5MB</p>
+                {isOcrProcessing && (
+                  <p className={styles.ocrProcessing}>Processing receipt... Please wait.</p>
+                )}
               </div>
+
+              {formData.paymentFile && !isOcrProcessing && (
+                <>
+                  <div className={styles.sectionDivider}>
+                    <span>Payment Details</span>
+                  </div>
+
+                  {ocrResult && ocrParsedFields.amount && (
+                    <p className={styles.verificationHint}>
+                      We&apos;ve auto-filled the details below from your receipt. Please verify they are correct.
+                    </p>
+                  )}
+
+                  <div className={styles.formRow}>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="paymentAmount" className={styles.label}>
+                        Amount Paid <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        id="paymentAmount"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className={`${styles.input} ${errors.paymentAmount ? styles.inputError : ''}`}
+                        value={formData.paymentAmount}
+                        onChange={(e) => updatePaymentField('paymentAmount', e.target.value)}
+                        placeholder="0.00"
+                      />
+                      {errors.paymentAmount && (
+                        <span className={styles.errorMessage}>{errors.paymentAmount}</span>
+                      )}
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label htmlFor="paymentDate" className={styles.label}>
+                        Payment Date <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        id="paymentDate"
+                        type="date"
+                        className={`${styles.input} ${errors.paymentDate ? styles.inputError : ''}`}
+                        value={formData.paymentDate}
+                        onChange={(e) => updatePaymentField('paymentDate', e.target.value)}
+                      />
+                      {errors.paymentDate && (
+                        <span className={styles.errorMessage}>{errors.paymentDate}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={styles.formRow}>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="paymentTime" className={styles.label}>
+                        Payment Time <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        id="paymentTime"
+                        type="time"
+                        className={`${styles.input} ${errors.paymentTime ? styles.inputError : ''}`}
+                        value={formData.paymentTime}
+                        onChange={(e) => updatePaymentField('paymentTime', e.target.value)}
+                      />
+                      {errors.paymentTime && (
+                        <span className={styles.errorMessage}>{errors.paymentTime}</span>
+                      )}
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label htmlFor="paymentReferenceNumber" className={styles.label}>
+                        Reference Number
+                      </label>
+                      <input
+                        id="paymentReferenceNumber"
+                        type="text"
+                        className={styles.input}
+                        value={formData.paymentReferenceNumber}
+                        onChange={(e) => updatePaymentField('paymentReferenceNumber', e.target.value)}
+                        placeholder="Transaction reference number"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className={styles.sectionDivider}>
                 <span>Invoice Request (Optional)</span>
