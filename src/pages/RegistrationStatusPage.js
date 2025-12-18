@@ -135,6 +135,19 @@ function RegistrationStatusPage() {
   }, []);
 
   /**
+   * Gets the payment status configuration (always returns payment status, not check-in)
+   *
+   * @param {string} status - The registration payment status
+   * @returns {Object} Status configuration with label and className
+   */
+  const getPaymentStatusConfig = useCallback((status) => {
+    return STATUS_CONFIG[status] || {
+      label: status || 'Unknown',
+      className: 'statusPending',
+    };
+  }, []);
+
+  /**
    * Formats a date string for display
    */
   const formatDate = useCallback((dateString) => {
@@ -184,6 +197,8 @@ function RegistrationStatusPage() {
 
   // Use allCheckedIn for status config to show "Checked In" banner when all attendees are checked in
   const statusConfig = registration ? getStatusConfig(registration.status, allCheckedIn) : null;
+  // Always get the actual payment status (separate from check-in status)
+  const paymentStatusConfig = registration ? getPaymentStatusConfig(registration.status) : null;
   const isConfirmed = registration?.status === REGISTRATION_STATUS.CONFIRMED;
 
   return (
@@ -362,8 +377,8 @@ function RegistrationStatusPage() {
                   </div>
                   <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Payment Status</span>
-                    <span className={`${styles.infoValue} ${styles[statusConfig.className]}`}>
-                      {statusConfig.label}
+                    <span className={`${styles.infoValue} ${styles[paymentStatusConfig.className]}`}>
+                      {paymentStatusConfig.label}
                     </span>
                   </div>
                   {registration.payment?.verifiedAt && (
@@ -371,6 +386,16 @@ function RegistrationStatusPage() {
                       <span className={styles.infoLabel}>Verified On</span>
                       <span className={styles.infoValue}>
                         {formatDate(registration.payment.verifiedAt)}
+                      </span>
+                    </div>
+                  )}
+                  {isConfirmed && (
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Check-In Status</span>
+                      <span className={styles.infoValue}>
+                        {checkedInCount > 0
+                          ? `${checkedInCount} of ${totalAttendees} Checked In`
+                          : 'Not Checked In'}
                       </span>
                     </div>
                   )}
