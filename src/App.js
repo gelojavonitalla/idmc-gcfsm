@@ -3,7 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout, ScrollToTop } from './components/layout';
 import { ProtectedRoute } from './components/auth';
 import { AdminProtectedRoute, AdminLoadingFallback } from './components/admin';
-import { AuthProvider, AdminAuthProvider, SettingsProvider } from './context';
+import { AuthProvider, AdminAuthProvider, SettingsProvider, ToastProvider } from './context';
+import ToastContainer from './components/ui/Toast';
 import {
   HomePage,
   RegisterPage,
@@ -59,9 +60,11 @@ function App() {
   return (
     <AuthProvider>
       <AdminAuthProvider>
-        <BrowserRouter>
-          <ScrollToTop />
-          <Routes>
+        <ToastProvider>
+          <BrowserRouter>
+            <ScrollToTop />
+            <ToastContainer />
+            <Routes>
             {/* Admin Routes - Lazy loaded for code splitting */}
             <Route
               path={ADMIN_ROUTES.LOGIN}
@@ -311,8 +314,9 @@ function App() {
                 </SettingsProvider>
               }
             />
-          </Routes>
-        </BrowserRouter>
+            </Routes>
+          </BrowserRouter>
+        </ToastProvider>
       </AdminAuthProvider>
     </AuthProvider>
   );
