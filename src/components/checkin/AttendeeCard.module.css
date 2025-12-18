@@ -303,9 +303,7 @@
   font-size: 0.9375rem;
   font-weight: 500;
   color: var(--color-text, #fff);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .attendeeRowLabel {
