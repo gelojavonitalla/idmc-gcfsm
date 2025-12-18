@@ -925,9 +925,12 @@ export async function undoCheckIn(registrationId, adminId, reason, attendeeIndex
       }
     }
 
+    const allAttendeesUnchecked = attendeeCheckIns.every((attendee) => !attendee.checkedIn);
+    const legacyCheckedIn = !allAttendeesUnchecked;
+
     await updateDoc(docRef, {
       attendeeCheckIns,
-      checkedIn: false,
+      checkedIn: legacyCheckedIn,
       checkInUndoneAt: serverTimestamp(),
       checkInUndoneBy: adminId,
       checkInUndoReason: reason || null,

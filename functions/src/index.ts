@@ -1057,7 +1057,7 @@ async function generateAllAttendeeQRCodes(
       attendeesWithQR.push({
         firstName: attendee.firstName,
         lastName: attendee.lastName,
-        email: attendee.email,
+        email: attendee.email ?? undefined,
         qrCodeDataUrl,
         attendeeIndex: i + 1,
       });
