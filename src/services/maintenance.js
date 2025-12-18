@@ -24,6 +24,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { COLLECTIONS } from '../constants';
+import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from './activityLog';
 
 /**
  * Generic function to fetch all documents from a collection
@@ -154,10 +155,29 @@ export async function getSpeaker(speakerId) {
  *
  * @param {string} speakerId - Speaker document ID
  * @param {Object} speakerData - Speaker data to save
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<Object>} Saved speaker data
  */
-export async function saveSpeaker(speakerId, speakerData) {
-  return saveDocument(COLLECTIONS.SPEAKERS, speakerId, speakerData);
+export async function saveSpeaker(speakerId, speakerData, adminId = null, adminEmail = null) {
+  const existing = await getSpeaker(speakerId);
+  const isNew = !existing;
+
+  const result = await saveDocument(COLLECTIONS.SPEAKERS, speakerId, speakerData);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: isNew ? ACTIVITY_TYPES.CREATE : ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.SPEAKER,
+      entityId: speakerId,
+      description: `${isNew ? 'Created' : 'Updated'} speaker: ${speakerData.name || speakerId}`,
+      adminId,
+      adminEmail,
+    });
+  }
+
+  return result;
 }
 
 /**
@@ -165,20 +185,50 @@ export async function saveSpeaker(speakerId, speakerData) {
  *
  * @param {string} speakerId - Speaker document ID
  * @param {Object} updates - Fields to update
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<void>}
  */
-export async function updateSpeaker(speakerId, updates) {
-  return updateDocument(COLLECTIONS.SPEAKERS, speakerId, updates);
+export async function updateSpeaker(speakerId, updates, adminId = null, adminEmail = null) {
+  await updateDocument(COLLECTIONS.SPEAKERS, speakerId, updates);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    const speaker = await getSpeaker(speakerId);
+    await logActivity({
+      type: ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.SPEAKER,
+      entityId: speakerId,
+      description: `Updated speaker: ${speaker?.name || speakerId}`,
+      adminId,
+      adminEmail,
+    });
+  }
 }
 
 /**
  * Deletes a speaker
  *
  * @param {string} speakerId - Speaker document ID
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<void>}
  */
-export async function deleteSpeaker(speakerId) {
-  return removeDocument(COLLECTIONS.SPEAKERS, speakerId);
+export async function deleteSpeaker(speakerId, adminId = null, adminEmail = null) {
+  const speaker = await getSpeaker(speakerId);
+  await removeDocument(COLLECTIONS.SPEAKERS, speakerId);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.DELETE,
+      entityType: ENTITY_TYPES.SPEAKER,
+      entityId: speakerId,
+      description: `Deleted speaker: ${speaker?.name || speakerId}`,
+      adminId,
+      adminEmail,
+    });
+  }
 }
 
 /**
@@ -205,10 +255,29 @@ export async function getSession(sessionId) {
  *
  * @param {string} sessionId - Session document ID
  * @param {Object} sessionData - Session data to save
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<Object>} Saved session data
  */
-export async function saveSession(sessionId, sessionData) {
-  return saveDocument(COLLECTIONS.SESSIONS, sessionId, sessionData);
+export async function saveSession(sessionId, sessionData, adminId = null, adminEmail = null) {
+  const existing = await getSession(sessionId);
+  const isNew = !existing;
+
+  const result = await saveDocument(COLLECTIONS.SESSIONS, sessionId, sessionData);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: isNew ? ACTIVITY_TYPES.CREATE : ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.SESSION,
+      entityId: sessionId,
+      description: `${isNew ? 'Created' : 'Updated'} session: ${sessionData.title || sessionId}`,
+      adminId,
+      adminEmail,
+    });
+  }
+
+  return result;
 }
 
 /**
@@ -216,20 +285,50 @@ export async function saveSession(sessionId, sessionData) {
  *
  * @param {string} sessionId - Session document ID
  * @param {Object} updates - Fields to update
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<void>}
  */
-export async function updateSession(sessionId, updates) {
-  return updateDocument(COLLECTIONS.SESSIONS, sessionId, updates);
+export async function updateSession(sessionId, updates, adminId = null, adminEmail = null) {
+  await updateDocument(COLLECTIONS.SESSIONS, sessionId, updates);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    const session = await getSession(sessionId);
+    await logActivity({
+      type: ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.SESSION,
+      entityId: sessionId,
+      description: `Updated session: ${session?.title || sessionId}`,
+      adminId,
+      adminEmail,
+    });
+  }
 }
 
 /**
  * Deletes a session
  *
  * @param {string} sessionId - Session document ID
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<void>}
  */
-export async function deleteSession(sessionId) {
-  return removeDocument(COLLECTIONS.SESSIONS, sessionId);
+export async function deleteSession(sessionId, adminId = null, adminEmail = null) {
+  const session = await getSession(sessionId);
+  await removeDocument(COLLECTIONS.SESSIONS, sessionId);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.DELETE,
+      entityType: ENTITY_TYPES.SESSION,
+      entityId: sessionId,
+      description: `Deleted session: ${session?.title || sessionId}`,
+      adminId,
+      adminEmail,
+    });
+  }
 }
 
 /**
@@ -256,10 +355,29 @@ export async function getFAQ(faqId) {
  *
  * @param {string} faqId - FAQ document ID
  * @param {Object} faqData - FAQ data to save
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<Object>} Saved FAQ data
  */
-export async function saveFAQ(faqId, faqData) {
-  return saveDocument(COLLECTIONS.FAQ, faqId, faqData);
+export async function saveFAQ(faqId, faqData, adminId = null, adminEmail = null) {
+  const existing = await getFAQ(faqId);
+  const isNew = !existing;
+
+  const result = await saveDocument(COLLECTIONS.FAQ, faqId, faqData);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: isNew ? ACTIVITY_TYPES.CREATE : ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.FAQ,
+      entityId: faqId,
+      description: `${isNew ? 'Created' : 'Updated'} FAQ: ${faqData.question?.substring(0, 50) || faqId}`,
+      adminId,
+      adminEmail,
+    });
+  }
+
+  return result;
 }
 
 /**
@@ -267,20 +385,50 @@ export async function saveFAQ(faqId, faqData) {
  *
  * @param {string} faqId - FAQ document ID
  * @param {Object} updates - Fields to update
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<void>}
  */
-export async function updateFAQ(faqId, updates) {
-  return updateDocument(COLLECTIONS.FAQ, faqId, updates);
+export async function updateFAQ(faqId, updates, adminId = null, adminEmail = null) {
+  await updateDocument(COLLECTIONS.FAQ, faqId, updates);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    const faq = await getFAQ(faqId);
+    await logActivity({
+      type: ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.FAQ,
+      entityId: faqId,
+      description: `Updated FAQ: ${faq?.question?.substring(0, 50) || faqId}`,
+      adminId,
+      adminEmail,
+    });
+  }
 }
 
 /**
  * Deletes an FAQ
  *
  * @param {string} faqId - FAQ document ID
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<void>}
  */
-export async function deleteFAQ(faqId) {
-  return removeDocument(COLLECTIONS.FAQ, faqId);
+export async function deleteFAQ(faqId, adminId = null, adminEmail = null) {
+  const faq = await getFAQ(faqId);
+  await removeDocument(COLLECTIONS.FAQ, faqId);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.DELETE,
+      entityType: ENTITY_TYPES.FAQ,
+      entityId: faqId,
+      description: `Deleted FAQ: ${faq?.question?.substring(0, 50) || faqId}`,
+      adminId,
+      adminEmail,
+    });
+  }
 }
 
 /**
@@ -612,10 +760,27 @@ export async function getRegistration(registrationId) {
  *
  * @param {string} registrationId - Registration document ID
  * @param {Object} updates - Fields to update
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<void>}
  */
-export async function updateRegistration(registrationId, updates) {
-  return updateDocument(COLLECTIONS.REGISTRATIONS, registrationId, updates);
+export async function updateRegistration(registrationId, updates, adminId = null, adminEmail = null) {
+  await updateDocument(COLLECTIONS.REGISTRATIONS, registrationId, updates);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    const registration = await getRegistration(registrationId);
+    const updateType = updates.status ? `Updated registration status to ${updates.status}` : 'Updated registration';
+
+    await logActivity({
+      type: ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.REGISTRATION,
+      entityId: registrationId,
+      description: `${updateType}: ${registration?.primaryAttendee?.firstName || ''} ${registration?.primaryAttendee?.lastName || registrationId}`,
+      adminId,
+      adminEmail,
+    });
+  }
 }
 
 /**

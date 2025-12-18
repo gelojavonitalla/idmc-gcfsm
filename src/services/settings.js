@@ -20,6 +20,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { COLLECTIONS } from '../constants';
+import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from './activityLog';
 
 /**
  * Settings document ID (singleton)
@@ -233,9 +234,11 @@ export async function getConferenceSettings() {
  * Updates conference settings
  *
  * @param {Object} settings - Settings object to update
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<Object>} Updated settings
  */
-export async function updateConferenceSettings(settings) {
+export async function updateConferenceSettings(settings, adminId = null, adminEmail = null) {
   try {
     const settingsRef = doc(db, COLLECTIONS.CONFERENCES, SETTINGS_DOC_ID);
     const settingsDoc = await getDoc(settingsRef);
@@ -255,6 +258,18 @@ export async function updateConferenceSettings(settings) {
         ...DEFAULT_SETTINGS,
         ...updateData,
         createdAt: serverTimestamp(),
+      });
+    }
+
+    // Log the activity
+    if (adminId && adminEmail) {
+      await logActivity({
+        type: ACTIVITY_TYPES.SETTINGS,
+        entityType: ENTITY_TYPES.SETTINGS,
+        entityId: SETTINGS_DOC_ID,
+        description: 'Updated conference settings',
+        adminId,
+        adminEmail,
       });
     }
 
@@ -290,9 +305,11 @@ export async function getPricingTiers() {
  * Creates a new pricing tier
  *
  * @param {Object} tier - Pricing tier data
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<Object>} Created tier with ID
  */
-export async function createPricingTier(tier) {
+export async function createPricingTier(tier, adminId = null, adminEmail = null) {
   try {
     const tiersRef = collection(db, COLLECTIONS.CONFERENCES, SETTINGS_DOC_ID, 'pricingTiers');
 
@@ -309,6 +326,18 @@ export async function createPricingTier(tier) {
 
     const docRef = await addDoc(tiersRef, tierData);
 
+    // Log the activity
+    if (adminId && adminEmail) {
+      await logActivity({
+        type: ACTIVITY_TYPES.CREATE,
+        entityType: ENTITY_TYPES.PRICING,
+        entityId: docRef.id,
+        description: `Created pricing tier: ${tier.name}`,
+        adminId,
+        adminEmail,
+      });
+    }
+
     return {
       id: docRef.id,
       ...tierData,
@@ -324,9 +353,11 @@ export async function createPricingTier(tier) {
  *
  * @param {string} tierId - Tier ID to update
  * @param {Object} tier - Updated tier data
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
  * @returns {Promise<Object>} Updated tier
  */
-export async function updatePricingTier(tierId, tier) {
+export async function updatePricingTier(tierId, tier, adminId = null, adminEmail = null) {
   try {
     const tierRef = doc(db, COLLECTIONS.CONFERENCES, SETTINGS_DOC_ID, 'pricingTiers', tierId);
 
@@ -341,6 +372,18 @@ export async function updatePricingTier(tierId, tier) {
     };
 
     await updateDoc(tierRef, updateData);
+
+    // Log the activity
+    if (adminId && adminEmail) {
+      await logActivity({
+        type: ACTIVITY_TYPES.UPDATE,
+        entityType: ENTITY_TYPES.PRICING,
+        entityId: tierId,
+        description: `Updated pricing tier: ${tier.name}`,
+        adminId,
+        adminEmail,
+      });
+    }
 
     return {
       id: tierId,

@@ -23,6 +23,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { COLLECTIONS, REGISTRATION_STATUS } from '../constants';
+import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from './activityLog';
 
 /**
  * Check-in method identifiers
@@ -557,6 +558,16 @@ export async function checkInAttendee(registrationId, checkInData) {
     });
   }
 
+  // Log to activity log
+  await logActivity({
+    type: ACTIVITY_TYPES.CHECKIN,
+    entityType: ENTITY_TYPES.REGISTRATION,
+    entityId: registrationId,
+    description: `Checked in ${totalAttendees} attendee(s): ${registration.primaryAttendee?.firstName || ''} ${registration.primaryAttendee?.lastName || ''}`,
+    adminId,
+    adminEmail: registration.primaryAttendee?.email || 'Unknown',
+  });
+
   return {
     ...registration,
     checkedIn: true,
@@ -662,6 +673,16 @@ export async function checkInSingleAttendee(registration, attendeeIndex, checkIn
     stationId: stationId || null,
     attendeeCount: 1,
     createdAt: checkInTimestamp,
+  });
+
+  // Log to activity log
+  await logActivity({
+    type: ACTIVITY_TYPES.CHECKIN,
+    entityType: ENTITY_TYPES.REGISTRATION,
+    entityId: registration.id || registration.registrationId,
+    description: `Checked in attendee: ${attendeeName}`,
+    adminId,
+    adminEmail: attendeeInfo?.email || 'Unknown',
   });
 
   return {
