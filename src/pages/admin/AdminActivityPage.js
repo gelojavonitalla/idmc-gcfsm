@@ -112,7 +112,7 @@ function AdminActivityPage() {
 
     try {
       const result = await getActivityLogs({
-        pageSize: 20,
+        pageSize: 50,
         lastDoc: loadMore ? lastDoc : null,
         type: filters.type,
         entityType: filters.entityType,

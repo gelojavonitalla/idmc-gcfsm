@@ -200,7 +200,7 @@ function HomePage() {
                   <p className={styles.pricingDescription}>
                     {REGISTRATION_CATEGORY_DESCRIPTIONS[value]}
                   </p>
-                  <Link to={ROUTES.REGISTER} className={styles.pricingButton}>
+                  <Link to={`${ROUTES.REGISTER}?category=${value}`} className={styles.pricingButton}>
                     Register Now
                   </Link>
                 </div>

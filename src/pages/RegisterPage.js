@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useSettings } from '../context';
 import {
   REGISTRATION_STEPS,
@@ -106,8 +107,29 @@ const INITIAL_FORM_DATA = {
  */
 function RegisterPage() {
   const { settings, activePricingTier } = useSettings();
+  const [searchParams] = useSearchParams();
+
+  /**
+   * Get initial form data with category from URL parameter if present
+   */
+  const initialFormData = useMemo(() => {
+    const categoryParam = searchParams.get('category');
+    const validCategories = Object.values(REGISTRATION_CATEGORIES);
+    const category = validCategories.includes(categoryParam)
+      ? categoryParam
+      : REGISTRATION_CATEGORIES.REGULAR;
+
+    return {
+      ...INITIAL_FORM_DATA,
+      primaryAttendee: {
+        ...INITIAL_FORM_DATA.primaryAttendee,
+        category,
+      },
+    };
+  }, [searchParams]);
+
   const [currentStep, setCurrentStep] = useState(REGISTRATION_STEPS.PERSONAL_INFO);
-  const [formData, setFormData] = useState(INITIAL_FORM_DATA);
+  const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState({});
   const [primaryErrors, setPrimaryErrors] = useState({});
   const [additionalErrors, setAdditionalErrors] = useState({});
