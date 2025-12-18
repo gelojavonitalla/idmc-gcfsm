@@ -1435,9 +1435,9 @@ function RegisterPage() {
                 >
                   <div className={styles.paymentMethodIcon}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                      <polyline points="9 22 9 12 15 12 15 22" />
-                      <path d="M3 9h18" />
+                      <rect x="4" y="4" width="16" height="16" rx="1" />
+                      <circle cx="12" cy="10" r="2" />
+                      <path d="M9 15c0-1.5 1.3-3 3-3s3 1.5 3 3v3H9v-3z" />
                     </svg>
                   </div>
                   <h3 className={styles.paymentMethodTitle}>Cash at Church Booth</h3>
