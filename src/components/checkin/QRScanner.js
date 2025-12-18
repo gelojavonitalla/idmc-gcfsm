@@ -37,9 +37,9 @@ function QRScanner({ onScan, onError, isActive = true }) {
   const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
   const [error, setError] = useState(null);
   const [isReady, setIsReady] = useState(false);
+  const [userInitiated, setUserInitiated] = useState(false);
   const scannerRef = useRef(null);
   const isScanningRef = useRef(false);
-  const hasRequestedPermissionRef = useRef(false);
   const scannerElementId = 'qr-scanner-container';
 
   /**
@@ -113,7 +113,7 @@ function QRScanner({ onScan, onError, isActive = true }) {
    * This is separated from scanner creation to avoid DOM timing issues.
    */
   const requestCameraPermission = useCallback(async () => {
-    if (!isActive) {
+    if (!isActive || !userInitiated) {
       return;
     }
 
@@ -162,7 +162,7 @@ function QRScanner({ onScan, onError, isActive = true }) {
         onError(err);
       }
     }
-  }, [isActive, onError, checkExistingPermission]);
+  }, [isActive, userInitiated, onError, checkExistingPermission]);
 
   /**
    * Creates scanner instance and starts scanning.
@@ -229,11 +229,22 @@ function QRScanner({ onScan, onError, isActive = true }) {
   }, [cameras, currentCameraIndex, stopScanning, startScanning]);
 
   /**
+   * Handles user clicking Start Scanning button
+   */
+  const handleStartScanning = async () => {
+    setUserInitiated(true);
+    setError(null);
+    setIsReady(false);
+    await requestCameraPermission();
+  };
+
+  /**
    * Requests camera permission (retry handler for Try Again button)
    */
   const requestPermission = async () => {
     setError(null);
     setIsReady(false);
+    setUserInitiated(true);
     await requestCameraPermission();
   };
 
@@ -298,14 +309,13 @@ function QRScanner({ onScan, onError, isActive = true }) {
   };
 
   /**
-   * Request camera permission on mount (runs once)
+   * Request camera permission when user initiates scanning
    */
   useEffect(() => {
-    if (!hasRequestedPermissionRef.current) {
-      hasRequestedPermissionRef.current = true;
+    if (userInitiated) {
       requestCameraPermission();
     }
-  }, [requestCameraPermission]);
+  }, [userInitiated, requestCameraPermission]);
 
   /**
    * Cleanup scanner on unmount
@@ -352,6 +362,31 @@ function QRScanner({ onScan, onError, isActive = true }) {
       startScanning(cameras[currentCameraIndex].id);
     }
   }, [isActive, isScanning, isPaused, hasPermission, cameras, currentCameraIndex, isReady, startScanning, stopScanning]);
+
+  // User hasn't initiated scanning yet
+  if (!userInitiated) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.permissionDenied}>
+          <svg
+            className={styles.cameraIcon}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+            <circle cx="12" cy="13" r="4" />
+          </svg>
+          <h3>QR Code Scanner</h3>
+          <p>Tap the button below to start scanning QR codes</p>
+          <button className={styles.retryButton} onClick={handleStartScanning}>
+            Start Scanning
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Permission pending state
   if (hasPermission === null) {
