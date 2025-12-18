@@ -1512,6 +1512,16 @@ export const ocrReceipt = onCall(
 
 /**
  * Generates the plain text version of invoice email
+ *
+ * @param {object} data - Invoice data for email generation
+ * @param {string} data.invoiceName - Name to use in the invoice
+ * @param {string} data.registrationId - Registration ID
+ * @param {string} data.invoiceNumber - Invoice number
+ * @param {number} data.amountPaid - Amount paid
+ * @param {object} data.primaryAttendee - Primary attendee information
+ * @param {string} data.primaryAttendee.firstName - Attendee first name
+ * @param {string} data.primaryAttendee.lastName - Attendee last name
+ * @return {string} Plain text email content
  */
 function generateInvoiceEmailText(
   data: {
@@ -1542,6 +1552,16 @@ IDMC GCFSM Finance Team
 
 /**
  * Generates the HTML version of invoice email
+ *
+ * @param {object} data - Invoice data for email generation
+ * @param {string} data.invoiceName - Name to use in the invoice
+ * @param {string} data.registrationId - Registration ID
+ * @param {string} data.invoiceNumber - Invoice number
+ * @param {number} data.amountPaid - Amount paid
+ * @param {object} data.primaryAttendee - Primary attendee information
+ * @param {string} data.primaryAttendee.firstName - Attendee first name
+ * @param {string} data.primaryAttendee.lastName - Attendee last name
+ * @return {string} HTML email content
  */
 function generateInvoiceEmailHtml(
   data: {
@@ -1703,7 +1723,8 @@ export const sendInvoiceEmail = onCall(
     }
 
     const db = getFirestore();
-    const registrationRef = db.collection(COLLECTIONS.REGISTRATIONS).doc(registrationId);
+    const registrationRef = db.collection(COLLECTIONS.REGISTRATIONS)
+      .doc(registrationId);
 
     try {
       // Get registration document
@@ -1826,7 +1847,7 @@ export const sendInvoiceEmail = onCall(
         "invoice.sentAt": FieldValue.serverTimestamp(),
         "invoice.sentBy": request.auth.token.email || "unknown",
         "invoice.emailDeliveryStatus": "sent",
-        updatedAt: FieldValue.serverTimestamp(),
+        "updatedAt": FieldValue.serverTimestamp(),
       });
 
       return {
@@ -1842,7 +1863,7 @@ export const sendInvoiceEmail = onCall(
           "invoice.status": INVOICE_STATUS.FAILED,
           "invoice.emailDeliveryStatus": "failed",
           "invoice.errorMessage": error instanceof Error ? error.message : "Unknown error",
-          updatedAt: FieldValue.serverTimestamp(),
+          "updatedAt": FieldValue.serverTimestamp(),
         });
       } catch (updateError) {
         logger.error("Failed to update invoice status:", updateError);
