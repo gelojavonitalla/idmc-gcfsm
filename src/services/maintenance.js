@@ -566,6 +566,7 @@ export async function searchRegistrations(searchQuery, options = {}) {
         const data = docSnap.data();
         const firstName = (data.primaryAttendee?.firstName || '').toLowerCase();
         const lastName = (data.primaryAttendee?.lastName || '').toLowerCase();
+        const fullName = `${firstName} ${lastName}`.trim();
         const email = (data.primaryAttendee?.email || '').toLowerCase();
         const shortCode = (data.shortCode || '').toLowerCase();
         const regId = (data.registrationId || docSnap.id).toLowerCase();
@@ -574,6 +575,7 @@ export async function searchRegistrations(searchQuery, options = {}) {
         if (
           firstName.includes(queryLower) ||
           lastName.includes(queryLower) ||
+          fullName.includes(queryLower) ||
           email.includes(queryLower) ||
           shortCode.includes(queryLower) ||
           regId.includes(queryLower)
