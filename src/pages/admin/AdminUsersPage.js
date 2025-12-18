@@ -71,7 +71,7 @@ function AdminUsersPage() {
       // Generate a temporary ID (will be replaced by Firebase Auth UID in Cloud Function)
       const tempId = `pending_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      await createAdmin(tempId, userData, user?.uid);
+      await createAdmin(tempId, userData, user?.uid, user?.email);
 
       // Refresh the user list
       await fetchUsers();
@@ -116,7 +116,7 @@ function AdminUsersPage() {
    */
   const handleUpdateRole = async (userId, newRole) => {
     try {
-      await updateAdminRole(userId, newRole);
+      await updateAdminRole(userId, newRole, user?.uid, user?.email);
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
       );
@@ -135,12 +135,12 @@ function AdminUsersPage() {
   const handleToggleStatus = async (userId, action) => {
     try {
       if (action === 'activate') {
-        await activateAdmin(userId);
+        await activateAdmin(userId, user?.uid, user?.email);
         setUsers((prev) =>
           prev.map((u) => (u.id === userId ? { ...u, status: 'active' } : u))
         );
       } else {
-        await deactivateAdmin(userId);
+        await deactivateAdmin(userId, user?.uid, user?.email);
         setUsers((prev) =>
           prev.map((u) => (u.id === userId ? { ...u, status: 'inactive' } : u))
         );
