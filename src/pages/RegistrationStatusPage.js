@@ -300,17 +300,13 @@ function RegistrationStatusPage() {
                 <div className={styles.infoGrid}>
                   <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Church</span>
-                    <span className={styles.infoValue}>
-                      {typeof registration.church === 'object' && registration.church !== null
-                        ? registration.church.name || '—'
-                        : registration.church || registration.primaryAttendee?.church || '—'}
-                    </span>
+                    <span className={styles.infoValue}>{registration.church?.name || '—'}</span>
                   </div>
                   <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Location</span>
                     <span className={styles.infoValue}>
-                      {typeof registration.church === 'object' && registration.church !== null
-                        ? `${registration.church.city || '—'}, ${registration.church.province || '—'}`
+                      {registration.church?.city && registration.church?.province
+                        ? `${registration.church.city}, ${registration.church.province}`
                         : '—'}
                     </span>
                   </div>
