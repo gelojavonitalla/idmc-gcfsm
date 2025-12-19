@@ -38,8 +38,9 @@ const useSendGrid = defineString("USE_SENDGRID", {default: "false"});
 
 // OneWaySMS email-to-SMS gateway configuration
 // SMS is sent by emailing: phone@{ONEWAYSMS_GATEWAY_DOMAIN}
+// The SUBJECT line contains the SMS message content
 const smsGatewayDomain = defineString("ONEWAYSMS_GATEWAY_DOMAIN", {
-  default: "gateway.onewaysms.ph",
+  default: "1.onewaysms.asia",
 });
 const smsGatewayEmail = defineString("ONEWAYSMS_GATEWAY_EMAIL", {default: ""});
 const useOneWaySms = defineString("USE_ONEWAYSMS", {default: "false"});
@@ -439,14 +440,15 @@ async function sendSmsViaOneWaySms(
   }
 
   try {
+    // OneWaySMS: The SUBJECT line contains the SMS message content
     const msg = {
       to: toEmail,
       from: {
         email: fromEmail,
         name: senderName.value() || "IDMC",
       },
-      subject: formattedPhone, // Phone number in subject for some gateways
-      text: message,
+      subject: message, // SMS content goes in subject for OneWaySMS
+      text: " ", // Body can be empty but SendGrid requires non-empty
     };
 
     await sgMail.send(msg);
