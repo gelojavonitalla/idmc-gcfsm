@@ -10,8 +10,6 @@ import {
   PAYMENT_METHODS,
   BANK_ACCOUNT_TYPES,
   BANK_NAMES,
-  REGISTRATION_CATEGORIES,
-  REGISTRATION_CATEGORY_LABELS,
 } from '../constants';
 import {
   generateRegistrationId,
@@ -112,29 +110,33 @@ const INITIAL_FORM_DATA = {
  *
  * @returns {JSX.Element} The registration page component
  */
-/**
- * Public registration categories: Early Bird, Member, and Regular
- * Derived from the REGISTRATION_CATEGORIES constant
- */
-const PUBLIC_REGISTRATION_CATEGORY_KEYS = [
-  REGISTRATION_CATEGORIES.EARLY_BIRD,
-  REGISTRATION_CATEGORIES.MEMBER,
-  REGISTRATION_CATEGORIES.REGULAR,
-];
-
 function RegisterPage() {
-  const { settings, activePricingTier } = useSettings();
+  const { settings, pricingTiers } = useSettings();
   const [searchParams] = useSearchParams();
+
+  /**
+   * Get available pricing tiers from the database
+   * Each tier has: id, name, regularPrice, studentPrice
+   */
+  const availablePricingTiers = useMemo(() => {
+    if (!pricingTiers || pricingTiers.length === 0) return [];
+    // Filter to only active tiers and sort by price
+    return pricingTiers
+      .filter(tier => tier.isActive)
+      .sort((a, b) => a.regularPrice - b.regularPrice);
+  }, [pricingTiers]);
 
   /**
    * Get initial form data with category from URL parameter if present
    */
   const initialFormData = useMemo(() => {
     const categoryParam = searchParams.get('category');
-    // Validate category param against available public categories
-    const category = PUBLIC_REGISTRATION_CATEGORY_KEYS.includes(categoryParam)
+    // Validate category param against available tier IDs
+    const validTierIds = availablePricingTiers.map(tier => tier.id);
+    const defaultTierId = validTierIds[0] || '';
+    const category = validTierIds.includes(categoryParam)
       ? categoryParam
-      : REGISTRATION_CATEGORIES.REGULAR; // Default to 'regular'
+      : defaultTierId;
 
     return {
       ...INITIAL_FORM_DATA,
@@ -143,7 +145,7 @@ function RegisterPage() {
         category,
       },
     };
-  }, [searchParams]);
+  }, [searchParams, availablePricingTiers]);
 
   const [currentStep, setCurrentStep] = useState(REGISTRATION_STEPS.PERSONAL_INFO);
   const [formData, setFormData] = useState(initialFormData);
@@ -179,7 +181,13 @@ function RegisterPage() {
     referenceNumber: false,
   });
 
-  const currentTier = activePricingTier;
+  /**
+   * Get the currently selected pricing tier based on the primary attendee's category
+   */
+  const currentTier = useMemo(() => {
+    return availablePricingTiers.find(tier => tier.id === formData.primaryAttendee.category);
+  }, [availablePricingTiers, formData.primaryAttendee.category]);
+
   const registrationOpen = settings.registrationOpen !== false;
 
   /**
@@ -441,31 +449,27 @@ function RegisterPage() {
   }, []);
 
   /**
-   * Gets the price for a registration category key from the active pricing tier
+   * Gets the price for a pricing tier by ID
+   * Uses regularPrice by default (studentPrice can be used based on attendee type)
    *
-   * @param {string} categoryKey - The category key ('early_bird', 'member', or 'regular')
-   * @returns {number} Category price or 0 if not found
+   * @param {string} tierId - The pricing tier ID
+   * @returns {number} Tier price or 0 if not found
    */
-  const getCategoryPrice = useCallback((categoryKey) => {
-    if (!activePricingTier) return 0;
-    if (categoryKey === REGISTRATION_CATEGORIES.EARLY_BIRD) {
-      return activePricingTier.earlyBirdPrice || 0;
-    }
-    if (categoryKey === REGISTRATION_CATEGORIES.MEMBER) {
-      return activePricingTier.memberPrice || 0;
-    }
-    return activePricingTier.regularPrice || 0;
-  }, [activePricingTier]);
+  const getCategoryPrice = useCallback((tierId) => {
+    const tier = availablePricingTiers.find(t => t.id === tierId);
+    return tier?.regularPrice || 0;
+  }, [availablePricingTiers]);
 
   /**
-   * Gets the display name for a registration category key
+   * Gets the display name for a pricing tier by ID
    *
-   * @param {string} categoryKey - The category key
-   * @returns {string} Category name or the key if not found
+   * @param {string} tierId - The pricing tier ID
+   * @returns {string} Tier name or the ID if not found
    */
-  const getCategoryName = useCallback((categoryKey) => {
-    return REGISTRATION_CATEGORY_LABELS[categoryKey] || categoryKey;
-  }, []);
+  const getCategoryName = useCallback((tierId) => {
+    const tier = availablePricingTiers.find(t => t.id === tierId);
+    return tier?.name || tierId;
+  }, [availablePricingTiers]);
 
   /**
    * Calculates total price for all attendees (primary + additional)
@@ -1245,9 +1249,9 @@ function RegisterPage() {
                       value={formData.primaryAttendee.category}
                       onChange={(e) => updatePrimaryAttendee('category', e.target.value)}
                     >
-                      {PUBLIC_REGISTRATION_CATEGORY_KEYS.map((categoryKey) => (
-                        <option key={categoryKey} value={categoryKey}>
-                          {REGISTRATION_CATEGORY_LABELS[categoryKey]} - {formatPrice(getCategoryPrice(categoryKey))}
+                      {availablePricingTiers.map((tier) => (
+                        <option key={tier.id} value={tier.id}>
+                          {tier.name} - {formatPrice(tier.regularPrice)}
                         </option>
                       ))}
                     </select>
@@ -1399,9 +1403,9 @@ function RegisterPage() {
                         value={attendee.category}
                         onChange={(e) => updateAdditionalAttendee(index, 'category', e.target.value)}
                       >
-                        {REGISTRATION_CATEGORIES.map((category) => (
-                          <option key={category.key} value={category.key}>
-                            {category.name} - {formatPrice(getCategoryPrice(category.key))}
+                        {availablePricingTiers.map((tier) => (
+                          <option key={tier.id} value={tier.id}>
+                            {tier.name} - {formatPrice(tier.regularPrice)}
                           </option>
                         ))}
                       </select>

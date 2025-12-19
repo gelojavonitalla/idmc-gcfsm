@@ -315,9 +315,8 @@ export async function createPricingTier(tier, adminId = null, adminEmail = null)
 
     const tierData = {
       name: tier.name,
-      earlyBirdPrice: Number(tier.earlyBirdPrice),
-      memberPrice: Number(tier.memberPrice),
       regularPrice: Number(tier.regularPrice),
+      studentPrice: Number(tier.studentPrice),
       startDate: tier.startDate,
       endDate: tier.endDate,
       isActive: tier.isActive ?? true,
@@ -364,9 +363,8 @@ export async function updatePricingTier(tierId, tier, adminId = null, adminEmail
 
     const updateData = {
       name: tier.name,
-      earlyBirdPrice: Number(tier.earlyBirdPrice),
-      memberPrice: Number(tier.memberPrice),
       regularPrice: Number(tier.regularPrice),
+      studentPrice: Number(tier.studentPrice),
       startDate: tier.startDate,
       endDate: tier.endDate,
       isActive: tier.isActive,

@@ -28,9 +28,8 @@ function PricingTierManager({ tiers, onCreate, onUpdate, onDelete, isLoading }) 
 
   const emptyTier = {
     name: '',
-    earlyBirdPrice: '',
-    memberPrice: '',
     regularPrice: '',
+    studentPrice: '',
     startDate: '',
     endDate: '',
     isActive: true,
@@ -237,21 +236,15 @@ function PricingTierManager({ tiers, onCreate, onUpdate, onDelete, isLoading }) 
                   </div>
                   <div className={styles.tierDetails}>
                     <div className={styles.priceRow}>
-                      <span className={styles.priceLabel}>Early Bird:</span>
-                      <span className={styles.priceValue}>
-                        {formatPrice(tier.earlyBirdPrice)}
-                      </span>
-                    </div>
-                    <div className={styles.priceRow}>
-                      <span className={styles.priceLabel}>Member:</span>
-                      <span className={styles.priceValue}>
-                        {formatPrice(tier.memberPrice)}
-                      </span>
-                    </div>
-                    <div className={styles.priceRow}>
                       <span className={styles.priceLabel}>Regular:</span>
                       <span className={styles.priceValue}>
                         {formatPrice(tier.regularPrice)}
+                      </span>
+                    </div>
+                    <div className={styles.priceRow}>
+                      <span className={styles.priceLabel}>Student:</span>
+                      <span className={styles.priceValue}>
+                        {formatPrice(tier.studentPrice)}
                       </span>
                     </div>
                     <div className={styles.dateRow}>
@@ -280,9 +273,8 @@ function PricingTierManager({ tiers, onCreate, onUpdate, onDelete, isLoading }) 
 function TierForm({ tier, onSave, onCancel, isSaving, isNew }) {
   const [formData, setFormData] = useState({
     name: tier.name || '',
-    earlyBirdPrice: tier.earlyBirdPrice || '',
-    memberPrice: tier.memberPrice || '',
     regularPrice: tier.regularPrice || '',
+    studentPrice: tier.studentPrice || '',
     startDate: tier.startDate || '',
     endDate: tier.endDate || '',
     isActive: tier.isActive ?? true,
@@ -342,40 +334,6 @@ function TierForm({ tier, onSave, onCancel, isSaving, isNew }) {
           </label>
         </div>
         <div className={styles.formField}>
-          <label htmlFor="earlyBirdPrice" className={styles.formLabel}>
-            Early Bird Price (PHP)
-          </label>
-          <input
-            type="number"
-            id="earlyBirdPrice"
-            name="earlyBirdPrice"
-            value={formData.earlyBirdPrice}
-            onChange={handleChange}
-            className={styles.formInput}
-            placeholder="350"
-            min="0"
-            step="0.01"
-            required
-          />
-        </div>
-        <div className={styles.formField}>
-          <label htmlFor="memberPrice" className={styles.formLabel}>
-            Member Price (PHP)
-          </label>
-          <input
-            type="number"
-            id="memberPrice"
-            name="memberPrice"
-            value={formData.memberPrice}
-            onChange={handleChange}
-            className={styles.formInput}
-            placeholder="350"
-            min="0"
-            step="0.01"
-            required
-          />
-        </div>
-        <div className={styles.formField}>
           <label htmlFor="regularPrice" className={styles.formLabel}>
             Regular Price (PHP)
           </label>
@@ -387,6 +345,23 @@ function TierForm({ tier, onSave, onCancel, isSaving, isNew }) {
             onChange={handleChange}
             className={styles.formInput}
             placeholder="500"
+            min="0"
+            step="0.01"
+            required
+          />
+        </div>
+        <div className={styles.formField}>
+          <label htmlFor="studentPrice" className={styles.formLabel}>
+            Student Price (PHP)
+          </label>
+          <input
+            type="number"
+            id="studentPrice"
+            name="studentPrice"
+            value={formData.studentPrice}
+            onChange={handleChange}
+            className={styles.formInput}
+            placeholder="300"
             min="0"
             step="0.01"
             required
@@ -445,9 +420,8 @@ function TierForm({ tier, onSave, onCancel, isSaving, isNew }) {
 TierForm.propTypes = {
   tier: PropTypes.shape({
     name: PropTypes.string,
-    earlyBirdPrice: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-    memberPrice: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     regularPrice: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    studentPrice: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     startDate: PropTypes.string,
     endDate: PropTypes.string,
     isActive: PropTypes.bool,
@@ -468,9 +442,8 @@ PricingTierManager.propTypes = {
     PropTypes.shape({
       id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
-      earlyBirdPrice: PropTypes.number.isRequired,
-      memberPrice: PropTypes.number.isRequired,
       regularPrice: PropTypes.number.isRequired,
+      studentPrice: PropTypes.number.isRequired,
       startDate: PropTypes.string.isRequired,
       endDate: PropTypes.string.isRequired,
       isActive: PropTypes.bool,

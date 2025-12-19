@@ -102,15 +102,33 @@ const SETTINGS_DATA = {
 
 /**
  * Pricing tiers seed data
- * Categories: Early Bird (350), Member (350), Regular (500)
+ * Each tier represents a registration category (Early Bird, GCF Member, Regular)
+ * Each tier has both regularPrice and studentPrice
  */
 const PRICING_TIERS_DATA = [
   {
-    tierId: 'standard',
-    name: 'Standard',
-    earlyBirdPrice: 350,
-    memberPrice: 350,
+    tierId: 'early-bird',
+    name: 'Early Bird',
+    regularPrice: 350,
+    studentPrice: 350,
+    startDate: '2025-01-01',
+    endDate: '2026-03-28',
+    isActive: true,
+  },
+  {
+    tierId: 'gcf-member',
+    name: 'GCF Member',
+    regularPrice: 350,
+    studentPrice: 350,
+    startDate: '2025-01-01',
+    endDate: '2026-03-28',
+    isActive: true,
+  },
+  {
+    tierId: 'regular',
+    name: 'Regular',
     regularPrice: 500,
+    studentPrice: 500,
     startDate: '2025-01-01',
     endDate: '2026-03-28',
     isActive: true,
@@ -182,9 +200,8 @@ async function seedPricingTiers(db) {
 
     await docRef.set({
       name: tier.name,
-      earlyBirdPrice: tier.earlyBirdPrice,
-      memberPrice: tier.memberPrice,
       regularPrice: tier.regularPrice,
+      studentPrice: tier.studentPrice,
       startDate: tier.startDate,
       endDate: tier.endDate,
       isActive: tier.isActive,
@@ -194,9 +211,8 @@ async function seedPricingTiers(db) {
     });
 
     console.log(`  - ${tier.name} (${tier.tierId})`);
-    console.log(`    Early Bird Price: PHP ${tier.earlyBirdPrice}`);
-    console.log(`    Member Price: PHP ${tier.memberPrice}`);
     console.log(`    Regular Price: PHP ${tier.regularPrice}`);
+    console.log(`    Student Price: PHP ${tier.studentPrice}`);
     console.log(`    Period: ${tier.startDate} to ${tier.endDate}`);
     console.log(`    Active: ${tier.isActive}`);
   }
