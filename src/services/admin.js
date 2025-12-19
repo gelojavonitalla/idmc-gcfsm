@@ -359,6 +359,47 @@ export async function deactivateAdmin(adminId, deactivatedBy = null, deactivated
 }
 
 /**
+ * Revokes a pending invitation by deleting the admin record
+ * This removes the pending admin and invalidates their invitation.
+ *
+ * @param {string} adminId - Admin user ID to revoke
+ * @param {string} revokedBy - UID of the admin performing the revocation
+ * @param {string} revokedByEmail - Email of the admin performing the revocation
+ * @returns {Promise<void>}
+ * @throws {Error} If admin not found or not in pending status
+ */
+export async function revokeInvitation(adminId, revokedBy, revokedByEmail) {
+  const admin = await getAdmin(adminId);
+
+  if (!admin) {
+    const error = new Error('Admin not found');
+    error.code = ADMIN_ERROR_CODES.ADMIN_NOT_FOUND;
+    throw error;
+  }
+
+  if (admin.status !== 'pending') {
+    throw new Error('Can only revoke pending invitations');
+  }
+
+  const adminEmail = admin.email;
+
+  // Delete the admin document
+  await deleteDoc(doc(db, COLLECTIONS.ADMINS, adminId));
+
+  // Log the activity
+  if (revokedBy && revokedByEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.DELETE,
+      entityType: ENTITY_TYPES.USER,
+      entityId: adminId,
+      description: `Revoked invitation for: ${adminEmail}`,
+      adminId: revokedBy,
+      adminEmail: revokedByEmail,
+    });
+  }
+}
+
+/**
  * Checks if a user has a specific permission
  *
  * @param {Object} admin - Admin user object
