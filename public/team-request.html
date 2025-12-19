@@ -1226,6 +1226,44 @@
       <div class="subsection">
         <h3>DNS Records to ADD:</h3>
         <p style="margin-bottom: 12px;">Add the following records to authenticate your domain with SendGrid:</p>
+
+        <div class="highlight" style="margin-bottom: 16px;">
+          <strong>Important for Namecheap Users:</strong>
+          <p style="margin-top: 8px;">In Namecheap, only enter the <strong>subdomain part</strong> in the Host field. Namecheap automatically appends your domain (<code>.idmc-gcfsm.org</code>).</p>
+          <p style="margin-top: 8px; margin-bottom: 12px;"><strong>Enter these exact values in Namecheap:</strong></p>
+          <table style="font-size: 0.9rem;">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Host (enter this)</th>
+                <th>Value (enter this)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>CNAME</td>
+                <td><code>em8789</code></td>
+                <td><code>u56746353.wl104.sendgrid.net</code></td>
+              </tr>
+              <tr>
+                <td>CNAME</td>
+                <td><code>s1._domainkey</code></td>
+                <td><code>s1.domainkey.u56746353.wl104.sendgrid.net</code></td>
+              </tr>
+              <tr>
+                <td>CNAME</td>
+                <td><code>s2._domainkey</code></td>
+                <td><code>s2.domainkey.u56746353.wl104.sendgrid.net</code></td>
+              </tr>
+              <tr>
+                <td>TXT</td>
+                <td><code>_dmarc</code></td>
+                <td><code>v=DMARC1; p=none;</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <table class="sendgrid-table">
           <thead>
             <tr>
