@@ -189,7 +189,7 @@ function AdminSchedulePage() {
   const stats = getStats();
 
   return (
-    <AdminLayout title="Schedule Management">
+    <AdminLayout>
       {/* Page Header */}
       <div className={styles.header}>
         <div>

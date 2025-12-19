@@ -344,7 +344,7 @@ function AdminVenuePage() {
   };
 
   return (
-    <AdminLayout title="Venue">
+    <AdminLayout>
       {/* Page Header */}
       <div className={styles.header}>
         <div>

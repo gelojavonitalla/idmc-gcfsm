@@ -232,7 +232,7 @@ function AdminLegalPage() {
   };
 
   return (
-    <AdminLayout title="Legal Pages">
+    <AdminLayout>
       {/* Page Header */}
       <div className={styles.header}>
         <div>

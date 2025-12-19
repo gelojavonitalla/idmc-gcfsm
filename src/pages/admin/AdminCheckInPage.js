@@ -173,7 +173,7 @@ function AdminCheckInPage() {
   }, []);
 
   return (
-    <AdminLayout title="Check-In">
+    <AdminLayout>
       <div className={styles.container}>
         {/* Header with Monitor Link */}
         <div className={styles.header}>

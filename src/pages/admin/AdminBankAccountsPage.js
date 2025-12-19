@@ -163,7 +163,7 @@ function AdminBankAccountsPage() {
   };
 
   return (
-    <AdminLayout title="Bank Accounts">
+    <AdminLayout>
       {/* Page Header */}
       <div className={styles.header}>
         <div>
