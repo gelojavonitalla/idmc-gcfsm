@@ -39,7 +39,7 @@ function AdminFinanceDashboardPage() {
    */
   const fetchBankAccounts = useCallback(async () => {
     try {
-      const accounts = await getAllBankAccounts(false); // Get all accounts including inactive
+      const accounts = await getAllBankAccounts(true); // Get only active accounts
       setBankAccounts(accounts);
     } catch (err) {
       console.error('Failed to fetch bank accounts:', err);
@@ -99,9 +99,9 @@ function AdminFinanceDashboardPage() {
       totalTransactions: registrations.length,
       confirmedTransactions: 0,
       pendingVerification: 0,
-      totalRevenue: 0,
-      confirmedRevenue: 0,
-      pendingRevenue: 0,
+      totalPayments: 0,
+      confirmedPayments: 0,
+      pendingPayments: 0,
     };
 
     registrations.forEach((reg) => {
@@ -109,13 +109,13 @@ function AdminFinanceDashboardPage() {
 
       if (reg.status === REGISTRATION_STATUS.CONFIRMED) {
         stats.confirmedTransactions += 1;
-        stats.confirmedRevenue += amount;
+        stats.confirmedPayments += amount;
       } else if (reg.status === REGISTRATION_STATUS.PENDING_VERIFICATION) {
         stats.pendingVerification += 1;
-        stats.pendingRevenue += amount;
+        stats.pendingPayments += amount;
       }
 
-      stats.totalRevenue += amount;
+      stats.totalPayments += amount;
     });
 
     return stats;
@@ -290,16 +290,16 @@ function AdminFinanceDashboardPage() {
             <div className={styles.statCard}>
               <div className={styles.statLabel}>Confirmed</div>
               <div className={styles.statValue}>{statistics.confirmedTransactions}</div>
-              <div className={styles.statSubvalue}>{formatPrice(statistics.confirmedRevenue)}</div>
+              <div className={styles.statSubvalue}>{formatPrice(statistics.confirmedPayments)}</div>
             </div>
             <div className={styles.statCard}>
               <div className={styles.statLabel}>Pending Verification</div>
               <div className={styles.statValue}>{statistics.pendingVerification}</div>
-              <div className={styles.statSubvalue}>{formatPrice(statistics.pendingRevenue)}</div>
+              <div className={styles.statSubvalue}>{formatPrice(statistics.pendingPayments)}</div>
             </div>
             <div className={`${styles.statCard} ${styles.statCardHighlight}`}>
-              <div className={styles.statLabel}>Total Revenue</div>
-              <div className={styles.statValue}>{formatPrice(statistics.totalRevenue)}</div>
+              <div className={styles.statLabel}>Total Payments</div>
+              <div className={styles.statValue}>{formatPrice(statistics.totalPayments)}</div>
             </div>
           </div>
         )}
