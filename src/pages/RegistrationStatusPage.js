@@ -523,7 +523,7 @@ function RegistrationStatusPage() {
                       </p>
                     ) : (
                       <p>
-                        Please complete your payment and upload proof of payment to confirm your registration.
+                        Please complete your payment of <strong>{formatPrice(registration.totalAmount)}</strong> and upload proof of payment to confirm your registration.
                       </p>
                     )}
 
