@@ -182,10 +182,9 @@ function AdminCheckInPage() {
             className={styles.monitorButton}
             onClick={() => navigate(ADMIN_ROUTES.CHECKIN_MONITOR)}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-              <line x1="8" y1="21" x2="16" y2="21" />
-              <line x1="12" y1="17" x2="12" y2="21" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 4 15 12 5 20 5 4" />
+              <polygon points="13 4 23 12 13 20 13 4" />
             </svg>
             View Monitor
           </button>
