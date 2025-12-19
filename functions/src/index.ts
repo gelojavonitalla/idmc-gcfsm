@@ -6,7 +6,7 @@
  */
 
 import {setGlobalOptions} from "firebase-functions";
-import {defineString} from "firebase-functions/params";
+import {defineString, defineSecret} from "firebase-functions/params";
 import {onDocumentCreated, onDocumentUpdated} from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
@@ -15,7 +15,6 @@ import {ImageAnnotatorClient} from "@google-cloud/vision";
 import {initializeApp} from "firebase-admin/app";
 import {getAuth} from "firebase-admin/auth";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
-import {SecretManagerServiceClient} from "@google-cloud/secret-manager";
 import * as sgMail from "@sendgrid/mail";
 import * as QRCode from "qrcode";
 
@@ -35,6 +34,9 @@ const appUrl = defineString("APP_URL", {default: ""});
 
 // Flag to enable/disable SendGrid (set to "true" to use SendGrid)
 const useSendGrid = defineString("USE_SENDGRID", {default: "false"});
+
+// SendGrid API key (stored in Secret Manager, accessed via defineSecret)
+const sendgridApiKey = defineSecret("SENDGRID_API_KEY");
 
 /**
  * Generates a QR code as a base64 data URL
@@ -61,21 +63,17 @@ async function generateQRCodeDataUrl(data: string): Promise<string> {
 }
 
 /**
- * Retrieves SendGrid API key from Secret Manager
- * Returns null if secret doesn't exist or can't be accessed
+ * Retrieves SendGrid API key from Secret Manager via defineSecret
+ * Returns null if secret doesn't exist or is empty
+ *
+ * @return {string | null} The SendGrid API key or null if not available
  */
-async function getSendGridApiKey(): Promise<string | null> {
+function getSendGridApiKey(): string | null {
   try {
-    const client = new SecretManagerServiceClient();
-    const projectId = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
-    const secretName = `projects/${projectId}/secrets/SENDGRID_API_KEY/versions/latest`;
-
-    const [version] = await client.accessSecretVersion({name: secretName});
-    const payload = version.payload?.data?.toString();
-
-    return payload || null;
+    const apiKey = sendgridApiKey.value();
+    return apiKey || null;
   } catch (error) {
-    logger.warn("Could not access SENDGRID_API_KEY from Secret Manager:", error);
+    logger.warn("Could not access SENDGRID_API_KEY:", error);
     return null;
   }
 }
@@ -345,7 +343,7 @@ async function sendInvitationEmailViaSendGrid(
   inviteLink: string
 ): Promise<void> {
   // Get SendGrid API key from Secret Manager
-  const apiKey = await getSendGridApiKey();
+  const apiKey = getSendGridApiKey();
   if (!apiKey) {
     throw new Error("SendGrid API key is not configured in Secret Manager");
   }
@@ -454,7 +452,7 @@ async function sendSmsViaOneWaySms(
   const formattedPhone = formatPhoneNumber(phoneNumber);
 
   // Get SendGrid API key (reuse existing infrastructure)
-  const apiKey = await getSendGridApiKey();
+  const apiKey = getSendGridApiKey();
   if (!apiKey) {
     logger.warn("SendGrid API key not configured, cannot send SMS");
     return false;
@@ -589,6 +587,7 @@ export const onAdminCreated = onDocumentCreated(
   {
     document: `${COLLECTIONS.ADMINS}/{adminId}`,
     database: DATABASE_ID,
+    secrets: [sendgridApiKey],
   },
   async (event) => {
     const snapshot = event.data;
@@ -1259,7 +1258,7 @@ async function sendRegistrationConfirmationEmail(
   to: string,
   registration: Parameters<typeof generateRegistrationConfirmationHtml>[0]
 ): Promise<void> {
-  const apiKey = await getSendGridApiKey();
+  const apiKey = getSendGridApiKey();
   if (!apiKey) {
     logger.warn("SendGrid API key not configured, skipping email");
     return;
@@ -1351,7 +1350,7 @@ async function sendTicketEmail(
   settings: Parameters<typeof generateTicketEmailHtml>[1],
   attendeesWithQR: AttendeeWithQR[]
 ): Promise<void> {
-  const apiKey = await getSendGridApiKey();
+  const apiKey = getSendGridApiKey();
   if (!apiKey) {
     logger.warn("SendGrid API key not configured, skipping email");
     return;
@@ -1399,7 +1398,7 @@ async function sendIndividualTicketEmail(
   settings: Parameters<typeof generateIndividualTicketEmailHtml>[1],
   attendee: AttendeeWithQR
 ): Promise<void> {
-  const apiKey = await getSendGridApiKey();
+  const apiKey = getSendGridApiKey();
   if (!apiKey) {
     logger.warn("SendGrid API key not configured, skipping email");
     return;
@@ -1435,6 +1434,7 @@ export const onRegistrationCreated = onDocumentCreated(
   {
     document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
     database: DATABASE_ID,
+    secrets: [sendgridApiKey],
   },
   async (event) => {
     const snapshot = event.data;
@@ -1506,6 +1506,7 @@ export const onPaymentConfirmed = onDocumentUpdated(
   {
     document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
     database: DATABASE_ID,
+    secrets: [sendgridApiKey],
   },
   async (event) => {
     const before = event.data?.before?.data();
@@ -1996,7 +1997,7 @@ function generateInvoiceEmailHtml(
  * @param context - Auth context
  */
 export const sendInvoiceEmail = onCall(
-  {cors: true},
+  {cors: true, secrets: [sendgridApiKey]},
   async (request) => {
     const {registrationId} = request.data;
 
@@ -2060,7 +2061,7 @@ export const sendInvoiceEmail = onCall(
       }
 
       // Get SendGrid API key
-      const apiKey = await getSendGridApiKey();
+      const apiKey = getSendGridApiKey();
       if (!apiKey) {
         throw new HttpsError(
           "failed-precondition",
