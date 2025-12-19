@@ -166,7 +166,7 @@ function AdminUsersPage() {
   const stats = getStats();
 
   return (
-    <AdminLayout title="User Management">
+    <AdminLayout>
       {/* Page Header */}
       <div className={styles.header}>
         <div>

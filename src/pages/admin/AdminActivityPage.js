@@ -174,7 +174,7 @@ function AdminActivityPage() {
   };
 
   return (
-    <AdminLayout title="Activity Log">
+    <AdminLayout>
       {/* Page Header */}
       <div className={styles.header}>
         <div>

@@ -122,6 +122,7 @@ function getAttendeeCount(registration) {
  * @param {boolean} props.hasMore - Whether there are more registrations to load
  * @param {Function} props.onLoadMore - Callback to load more registrations
  * @param {boolean} props.isLoadingMore - Loading more state
+ * @param {boolean} props.isUpdating - Whether a status update is in progress
  * @param {number} props.totalCount - Total count of registrations
  * @param {number} props.loadedCount - Number of loaded registrations
  * @returns {JSX.Element} The registrations table
@@ -134,6 +135,7 @@ function RegistrationsTable({
   hasMore,
   onLoadMore,
   isLoadingMore,
+  isUpdating,
   totalCount,
   loadedCount,
 }) {
@@ -216,6 +218,7 @@ function RegistrationsTable({
                   <td>
                     <div className={styles.actions}>
                       <button
+                        type="button"
                         className={styles.viewButton}
                         onClick={() => onViewDetails(registration)}
                         title="View details"
@@ -233,6 +236,7 @@ function RegistrationsTable({
                       {registration.status ===
                         REGISTRATION_STATUS.PENDING_VERIFICATION && (
                         <button
+                          type="button"
                           className={styles.confirmButton}
                           onClick={() =>
                             onUpdateStatus(
@@ -240,6 +244,7 @@ function RegistrationsTable({
                               REGISTRATION_STATUS.CONFIRMED
                             )
                           }
+                          disabled={isUpdating}
                           title="Confirm payment"
                         >
                           <svg
@@ -315,6 +320,7 @@ RegistrationsTable.propTypes = {
   hasMore: PropTypes.bool,
   onLoadMore: PropTypes.func,
   isLoadingMore: PropTypes.bool,
+  isUpdating: PropTypes.bool,
   totalCount: PropTypes.number,
   loadedCount: PropTypes.number,
 };
@@ -325,6 +331,7 @@ RegistrationsTable.defaultProps = {
   hasMore: false,
   onLoadMore: () => {},
   isLoadingMore: false,
+  isUpdating: false,
   totalCount: 0,
   loadedCount: 0,
 };

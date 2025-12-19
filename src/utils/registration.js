@@ -43,23 +43,31 @@ export function getCurrentPricingTier() {
 
 /**
  * Calculates the registration price based on category and pricing tier.
+ * Handles both legacy tier format (earlyBirdPrice, memberPrice, regularPrice)
+ * and database tier format (regularPrice, studentPrice).
  *
- * @param {string} category - The registration category (regular, student_senior, volunteer, speaker)
+ * @param {string} category - The registration category (early_bird, member, regular)
  * @param {Object} tier - The pricing tier object (optional, defaults to current tier)
  * @returns {number} The calculated price
  */
 export function calculatePrice(category, tier = null) {
   const pricingTier = tier || getCurrentPricingTier();
 
+  // Handle case where tier is null/undefined
+  if (!pricingTier) {
+    return 0;
+  }
+
   switch (category) {
-    case REGISTRATION_CATEGORIES.STUDENT_SENIOR:
-      return pricingTier.studentPrice;
-    case REGISTRATION_CATEGORIES.VOLUNTEER:
-    case REGISTRATION_CATEGORIES.SPEAKER:
-      return 0; // Free registration for volunteers and speakers
+    case REGISTRATION_CATEGORIES.EARLY_BIRD:
+      // Database tiers may not have earlyBirdPrice, fall back to regularPrice
+      return pricingTier.earlyBirdPrice ?? pricingTier.regularPrice ?? 0;
+    case REGISTRATION_CATEGORIES.MEMBER:
+      // Database tiers may not have memberPrice, fall back to regularPrice
+      return pricingTier.memberPrice ?? pricingTier.regularPrice ?? 0;
     case REGISTRATION_CATEGORIES.REGULAR:
     default:
-      return pricingTier.regularPrice;
+      return pricingTier.regularPrice ?? 0;
   }
 }
 
@@ -145,6 +153,9 @@ export function getDaysUntilConference() {
  * @returns {string} Formatted price string
  */
 export function formatPrice(amount, currency = 'PHP') {
+  if (amount === undefined || amount === null) {
+    return `${currency} 0`;
+  }
   return `${currency} ${amount.toLocaleString()}`;
 }
 
@@ -202,12 +213,14 @@ export function formatDate(date) {
 
 /**
  * Checks if a category requires proof/verification.
+ * Currently no categories require proof.
  *
  * @param {string} category - The registration category
  * @returns {boolean} True if proof is required
  */
 export function requiresProof(category) {
-  return category === REGISTRATION_CATEGORIES.STUDENT_SENIOR;
+  // None of the current categories (early_bird, member, regular) require proof
+  return false;
 }
 
 /**

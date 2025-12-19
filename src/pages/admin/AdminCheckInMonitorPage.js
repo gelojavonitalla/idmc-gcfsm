@@ -47,7 +47,7 @@ function AdminCheckInMonitorPage() {
   }, []);
 
   return (
-    <AdminLayout title="Check-In Monitor">
+    <AdminLayout>
       <div className={styles.container}>
         <div className={styles.header}>
           <div>

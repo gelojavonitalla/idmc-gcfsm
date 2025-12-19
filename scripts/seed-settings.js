@@ -98,17 +98,44 @@ const SETTINGS_DATA = {
     subtitle: 'Watch the highlights from our previous conference',
     youtubeVideoId: 'emGTZDXOaZY',
   },
+  // SMS Gateway Configuration (OneWaySMS via SendGrid email-to-SMS)
+  // These settings can be updated in Firestore without redeploying
+  sms: {
+    enabled: false, // USE_ONEWAYSMS - Set to true to enable SMS notifications
+    gatewayDomain: '1.onewaysms.asia', // ONEWAYSMS_GATEWAY_DOMAIN
+    gatewayEmail: '', // ONEWAYSMS_GATEWAY_EMAIL - Optional: direct gateway email (leave empty to use phone@domain format)
+  },
 };
 
 /**
  * Pricing tiers seed data
+ * Each tier represents a registration category (Early Bird, GCF Member, Regular)
+ * Each tier has both regularPrice and studentPrice
  */
 const PRICING_TIERS_DATA = [
   {
-    tierId: 'standard',
-    name: 'Standard',
+    tierId: 'early-bird',
+    name: 'Early Bird',
+    regularPrice: 350,
+    studentPrice: 350,
+    startDate: '2025-01-01',
+    endDate: '2026-03-28',
+    isActive: true,
+  },
+  {
+    tierId: 'gcf-member',
+    name: 'GCF Member',
+    regularPrice: 350,
+    studentPrice: 350,
+    startDate: '2025-01-01',
+    endDate: '2026-03-28',
+    isActive: true,
+  },
+  {
+    tierId: 'regular',
+    name: 'Regular',
     regularPrice: 500,
-    studentPrice: 300,
+    studentPrice: 500,
     startDate: '2025-01-01',
     endDate: '2026-03-28',
     isActive: true,
@@ -161,6 +188,10 @@ async function seedSettings(db) {
   console.log(`    About IDMC: ${SETTINGS_DATA.aboutIdmc.milestones.length} milestones`);
   console.log(`    About GCF: ${SETTINGS_DATA.aboutGcf.coreValues.length} core values`);
   console.log(`    Previous IDMC: ${SETTINGS_DATA.idmc2025.title}`);
+  console.log('\n  - SMS Gateway Configuration:');
+  console.log(`    Enabled: ${SETTINGS_DATA.sms.enabled}`);
+  console.log(`    Gateway Domain: ${SETTINGS_DATA.sms.gatewayDomain}`);
+  console.log(`    Gateway Email: ${SETTINGS_DATA.sms.gatewayEmail || '(not set - using phone@domain format)'}`);
 }
 
 /**
@@ -192,7 +223,7 @@ async function seedPricingTiers(db) {
 
     console.log(`  - ${tier.name} (${tier.tierId})`);
     console.log(`    Regular Price: PHP ${tier.regularPrice}`);
-    console.log(`    Student/Senior Price: PHP ${tier.studentPrice}`);
+    console.log(`    Student Price: PHP ${tier.studentPrice}`);
     console.log(`    Period: ${tier.startDate} to ${tier.endDate}`);
     console.log(`    Active: ${tier.isActive}`);
   }

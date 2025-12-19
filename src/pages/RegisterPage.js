@@ -25,6 +25,8 @@ import {
   REGISTRATION_ERROR_CODES,
 } from '../services';
 import { getPublishedWorkshops } from '../services/workshops';
+import { getFoodMenuSettings, getAllFoodMenuItems } from '../services/foodMenu';
+import { FOOD_MENU_STATUS } from '../constants';
 import { processReceipt } from '../tesseract';
 import WorkshopSelector from '../components/workshops/WorkshopSelector';
 import styles from './RegisterPage.module.css';
@@ -53,6 +55,7 @@ const createEmptyAdditionalAttendee = () => {
     ministryRole: '',
     category: 'regular', // Default category key - will be validated against database categories
     workshopSelections: [], // Array of { sessionId, sessionTitle, timeSlot }
+    foodChoice: '', // Selected food menu item ID
   };
 };
 
@@ -78,6 +81,7 @@ const INITIAL_FORM_DATA = {
     ministryRole: '',
     category: 'regular', // Default category key - will be validated against database categories
     workshopSelections: [], // Array of { sessionId, sessionTitle, timeSlot }
+    foodChoice: '', // Selected food menu item ID
   },
 
   // Additional attendees (required: phone; optional: email)
@@ -110,28 +114,33 @@ const INITIAL_FORM_DATA = {
  *
  * @returns {JSX.Element} The registration page component
  */
-/**
- * Registration category options derived from pricing tier
- */
-const REGISTRATION_CATEGORIES = [
-  { key: 'regular', name: 'Regular' },
-  { key: 'student', name: 'Student' },
-];
-
 function RegisterPage() {
-  const { settings, activePricingTier } = useSettings();
+  const { settings, pricingTiers } = useSettings();
   const [searchParams] = useSearchParams();
+
+  /**
+   * Get available pricing tiers from the database
+   * Each tier has: id, name, regularPrice, studentPrice
+   */
+  const availablePricingTiers = useMemo(() => {
+    if (!pricingTiers || pricingTiers.length === 0) return [];
+    // Filter to only active tiers and sort by price
+    return pricingTiers
+      .filter(tier => tier.isActive)
+      .sort((a, b) => a.regularPrice - b.regularPrice);
+  }, [pricingTiers]);
 
   /**
    * Get initial form data with category from URL parameter if present
    */
   const initialFormData = useMemo(() => {
     const categoryParam = searchParams.get('category');
-    // Validate category param against available categories
-    const validCategoryKeys = REGISTRATION_CATEGORIES.map((cat) => cat.key);
-    const category = validCategoryKeys.includes(categoryParam)
+    // Validate category param against available tier IDs
+    const validTierIds = availablePricingTiers.map(tier => tier.id);
+    const defaultTierId = validTierIds[0] || '';
+    const category = validTierIds.includes(categoryParam)
       ? categoryParam
-      : 'regular'; // Default to 'regular'
+      : defaultTierId;
 
     return {
       ...INITIAL_FORM_DATA,
@@ -140,7 +149,7 @@ function RegisterPage() {
         category,
       },
     };
-  }, [searchParams]);
+  }, [searchParams, availablePricingTiers]);
 
   const [currentStep, setCurrentStep] = useState(REGISTRATION_STEPS.PERSONAL_INFO);
   const [formData, setFormData] = useState(initialFormData);
@@ -159,6 +168,9 @@ function RegisterPage() {
   const [loadingBankAccounts, setLoadingBankAccounts] = useState(false);
   const [workshops, setWorkshops] = useState([]);
   const [loadingWorkshops, setLoadingWorkshops] = useState(false);
+  const [foodMenuItems, setFoodMenuItems] = useState([]);
+  const [foodSelectionEnabled, setFoodSelectionEnabled] = useState(false);
+  const [loadingFoodMenu, setLoadingFoodMenu] = useState(false);
 
   // OCR-related state
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
@@ -176,7 +188,13 @@ function RegisterPage() {
     referenceNumber: false,
   });
 
-  const currentTier = activePricingTier;
+  /**
+   * Get the currently selected pricing tier based on the primary attendee's category
+   */
+  const currentTier = useMemo(() => {
+    return availablePricingTiers.find(tier => tier.id === formData.primaryAttendee.category);
+  }, [availablePricingTiers, formData.primaryAttendee.category]);
+
   const registrationOpen = settings.registrationOpen !== false;
 
   /**
@@ -215,6 +233,34 @@ function RegisterPage() {
     };
 
     fetchWorkshops();
+  }, []);
+
+  /**
+   * Fetches food menu settings and published items on component mount
+   */
+  useEffect(() => {
+    const fetchFoodMenu = async () => {
+      setLoadingFoodMenu(true);
+      try {
+        const settings = await getFoodMenuSettings();
+        setFoodSelectionEnabled(settings.foodSelectionEnabled || false);
+
+        if (settings.foodSelectionEnabled) {
+          const items = await getAllFoodMenuItems();
+          // Filter to only show published items
+          const publishedItems = items.filter(
+            (item) => item.status === FOOD_MENU_STATUS.PUBLISHED
+          );
+          setFoodMenuItems(publishedItems);
+        }
+      } catch (error) {
+        console.error('Failed to fetch food menu:', error);
+      } finally {
+        setLoadingFoodMenu(false);
+      }
+    };
+
+    fetchFoodMenu();
   }, []);
 
   /**
@@ -438,29 +484,27 @@ function RegisterPage() {
   }, []);
 
   /**
-   * Gets the price for a registration category key from the active pricing tier
+   * Gets the price for a pricing tier by ID
+   * Uses regularPrice by default (studentPrice can be used based on attendee type)
    *
-   * @param {string} categoryKey - The category key ('regular' or 'student')
-   * @returns {number} Category price or 0 if not found
+   * @param {string} tierId - The pricing tier ID
+   * @returns {number} Tier price or 0 if not found
    */
-  const getCategoryPrice = useCallback((categoryKey) => {
-    if (!activePricingTier) return 0;
-    if (categoryKey === 'student') {
-      return activePricingTier.studentPrice || 0;
-    }
-    return activePricingTier.regularPrice || 0;
-  }, [activePricingTier]);
+  const getCategoryPrice = useCallback((tierId) => {
+    const tier = availablePricingTiers.find(t => t.id === tierId);
+    return tier?.regularPrice || 0;
+  }, [availablePricingTiers]);
 
   /**
-   * Gets the display name for a registration category key
+   * Gets the display name for a pricing tier by ID
    *
-   * @param {string} categoryKey - The category key
-   * @returns {string} Category name or the key if not found
+   * @param {string} tierId - The pricing tier ID
+   * @returns {string} Tier name or the ID if not found
    */
-  const getCategoryName = useCallback((categoryKey) => {
-    const category = REGISTRATION_CATEGORIES.find((cat) => cat.key === categoryKey);
-    return category ? category.name : categoryKey;
-  }, []);
+  const getCategoryName = useCallback((tierId) => {
+    const tier = availablePricingTiers.find(t => t.id === tierId);
+    return tier?.name || tierId;
+  }, [availablePricingTiers]);
 
   /**
    * Calculates total price for all attendees (primary + additional)
@@ -570,6 +614,9 @@ function RegisterPage() {
     if (!primary.ministryRole) {
       newPrimaryErrors.ministryRole = 'Ministry role is required';
     }
+    if (foodSelectionEnabled && foodMenuItems.length > 0 && !primary.foodChoice) {
+      newPrimaryErrors.foodChoice = 'Food preference is required';
+    }
 
     // Validate additional attendees (phone required, email optional)
     (formData.additionalAttendees || []).forEach((attendee, index) => {
@@ -593,6 +640,9 @@ function RegisterPage() {
       if (!attendee.ministryRole) {
         attendeeErr.ministryRole = 'Ministry role is required';
       }
+      if (foodSelectionEnabled && foodMenuItems.length > 0 && !attendee.foodChoice) {
+        attendeeErr.foodChoice = 'Food preference is required';
+      }
 
       if (Object.keys(attendeeErr).length > 0) {
         newAdditionalErrors[index] = attendeeErr;
@@ -608,7 +658,7 @@ function RegisterPage() {
       Object.keys(newPrimaryErrors).length === 0 &&
       Object.keys(newAdditionalErrors).length === 0
     );
-  }, [formData]);
+  }, [formData, foodSelectionEnabled, foodMenuItems]);
 
   /**
    * Validates the ticket selection step
@@ -772,6 +822,7 @@ function RegisterPage() {
           ministryRole: formData.primaryAttendee.ministryRole,
           category: formData.primaryAttendee.category,
           workshopSelection: formData.primaryAttendee.workshopSelection || '',
+          foodChoice: formData.primaryAttendee.foodChoice || '',
         },
         additionalAttendees: (formData.additionalAttendees || []).map((attendee) => ({
           lastName: attendee.lastName,
@@ -781,6 +832,7 @@ function RegisterPage() {
           email: attendee.email || '',
           ministryRole: attendee.ministryRole,
           category: attendee.category,
+          foodChoice: attendee.foodChoice || '',
         })),
         church: {
           name: formData.churchName,
@@ -963,8 +1015,8 @@ function RegisterPage() {
               <div className={styles.recoveryInfo}>
                 <h2>Lost Your Confirmation?</h2>
                 <p>
-                  You can retrieve your registration anytime at:{' '}
-                  <a href={ROUTES.REGISTRATION_STATUS}>{ROUTES.REGISTRATION_STATUS}</a>
+                  You can retrieve your registration anytime.{' '}
+                  <a href={ROUTES.REGISTRATION_STATUS}>Check Registration Status</a>
                 </p>
                 <p>Use your email, phone number, or registration ID to look up your registration.</p>
               </div>
@@ -1240,14 +1292,39 @@ function RegisterPage() {
                       value={formData.primaryAttendee.category}
                       onChange={(e) => updatePrimaryAttendee('category', e.target.value)}
                     >
-                      {REGISTRATION_CATEGORIES.map((category) => (
-                        <option key={category.key} value={category.key}>
-                          {category.name} - {formatPrice(getCategoryPrice(category.key))}
+                      {availablePricingTiers.map((tier) => (
+                        <option key={tier.id} value={tier.id}>
+                          {tier.name} - {formatPrice(tier.regularPrice)}
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
+
+                {/* Food Selection for Primary Attendee */}
+                {foodSelectionEnabled && foodMenuItems.length > 0 && (
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>
+                      Food Preference <span className={styles.required}>*</span>
+                    </label>
+                    <select
+                      className={`${styles.select} ${primaryErrors.foodChoice ? styles.inputError : ''}`}
+                      value={formData.primaryAttendee.foodChoice}
+                      onChange={(e) => updatePrimaryAttendee('foodChoice', e.target.value)}
+                      disabled={loadingFoodMenu}
+                    >
+                      <option value="">Select food preference</option>
+                      {foodMenuItems.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                    {primaryErrors.foodChoice && (
+                      <span className={styles.errorMessage}>{primaryErrors.foodChoice}</span>
+                    )}
+                  </div>
+                )}
 
                 {/* Workshop Selection for Primary Attendee */}
                 {workshops.length > 0 && (
@@ -1394,14 +1471,39 @@ function RegisterPage() {
                         value={attendee.category}
                         onChange={(e) => updateAdditionalAttendee(index, 'category', e.target.value)}
                       >
-                        {REGISTRATION_CATEGORIES.map((category) => (
-                          <option key={category.key} value={category.key}>
-                            {category.name} - {formatPrice(getCategoryPrice(category.key))}
+                        {availablePricingTiers.map((tier) => (
+                          <option key={tier.id} value={tier.id}>
+                            {tier.name} - {formatPrice(tier.regularPrice)}
                           </option>
                         ))}
                       </select>
                     </div>
                   </div>
+
+                  {/* Food Selection for Additional Attendee */}
+                  {foodSelectionEnabled && foodMenuItems.length > 0 && (
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>
+                        Food Preference <span className={styles.required}>*</span>
+                      </label>
+                      <select
+                        className={`${styles.select} ${additionalErrors[index]?.foodChoice ? styles.inputError : ''}`}
+                        value={attendee.foodChoice}
+                        onChange={(e) => updateAdditionalAttendee(index, 'foodChoice', e.target.value)}
+                        disabled={loadingFoodMenu}
+                      >
+                        <option value="">Select food preference</option>
+                        {foodMenuItems.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                      </select>
+                      {additionalErrors[index]?.foodChoice && (
+                        <span className={styles.errorMessage}>{additionalErrors[index].foodChoice}</span>
+                      )}
+                    </div>
+                  )}
 
                   {/* Workshop Selection for Additional Attendee */}
                   {workshops.length > 0 && (

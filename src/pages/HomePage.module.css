@@ -250,6 +250,20 @@
   line-height: 1.5;
 }
 
+.pricingStudentPrice {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-4);
+}
+
+.pricingEmpty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: var(--spacing-12);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-lg);
+}
+
 .pricingButton {
   display: inline-block;
   padding: var(--spacing-3) var(--spacing-6);

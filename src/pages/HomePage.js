@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { CountdownTimer } from '../components/ui';
 import { useSettings } from '../context';
@@ -7,11 +7,8 @@ import {
   SPEAKERS,
   SESSION_TYPES,
   ROUTES,
-  REGISTRATION_CATEGORIES,
-  REGISTRATION_CATEGORY_LABELS,
-  REGISTRATION_CATEGORY_DESCRIPTIONS,
 } from '../constants';
-import { calculatePrice, formatPrice } from '../utils';
+import { formatPrice } from '../utils';
 import styles from './HomePage.module.css';
 
 /**
@@ -23,10 +20,28 @@ import styles from './HomePage.module.css';
  * @returns {JSX.Element} The home page component
  */
 function HomePage() {
-  const { settings, activePricingTier } = useSettings();
+  const { settings, pricingTiers } = useSettings();
   const [speakers, setSpeakers] = useState([]);
   const [isLoadingSpeakers, setIsLoadingSpeakers] = useState(true);
   const [speakersError, setSpeakersError] = useState(null);
+
+  /**
+   * Filter pricing tiers to only show active ones within valid date range
+   */
+  const displayPricingTiers = useMemo(() => {
+    if (!pricingTiers || pricingTiers.length === 0) return [];
+
+    const now = new Date();
+    return pricingTiers
+      .filter((tier) => {
+        if (!tier.isActive) return false;
+        const startDate = new Date(tier.startDate);
+        const endDate = new Date(tier.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        return now >= startDate && now <= endDate;
+      })
+      .sort((a, b) => a.regularPrice - b.regularPrice);
+  }, [pricingTiers]);
 
   /**
    * Fetches featured speakers from Firestore on component mount
@@ -187,30 +202,34 @@ function HomePage() {
             Choose the registration category that applies to you
           </p>
           <div className={styles.pricingGrid}>
-            {Object.entries(REGISTRATION_CATEGORIES)
-              .filter(([, value]) =>
-                value !== REGISTRATION_CATEGORIES.SPEAKER &&
-                value !== REGISTRATION_CATEGORIES.VOLUNTEER
-              )
-              .map(([key, value]) => {
-                const price = calculatePrice(value, activePricingTier);
-                return (
-                  <div key={key} className={styles.pricingCard}>
-                    <h3 className={styles.pricingName}>
-                      {REGISTRATION_CATEGORY_LABELS[value]}
-                    </h3>
-                    <div className={styles.pricingPrice}>
-                      {formatPrice(price)}
-                    </div>
-                    <p className={styles.pricingDescription}>
-                      {REGISTRATION_CATEGORY_DESCRIPTIONS[value]}
-                    </p>
-                    <Link to={`${ROUTES.REGISTER}?category=${value}`} className={styles.pricingButton}>
-                      Register Now
-                    </Link>
+            {displayPricingTiers.length > 0 ? (
+              displayPricingTiers.map((tier) => (
+                <div key={tier.id} className={styles.pricingCard}>
+                  <h3 className={styles.pricingName}>{tier.name}</h3>
+                  <div className={styles.pricingPrice}>
+                    {formatPrice(tier.regularPrice)}
                   </div>
-                );
-              })}
+                  {tier.studentPrice !== tier.regularPrice && (
+                    <p className={styles.pricingStudentPrice}>
+                      Student: {formatPrice(tier.studentPrice)}
+                    </p>
+                  )}
+                  {tier.description && (
+                    <p className={styles.pricingDescription}>{tier.description}</p>
+                  )}
+                  <Link
+                    to={`${ROUTES.REGISTER}?category=${tier.id}`}
+                    className={styles.pricingButton}
+                  >
+                    Register Now
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <div className={styles.pricingEmpty}>
+                <p>Registration pricing will be available soon.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>

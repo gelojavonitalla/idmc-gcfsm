@@ -430,7 +430,7 @@ function AdminRegistrationsPage() {
   const displayRegistrations = getDisplayRegistrations();
 
   return (
-    <AdminLayout title="Registrations Management">
+    <AdminLayout>
       {/* Page Header */}
       <div className={styles.header}>
         <div>
@@ -631,6 +631,7 @@ function AdminRegistrationsPage() {
         hasMore={hasMore && !isSearchMode}
         onLoadMore={handleLoadMore}
         isLoadingMore={isLoadingMore}
+        isUpdating={isUpdating}
         totalCount={isSearchMode ? searchResults.length : totalCount}
         loadedCount={isSearchMode ? searchResults.length : registrations.length}
       />

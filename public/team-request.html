@@ -86,6 +86,61 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .anchor-link-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      opacity: 0.4;
+      flex-shrink: 0;
+    }
+
+    .section:hover .anchor-link-btn {
+      opacity: 1;
+    }
+
+    .anchor-link-btn:hover {
+      background: #f1f5f9;
+      border-color: var(--border);
+    }
+
+    .anchor-link-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--text-muted);
+      transition: stroke 0.2s ease;
+    }
+
+    .anchor-link-btn:hover svg {
+      stroke: var(--primary);
+    }
+
+    .anchor-link-btn.copied {
+      background: #dcfce7;
+      border-color: var(--success);
+      opacity: 1;
+    }
+
+    .anchor-link-btn.copied svg {
+      stroke: var(--success);
     }
 
     .section h2 .badge {
@@ -388,9 +443,17 @@
     </div>
 
     <!-- Section 1: Hero Media -->
-    <div class="section">
+    <div class="section" id="hero-media">
       <h2>
-        <span>1. Hero Section Media</span>
+        <div class="section-header">
+          <span>1. Hero Section Media</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'hero-media')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
         <span class="badge badge-required">Required</span>
       </h2>
       <p>The hero section is the first thing visitors see on the homepage. We want to make it impactful with a background video.</p>
@@ -437,9 +500,17 @@
     </div>
 
     <!-- Section 2: Speakers -->
-    <div class="section">
+    <div class="section" id="speakers">
       <h2>
-        <span>2. Speakers Information</span>
+        <div class="section-header">
+          <span>2. Speakers Information</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'speakers')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
         <span class="badge badge-required">Required</span>
       </h2>
       <p>
@@ -527,9 +598,17 @@
     </div>
 
     <!-- Section 3: Workshops -->
-    <div class="section">
+    <div class="section" id="workshops">
       <h2>
-        <span>3. Workshops & Schedule</span>
+        <div class="section-header">
+          <span>3. Workshops & Schedule</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'workshops')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
         <span class="badge badge-required">Required</span>
       </h2>
       <p>
@@ -575,7 +654,7 @@
             <tr>
               <td>Senior Citizens</td>
               <td>Capt. Jun & Marivic Parcon</td>
-              <td>YDT</td>
+              <td>Youth Center</td>
               <td>50</td>
               <td><span class="status status-placeholder">Sample</span></td>
             </tr>
@@ -609,9 +688,17 @@
     </div>
 
     <!-- Section 4: Conference Booklet -->
-    <div class="section">
+    <div class="section" id="booklet">
       <h2>
-        <span>4. Conference Booklet (Digital Copy)</span>
+        <div class="section-header">
+          <span>4. Conference Booklet (Digital Copy)</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'booklet')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
         <span class="badge badge-required">Required</span>
       </h2>
       <p>
@@ -641,9 +728,17 @@
     </div>
 
     <!-- Section 5: Contact Details -->
-    <div class="section">
+    <div class="section" id="contact">
       <h2>
-        <span>5. Contact Information</span>
+        <div class="section-header">
+          <span>5. Contact Information</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'contact')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
         <span class="badge badge-review">Needs Review</span>
       </h2>
       <p>Please verify these contact details are correct and up-to-date:</p>
@@ -726,9 +821,17 @@
     </div>
 
     <!-- Section 6: Legal Pages -->
-    <div class="section">
+    <div class="section" id="legal">
       <h2>
-        <span>6. Terms & Conditions and Privacy Policy</span>
+        <div class="section-header">
+          <span>6. Terms & Conditions and Privacy Policy</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'legal')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
         <span class="badge badge-review">Needs Review</span>
       </h2>
       <p>
@@ -784,9 +887,17 @@
     </div>
 
     <!-- Section 7: FAQ -->
-    <div class="section">
+    <div class="section" id="faq">
       <h2>
-        <span>7. Frequently Asked Questions</span>
+        <div class="section-header">
+          <span>7. Frequently Asked Questions</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'faq')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
         <span class="badge badge-review">Needs Review</span>
       </h2>
       <p>Please review the current FAQ content and let me know if any changes or additions are needed.</p>
@@ -819,9 +930,17 @@
     </div>
 
     <!-- Section 8: Payment Information -->
-    <div class="section">
+    <div class="section" id="payment">
       <h2>
-        <span>8. Payment Information & Bank Accounts</span>
+        <div class="section-header">
+          <span>8. Payment Information & Bank Accounts</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'payment')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
         <span class="badge badge-review">Needs Verification</span>
       </h2>
       <p>The website now supports multiple bank account options for online transfers. <strong>Please verify that all account details are correct:</strong></p>
@@ -955,9 +1074,17 @@
     </div>
 
     <!-- Section 9: Venue Page -->
-    <div class="section">
+    <div class="section" id="venue">
       <h2>
-        <span>9. Venue Page</span>
+        <div class="section-header">
+          <span>9. Venue Page</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'venue')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
         <span class="badge badge-review">Feedback Requested</span>
       </h2>
       <p>
@@ -1016,9 +1143,17 @@
     </div>
 
     <!-- Section 10: About IDMC Page -->
-    <div class="section">
+    <div class="section" id="about-idmc">
       <h2>
-        <span>10. About IDMC Page</span>
+        <div class="section-header">
+          <span>10. About IDMC Page</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'about-idmc')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
         <span class="badge badge-review">Needs Review</span>
       </h2>
       <p>
@@ -1039,9 +1174,17 @@
     </div>
 
     <!-- Section 11: About GCF South Metro -->
-    <div class="section">
+    <div class="section" id="about-gcfsm">
       <h2>
-        <span>11. About GCF South Metro</span>
+        <div class="section-header">
+          <span>11. About GCF South Metro</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'about-gcfsm')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
         <span class="badge badge-review">Needs Review</span>
       </h2>
       <p>
@@ -1062,9 +1205,17 @@
     </div>
 
     <!-- Section 12: SendGrid DNS Authentication -->
-    <div class="section">
+    <div class="section" id="sendgrid-dns">
       <h2>
-        <span>12. SendGrid Domain Authentication (DNS)</span>
+        <div class="section-header">
+          <span>12. SendGrid Domain Authentication (DNS)</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'sendgrid-dns')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
         <span class="badge badge-required">Action Required</span>
       </h2>
       <p>
@@ -1075,6 +1226,44 @@
       <div class="subsection">
         <h3>DNS Records to ADD:</h3>
         <p style="margin-bottom: 12px;">Add the following records to authenticate your domain with SendGrid:</p>
+
+        <div class="highlight" style="margin-bottom: 16px;">
+          <strong>Important for Namecheap Users:</strong>
+          <p style="margin-top: 8px;">In Namecheap, only enter the <strong>subdomain part</strong> in the Host field. Namecheap automatically appends your domain (<code>.idmc-gcfsm.org</code>).</p>
+          <p style="margin-top: 8px; margin-bottom: 12px;"><strong>Enter these exact values in Namecheap:</strong></p>
+          <table style="font-size: 0.9rem;">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Host (enter this)</th>
+                <th>Value (enter this)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>CNAME</td>
+                <td><code>em8789</code></td>
+                <td><code>u56746353.wl104.sendgrid.net</code></td>
+              </tr>
+              <tr>
+                <td>CNAME</td>
+                <td><code>s1._domainkey</code></td>
+                <td><code>s1.domainkey.u56746353.wl104.sendgrid.net</code></td>
+              </tr>
+              <tr>
+                <td>CNAME</td>
+                <td><code>s2._domainkey</code></td>
+                <td><code>s2.domainkey.u56746353.wl104.sendgrid.net</code></td>
+              </tr>
+              <tr>
+                <td>TXT</td>
+                <td><code>_dmarc</code></td>
+                <td><code>v=DMARC1; p=none;</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <table class="sendgrid-table">
           <thead>
             <tr>
@@ -1088,8 +1277,8 @@
               <td><span class="type-badge">CNAME</span></td>
               <td>
                 <div class="dns-value-cell">
-                  <span class="dns-value">em7984.idmc-gcfsm.org</span>
-                  <button class="copy-btn" onclick="copyToClipboard(this, 'em7984.idmc-gcfsm.org')" title="Copy to clipboard">
+                  <span class="dns-value">em8789.idmc-gcfsm.org</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 'em8789.idmc-gcfsm.org')" title="Copy to clipboard">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -1209,8 +1398,18 @@
     </div>
 
     <!-- Summary Checklist -->
-    <div class="section" style="border: 2px solid var(--primary);">
-      <h2>Summary Checklist</h2>
+    <div class="section" id="summary" style="border: 2px solid var(--primary);">
+      <h2>
+        <div class="section-header">
+          <span>Summary Checklist</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'summary')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+      </h2>
       <p>Quick reference of all items needed:</p>
 
       <div class="subsection">
@@ -1262,7 +1461,7 @@
       <div class="subsection">
         <h3>Action Required (DNS - SendGrid Email Authentication):</h3>
         <ul>
-          <li>&#9744; Add CNAME: <code>em7984.idmc-gcfsm.org</code> → <code>u56746353.wl104.sendgrid.net</code></li>
+          <li>&#9744; Add CNAME: <code>em8789.idmc-gcfsm.org</code> → <code>u56746353.wl104.sendgrid.net</code></li>
           <li>&#9744; Add CNAME: <code>s1._domainkey.idmc-gcfsm.org</code> → <code>s1.domainkey.u56746353.wl104.sendgrid.net</code></li>
           <li>&#9744; Add CNAME: <code>s2._domainkey.idmc-gcfsm.org</code> → <code>s2.domainkey.u56746353.wl104.sendgrid.net</code></li>
           <li>&#9744; Add TXT: <code>_dmarc.idmc-gcfsm.org</code> → <code>v=DMARC1; p=none;</code></li>
@@ -1277,6 +1476,30 @@
   </div>
 
   <script>
+    /**
+     * Copies anchor link to clipboard and shows visual feedback
+     * @param {HTMLElement} button - The anchor link button element
+     * @param {string} anchorId - The anchor ID to copy
+     */
+    function copyAnchorLink(button, anchorId) {
+      var url = window.location.origin + window.location.pathname + '#' + anchorId;
+      navigator.clipboard.writeText(url).then(function() {
+        // Add copied class for visual feedback
+        button.classList.add('copied');
+
+        // Change icon to checkmark
+        button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+        // Reset after 2 seconds
+        setTimeout(function() {
+          button.classList.remove('copied');
+          button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>';
+        }, 2000);
+      }).catch(function(err) {
+        console.error('Failed to copy: ', err);
+      });
+    }
+
     /**
      * Copies text to clipboard and shows visual feedback
      * @param {HTMLElement} button - The copy button element

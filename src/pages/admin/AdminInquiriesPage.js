@@ -177,7 +177,7 @@ function AdminInquiriesPage() {
   const stats = getStats();
 
   return (
-    <AdminLayout title="Contact Inquiries">
+    <AdminLayout>
       {/* Page Header */}
       <div className={styles.header}>
         <div>
