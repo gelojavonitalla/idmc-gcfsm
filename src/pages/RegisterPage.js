@@ -1015,8 +1015,8 @@ function RegisterPage() {
               <div className={styles.recoveryInfo}>
                 <h2>Lost Your Confirmation?</h2>
                 <p>
-                  You can retrieve your registration anytime at:{' '}
-                  <a href={ROUTES.REGISTRATION_STATUS}>{ROUTES.REGISTRATION_STATUS}</a>
+                  You can retrieve your registration anytime.{' '}
+                  <a href={ROUTES.REGISTRATION_STATUS}>Check Registration Status</a>
                 </p>
                 <p>Use your email, phone number, or registration ID to look up your registration.</p>
               </div>
