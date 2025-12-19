@@ -55,6 +55,7 @@ export {
   activateAdmin,
   deactivateAdmin,
   resendInvitation,
+  revokeInvitation,
   hasPermission,
   isSuperAdmin,
   ADMIN_ERROR_CODES,
