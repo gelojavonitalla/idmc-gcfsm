@@ -217,8 +217,9 @@ function InvoiceDetailModal({ isOpen, onClose, registration, onInvoiceUpdated })
 
     try {
       // Call Cloud Function to send invoice email
+      // Use registrationId (the document ID) instead of id to ensure correct lookup
       const sendInvoiceEmail = httpsCallable(functions, 'sendInvoiceEmail');
-      const result = await sendInvoiceEmail({ registrationId: registration.id });
+      const result = await sendInvoiceEmail({ registrationId: registration.registrationId });
 
       if (onInvoiceUpdated) {
         onInvoiceUpdated();
