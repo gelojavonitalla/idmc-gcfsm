@@ -15,7 +15,7 @@ import {ImageAnnotatorClient} from "@google-cloud/vision";
 import {initializeApp} from "firebase-admin/app";
 import {getAuth} from "firebase-admin/auth";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
-import * as sgMail from "@sendgrid/mail";
+import sgMail from "@sendgrid/mail";
 import * as QRCode from "qrcode";
 
 // Initialize Firebase Admin SDK
