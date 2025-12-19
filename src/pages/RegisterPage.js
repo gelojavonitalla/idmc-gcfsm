@@ -963,6 +963,16 @@ function RegisterPage() {
 
       <section className={styles.contentSection}>
         <div className={styles.container}>
+          {/* Registration Status Link */}
+          <div className={styles.statusLinkBox}>
+            <p>
+              Already registered?{' '}
+              <a href={ROUTES.REGISTRATION_STATUS}>
+                Check your registration status
+              </a>
+            </p>
+          </div>
+
           {/* Progress Steps */}
           <div className={styles.progressBar}>
           {Object.entries(REGISTRATION_STEP_LABELS).map(([step, label]) => {
