@@ -55,11 +55,7 @@ function WorkshopSelector({ workshops, selections, onSelectionChange, disabled =
 
     const selectedWorkshop = workshops.find((w) => w.id === workshopId);
 
-    if (workshopId === '') {
-      // Deselect
-      const newSelections = selections.filter((s) => s.timeSlot !== timeSlot);
-      onSelectionChange(newSelections);
-    } else if (selectedWorkshop) {
+    if (selectedWorkshop) {
       // Select or update
       const newSelections = selections.filter((s) => s.timeSlot !== timeSlot);
       newSelections.push({
@@ -110,27 +106,6 @@ function WorkshopSelector({ workshops, selections, onSelectionChange, disabled =
             <h4 className={styles.timeSlotLabel}>{slotLabel}</h4>
 
             <div className={styles.workshopOptions}>
-              {/* No selection option */}
-              <label
-                className={`${styles.workshopOption} ${selectedId === '' ? styles.selected : ''}`}
-              >
-                <input
-                  type="radio"
-                  name={`workshop-${timeSlot}`}
-                  value=""
-                  checked={selectedId === ''}
-                  onChange={() => handleSelectionChange(timeSlot, '')}
-                  disabled={disabled}
-                  className={styles.radioInput}
-                />
-                <div className={styles.optionContent}>
-                  <span className={styles.optionTitle}>No workshop selection</span>
-                  <span className={styles.optionDescription}>
-                    Skip workshop selection for this time slot
-                  </span>
-                </div>
-              </label>
-
               {/* Workshop options */}
               {slotWorkshops.map((workshop) => {
                 const isAvailable = hasAvailableCapacity(workshop);
