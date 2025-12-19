@@ -81,6 +81,32 @@
   color: var(--color-text-secondary);
 }
 
+/* Status Link Box */
+.statusLinkBox {
+  background: var(--color-info-50, #eff6ff);
+  border: 1px solid var(--color-info-200, #bfdbfe);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3);
+  margin-bottom: var(--spacing-6);
+  text-align: center;
+}
+
+.statusLinkBox p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.statusLinkBox a {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.statusLinkBox a:hover {
+  color: var(--color-primary-dark, #2563eb);
+}
+
 /* Progress Bar */
 .progressBar {
   display: flex;
