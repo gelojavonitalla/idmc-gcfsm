@@ -48,13 +48,45 @@ jobs:
           channelId: live
           projectId: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
+      # Set up Google Cloud SDK for secret management
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
+
+      # Authenticate with GCP using service account
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      # Create or update SendGrid API key in Secret Manager
+      - name: Configure SendGrid secret
+        run: |
+          PROJECT_ID="${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}"
+          SECRET_NAME="SENDGRID_API_KEY"
+
+          # Check if secret exists
+          if gcloud secrets describe $SECRET_NAME --project=$PROJECT_ID > /dev/null 2>&1; then
+            # Secret exists, add new version
+            echo -n "${{ secrets.SENDGRID_API_KEY }}" | gcloud secrets versions add $SECRET_NAME --data-file=- --project=$PROJECT_ID
+          else
+            # Secret doesn't exist, create it
+            echo -n "${{ secrets.SENDGRID_API_KEY }}" | gcloud secrets create $SECRET_NAME --data-file=- --project=$PROJECT_ID
+          fi
+
+          # Get the Cloud Functions service account email
+          SA_EMAIL="${PROJECT_ID}@appspot.gserviceaccount.com"
+
+          # Grant access to the secret (idempotent operation)
+          gcloud secrets add-iam-policy-binding $SECRET_NAME \
+            --member="serviceAccount:${SA_EMAIL}" \
+            --role="roles/secretmanager.secretAccessor" \
+            --project=$PROJECT_ID --quiet || true
+
       # Deploy Cloud Functions
       - name: Deploy Cloud Functions
         run: |
-          # Write service account to file for authentication
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > $HOME/gcloud-key.json
-          export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json
-
           # Create .env file for Firebase Functions params
           echo "SENDER_EMAIL=${{ vars.SENDER_EMAIL }}" > functions/.env
           echo "SENDER_NAME=${{ vars.SENDER_NAME }}" >> functions/.env
@@ -65,5 +97,4 @@ jobs:
           firebase deploy --only functions --project ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }} --force
 
           # Clean up
-          rm -f $HOME/gcloud-key.json
           rm -f functions/.env
