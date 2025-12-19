@@ -90,6 +90,11 @@ async function getSendGridApiKey(): Promise<string | null> {
 }
 
 /**
+ * Database ID for Firestore
+ */
+const DATABASE_ID = "idmc-2026";
+
+/**
  * Collection name constants
  */
 const COLLECTIONS = {
@@ -125,7 +130,7 @@ const DEFAULT_SMS_SETTINGS: SmsSettings = {
  */
 async function getSmsSettings(): Promise<SmsSettings> {
   try {
-    const db = getFirestore();
+    const db = getFirestore(DATABASE_ID);
     const settingsDoc = await db
       .collection(COLLECTIONS.CONFERENCES)
       .doc("conference-settings")
@@ -629,7 +634,7 @@ export const onAdminCreated = onDocumentCreated(
     logger.info(`Processing invitation for admin: ${email}`);
 
     const auth = getAuth();
-    const db = getFirestore();
+    const db = getFirestore(DATABASE_ID);
 
     try {
       let userRecord;
@@ -1536,7 +1541,7 @@ export const onPaymentConfirmed = onDocumentUpdated(
     const updateData: Record<string, unknown> = {};
 
     // Get conference settings for event details (needed for email)
-    const db = getFirestore();
+    const db = getFirestore(DATABASE_ID);
     const defaultSettings = {
       title: "IDMC 2026",
       startDate: new Date().toISOString(),
@@ -1662,7 +1667,7 @@ export const cancelExpiredRegistrations = onSchedule(
   async () => {
     logger.info("Running scheduled task: cancelExpiredRegistrations");
 
-    const db = getFirestore();
+    const db = getFirestore(DATABASE_ID);
     const now = new Date();
 
     try {
@@ -2022,7 +2027,7 @@ export const sendInvoiceEmail = onCall(
       );
     }
 
-    const db = getFirestore();
+    const db = getFirestore(DATABASE_ID);
     const registrationRef = db.collection(COLLECTIONS.REGISTRATIONS)
       .doc(registrationId);
 
