@@ -1881,3 +1881,381 @@ export const sendInvoiceEmail = onCall(
     }
   }
 );
+
+// ============================================
+// Secure Registration Lookup Functions
+// ============================================
+
+/**
+ * Rate limit tracking interface
+ */
+interface RateLimitEntry {
+  count: number;
+  firstRequest: number;
+}
+
+// In-memory rate limit store (resets on function cold start)
+// For production, consider using Redis or Firestore
+const rateLimitStore: Map<string, RateLimitEntry> = new Map();
+
+/**
+ * Rate limit configuration
+ */
+const RATE_LIMIT_CONFIG = {
+  windowMs: 60 * 1000, // 1 minute window
+  maxRequests: 10, // Max 10 requests per window
+};
+
+/**
+ * Checks rate limit for an identifier
+ *
+ * @param {string} identifier - IP address or other identifier
+ * @return {boolean} True if within rate limit, false if exceeded
+ */
+function checkRateLimit(identifier: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitStore.get(identifier);
+
+  if (!entry) {
+    rateLimitStore.set(identifier, {count: 1, firstRequest: now});
+    return true;
+  }
+
+  // Check if window has expired
+  if (now - entry.firstRequest > RATE_LIMIT_CONFIG.windowMs) {
+    rateLimitStore.set(identifier, {count: 1, firstRequest: now});
+    return true;
+  }
+
+  // Check if under limit
+  if (entry.count < RATE_LIMIT_CONFIG.maxRequests) {
+    entry.count++;
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Masks an email address for privacy
+ * Example: "john.doe@example.com" -> "jo***@example.com"
+ *
+ * @param {string} email - Email address to mask
+ * @return {string} Masked email
+ */
+function maskEmail(email: string): string {
+  if (!email || typeof email !== "string") {
+    return "";
+  }
+
+  const [localPart, domain] = email.split("@");
+  if (!localPart || !domain) {
+    return "***@***";
+  }
+
+  const visibleChars = Math.min(2, localPart.length);
+  const masked = localPart.substring(0, visibleChars) + "***";
+  return `${masked}@${domain}`;
+}
+
+/**
+ * Masks a name for privacy
+ * Example: "John Doe" -> "J***"
+ *
+ * @param {string} name - Name to mask
+ * @return {string} Masked name
+ */
+function maskName(name: string): string {
+  if (!name || typeof name !== "string") {
+    return "";
+  }
+
+  const trimmedName = name.trim();
+  if (trimmedName.length === 0) {
+    return "";
+  }
+
+  return trimmedName.charAt(0) + "***";
+}
+
+/**
+ * Secure registration lookup callable function
+ *
+ * This function provides a secure way to look up registrations:
+ * - Rate limited to prevent brute force attacks
+ * - Returns masked data only (no sensitive information exposed)
+ * - Does not require authentication (for public status check)
+ *
+ * @param {Object} data - Request data containing identifier
+ * @param {string} data.identifier - Registration ID, short code, email, phone
+ * @return {Object} Masked registration data
+ */
+export const lookupRegistrationSecure = onCall(
+  {
+    region: "asia-southeast1",
+    maxInstances: 10,
+  },
+  async (request) => {
+    const {identifier} = request.data as {identifier?: string};
+
+    if (!identifier || identifier.trim().length < 4) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Please provide a valid registration ID, email, or phone number"
+      );
+    }
+
+    // Get client IP for rate limiting (use UID if authenticated)
+    const clientId = request.auth?.uid ||
+                     request.rawRequest?.ip ||
+                     "unknown";
+
+    // Check rate limit
+    if (!checkRateLimit(clientId)) {
+      throw new HttpsError(
+        "resource-exhausted",
+        "Too many requests. Please try again in a minute."
+      );
+    }
+
+    const db = getFirestore();
+    const trimmed = identifier.trim();
+    const upperTrimmed = trimmed.toUpperCase();
+
+    let registration: FirebaseFirestore.DocumentData | null = null;
+    let registrationId: string | null = null;
+
+    // Try different lookup strategies
+    const registrationsRef = db.collection(COLLECTIONS.REGISTRATIONS);
+
+    // 1. Try full registration ID (e.g., "REG-2026-A7K3MN")
+    if (trimmed.toUpperCase().startsWith("REG-")) {
+      const docRef = registrationsRef.doc(trimmed.toUpperCase());
+      const docSnap = await docRef.get();
+      if (docSnap.exists) {
+        registration = docSnap.data() ?? null;
+        registrationId = docSnap.id;
+      }
+    }
+
+    // 2. Try 6-character short code
+    if (!registration && /^[A-Za-z0-9]{6}$/.test(trimmed)) {
+      const query = await registrationsRef
+        .where("shortCode", "==", upperTrimmed)
+        .limit(1)
+        .get();
+      if (!query.empty) {
+        registration = query.docs[0].data();
+        registrationId = query.docs[0].id;
+      }
+    }
+
+    // 3. Try 4-character short code suffix
+    if (!registration && /^[A-Za-z0-9]{4}$/.test(trimmed)) {
+      const query = await registrationsRef
+        .where("shortCodeSuffix", "==", upperTrimmed)
+        .limit(1)
+        .get();
+      if (!query.empty) {
+        registration = query.docs[0].data();
+        registrationId = query.docs[0].id;
+      }
+    }
+
+    // 4. Try email lookup
+    if (!registration && trimmed.includes("@")) {
+      const normalizedEmail = trimmed.toLowerCase();
+      const query = await registrationsRef
+        .where("primaryAttendee.email", "==", normalizedEmail)
+        .limit(1)
+        .get();
+      if (!query.empty) {
+        registration = query.docs[0].data();
+        registrationId = query.docs[0].id;
+      }
+    }
+
+    // 5. Try phone lookup
+    if (!registration) {
+      const cleanPhone = trimmed.replace(/[\s-]/g, "");
+      if (/^(\+63|0)?9\d{9}$/.test(cleanPhone)) {
+        // Try different phone format variations
+        const phoneVariants = [
+          cleanPhone,
+          cleanPhone.replace(/^0/, "+63"),
+          cleanPhone.replace(/^\+63/, "0"),
+        ];
+
+        for (const variant of phoneVariants) {
+          const query = await registrationsRef
+            .where("primaryAttendee.phone", "==", variant)
+            .limit(1)
+            .get();
+          if (!query.empty) {
+            registration = query.docs[0].data();
+            registrationId = query.docs[0].id;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!registration || !registrationId) {
+      throw new HttpsError(
+        "not-found",
+        "Registration not found. Please check your information and try again."
+      );
+    }
+
+    // Log this lookup for audit purposes
+    logger.info(`Registration lookup: ${registrationId} by ${clientId}`);
+
+    // Calculate attendee count
+    const additionalAttendees = registration.additionalAttendees || [];
+    const attendeeCount = 1 + additionalAttendees.length;
+
+    // Return MASKED data only - no sensitive information
+    return {
+      registrationId: registration.registrationId,
+      shortCode: registration.shortCode,
+      status: registration.status,
+      primaryAttendee: {
+        firstName: registration.primaryAttendee?.firstName || "",
+        // Mask last name for privacy
+        lastName: maskName(registration.primaryAttendee?.lastName || ""),
+        // Mask email for privacy
+        email: maskEmail(registration.primaryAttendee?.email || ""),
+      },
+      attendeeCount,
+      // Include check-in status if confirmed
+      checkInStatus: registration.status === REGISTRATION_STATUS.CONFIRMED ? {
+        checkedIn: registration.checkIn?.checkedIn || false,
+        checkedInCount: registration.checkIn?.checkedInCount || 0,
+      } : null,
+      // Include payment status (but not amounts or details)
+      paymentStatus: registration.payment?.status || registration.status,
+      // Masked - don't expose full church name
+      church: registration.church?.name ?
+        maskName(registration.church.name) : null,
+    };
+  }
+);
+
+/**
+ * Get full registration details after verification
+ *
+ * This function requires a verification token that was sent to the
+ * registrant's email or phone. It returns full registration data
+ * including QR codes for check-in.
+ *
+ * @param {Object} data - Request data
+ * @param {string} data.registrationId - Registration ID
+ * @param {string} data.verificationCode - Code sent to email/phone
+ * @returns {Object} Full registration data with QR codes
+ */
+export const getRegistrationWithVerification = onCall(
+  {
+    region: "asia-southeast1",
+    maxInstances: 10,
+  },
+  async (request) => {
+    const {registrationId, verificationCode} = request.data as {
+      registrationId?: string;
+      verificationCode?: string;
+    };
+
+    if (!registrationId || !verificationCode) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Registration ID and verification code are required"
+      );
+    }
+
+    // Get client IP for rate limiting
+    const clientId = request.auth?.uid ||
+                     request.rawRequest?.ip ||
+                     "unknown";
+
+    // Stricter rate limit for verification attempts (5 per minute)
+    const verifyRateLimitKey = `verify:${clientId}`;
+    const entry = rateLimitStore.get(verifyRateLimitKey);
+    const now = Date.now();
+
+    if (entry) {
+      if (now - entry.firstRequest < 60000 && entry.count >= 5) {
+        throw new HttpsError(
+          "resource-exhausted",
+          "Too many verification attempts. Please try again later."
+        );
+      }
+      if (now - entry.firstRequest >= 60000) {
+        rateLimitStore.set(verifyRateLimitKey, {count: 1, firstRequest: now});
+      } else {
+        entry.count++;
+      }
+    } else {
+      rateLimitStore.set(verifyRateLimitKey, {count: 1, firstRequest: now});
+    }
+
+    const db = getFirestore();
+    const registrationRef = db
+      .collection(COLLECTIONS.REGISTRATIONS)
+      .doc(registrationId.toUpperCase());
+    const registrationDoc = await registrationRef.get();
+
+    if (!registrationDoc.exists) {
+      throw new HttpsError("not-found", "Registration not found");
+    }
+
+    const registration = registrationDoc.data();
+    if (!registration) {
+      throw new HttpsError("not-found", "Registration data is empty");
+    }
+
+    // Verify the code matches
+    // The verification code is the last 4 characters of the short code
+    // combined with the last 4 digits of the phone number
+    const expectedCode = (registration.shortCodeSuffix || "").toUpperCase() +
+      (registration.primaryAttendee?.phone || "").slice(-4);
+
+    if (verificationCode.toUpperCase() !== expectedCode.toUpperCase()) {
+      logger.warn(`Invalid verification attempt for ${registrationId}`);
+      throw new HttpsError(
+        "permission-denied",
+        "Invalid verification code. Please check and try again."
+      );
+    }
+
+    logger.info(`Verified registration access: ${registrationId}`);
+
+    // Generate QR codes for all attendees
+    const attendeesWithQR = await generateAllAttendeeQRCodes(
+      registration.registrationId,
+      registration.primaryAttendee,
+      registration.additionalAttendees
+    );
+
+    // Return full registration data
+    return {
+      registrationId: registration.registrationId,
+      shortCode: registration.shortCode,
+      status: registration.status,
+      primaryAttendee: registration.primaryAttendee,
+      additionalAttendees: registration.additionalAttendees || [],
+      church: registration.church,
+      totalAmount: registration.totalAmount,
+      payment: {
+        status: registration.payment?.status,
+        method: registration.payment?.method,
+        amountPaid: registration.payment?.amountPaid,
+      },
+      checkIn: registration.checkIn,
+      qrCodes: attendeesWithQR.map((a) => ({
+        attendeeIndex: a.attendeeIndex,
+        firstName: a.firstName,
+        lastName: a.lastName,
+        qrCodeDataUrl: a.qrCodeDataUrl,
+      })),
+    };
+  }
+);

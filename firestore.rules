@@ -1,18 +1,285 @@
-rules_version='2'
+rules_version = '2';
 
+/**
+ * Firestore Security Rules for IDMC Conference Management System
+ *
+ * Security Model:
+ * - Public users can view conference info, register, and submit inquiries
+ * - Admins can manage registrations and content
+ * - Superadmins have full access including admin management
+ *
+ * Collections:
+ * - conferences: Conference settings and configuration
+ * - speakers: Speaker profiles
+ * - sessions: Conference sessions/schedule
+ * - registrations: Attendee registrations
+ * - faq: Frequently asked questions
+ * - contactInquiries: Contact form submissions
+ * - admins: Admin user profiles
+ * - activityLogs: Audit trail for admin actions
+ * - downloads: Downloadable resources
+ * - venueRooms: Venue room information
+ * - venueTransport: Transportation options
+ * - venueAmenities: Venue amenities
+ * - checkInLogs: Event check-in records
+ * - bankAccounts: Payment bank account info
+ */
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ============================================
+    // Helper Functions
+    // ============================================
+
+    /**
+     * Check if the user is authenticated
+     */
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    /**
+     * Check if the authenticated user is an admin
+     */
+    function isAdmin() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    /**
+     * Get the admin document for the current user
+     */
+    function getAdminData() {
+      return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data;
+    }
+
+    /**
+     * Check if the admin has a specific role
+     */
+    function hasRole(role) {
+      return isAdmin() && getAdminData().role == role;
+    }
+
+    /**
+     * Check if the admin has one of the specified roles
+     */
+    function hasAnyRole(roles) {
+      return isAdmin() && (getAdminData().role in roles);
+    }
+
+    /**
+     * Check if the user is a superadmin
+     */
+    function isSuperAdmin() {
+      return hasRole('superadmin');
+    }
+
+    /**
+     * Check if the admin is active
+     */
+    function isActiveAdmin() {
+      return isAdmin() && getAdminData().status == 'active';
+    }
+
+    /**
+     * Validate that required fields are present in the request
+     */
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // ============================================
+    // Collection Rules
+    // ============================================
+
+    /**
+     * Conferences Collection
+     * Contains conference settings, pricing tiers, and configuration
+     * - Public can read (for displaying conference info)
+     * - Only active admins can write
+     */
+    match /conferences/{conferenceId} {
+      allow read: if true;
+      allow write: if isActiveAdmin();
+
+      // Pricing tiers subcollection
+      match /pricingTiers/{tierId} {
+        allow read: if true;
+        allow write: if isActiveAdmin();
+      }
+    }
+
+    /**
+     * Speakers Collection
+     * - Public can read (for displaying on website)
+     * - Only active admins can write
+     */
+    match /speakers/{speakerId} {
+      allow read: if true;
+      allow write: if isActiveAdmin();
+    }
+
+    /**
+     * Sessions Collection
+     * - Public can read (for displaying schedule)
+     * - Only active admins can write
+     */
+    match /sessions/{sessionId} {
+      allow read: if true;
+      allow write: if isActiveAdmin();
+    }
+
+    /**
+     * Registrations Collection
+     * - Public can create (for registration form)
+     * - Public CANNOT read (prevents data exposure)
+     * - Only active admins can read and update
+     * - Only superadmins can delete
+     */
+    match /registrations/{registrationId} {
+      // Anyone can create a registration (public registration form)
+      allow create: if true;
+
+      // Only admins can read registrations
+      allow read: if isActiveAdmin();
+
+      // Only admins can update registrations
+      allow update: if isActiveAdmin();
+
+      // Only superadmins can delete registrations
+      allow delete: if isSuperAdmin();
+    }
+
+    /**
+     * FAQ Collection
+     * - Public can read
+     * - Only active admins can write
+     */
+    match /faq/{faqId} {
+      allow read: if true;
+      allow write: if isActiveAdmin();
+    }
+
+    /**
+     * Contact Inquiries Collection
+     * - Public can create (contact form submission)
+     * - Only admins can read
+     * - Only admins can update (mark as read/resolved)
+     * - Only superadmins can delete
+     */
+    match /contactInquiries/{inquiryId} {
+      allow create: if true;
+      allow read: if isActiveAdmin();
+      allow update: if isActiveAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    /**
+     * Admins Collection
+     * - Only admins can read admin list
+     * - Admins can read their own document
+     * - Only superadmins can create new admins
+     * - Superadmins can update any admin
+     * - Admins can update their own profile (limited fields)
+     * - Only superadmins can delete admins
+     */
+    match /admins/{adminId} {
+      // Admins can read all admin records
+      allow read: if isActiveAdmin();
+
+      // Only superadmins can create new admins
+      allow create: if isSuperAdmin();
+
+      // Superadmins can update any admin
+      // Regular admins can only update their own non-role fields
+      allow update: if isSuperAdmin() ||
+                       (isActiveAdmin() &&
+                        request.auth.uid == adminId &&
+                        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status', 'permissions']));
+
+      // Only superadmins can delete admins
+      allow delete: if isSuperAdmin();
+    }
+
+    /**
+     * Activity Logs Collection
+     * - Only admins can read logs
+     * - Only admins can create logs (audit trail)
+     * - No one can update or delete logs (immutable audit trail)
+     */
+    match /activityLogs/{logId} {
+      allow read: if isActiveAdmin();
+      allow create: if isActiveAdmin();
+      allow update, delete: if false;
+    }
+
+    /**
+     * Downloads Collection
+     * - Public can read (downloadable resources)
+     * - Only active admins can write
+     */
+    match /downloads/{downloadId} {
+      allow read: if true;
+      allow write: if isActiveAdmin();
+    }
+
+    /**
+     * Venue Rooms Collection
+     * - Public can read (venue information)
+     * - Only active admins can write
+     */
+    match /venueRooms/{roomId} {
+      allow read: if true;
+      allow write: if isActiveAdmin();
+    }
+
+    /**
+     * Venue Transport Collection
+     * - Public can read (transportation options)
+     * - Only active admins can write
+     */
+    match /venueTransport/{transportId} {
+      allow read: if true;
+      allow write: if isActiveAdmin();
+    }
+
+    /**
+     * Venue Amenities Collection
+     * - Public can read (amenity information)
+     * - Only active admins can write
+     */
+    match /venueAmenities/{amenityId} {
+      allow read: if true;
+      allow write: if isActiveAdmin();
+    }
+
+    /**
+     * Check-In Logs Collection
+     * - Only admins can read and create
+     * - No updates or deletes (immutable record)
+     */
+    match /checkInLogs/{logId} {
+      allow read: if isActiveAdmin();
+      allow create: if isActiveAdmin();
+      allow update, delete: if false;
+    }
+
+    /**
+     * Bank Accounts Collection
+     * - Only admins can read (for displaying payment info)
+     * - Only superadmins and finance admins can write
+     */
+    match /bankAccounts/{accountId} {
+      allow read: if isActiveAdmin();
+      allow write: if hasAnyRole(['superadmin', 'finance']);
+    }
+
+    /**
+     * Catch-all rule: Deny access to any undefined collections
+     * This prevents accidental exposure of new collections
+     */
     match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
-      allow read, write: if request.time < timestamp.date(2026, 1, 10);
+      allow read, write: if false;
     }
   }
 }
