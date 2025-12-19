@@ -110,8 +110,16 @@ const INITIAL_FORM_DATA = {
  *
  * @returns {JSX.Element} The registration page component
  */
+/**
+ * Registration category options derived from pricing tier
+ */
+const REGISTRATION_CATEGORIES = [
+  { key: 'regular', name: 'Regular' },
+  { key: 'student', name: 'Student' },
+];
+
 function RegisterPage() {
-  const { settings, activePricingTier, activeRegistrationCategories } = useSettings();
+  const { settings, activePricingTier } = useSettings();
   const [searchParams] = useSearchParams();
 
   /**
@@ -119,11 +127,11 @@ function RegisterPage() {
    */
   const initialFormData = useMemo(() => {
     const categoryParam = searchParams.get('category');
-    // Validate category param against database categories
-    const validCategoryKeys = activeRegistrationCategories.map((cat) => cat.key);
+    // Validate category param against available categories
+    const validCategoryKeys = REGISTRATION_CATEGORIES.map((cat) => cat.key);
     const category = validCategoryKeys.includes(categoryParam)
       ? categoryParam
-      : (activeRegistrationCategories[0]?.key || 'regular'); // Use first category or default to 'regular'
+      : 'regular'; // Default to 'regular'
 
     return {
       ...INITIAL_FORM_DATA,
@@ -132,7 +140,7 @@ function RegisterPage() {
         category,
       },
     };
-  }, [searchParams, activeRegistrationCategories]);
+  }, [searchParams]);
 
   const [currentStep, setCurrentStep] = useState(REGISTRATION_STEPS.PERSONAL_INFO);
   const [formData, setFormData] = useState(initialFormData);
@@ -430,15 +438,18 @@ function RegisterPage() {
   }, []);
 
   /**
-   * Gets the price for a registration category key
+   * Gets the price for a registration category key from the active pricing tier
    *
-   * @param {string} categoryKey - The category key
+   * @param {string} categoryKey - The category key ('regular' or 'student')
    * @returns {number} Category price or 0 if not found
    */
   const getCategoryPrice = useCallback((categoryKey) => {
-    const category = activeRegistrationCategories.find((cat) => cat.key === categoryKey);
-    return category ? category.price : 0;
-  }, [activeRegistrationCategories]);
+    if (!activePricingTier) return 0;
+    if (categoryKey === 'student') {
+      return activePricingTier.studentPrice || 0;
+    }
+    return activePricingTier.regularPrice || 0;
+  }, [activePricingTier]);
 
   /**
    * Gets the display name for a registration category key
@@ -447,9 +458,9 @@ function RegisterPage() {
    * @returns {string} Category name or the key if not found
    */
   const getCategoryName = useCallback((categoryKey) => {
-    const category = activeRegistrationCategories.find((cat) => cat.key === categoryKey);
+    const category = REGISTRATION_CATEGORIES.find((cat) => cat.key === categoryKey);
     return category ? category.name : categoryKey;
-  }, [activeRegistrationCategories]);
+  }, []);
 
   /**
    * Calculates total price for all attendees (primary + additional)
@@ -1229,9 +1240,9 @@ function RegisterPage() {
                       value={formData.primaryAttendee.category}
                       onChange={(e) => updatePrimaryAttendee('category', e.target.value)}
                     >
-                      {activeRegistrationCategories.map((category) => (
-                        <option key={category.id} value={category.key}>
-                          {category.name} - {formatPrice(category.price)}
+                      {REGISTRATION_CATEGORIES.map((category) => (
+                        <option key={category.key} value={category.key}>
+                          {category.name} - {formatPrice(getCategoryPrice(category.key))}
                         </option>
                       ))}
                     </select>
@@ -1383,9 +1394,9 @@ function RegisterPage() {
                         value={attendee.category}
                         onChange={(e) => updateAdditionalAttendee(index, 'category', e.target.value)}
                       >
-                        {activeRegistrationCategories.map((category) => (
-                          <option key={category.id} value={category.key}>
-                            {category.name} - {formatPrice(category.price)}
+                        {REGISTRATION_CATEGORIES.map((category) => (
+                          <option key={category.key} value={category.key}>
+                            {category.name} - {formatPrice(getCategoryPrice(category.key))}
                           </option>
                         ))}
                       </select>
