@@ -544,7 +544,7 @@ function RegistrationDetailModal({
               {/* Payment Proof Image - Only for paid registrations */}
               {registration.totalAmount > 0 && registration.payment?.proofUrl && (
                 <div className={styles.paymentProofContainer}>
-                  <label className={styles.label}>Payment Proof:</label>
+                  <label className={styles.formLabel}>Payment Proof</label>
                   <a
                     href={registration.payment.proofUrl}
                     target="_blank"
@@ -567,7 +567,7 @@ function RegistrationDetailModal({
                   <>
                     {/* Total Amount (read-only) */}
                     <div className={styles.formGroup}>
-                      <label className={styles.label}>Total Amount Required</label>
+                      <label className={styles.formLabel}>Total Amount Required</label>
                       <input
                         type="text"
                         value={formatCurrency(registration.totalAmount)}
@@ -578,7 +578,7 @@ function RegistrationDetailModal({
 
                     {/* Amount Received Input */}
                     <div className={styles.formGroup}>
-                      <label className={styles.label}>
+                      <label className={styles.formLabel}>
                         Amount Received <span className={styles.required}>*</span>
                       </label>
                       <input
@@ -596,7 +596,7 @@ function RegistrationDetailModal({
 
                     {/* Calculated Balance (auto-calculated) */}
                     <div className={styles.formGroup}>
-                      <label className={styles.label}>Balance</label>
+                      <label className={styles.formLabel}>Balance</label>
                       <input
                         type="text"
                         value={formatCurrency(Math.max(0, registration.totalAmount - amountPaid))}
@@ -614,7 +614,7 @@ function RegistrationDetailModal({
 
                     {/* Payment Method */}
                     <div className={styles.formGroup}>
-                      <label className={styles.label}>
+                      <label className={styles.formLabel}>
                         Payment Method <span className={styles.required}>*</span>
                       </label>
                       <select
@@ -632,7 +632,7 @@ function RegistrationDetailModal({
 
                     {/* Reference Number */}
                     <div className={styles.formGroup}>
-                      <label className={styles.label}>Reference Number</label>
+                      <label className={styles.formLabel}>Reference Number</label>
                       <input
                         type="text"
                         value={referenceNumber}
@@ -646,7 +646,7 @@ function RegistrationDetailModal({
                     {/* Rejection Reason (only shown if partial payment) */}
                     {amountPaid > 0 && amountPaid < registration.totalAmount && (
                       <div className={styles.formGroup}>
-                        <label className={styles.label}>
+                        <label className={styles.formLabel}>
                           Message to User (shown on status page)
                         </label>
                         <textarea
