@@ -8,12 +8,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '../../components/admin';
 import { getPublishedWorkshops } from '../../services/workshops';
-import {
-  WORKSHOP_CATEGORY_LABELS,
-  WORKSHOP_CATEGORY_COLORS,
-  WORKSHOP_CATEGORIES,
-  WORKSHOP_TIME_SLOT_LABELS,
-} from '../../constants';
 import styles from './AdminWorkshopsPage.module.css';
 
 /**
@@ -77,17 +71,6 @@ function AdminWorkshopsPage() {
     if (remaining === 0) return 'full';
     if (remaining <= 10) return 'limited';
     return 'available';
-  };
-
-  /**
-   * Gets category colors for styling
-   *
-   * @param {string} category - Workshop category
-   * @returns {Object} Category color object
-   */
-  const getCategoryColors = (category) => {
-    return WORKSHOP_CATEGORY_COLORS[category] ||
-      WORKSHOP_CATEGORY_COLORS[WORKSHOP_CATEGORIES.NEXT_GENERATION];
   };
 
   /**
@@ -230,10 +213,7 @@ function AdminWorkshopsPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Workshop Title</th>
-                <th>Category</th>
-                <th>Time Slot</th>
-                <th>Speaker(s)</th>
+                <th>Title</th>
                 <th>Venue</th>
                 <th>Capacity</th>
                 <th>Registered</th>
@@ -248,7 +228,6 @@ function AdminWorkshopsPage() {
                 const fillPercentage = workshop.capacity
                   ? Math.round(((workshop.registeredCount || 0) / workshop.capacity) * 100)
                   : 0;
-                const categoryColors = getCategoryColors(workshop.category);
 
                 return (
                   <tr key={workshop.id}>
@@ -256,28 +235,6 @@ function AdminWorkshopsPage() {
                       <div className={styles.titleContainer}>
                         <span>{workshop.title}</span>
                       </div>
-                    </td>
-                    <td>
-                      <span
-                        className={styles.categoryBadge}
-                        style={{
-                          backgroundColor: categoryColors.background,
-                          color: categoryColors.text,
-                          borderColor: categoryColors.border,
-                        }}
-                      >
-                        {WORKSHOP_CATEGORY_LABELS[workshop.category] || workshop.category}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={styles.timeSlot}>
-                        {WORKSHOP_TIME_SLOT_LABELS[workshop.timeSlot] || workshop.timeSlot}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={styles.speakers}>
-                        {workshop.speakerNames?.join(', ') || 'TBA'}
-                      </span>
                     </td>
                     <td>
                       <span className={styles.venue}>{workshop.venue || 'TBA'}</span>

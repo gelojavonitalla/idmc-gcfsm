@@ -163,7 +163,6 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Site', path: ADMIN_ROUTES.SETTINGS, icon: 'settings' },
       { label: 'Speakers', path: ADMIN_ROUTES.SPEAKERS, icon: 'mic' },
       { label: 'Schedule', path: ADMIN_ROUTES.SCHEDULE, icon: 'calendar' },
-      { label: 'Workshops', path: ADMIN_ROUTES.WORKSHOPS, icon: 'school' },
       { label: 'Venue', path: ADMIN_ROUTES.VENUE, icon: 'location' },
       { label: 'FAQ', path: ADMIN_ROUTES.FAQ, icon: 'help' },
       { label: 'Downloads', path: ADMIN_ROUTES.DOWNLOADS, icon: 'download' },
@@ -176,6 +175,7 @@ export const ADMIN_NAV_GROUPS = [
     label: 'Operations',
     items: [
       { label: 'Registrations', path: ADMIN_ROUTES.REGISTRATIONS, icon: 'people' },
+      { label: 'Workshops', path: ADMIN_ROUTES.WORKSHOPS, icon: 'hammer' },
       { label: 'Check-In', path: ADMIN_ROUTES.CHECKIN, icon: 'checkin' },
       { label: 'Check-In Monitor', path: ADMIN_ROUTES.CHECKIN_MONITOR, icon: 'monitor' },
       { label: 'Inquiries', path: ADMIN_ROUTES.INQUIRIES, icon: 'mail' },
