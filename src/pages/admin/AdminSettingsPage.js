@@ -11,6 +11,7 @@ import {
   SettingsForm,
   PricingTierManager,
 } from '../../components/admin';
+import RegistrationCategoryManager from '../../components/admin/RegistrationCategoryManager';
 import {
   getConferenceSettings,
   updateConferenceSettings,
@@ -18,6 +19,10 @@ import {
   createPricingTier,
   updatePricingTier,
   deletePricingTier,
+  getRegistrationCategories,
+  createRegistrationCategory,
+  updateRegistrationCategory,
+  deleteRegistrationCategory,
 } from '../../services';
 import { useAdminAuth } from '../../context';
 import styles from './AdminSettingsPage.module.css';
@@ -31,6 +36,7 @@ function AdminSettingsPage() {
   const { admin } = useAdminAuth();
   const [settings, setSettings] = useState(null);
   const [pricingTiers, setPricingTiers] = useState([]);
+  const [registrationCategories, setRegistrationCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('general');
@@ -43,13 +49,15 @@ function AdminSettingsPage() {
     setError(null);
 
     try {
-      const [settingsData, tiersData] = await Promise.all([
+      const [settingsData, tiersData, categoriesData] = await Promise.all([
         getConferenceSettings(),
         getPricingTiers(),
+        getRegistrationCategories(),
       ]);
 
       setSettings(settingsData);
       setPricingTiers(tiersData);
+      setRegistrationCategories(categoriesData);
     } catch (fetchError) {
       console.error('Failed to fetch settings:', fetchError);
       setError('Failed to load settings. Please try again.');
@@ -108,6 +116,39 @@ function AdminSettingsPage() {
     setPricingTiers((prev) => prev.filter((tier) => tier.id !== tierId));
   };
 
+  /**
+   * Handles creating a registration category
+   *
+   * @param {Object} categoryData - Category data to create
+   */
+  const handleCreateCategory = async (categoryData) => {
+    const newCategory = await createRegistrationCategory(categoryData, admin?.id, admin?.email);
+    setRegistrationCategories((prev) => [...prev, newCategory]);
+  };
+
+  /**
+   * Handles updating a registration category
+   *
+   * @param {string} categoryId - Category ID to update
+   * @param {Object} categoryData - Updated category data
+   */
+  const handleUpdateCategory = async (categoryId, categoryData) => {
+    const updated = await updateRegistrationCategory(categoryId, categoryData, admin?.id, admin?.email);
+    setRegistrationCategories((prev) =>
+      prev.map((category) => (category.id === categoryId ? { ...category, ...updated } : category))
+    );
+  };
+
+  /**
+   * Handles deleting a registration category
+   *
+   * @param {string} categoryId - Category ID to delete
+   */
+  const handleDeleteCategory = async (categoryId) => {
+    await deleteRegistrationCategory(categoryId, admin?.id, admin?.email);
+    setRegistrationCategories((prev) => prev.filter((category) => category.id !== categoryId));
+  };
+
   return (
     <AdminLayout title="Settings">
       {/* Page Header */}
@@ -164,6 +205,16 @@ function AdminSettingsPage() {
           </svg>
           Pricing Tiers
         </button>
+        <button
+          className={`${styles.tab} ${activeTab === 'categories' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('categories')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+          </svg>
+          Registration Categories
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -181,6 +232,15 @@ function AdminSettingsPage() {
             onCreate={handleCreateTier}
             onUpdate={handleUpdateTier}
             onDelete={handleDeleteTier}
+            isLoading={isLoading}
+          />
+        )}
+        {activeTab === 'categories' && (
+          <RegistrationCategoryManager
+            categories={registrationCategories}
+            onCreate={handleCreateCategory}
+            onUpdate={handleUpdateCategory}
+            onDelete={handleDeleteCategory}
             isLoading={isLoading}
           />
         )}
