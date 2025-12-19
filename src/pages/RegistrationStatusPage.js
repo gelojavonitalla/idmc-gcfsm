@@ -521,9 +521,13 @@ function RegistrationStatusPage() {
                         You have a balance of <strong>{formatPrice(registration.payment.balance)}</strong> remaining.
                         Please upload proof of full payment to confirm your registration.
                       </p>
-                    ) : (
+                    ) : registration.totalAmount > 0 ? (
                       <p>
                         Please complete your payment of <strong>{formatPrice(registration.totalAmount)}</strong> and upload proof of payment to confirm your registration.
+                      </p>
+                    ) : (
+                      <p>
+                        Please upload proof of payment to confirm your registration. If you believe this is an error, please <a href={ROUTES.CONTACT}>contact us</a>.
                       </p>
                     )}
 
