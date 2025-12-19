@@ -1946,12 +1946,10 @@ function RegisterPage() {
                     of <strong>{formatPrice(calculateTotalPrice())}</strong> to the registration booth.
                   </p>
                   <p>
-                    <strong>Office Hours:</strong>
+                    <strong>Booth Hours:</strong>
                   </p>
                   <ul>
-                    <li>Monday to Friday: 9:00 AM - 5:00 PM</li>
-                    <li>Saturday: 9:00 AM - 12:00 PM</li>
-                    <li>Sunday: During church service</li>
+                    <li>Sunday: During church service (booth available outside the church)</li>
                     <li>Or during the event day at the registration booth</li>
                   </ul>
                   <p className={styles.cashPaymentNote}>
