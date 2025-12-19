@@ -54,6 +54,11 @@ const DEFAULT_SETTINGS = {
     instagram: 'https://instagram.com/gcfsouthmetro',
     youtube: 'https://youtube.com/channel/UCJ36YX23P_yCjMzetI1s6Ag',
   },
+  sms: {
+    enabled: false,
+    gatewayDomain: '1.onewaysms.asia',
+    gatewayEmail: '',
+  },
 };
 
 function SettingsForm({ settings, onSave, isLoading }) {
@@ -86,6 +91,11 @@ function SettingsForm({ settings, onSave, isLoading }) {
       facebook: settings?.social?.facebook || DEFAULT_SETTINGS.social.facebook,
       instagram: settings?.social?.instagram || DEFAULT_SETTINGS.social.instagram,
       youtube: settings?.social?.youtube || DEFAULT_SETTINGS.social.youtube,
+    },
+    sms: {
+      enabled: settings?.sms?.enabled ?? DEFAULT_SETTINGS.sms.enabled,
+      gatewayDomain: settings?.sms?.gatewayDomain || DEFAULT_SETTINGS.sms.gatewayDomain,
+      gatewayEmail: settings?.sms?.gatewayEmail || DEFAULT_SETTINGS.sms.gatewayEmail,
     },
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -627,6 +637,68 @@ function SettingsForm({ settings, onSave, isLoading }) {
         </div>
       </section>
 
+      {/* SMS Notifications Section */}
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>SMS Notifications</h3>
+        <p className={styles.sectionDescription}>
+          Configure OneWaySMS email-to-SMS gateway for sending text message notifications.
+        </p>
+        <div className={styles.grid}>
+          <div className={styles.fieldFull}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                name="sms.enabled"
+                checked={formData.sms.enabled}
+                onChange={handleChange}
+                className={styles.checkbox}
+              />
+              <span>Enable SMS Notifications</span>
+            </label>
+            <p className={styles.fieldHint}>
+              When enabled, SMS notifications will be sent for registration confirmations and
+              payment confirmations.
+            </p>
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="sms.gatewayDomain" className={styles.label}>
+              Gateway Domain
+            </label>
+            <input
+              type="text"
+              id="sms.gatewayDomain"
+              name="sms.gatewayDomain"
+              value={formData.sms.gatewayDomain}
+              onChange={handleChange}
+              className={styles.input}
+              placeholder="1.onewaysms.asia"
+              disabled={!formData.sms.enabled}
+            />
+            <p className={styles.fieldHint}>
+              SMS gateway domain (e.g., 1.onewaysms.asia)
+            </p>
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="sms.gatewayEmail" className={styles.label}>
+              Gateway Email (Optional)
+            </label>
+            <input
+              type="email"
+              id="sms.gatewayEmail"
+              name="sms.gatewayEmail"
+              value={formData.sms.gatewayEmail}
+              onChange={handleChange}
+              className={styles.input}
+              placeholder="Leave empty to use phone@domain format"
+              disabled={!formData.sms.enabled}
+            />
+            <p className={styles.fieldHint}>
+              Direct gateway email if required by your SMS provider
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Submit Button */}
       <div className={styles.actions}>
         <button
@@ -685,6 +757,11 @@ SettingsForm.propTypes = {
       facebook: PropTypes.string,
       instagram: PropTypes.string,
       youtube: PropTypes.string,
+    }),
+    sms: PropTypes.shape({
+      enabled: PropTypes.bool,
+      gatewayDomain: PropTypes.string,
+      gatewayEmail: PropTypes.string,
     }),
   }),
   onSave: PropTypes.func.isRequired,

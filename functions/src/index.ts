@@ -36,6 +36,15 @@ const appUrl = defineString("APP_URL", {default: ""});
 // Flag to enable/disable SendGrid (set to "true" to use SendGrid)
 const useSendGrid = defineString("USE_SENDGRID", {default: "false"});
 
+// OneWaySMS email-to-SMS gateway configuration
+// SMS is sent by emailing: phone@{ONEWAYSMS_GATEWAY_DOMAIN}
+// The SUBJECT line contains the SMS message content
+const smsGatewayDomain = defineString("ONEWAYSMS_GATEWAY_DOMAIN", {
+  default: "1.onewaysms.asia",
+});
+const smsGatewayEmail = defineString("ONEWAYSMS_GATEWAY_EMAIL", {default: ""});
+const useOneWaySms = defineString("USE_ONEWAYSMS", {default: "false"});
+
 /**
  * Generates a QR code as a base64 data URL
  *
@@ -87,7 +96,74 @@ const COLLECTIONS = {
   ADMINS: "admins",
   REGISTRATIONS: "registrations",
   SETTINGS: "settings",
+  CONFERENCES: "conferences",
 };
+
+/**
+ * SMS settings interface
+ */
+interface SmsSettings {
+  enabled: boolean;
+  gatewayDomain: string;
+  gatewayEmail: string;
+}
+
+/**
+ * Default SMS settings
+ */
+const DEFAULT_SMS_SETTINGS: SmsSettings = {
+  enabled: false,
+  gatewayDomain: "1.onewaysms.asia",
+  gatewayEmail: "",
+};
+
+/**
+ * Retrieves SMS settings from Firestore conference settings
+ * Falls back to environment variables if Firestore settings not found
+ *
+ * @return {Promise<SmsSettings>} SMS configuration settings
+ */
+async function getSmsSettings(): Promise<SmsSettings> {
+  try {
+    const db = getFirestore();
+    const settingsDoc = await db
+      .collection(COLLECTIONS.CONFERENCES)
+      .doc("conference-settings")
+      .get();
+
+    if (settingsDoc.exists) {
+      const data = settingsDoc.data();
+      if (data?.sms) {
+        return {
+          enabled: data.sms.enabled ?? DEFAULT_SMS_SETTINGS.enabled,
+          gatewayDomain: data.sms.gatewayDomain ||
+            DEFAULT_SMS_SETTINGS.gatewayDomain,
+          gatewayEmail: data.sms.gatewayEmail ||
+            DEFAULT_SMS_SETTINGS.gatewayEmail,
+        };
+      }
+    }
+
+    // Fallback to environment variables for backward compatibility
+    return {
+      enabled: useOneWaySms.value().toLowerCase() === "true",
+      gatewayDomain: smsGatewayDomain.value() ||
+        DEFAULT_SMS_SETTINGS.gatewayDomain,
+      gatewayEmail: smsGatewayEmail.value() ||
+        DEFAULT_SMS_SETTINGS.gatewayEmail,
+    };
+  } catch (error) {
+    logger.warn("Could not fetch SMS settings from Firestore:", error);
+    // Fallback to environment variables
+    return {
+      enabled: useOneWaySms.value().toLowerCase() === "true",
+      gatewayDomain: smsGatewayDomain.value() ||
+        DEFAULT_SMS_SETTINGS.gatewayDomain,
+      gatewayEmail: smsGatewayEmail.value() ||
+        DEFAULT_SMS_SETTINGS.gatewayEmail,
+    };
+  }
+}
 
 /**
  * Registration status constants
@@ -321,6 +397,196 @@ async function sendInvitationEmailViaSendGrid(
 function isSendGridEnabled(): boolean {
   return useSendGrid.value().toLowerCase() === "true";
 }
+
+/**
+ * Formats a Philippine phone number to international format
+ * Handles various input formats: 09XX, 9XX, +639XX, 639XX
+ *
+ * @param {string} phone - The phone number to format
+ * @return {string} Phone number in format 639XXXXXXXXX (no + prefix)
+ */
+function formatPhoneNumber(phone: string): string {
+  // Remove all non-digit characters
+  const digits = phone.replace(/\D/g, "");
+
+  // Handle different formats
+  if (digits.startsWith("63") && digits.length === 12) {
+    // Already in 639XXXXXXXXX format
+    return digits;
+  } else if (digits.startsWith("09") && digits.length === 11) {
+    // Philippine format 09XXXXXXXXX
+    return "63" + digits.slice(1);
+  } else if (digits.startsWith("9") && digits.length === 10) {
+    // Without leading zero: 9XXXXXXXXX
+    return "63" + digits;
+  }
+
+  // Return as-is if format is unrecognized
+  logger.warn(`Unrecognized phone format: ${phone}, returning as-is`);
+  return digits;
+}
+
+/**
+ * Validates a Philippine mobile phone number
+ *
+ * @param {string} phone - The phone number to validate
+ * @return {boolean} True if valid Philippine mobile number
+ */
+function isValidPhilippinePhone(phone: string): boolean {
+  const formatted = formatPhoneNumber(phone);
+  // Valid Philippine mobile numbers start with 639 and are 12 digits
+  return /^639\d{9}$/.test(formatted);
+}
+
+/**
+ * Sends SMS via OneWaySMS email-to-SMS gateway using SendGrid
+ *
+ * OneWaySMS works by sending an email to a specific gateway address.
+ * The email is then converted to an SMS and sent to the recipient.
+ * Settings are read from Firestore conference settings.
+ *
+ * @param {string} phoneNumber - Recipient phone number (any Philippine format)
+ * @param {string} message - SMS message content (max 160 chars for single SMS)
+ * @return {Promise<boolean>} True if SMS was sent successfully
+ */
+async function sendSmsViaOneWaySms(
+  phoneNumber: string,
+  message: string
+): Promise<boolean> {
+  // Get SMS settings from Firestore
+  const smsSettings = await getSmsSettings();
+
+  if (!smsSettings.enabled) {
+    logger.info("OneWaySMS not enabled, skipping SMS");
+    return false;
+  }
+
+  // Validate phone number
+  if (!isValidPhilippinePhone(phoneNumber)) {
+    logger.warn(`Invalid phone number for SMS: ${phoneNumber}`);
+    return false;
+  }
+
+  const formattedPhone = formatPhoneNumber(phoneNumber);
+
+  // Get SendGrid API key (reuse existing infrastructure)
+  const apiKey = await getSendGridApiKey();
+  if (!apiKey) {
+    logger.warn("SendGrid API key not configured, cannot send SMS");
+    return false;
+  }
+
+  sgMail.setApiKey(apiKey);
+
+  const fromEmail = senderEmail.value();
+  if (!fromEmail) {
+    logger.warn("SENDER_EMAIL not configured, cannot send SMS");
+    return false;
+  }
+
+  // Get gateway email address from Firestore settings
+  // Format: either direct gateway email or phone@gateway.domain
+  let toEmail: string;
+  if (smsSettings.gatewayEmail) {
+    // Direct gateway email provided (OneWaySMS may use this format)
+    toEmail = smsSettings.gatewayEmail;
+  } else if (smsSettings.gatewayDomain) {
+    // Standard email-to-SMS format: phone@gateway.domain
+    toEmail = `${formattedPhone}@${smsSettings.gatewayDomain}`;
+  } else {
+    logger.error("No SMS gateway configured");
+    return false;
+  }
+
+  try {
+    // OneWaySMS: The SUBJECT line contains the SMS message content
+    const msg = {
+      to: toEmail,
+      from: {
+        email: fromEmail,
+        name: senderName.value() || "IDMC",
+      },
+      subject: message, // SMS content goes in subject for OneWaySMS
+      text: " ", // Body can be empty but SendGrid requires non-empty
+    };
+
+    await sgMail.send(msg);
+    logger.info(`SMS sent successfully to ${formattedPhone}`);
+    return true;
+  } catch (error) {
+    logger.error(`Failed to send SMS to ${formattedPhone}:`, error);
+    return false;
+  }
+}
+
+/**
+ * SMS message templates
+ */
+const SMS_TEMPLATES = {
+  /**
+   * Registration confirmation SMS
+   *
+   * @param {string} firstName - Attendee's first name
+   * @param {string} registrationId - Full registration ID
+   * @param {string} shortCode - Short registration code
+   * @param {number} amount - Total amount to pay
+   * @param {string} deadline - Payment deadline ISO string
+   * @return {string} SMS message text
+   */
+  registrationConfirmation: (
+    firstName: string,
+    registrationId: string,
+    shortCode: string,
+    amount: number,
+    deadline: string
+  ): string => {
+    const formattedDeadline = new Date(deadline).toLocaleDateString("en-PH", {
+      month: "short",
+      day: "numeric",
+    });
+    const statusUrl = `${appUrl.value()}/registration/status?id=${registrationId}`;
+    return `Hi ${firstName}! Your IDMC 2026 registration is received. ` +
+      `ID: ${shortCode}. Pay PHP${amount.toLocaleString()} by ` +
+      `${formattedDeadline}. Check status: ${statusUrl}`;
+  },
+
+  /**
+   * Payment confirmed SMS
+   *
+   * @param {string} firstName - Attendee's first name
+   * @param {string} shortCode - Short registration code
+   * @return {string} SMS message text
+   */
+  paymentConfirmed: (
+    firstName: string,
+    shortCode: string
+  ): string => {
+    return `Hi ${firstName}! Your IDMC 2026 payment is CONFIRMED! ` +
+      `Your code: ${shortCode}. Show your QR code at check-in. See you there!`;
+  },
+
+  /**
+   * Payment reminder SMS
+   *
+   * @param {string} firstName - Attendee's first name
+   * @param {string} shortCode - Short registration code
+   * @param {string} deadline - Payment deadline ISO string
+   * @return {string} SMS message text
+   */
+  paymentReminder: (
+    firstName: string,
+    shortCode: string,
+    deadline: string
+  ): string => {
+    const formattedDeadline = new Date(deadline).toLocaleDateString("en-PH", {
+      month: "short",
+      day: "numeric",
+    });
+    return `Hi ${firstName}! Reminder: Your IDMC 2026 payment ` +
+      `(${shortCode}) is due on ${formattedDeadline}. ` +
+      "Please pay to confirm your slot.";
+  },
+};
 
 /**
  * Firestore trigger that sends invitation email when a new admin is created
@@ -1175,7 +1441,7 @@ async function sendIndividualTicketEmail(
 }
 
 /**
- * Firestore trigger that sends confirmation email when a new
+ * Firestore trigger that sends confirmation email and SMS when a new
  * registration is created
  */
 export const onRegistrationCreated = onDocumentCreated(
@@ -1192,41 +1458,59 @@ export const onRegistrationCreated = onDocumentCreated(
 
     logger.info(`Processing new registration: ${registrationId}`);
 
-    // Only send email if SendGrid is enabled
-    if (!isSendGridEnabled()) {
-      logger.info("SendGrid not enabled, skipping confirmation email");
-      return;
-    }
-
     const email = registrationData.primaryAttendee?.email;
-    if (!email) {
-      logger.error(`Registration ${registrationId} has no email address`);
-      return;
+    const phone = registrationData.primaryAttendee?.phone;
+    const updateData: Record<string, unknown> = {};
+
+    // Send confirmation email if SendGrid is enabled
+    if (isSendGridEnabled() && email) {
+      try {
+        await sendRegistrationConfirmationEmail(email, {
+          registrationId: registrationData.registrationId,
+          shortCode: registrationData.shortCode,
+          primaryAttendee: registrationData.primaryAttendee,
+          totalAmount: registrationData.totalAmount,
+          paymentDeadline: registrationData.paymentDeadline,
+          church: registrationData.church,
+        });
+        updateData.confirmationEmailSent = true;
+        updateData.confirmationEmailSentAt = FieldValue.serverTimestamp();
+      } catch (error) {
+        logger.error(`Error sending confirmation email for ${registrationId}:`, error);
+      }
+    } else if (!isSendGridEnabled()) {
+      logger.info("SendGrid not enabled, skipping confirmation email");
     }
 
-    try {
-      await sendRegistrationConfirmationEmail(email, {
-        registrationId: registrationData.registrationId,
-        shortCode: registrationData.shortCode,
-        primaryAttendee: registrationData.primaryAttendee,
-        totalAmount: registrationData.totalAmount,
-        paymentDeadline: registrationData.paymentDeadline,
-        church: registrationData.church,
-      });
+    // Send confirmation SMS if phone is available
+    if (phone) {
+      try {
+        const smsMessage = SMS_TEMPLATES.registrationConfirmation(
+          registrationData.primaryAttendee.firstName,
+          registrationData.registrationId,
+          registrationData.shortCode,
+          registrationData.totalAmount,
+          registrationData.paymentDeadline
+        );
+        const smsSent = await sendSmsViaOneWaySms(phone, smsMessage);
+        if (smsSent) {
+          updateData.confirmationSmsSent = true;
+          updateData.confirmationSmsSentAt = FieldValue.serverTimestamp();
+        }
+      } catch (error) {
+        logger.error(`Error sending confirmation SMS for ${registrationId}:`, error);
+      }
+    }
 
-      // Update document to mark email as sent
-      await snapshot.ref.update({
-        confirmationEmailSent: true,
-        confirmationEmailSentAt: FieldValue.serverTimestamp(),
-      });
-    } catch (error) {
-      logger.error(`Error sending confirmation email for ${registrationId}:`, error);
+    // Update document with notification status
+    if (Object.keys(updateData).length > 0) {
+      await snapshot.ref.update(updateData);
     }
   }
 );
 
 /**
- * Firestore trigger that sends ticket email when payment is confirmed
+ * Firestore trigger that sends ticket email and SMS when payment is confirmed
  */
 export const onPaymentConfirmed = onDocumentUpdated(
   `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
@@ -1247,19 +1531,11 @@ export const onPaymentConfirmed = onDocumentUpdated(
     const registrationId = event.params.registrationId;
     logger.info(`Payment confirmed for registration: ${registrationId}`);
 
-    // Only send email if SendGrid is enabled
-    if (!isSendGridEnabled()) {
-      logger.info("SendGrid not enabled, skipping ticket email");
-      return;
-    }
-
     const primaryEmail = after.primaryAttendee?.email;
-    if (!primaryEmail) {
-      logger.error(`Registration ${registrationId} has no email address`);
-      return;
-    }
+    const primaryPhone = after.primaryAttendee?.phone;
+    const updateData: Record<string, unknown> = {};
 
-    // Get conference settings for event details
+    // Get conference settings for event details (needed for email)
     const db = getFirestore();
     const defaultSettings = {
       title: "IDMC 2026",
@@ -1281,70 +1557,94 @@ export const onPaymentConfirmed = onDocumentUpdated(
       logger.warn("Could not fetch settings, using defaults:", error);
     }
 
-    try {
-      // Generate QR codes for all attendees
-      const attendeesWithQR = await generateAllAttendeeQRCodes(
-        after.registrationId,
-        after.primaryAttendee,
-        after.additionalAttendees
-      );
+    // Send ticket email if SendGrid is enabled
+    if (isSendGridEnabled() && primaryEmail) {
+      try {
+        // Generate QR codes for all attendees
+        const attendeesWithQR = await generateAllAttendeeQRCodes(
+          after.registrationId,
+          after.primaryAttendee,
+          after.additionalAttendees
+        );
 
-      logger.info(`Generated ${attendeesWithQR.length} QR codes for registration: ${registrationId}`);
+        logger.info(`Generated ${attendeesWithQR.length} QR codes for registration: ${registrationId}`);
 
-      // Send email to primary attendee with ALL QR codes
-      await sendTicketEmail(primaryEmail, {
-        registrationId: after.registrationId,
-        shortCode: after.shortCode,
-        qrCodeData: after.qrCodeData,
-        primaryAttendee: after.primaryAttendee,
-        totalAmount: after.totalAmount,
-        church: after.church,
-        additionalAttendees: after.additionalAttendees,
-      }, settings, attendeesWithQR);
+        // Send email to primary attendee with ALL QR codes
+        await sendTicketEmail(primaryEmail, {
+          registrationId: after.registrationId,
+          shortCode: after.shortCode,
+          qrCodeData: after.qrCodeData,
+          primaryAttendee: after.primaryAttendee,
+          totalAmount: after.totalAmount,
+          church: after.church,
+          additionalAttendees: after.additionalAttendees,
+        }, settings, attendeesWithQR);
 
-      // Send individual emails to additional attendees who have email addresses
-      const additionalAttendees = after.additionalAttendees || [];
-      let additionalEmailsSent = 0;
+        updateData.ticketEmailSent = true;
+        updateData.ticketEmailSentAt = FieldValue.serverTimestamp();
 
-      for (let i = 0; i < additionalAttendees.length; i++) {
-        const attendee = additionalAttendees[i];
-        const attendeeEmail = attendee.email?.trim();
+        // Send individual emails to additional attendees with emails
+        const additionalAttendees = after.additionalAttendees || [];
+        let additionalEmailsSent = 0;
 
-        if (attendeeEmail) {
-          try {
-            const attendeeWithQR = attendeesWithQR.find(
-              (a) => a.attendeeIndex === i + 1
-            );
-            if (attendeeWithQR) {
-              await sendIndividualTicketEmail(
-                attendeeEmail,
-                {
-                  registrationId: after.registrationId,
-                  shortCode: after.shortCode,
-                  church: after.church,
-                  primaryAttendee: after.primaryAttendee,
-                },
-                settings,
-                attendeeWithQR
+        for (let i = 0; i < additionalAttendees.length; i++) {
+          const attendee = additionalAttendees[i];
+          const attendeeEmail = attendee.email?.trim();
+
+          if (attendeeEmail) {
+            try {
+              const attendeeWithQR = attendeesWithQR.find(
+                (a) => a.attendeeIndex === i + 1
               );
-              additionalEmailsSent++;
+              if (attendeeWithQR) {
+                await sendIndividualTicketEmail(
+                  attendeeEmail,
+                  {
+                    registrationId: after.registrationId,
+                    shortCode: after.shortCode,
+                    church: after.church,
+                    primaryAttendee: after.primaryAttendee,
+                  },
+                  settings,
+                  attendeeWithQR
+                );
+                additionalEmailsSent++;
+              }
+            } catch (emailError) {
+              logger.warn(`Failed to send individual email to ${attendeeEmail}:`, emailError);
             }
-          } catch (emailError) {
-            logger.warn(`Failed to send individual email to ${attendeeEmail}:`, emailError);
           }
         }
+
+        updateData.additionalEmailsSent = additionalEmailsSent;
+        logger.info(`Sent ${additionalEmailsSent} additional individual ticket emails for ${registrationId}`);
+      } catch (error) {
+        logger.error(`Error sending ticket email for ${registrationId}:`, error);
       }
+    } else if (!isSendGridEnabled()) {
+      logger.info("SendGrid not enabled, skipping ticket email");
+    }
 
-      logger.info(`Sent ${additionalEmailsSent} additional individual ticket emails for ${registrationId}`);
+    // Send confirmation SMS if phone is available
+    if (primaryPhone) {
+      try {
+        const smsMessage = SMS_TEMPLATES.paymentConfirmed(
+          after.primaryAttendee.firstName,
+          after.shortCode
+        );
+        const smsSent = await sendSmsViaOneWaySms(primaryPhone, smsMessage);
+        if (smsSent) {
+          updateData.ticketSmsSent = true;
+          updateData.ticketSmsSentAt = FieldValue.serverTimestamp();
+        }
+      } catch (error) {
+        logger.error(`Error sending payment confirmation SMS for ${registrationId}:`, error);
+      }
+    }
 
-      // Update document to mark ticket email as sent
-      await event.data?.after?.ref.update({
-        ticketEmailSent: true,
-        ticketEmailSentAt: FieldValue.serverTimestamp(),
-        additionalEmailsSent,
-      });
-    } catch (error) {
-      logger.error(`Error sending ticket email for ${registrationId}:`, error);
+    // Update document with notification status
+    if (Object.keys(updateData).length > 0) {
+      await event.data?.after?.ref.update(updateData);
     }
   }
 );
