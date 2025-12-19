@@ -160,7 +160,7 @@ export const ADMIN_NAV_GROUPS = [
     id: 'content',
     label: 'Content',
     items: [
-      { label: 'Site', path: ADMIN_ROUTES.SETTINGS, icon: 'settings' },
+      { label: 'Site', path: ADMIN_ROUTES.SETTINGS, icon: 'globe' },
       { label: 'Speakers', path: ADMIN_ROUTES.SPEAKERS, icon: 'mic' },
       { label: 'Schedule', path: ADMIN_ROUTES.SCHEDULE, icon: 'calendar' },
       { label: 'Venue', path: ADMIN_ROUTES.VENUE, icon: 'location' },
