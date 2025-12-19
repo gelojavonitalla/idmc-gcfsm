@@ -586,7 +586,10 @@ const SMS_TEMPLATES = {
  * @param event - The Firestore event containing the new document data
  */
 export const onAdminCreated = onDocumentCreated(
-  `${COLLECTIONS.ADMINS}/{adminId}`,
+  {
+    document: `${COLLECTIONS.ADMINS}/{adminId}`,
+    database: DATABASE_ID,
+  },
   async (event) => {
     const snapshot = event.data;
     if (!snapshot) {
@@ -1429,7 +1432,10 @@ async function sendIndividualTicketEmail(
  * registration is created
  */
 export const onRegistrationCreated = onDocumentCreated(
-  `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
+  {
+    document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
+    database: DATABASE_ID,
+  },
   async (event) => {
     const snapshot = event.data;
     if (!snapshot) {
@@ -1497,7 +1503,10 @@ export const onRegistrationCreated = onDocumentCreated(
  * Firestore trigger that sends ticket email and SMS when payment is confirmed
  */
 export const onPaymentConfirmed = onDocumentUpdated(
-  `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
+  {
+    document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
+    database: DATABASE_ID,
+  },
   async (event) => {
     const before = event.data?.before?.data();
     const after = event.data?.after?.data();
