@@ -92,10 +92,8 @@ function SessionTable({ sessions, onEdit, onDelete, onToggleStatus, isLoading })
               <th style={{ width: '60px' }}>Order</th>
               <th>Session</th>
               <th>Time</th>
-              <th>Type</th>
               <th>Venue</th>
               <th>Speakers</th>
-              <th>Status</th>
               <th style={{ width: '100px' }}>Actions</th>
             </tr>
           </thead>
@@ -112,6 +110,31 @@ function SessionTable({ sessions, onEdit, onDelete, onToggleStatus, isLoading })
                         {session.description.length > 60 ? '...' : ''}
                       </span>
                     )}
+                    <div className={styles.sessionBadges}>
+                      <span
+                        className={styles.typeBadge}
+                        style={getTypeStyle(session.sessionType)}
+                      >
+                        {SESSION_TYPE_LABELS[session.sessionType] || session.sessionType}
+                      </span>
+                      <button
+                        className={`${styles.statusBadge} ${
+                          session.status === SESSION_STATUS.PUBLISHED
+                            ? styles.statusPublished
+                            : styles.statusDraft
+                        }`}
+                        onClick={() => onToggleStatus(session.id)}
+                        title={`Click to ${
+                          session.status === SESSION_STATUS.PUBLISHED
+                            ? 'unpublish'
+                            : 'publish'
+                        }`}
+                      >
+                        {session.status === SESSION_STATUS.PUBLISHED
+                          ? 'Published'
+                          : 'Draft'}
+                      </button>
+                    </div>
                   </div>
                 </td>
                 <td>
@@ -126,38 +149,11 @@ function SessionTable({ sessions, onEdit, onDelete, onToggleStatus, isLoading })
                     )}
                   </div>
                 </td>
-                <td>
-                  <span
-                    className={styles.typeBadge}
-                    style={getTypeStyle(session.sessionType)}
-                  >
-                    {SESSION_TYPE_LABELS[session.sessionType] || session.sessionType}
-                  </span>
-                </td>
                 <td className={styles.venue}>{session.venue || '-'}</td>
                 <td className={styles.speakers}>
                   {session.speakerNames?.length > 0
                     ? session.speakerNames.join(', ')
                     : '-'}
-                </td>
-                <td>
-                  <button
-                    className={`${styles.statusBadge} ${
-                      session.status === SESSION_STATUS.PUBLISHED
-                        ? styles.statusPublished
-                        : styles.statusDraft
-                    }`}
-                    onClick={() => onToggleStatus(session.id)}
-                    title={`Click to ${
-                      session.status === SESSION_STATUS.PUBLISHED
-                        ? 'unpublish'
-                        : 'publish'
-                    }`}
-                  >
-                    {session.status === SESSION_STATUS.PUBLISHED
-                      ? 'Published'
-                      : 'Draft'}
-                  </button>
                 </td>
                 <td>
                   <div className={styles.actions}>
