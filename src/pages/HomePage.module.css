@@ -55,13 +55,6 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
-/* Video Section */
-.videoSection {
-  padding: var(--spacing-20) 0;
-  background-color: var(--color-background-secondary);
-  text-align: center;
-}
-
 .sectionTitle {
   font-size: var(--font-size-3xl);
   color: var(--color-text);
@@ -82,26 +75,6 @@
   padding: var(--spacing-16) 0;
   text-align: center;
   background-color: var(--color-background-secondary);
-}
-
-/* Placeholder Sections */
-.placeholderSection {
-  padding: var(--spacing-16) 0;
-  text-align: center;
-  border-bottom: 1px solid var(--color-gray-200);
-}
-
-.placeholderSection:nth-child(even) {
-  background-color: var(--color-background-secondary);
-}
-
-.placeholderSection h2 {
-  margin-bottom: var(--spacing-4);
-  color: var(--color-text);
-}
-
-.placeholderSection p {
-  color: var(--color-text-secondary);
 }
 
 /* Speakers Section */
@@ -293,72 +266,6 @@
   text-decoration: none;
 }
 
-/* About Section */
-.aboutSection {
-  padding: var(--spacing-20) 0;
-  background-color: var(--color-background);
-}
-
-.aboutContent {
-  max-width: 800px;
-  margin: 0 auto;
-  text-align: left;
-}
-
-.aboutOrg h3 {
-  font-size: var(--font-size-2xl);
-  color: var(--color-text);
-  margin-bottom: var(--spacing-4);
-  text-align: center;
-}
-
-.aboutMission {
-  font-size: var(--font-size-lg);
-  color: var(--color-primary);
-  margin-bottom: var(--spacing-4);
-  text-align: center;
-  font-style: italic;
-}
-
-.aboutDescription {
-  font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
-  line-height: 1.8;
-  margin-bottom: var(--spacing-6);
-  text-align: center;
-}
-
-.coreValues {
-  background: var(--color-background-secondary);
-  padding: var(--spacing-6);
-  border-radius: var(--radius-lg);
-}
-
-.coreValues h4 {
-  font-size: var(--font-size-lg);
-  color: var(--color-text);
-  margin-bottom: var(--spacing-4);
-  text-align: center;
-}
-
-.coreValues ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-3);
-}
-
-.coreValues li {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  padding: var(--spacing-2) var(--spacing-4);
-  background: var(--color-background);
-  border-radius: var(--radius-md);
-  border-left: 3px solid var(--color-primary);
-}
-
 /* Venue Section */
 .venueSection {
   padding: var(--spacing-20) 0;
@@ -441,92 +348,6 @@
   border: 0;
 }
 
-/* Schedule Section */
-.scheduleSection {
-  padding: var(--spacing-20) 0;
-  background-color: var(--color-background-secondary);
-  text-align: center;
-  scroll-margin-top: var(--header-height);
-}
-
-.scheduleList {
-  max-width: 700px;
-  margin: 0 auto;
-  text-align: left;
-}
-
-.scheduleItem {
-  display: flex;
-  gap: var(--spacing-6);
-  padding: var(--spacing-4) 0;
-  border-bottom: 1px solid var(--color-gray-200);
-}
-
-.scheduleItem:last-child {
-  border-bottom: none;
-}
-
-.scheduleTime {
-  min-width: 90px;
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-primary);
-  padding-top: var(--spacing-1);
-}
-
-.scheduleContent {
-  flex: 1;
-}
-
-.scheduleTitle {
-  font-size: var(--font-size-lg);
-  color: var(--color-text);
-  margin-bottom: var(--spacing-1);
-}
-
-.scheduleSubtitle {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  font-style: italic;
-  margin-bottom: var(--spacing-2);
-}
-
-.scheduleTracks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-2);
-  margin-top: var(--spacing-2);
-}
-
-.scheduleTrack {
-  font-size: var(--font-size-xs);
-  background: var(--color-primary);
-  color: white;
-  padding: var(--spacing-1) var(--spacing-3);
-  border-radius: var(--radius-full);
-}
-
-/* Schedule type styling */
-.scheduleTypePlenary .scheduleTitle {
-  color: var(--color-primary);
-}
-
-.scheduleTypeWorship .scheduleTitle {
-  color: var(--color-secondary);
-}
-
-.scheduleTypeBreak {
-  background: var(--color-gray-100);
-  margin: 0 calc(-1 * var(--spacing-4));
-  padding-left: var(--spacing-4);
-  padding-right: var(--spacing-4);
-  border-radius: var(--radius-md);
-}
-
-.scheduleTypeBreak .scheduleTitle {
-  color: var(--color-text-secondary);
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .heroSection {
@@ -555,10 +376,6 @@
     grid-template-columns: 1fr;
   }
 
-  .coreValues ul {
-    grid-template-columns: 1fr;
-  }
-
   .venueContent {
     grid-template-columns: 1fr;
     text-align: center;
@@ -578,15 +395,6 @@
 
   .mapIframe {
     height: 250px;
-  }
-
-  .scheduleItem {
-    flex-direction: column;
-    gap: var(--spacing-2);
-  }
-
-  .scheduleTime {
-    min-width: auto;
   }
 }
 
@@ -632,10 +440,8 @@
   }
 
   .venueSection,
-  .aboutSection,
   .pricingSection,
-  .speakersSection,
-  .scheduleSection {
+  .speakersSection {
     padding: var(--spacing-12) 0;
   }
 }

@@ -17,7 +17,7 @@ import styles from './HomePage.module.css';
 /**
  * HomePage Component
  * Landing page for the IDMC Conference website.
- * Displays hero, video, countdown, speakers, schedule highlights, pricing, about, and venue sections.
+ * Displays hero, countdown, speakers, pricing, and venue sections.
  * Fetches featured speaker data from Firestore with fallback to mock data.
  *
  * @returns {JSX.Element} The home page component
