@@ -2077,8 +2077,9 @@ export const sendInvoiceEmail = onCall(
       }
 
       // Download invoice file from Storage
+      // Use the idmc-2026 bucket, not the default project bucket
       const {getStorage} = await import("firebase-admin/storage");
-      const bucket = getStorage().bucket();
+      const bucket = getStorage().bucket(DATABASE_ID);
 
       // Extract file path from URL
       const invoiceUrl = registration.invoice.invoiceUrl;
