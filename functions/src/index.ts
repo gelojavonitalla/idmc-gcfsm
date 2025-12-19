@@ -19,6 +19,18 @@ import {SecretManagerServiceClient} from "@google-cloud/secret-manager";
 import * as sgMail from "@sendgrid/mail";
 import * as QRCode from "qrcode";
 import {verifyFinanceAdmin, verifyAdminRole} from "./auth";
+import {
+  checkRateLimit,
+  cleanupExpiredRateLimits,
+  RATE_LIMIT_CONFIGS,
+} from "./rateLimit";
+import {
+  logAuditEvent,
+  logRegistrationAccess,
+  logRateLimitExceeded,
+  AUDIT_ACTIONS,
+  AUDIT_SEVERITY,
+} from "./auditLog";
 
 // Initialize Firebase Admin SDK
 initializeApp();
@@ -1843,7 +1855,6 @@ export const sendInvoiceEmail = onCall(
 
       // Send email
       await sgMail.send(msg);
-      logger.info(`Invoice email sent successfully to ${primaryEmail}`);
 
       // Update registration with sent status
       await registrationRef.update({
@@ -1852,6 +1863,19 @@ export const sendInvoiceEmail = onCall(
         "invoice.sentBy": admin.email,
         "invoice.emailDeliveryStatus": "sent",
         "updatedAt": FieldValue.serverTimestamp(),
+      });
+
+      // Log the invoice sent event
+      await logAuditEvent({
+        action: AUDIT_ACTIONS.INVOICE_SENT,
+        severity: AUDIT_SEVERITY.INFO,
+        actorId: request.auth?.uid || null,
+        actorEmail: admin.email,
+        actorRole: admin.role,
+        entityType: "registration",
+        entityId: registrationId,
+        description: `Invoice sent to ${primaryEmail} for ${registrationId}`,
+        metadata: {recipientEmail: primaryEmail},
       });
 
       return {
@@ -1891,54 +1915,21 @@ export const sendInvoiceEmail = onCall(
 // ============================================
 
 /**
- * Rate limit tracking interface
+ * Scheduled function to clean up expired rate limit records
+ * Runs daily at 3:00 AM to remove stale records and keep database clean
  */
-interface RateLimitEntry {
-  count: number;
-  firstRequest: number;
-}
-
-// In-memory rate limit store (resets on function cold start)
-// For production, consider using Redis or Firestore
-const rateLimitStore: Map<string, RateLimitEntry> = new Map();
-
-/**
- * Rate limit configuration
- */
-const RATE_LIMIT_CONFIG = {
-  windowMs: 60 * 1000, // 1 minute window
-  maxRequests: 10, // Max 10 requests per window
-};
-
-/**
- * Checks rate limit for an identifier
- *
- * @param {string} identifier - IP address or other identifier
- * @return {boolean} True if within rate limit, false if exceeded
- */
-function checkRateLimit(identifier: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitStore.get(identifier);
-
-  if (!entry) {
-    rateLimitStore.set(identifier, {count: 1, firstRequest: now});
-    return true;
+export const cleanupRateLimits = onSchedule(
+  {
+    schedule: "0 3 * * *", // Daily at 3:00 AM
+    region: "asia-southeast1",
+    timeZone: "Asia/Manila",
+  },
+  async () => {
+    logger.info("Starting rate limit cleanup");
+    const deleted = await cleanupExpiredRateLimits();
+    logger.info(`Rate limit cleanup complete. Deleted ${deleted} records.`);
   }
-
-  // Check if window has expired
-  if (now - entry.firstRequest > RATE_LIMIT_CONFIG.windowMs) {
-    rateLimitStore.set(identifier, {count: 1, firstRequest: now});
-    return true;
-  }
-
-  // Check if under limit
-  if (entry.count < RATE_LIMIT_CONFIG.maxRequests) {
-    entry.count++;
-    return true;
-  }
-
-  return false;
-}
+);
 
 /**
  * Masks an email address for privacy
@@ -2017,12 +2008,17 @@ export const lookupRegistrationSecure = onCall(
                      request.rawRequest?.ip ||
                      "unknown";
 
-    // Check rate limit
-    if (!checkRateLimit(clientId)) {
-      throw new HttpsError(
-        "resource-exhausted",
-        "Too many requests. Please try again in a minute."
+    // Check rate limit using persistent Firestore-based limiter
+    try {
+      await checkRateLimit(
+        "registration_lookup",
+        clientId,
+        RATE_LIMIT_CONFIGS.REGISTRATION_LOOKUP
       );
+    } catch (error) {
+      // Log rate limit exceeded event
+      await logRateLimitExceeded("registration_lookup", clientId, clientId);
+      throw error;
     }
 
     const db = getFirestore();
@@ -2115,7 +2111,13 @@ export const lookupRegistrationSecure = onCall(
     }
 
     // Log this lookup for audit purposes
-    logger.info(`Registration lookup: ${registrationId} by ${clientId}`);
+    await logRegistrationAccess(
+      registrationId,
+      "lookup",
+      request.auth?.uid || null,
+      undefined,
+      clientId
+    );
 
     // Calculate attendee count
     const additionalAttendees = registration.additionalAttendees || [];
@@ -2185,25 +2187,16 @@ export const getRegistrationWithVerification = onCall(
                      request.rawRequest?.ip ||
                      "unknown";
 
-    // Stricter rate limit for verification attempts (5 per minute)
-    const verifyRateLimitKey = `verify:${clientId}`;
-    const entry = rateLimitStore.get(verifyRateLimitKey);
-    const now = Date.now();
-
-    if (entry) {
-      if (now - entry.firstRequest < 60000 && entry.count >= 5) {
-        throw new HttpsError(
-          "resource-exhausted",
-          "Too many verification attempts. Please try again later."
-        );
-      }
-      if (now - entry.firstRequest >= 60000) {
-        rateLimitStore.set(verifyRateLimitKey, {count: 1, firstRequest: now});
-      } else {
-        entry.count++;
-      }
-    } else {
-      rateLimitStore.set(verifyRateLimitKey, {count: 1, firstRequest: now});
+    // Stricter rate limit for verification attempts using persistent limiter
+    try {
+      await checkRateLimit(
+        "registration_verification",
+        clientId,
+        RATE_LIMIT_CONFIGS.VERIFICATION
+      );
+    } catch (error) {
+      await logRateLimitExceeded("verification", clientId, clientId);
+      throw error;
     }
 
     const db = getFirestore();
@@ -2235,7 +2228,16 @@ export const getRegistrationWithVerification = onCall(
       );
     }
 
-    logger.info(`Verified registration access: ${registrationId}`);
+    // Log successful verification
+    await logAuditEvent({
+      action: AUDIT_ACTIONS.REGISTRATION_VERIFIED,
+      severity: AUDIT_SEVERITY.INFO,
+      actorId: request.auth?.uid || null,
+      entityType: "registration",
+      entityId: registrationId.toUpperCase(),
+      description: `Registration verified: ${registrationId}`,
+      ipAddress: clientId,
+    });
 
     // Generate QR codes for all attendees
     const attendeesWithQR = await generateAllAttendeeQRCodes(
