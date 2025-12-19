@@ -7,7 +7,13 @@
 
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { getConferenceSettings, getPricingTiers, getActivePricingTierFromDb } from '../services/settings';
+import {
+  getConferenceSettings,
+  getPricingTiers,
+  getActivePricingTierFromDb,
+  getRegistrationCategories,
+  getActiveRegistrationCategories,
+} from '../services/settings';
 
 /**
  * Settings context
@@ -65,6 +71,8 @@ export function SettingsProvider({ children }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [pricingTiers, setPricingTiers] = useState([]);
   const [activePricingTier, setActivePricingTier] = useState(null);
+  const [registrationCategories, setRegistrationCategories] = useState([]);
+  const [activeRegistrationCategories, setActiveRegistrationCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -76,15 +84,19 @@ export function SettingsProvider({ children }) {
     setError(null);
 
     try {
-      const [settingsData, tiersData, activeTier] = await Promise.all([
+      const [settingsData, tiersData, activeTier, categoriesData, activeCategories] = await Promise.all([
         getConferenceSettings(),
         getPricingTiers(),
         getActivePricingTierFromDb(),
+        getRegistrationCategories(),
+        getActiveRegistrationCategories(),
       ]);
 
       setSettings(settingsData);
       setPricingTiers(tiersData);
       setActivePricingTier(activeTier);
+      setRegistrationCategories(categoriesData);
+      setActiveRegistrationCategories(activeCategories);
     } catch (fetchError) {
       console.error('Failed to fetch settings:', fetchError);
       setError(fetchError.message);
@@ -109,11 +121,13 @@ export function SettingsProvider({ children }) {
       settings,
       pricingTiers,
       activePricingTier,
+      registrationCategories,
+      activeRegistrationCategories,
       isLoading,
       error,
       refreshSettings,
     }),
-    [settings, pricingTiers, activePricingTier, isLoading, error, refreshSettings]
+    [settings, pricingTiers, activePricingTier, registrationCategories, activeRegistrationCategories, isLoading, error, refreshSettings]
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

@@ -4,8 +4,6 @@ import { useSettings } from '../context';
 import {
   REGISTRATION_STEPS,
   REGISTRATION_STEP_LABELS,
-  REGISTRATION_CATEGORIES,
-  REGISTRATION_CATEGORY_LABELS,
   MINISTRY_ROLES,
   ROUTES,
   BANK_LABELS,
@@ -14,7 +12,6 @@ import {
   BANK_NAMES,
 } from '../constants';
 import {
-  calculatePrice,
   generateRegistrationId,
   formatPrice,
   isValidEmail,
@@ -54,7 +51,7 @@ const createEmptyAdditionalAttendee = () => {
     cellphone: '',
     email: '', // Optional for additional attendees
     ministryRole: '',
-    category: REGISTRATION_CATEGORIES.REGULAR,
+    category: 'regular', // Default category key - will be validated against database categories
     workshopSelections: [], // Array of { sessionId, sessionTitle, timeSlot }
   };
 };
@@ -79,7 +76,7 @@ const INITIAL_FORM_DATA = {
     email: '',
     emailConfirm: '',
     ministryRole: '',
-    category: REGISTRATION_CATEGORIES.REGULAR,
+    category: 'regular', // Default category key - will be validated against database categories
     workshopSelections: [], // Array of { sessionId, sessionTitle, timeSlot }
   },
 
@@ -114,7 +111,7 @@ const INITIAL_FORM_DATA = {
  * @returns {JSX.Element} The registration page component
  */
 function RegisterPage() {
-  const { settings, activePricingTier } = useSettings();
+  const { settings, activePricingTier, activeRegistrationCategories } = useSettings();
   const [searchParams] = useSearchParams();
 
   /**
@@ -122,10 +119,11 @@ function RegisterPage() {
    */
   const initialFormData = useMemo(() => {
     const categoryParam = searchParams.get('category');
-    const validCategories = Object.values(REGISTRATION_CATEGORIES);
-    const category = validCategories.includes(categoryParam)
+    // Validate category param against database categories
+    const validCategoryKeys = activeRegistrationCategories.map((cat) => cat.key);
+    const category = validCategoryKeys.includes(categoryParam)
       ? categoryParam
-      : REGISTRATION_CATEGORIES.REGULAR;
+      : (activeRegistrationCategories[0]?.key || 'regular'); // Use first category or default to 'regular'
 
     return {
       ...INITIAL_FORM_DATA,
@@ -134,7 +132,7 @@ function RegisterPage() {
         category,
       },
     };
-  }, [searchParams]);
+  }, [searchParams, activeRegistrationCategories]);
 
   const [currentStep, setCurrentStep] = useState(REGISTRATION_STEPS.PERSONAL_INFO);
   const [formData, setFormData] = useState(initialFormData);
@@ -432,21 +430,43 @@ function RegisterPage() {
   }, []);
 
   /**
+   * Gets the price for a registration category key
+   *
+   * @param {string} categoryKey - The category key
+   * @returns {number} Category price or 0 if not found
+   */
+  const getCategoryPrice = useCallback((categoryKey) => {
+    const category = activeRegistrationCategories.find((cat) => cat.key === categoryKey);
+    return category ? category.price : 0;
+  }, [activeRegistrationCategories]);
+
+  /**
+   * Gets the display name for a registration category key
+   *
+   * @param {string} categoryKey - The category key
+   * @returns {string} Category name or the key if not found
+   */
+  const getCategoryName = useCallback((categoryKey) => {
+    const category = activeRegistrationCategories.find((cat) => cat.key === categoryKey);
+    return category ? category.name : categoryKey;
+  }, [activeRegistrationCategories]);
+
+  /**
    * Calculates total price for all attendees (primary + additional)
    *
    * @returns {number} Total price
    */
   const calculateTotalPrice = useCallback(() => {
     // Primary attendee price
-    const primaryPrice = calculatePrice(formData.primaryAttendee.category, currentTier);
+    const primaryPrice = getCategoryPrice(formData.primaryAttendee.category);
 
     // Additional attendees price
     const additionalPrice = (formData.additionalAttendees || []).reduce((total, attendee) => {
-      return total + calculatePrice(attendee.category, currentTier);
+      return total + getCategoryPrice(attendee.category);
     }, 0);
 
     return primaryPrice + additionalPrice;
-  }, [formData.primaryAttendee.category, formData.additionalAttendees, currentTier]);
+  }, [formData.primaryAttendee.category, formData.additionalAttendees, getCategoryPrice]);
 
   /**
    * Checks if payment is required based on total amount
@@ -877,9 +897,9 @@ function RegisterPage() {
                       {primary.lastName}, {primary.firstName} {primary.middleName}
                     </p>
                     <p>{primary.email} | {primary.cellphone}</p>
-                    <p>{primary.ministryRole} | {REGISTRATION_CATEGORY_LABELS[primary.category]}</p>
+                    <p>{primary.ministryRole} | {getCategoryName(primary.category)}</p>
                     <p className={styles.attendeePrice}>
-                      {formatPrice(calculatePrice(primary.category, currentTier))}
+                      {formatPrice(getCategoryPrice(primary.category))}
                     </p>
                   </div>
                 </div>
@@ -897,9 +917,9 @@ function RegisterPage() {
                           <p>
                             {attendee.email || '(No email)'} | {attendee.cellphone}
                           </p>
-                          <p>{attendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[attendee.category]}</p>
+                          <p>{attendee.ministryRole} | {getCategoryName(attendee.category)}</p>
                           <p className={styles.attendeePrice}>
-                            {formatPrice(calculatePrice(attendee.category, currentTier))}
+                            {formatPrice(getCategoryPrice(attendee.category))}
                           </p>
                         </div>
                       </div>
@@ -1209,16 +1229,11 @@ function RegisterPage() {
                       value={formData.primaryAttendee.category}
                       onChange={(e) => updatePrimaryAttendee('category', e.target.value)}
                     >
-                      {Object.entries(REGISTRATION_CATEGORIES)
-                        .filter(([, value]) =>
-                          value !== REGISTRATION_CATEGORIES.SPEAKER &&
-                          value !== REGISTRATION_CATEGORIES.VOLUNTEER
-                        ) // Hide SPEAKER and VOLUNTEER from public registration (admin-only)
-                        .map(([key, value]) => (
-                          <option key={key} value={value}>
-                            {REGISTRATION_CATEGORY_LABELS[value]} - {formatPrice(calculatePrice(value, currentTier))}
-                          </option>
-                        ))}
+                      {activeRegistrationCategories.map((category) => (
+                        <option key={category.id} value={category.key}>
+                          {category.name} - {formatPrice(category.price)}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -1368,16 +1383,11 @@ function RegisterPage() {
                         value={attendee.category}
                         onChange={(e) => updateAdditionalAttendee(index, 'category', e.target.value)}
                       >
-                        {Object.entries(REGISTRATION_CATEGORIES)
-                          .filter(([, value]) =>
-                            value !== REGISTRATION_CATEGORIES.SPEAKER &&
-                            value !== REGISTRATION_CATEGORIES.VOLUNTEER
-                          ) // Hide SPEAKER and VOLUNTEER from public registration (admin-only)
-                          .map(([key, value]) => (
-                            <option key={key} value={value}>
-                              {REGISTRATION_CATEGORY_LABELS[value]} - {formatPrice(calculatePrice(value, currentTier))}
-                            </option>
-                          ))}
+                        {activeRegistrationCategories.map((category) => (
+                          <option key={category.id} value={category.key}>
+                            {category.name} - {formatPrice(category.price)}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -1434,10 +1444,10 @@ function RegisterPage() {
                       {formData.primaryAttendee.firstName} {formData.primaryAttendee.lastName}
                     </span>
                     <span className={styles.attendeeListCategory}>
-                      {REGISTRATION_CATEGORY_LABELS[formData.primaryAttendee.category]}
+                      {getCategoryName(formData.primaryAttendee.category)}
                     </span>
                     <span className={styles.attendeeListPrice}>
-                      {formatPrice(calculatePrice(formData.primaryAttendee.category, currentTier))}
+                      {formatPrice(getCategoryPrice(formData.primaryAttendee.category))}
                     </span>
                   </div>
                 </div>
@@ -1453,10 +1463,10 @@ function RegisterPage() {
                           {index + 2}. {attendee.firstName} {attendee.lastName}
                         </span>
                         <span className={styles.attendeeListCategory}>
-                          {REGISTRATION_CATEGORY_LABELS[attendee.category]}
+                          {getCategoryName(attendee.category)}
                         </span>
                         <span className={styles.attendeeListPrice}>
-                          {formatPrice(calculatePrice(attendee.category, currentTier))}
+                          {formatPrice(getCategoryPrice(attendee.category))}
                         </span>
                       </div>
                     ))}
@@ -2078,10 +2088,10 @@ function RegisterPage() {
                       {formData.primaryAttendee.lastName}, {formData.primaryAttendee.firstName} {formData.primaryAttendee.middleName}
                     </p>
                     <p>{formData.primaryAttendee.email} | {formData.primaryAttendee.cellphone}</p>
-                    <p>{formData.primaryAttendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[formData.primaryAttendee.category]}</p>
+                    <p>{formData.primaryAttendee.ministryRole} | {getCategoryName(formData.primaryAttendee.category)}</p>
                   </div>
                   <div className={styles.attendeePrice}>
-                    {formatPrice(calculatePrice(formData.primaryAttendee.category, currentTier))}
+                    {formatPrice(getCategoryPrice(formData.primaryAttendee.category))}
                   </div>
                 </div>
               </div>
@@ -2097,10 +2107,10 @@ function RegisterPage() {
                           {attendee.lastName}, {attendee.firstName} {attendee.middleName}
                         </p>
                         <p>{attendee.email || '(No email)'} | {attendee.cellphone}</p>
-                        <p>{attendee.ministryRole} | {REGISTRATION_CATEGORY_LABELS[attendee.category]}</p>
+                        <p>{attendee.ministryRole} | {getCategoryName(attendee.category)}</p>
                       </div>
                       <div className={styles.attendeePrice}>
-                        {formatPrice(calculatePrice(attendee.category, currentTier))}
+                        {formatPrice(getCategoryPrice(attendee.category))}
                       </div>
                     </div>
                   ))}
