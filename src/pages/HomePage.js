@@ -187,25 +187,30 @@ function HomePage() {
             Choose the registration category that applies to you
           </p>
           <div className={styles.pricingGrid}>
-            {Object.entries(REGISTRATION_CATEGORIES).map(([key, value]) => {
-              const price = calculatePrice(value, activePricingTier);
-              return (
-                <div key={key} className={styles.pricingCard}>
-                  <h3 className={styles.pricingName}>
-                    {REGISTRATION_CATEGORY_LABELS[value]}
-                  </h3>
-                  <div className={styles.pricingPrice}>
-                    {formatPrice(price)}
+            {Object.entries(REGISTRATION_CATEGORIES)
+              .filter(([, value]) =>
+                value !== REGISTRATION_CATEGORIES.SPEAKER &&
+                value !== REGISTRATION_CATEGORIES.VOLUNTEER
+              )
+              .map(([key, value]) => {
+                const price = calculatePrice(value, activePricingTier);
+                return (
+                  <div key={key} className={styles.pricingCard}>
+                    <h3 className={styles.pricingName}>
+                      {REGISTRATION_CATEGORY_LABELS[value]}
+                    </h3>
+                    <div className={styles.pricingPrice}>
+                      {formatPrice(price)}
+                    </div>
+                    <p className={styles.pricingDescription}>
+                      {REGISTRATION_CATEGORY_DESCRIPTIONS[value]}
+                    </p>
+                    <Link to={`${ROUTES.REGISTER}?category=${value}`} className={styles.pricingButton}>
+                      Register Now
+                    </Link>
                   </div>
-                  <p className={styles.pricingDescription}>
-                    {REGISTRATION_CATEGORY_DESCRIPTIONS[value]}
-                  </p>
-                  <Link to={`${ROUTES.REGISTER}?category=${value}`} className={styles.pricingButton}>
-                    Register Now
-                  </Link>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </div>
       </section>
