@@ -586,6 +586,7 @@ const SMS_TEMPLATES = {
 export const onAdminCreated = onDocumentCreated(
   {
     document: `${COLLECTIONS.ADMINS}/{adminId}`,
+    database: DATABASE_ID,
     secrets: [sendgridApiKey],
   },
   async (event) => {
@@ -1432,6 +1433,7 @@ async function sendIndividualTicketEmail(
 export const onRegistrationCreated = onDocumentCreated(
   {
     document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
+    database: DATABASE_ID,
     secrets: [sendgridApiKey],
   },
   async (event) => {
@@ -1503,6 +1505,7 @@ export const onRegistrationCreated = onDocumentCreated(
 export const onPaymentConfirmed = onDocumentUpdated(
   {
     document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
+    database: DATABASE_ID,
     secrets: [sendgridApiKey],
   },
   async (event) => {
