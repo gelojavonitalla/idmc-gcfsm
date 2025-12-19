@@ -38,6 +38,11 @@ function Footer() {
             <nav aria-label="Footer navigation">
               <ul className={styles.linksList}>
                 <li>
+                  <Link to={ROUTES.ABOUT} className={styles.link}>
+                    About IDMC
+                  </Link>
+                </li>
+                <li>
                   <Link to={ROUTES.SPEAKERS} className={styles.link}>
                     Speakers
                   </Link>
@@ -53,18 +58,18 @@ function Footer() {
                   </Link>
                 </li>
                 <li>
+                  <Link to={ROUTES.VENUE} className={styles.link}>
+                    Venue
+                  </Link>
+                </li>
+                <li>
                   <Link to={ROUTES.DOWNLOADS} className={styles.link}>
                     Downloads
                   </Link>
                 </li>
                 <li>
-                  <Link to={ROUTES.REGISTER} className={styles.link}>
-                    Register
-                  </Link>
-                </li>
-                <li>
-                  <Link to={ROUTES.ABOUT} className={styles.link}>
-                    About IDMC
+                  <Link to={ROUTES.REGISTRATION_STATUS} className={styles.link}>
+                    Check Status
                   </Link>
                 </li>
                 <li>
