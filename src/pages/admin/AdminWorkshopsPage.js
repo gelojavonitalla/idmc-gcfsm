@@ -265,6 +265,9 @@ function AdminWorkshopsPage() {
                 const capacity = getEffectiveCapacity(workshop);
                 const remaining = getRemainingCapacity(workshop);
                 const status = getCapacityStatus(workshop);
+                const fillPercentage = capacity
+                  ? Math.round(((workshop.registeredCount || 0) / capacity) * 100)
+                  : 0;
 
                 return (
                   <tr key={workshop.id}>
@@ -286,12 +289,22 @@ function AdminWorkshopsPage() {
                       {remaining === Infinity ? '∞' : remaining}
                     </td>
                     <td>
-                      <span className={`${styles.statusBadge} ${styles[status]}`}>
-                        {status === 'full' && 'Full'}
-                        {status === 'limited' && 'Limited'}
-                        {status === 'available' && 'Available'}
-                        {status === 'unlimited' && 'Unlimited'}
-                      </span>
+                      <div className={styles.statusCell}>
+                        <span className={`${styles.statusBadge} ${styles[status]}`}>
+                          {status === 'full' && 'Full'}
+                          {status === 'limited' && 'Limited'}
+                          {status === 'available' && 'Available'}
+                          {status === 'unlimited' && 'Unlimited'}
+                        </span>
+                        {capacity && (
+                          <div className={styles.progressBar}>
+                            <div
+                              className={styles.progressFill}
+                              style={{ width: `${fillPercentage}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
