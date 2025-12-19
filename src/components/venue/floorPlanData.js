@@ -483,7 +483,7 @@ export const SECOND_FLOOR_ROOMS = [
   },
   {
     id: 'ydt',
-    name: 'YDT',
+    name: 'Youth Center',
     fullName: 'Youth Discipleship Training Room',
     type: ROOM_TYPES.WORKSHOP,
     floor: FLOORS.SECOND,
