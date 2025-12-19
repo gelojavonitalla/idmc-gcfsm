@@ -931,9 +931,10 @@ export const SCHEDULE = [
 
 /**
  * Workshop time slot labels
+ * For single-day events, day prefix is omitted
  */
 export const WORKSHOP_TIME_SLOT_LABELS = {
-  [WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON]: 'Day 1 Afternoon (1:15 PM - 3:00 PM)',
+  [WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON]: 'Afternoon (1:15 PM - 3:00 PM)',
 };
 
 /**
