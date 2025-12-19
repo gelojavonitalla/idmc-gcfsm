@@ -113,12 +113,13 @@ const INITIAL_FORM_DATA = {
  * @returns {JSX.Element} The registration page component
  */
 /**
- * Public registration categories (excludes admin-only categories like Volunteer and Speaker)
+ * Public registration categories: Early Bird, Member, and Regular
  * Derived from the REGISTRATION_CATEGORIES constant
  */
 const PUBLIC_REGISTRATION_CATEGORY_KEYS = [
+  REGISTRATION_CATEGORIES.EARLY_BIRD,
+  REGISTRATION_CATEGORIES.MEMBER,
   REGISTRATION_CATEGORIES.REGULAR,
-  REGISTRATION_CATEGORIES.STUDENT_SENIOR,
 ];
 
 function RegisterPage() {
@@ -442,13 +443,16 @@ function RegisterPage() {
   /**
    * Gets the price for a registration category key from the active pricing tier
    *
-   * @param {string} categoryKey - The category key ('regular' or 'student_senior')
+   * @param {string} categoryKey - The category key ('early_bird', 'member', or 'regular')
    * @returns {number} Category price or 0 if not found
    */
   const getCategoryPrice = useCallback((categoryKey) => {
     if (!activePricingTier) return 0;
-    if (categoryKey === REGISTRATION_CATEGORIES.STUDENT_SENIOR) {
-      return activePricingTier.studentPrice || 0;
+    if (categoryKey === REGISTRATION_CATEGORIES.EARLY_BIRD) {
+      return activePricingTier.earlyBirdPrice || 0;
+    }
+    if (categoryKey === REGISTRATION_CATEGORIES.MEMBER) {
+      return activePricingTier.memberPrice || 0;
     }
     return activePricingTier.regularPrice || 0;
   }, [activePricingTier]);
