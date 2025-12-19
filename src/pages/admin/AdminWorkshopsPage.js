@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '../../components/admin';
 import { getPublishedWorkshops } from '../../services/workshops';
+import { getVenueRooms } from '../../services/venue';
 import styles from './AdminWorkshopsPage.module.css';
 
 /**
@@ -18,19 +19,42 @@ import styles from './AdminWorkshopsPage.module.css';
  */
 function AdminWorkshopsPage() {
   const [workshops, setWorkshops] = useState([]);
+  const [venueRooms, setVenueRooms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   /**
-   * Fetches workshop data
+   * Gets capacity for a workshop from its linked venue room.
+   * Matches workshop venue name to room name (case-insensitive).
+   *
+   * @param {Object} workshop - Workshop object with venue field
+   * @returns {number|null} Room capacity or null if no match found
+   */
+  const getVenueRoomCapacity = useCallback((workshop) => {
+    if (!workshop.venue) {
+      return null;
+    }
+    const venueName = workshop.venue.toLowerCase().trim();
+    const matchingRoom = venueRooms.find(
+      (room) => room.name && room.name.toLowerCase().trim() === venueName
+    );
+    return matchingRoom?.capacity ?? null;
+  }, [venueRooms]);
+
+  /**
+   * Fetches workshop and venue room data
    */
   const fetchWorkshops = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const workshopData = await getPublishedWorkshops();
+      const [workshopData, roomsData] = await Promise.all([
+        getPublishedWorkshops(),
+        getVenueRooms(),
+      ]);
       setWorkshops(workshopData);
+      setVenueRooms(roomsData);
     } catch (fetchError) {
       console.error('Failed to fetch workshops:', fetchError);
       setError('Failed to load workshop data. Please try again.');
@@ -47,17 +71,20 @@ function AdminWorkshopsPage() {
   }, [fetchWorkshops]);
 
   /**
-   * Calculates remaining capacity for a workshop
+   * Calculates remaining capacity for a workshop.
+   * Uses venue room capacity if available, otherwise falls back to workshop capacity.
    *
    * @param {Object} workshop - Workshop object
    * @returns {number} Remaining capacity
    */
-  const getRemainingCapacity = (workshop) => {
-    if (workshop.capacity === null || workshop.capacity === undefined) {
+  const getRemainingCapacity = useCallback((workshop) => {
+    const roomCapacity = getVenueRoomCapacity(workshop);
+    const capacity = roomCapacity ?? workshop.capacity;
+    if (capacity === null || capacity === undefined) {
       return Infinity;
     }
-    return Math.max(0, workshop.capacity - (workshop.registeredCount || 0));
-  };
+    return Math.max(0, capacity - (workshop.registeredCount || 0));
+  }, [getVenueRoomCapacity]);
 
   /**
    * Gets capacity status color
@@ -74,23 +101,35 @@ function AdminWorkshopsPage() {
   };
 
   /**
+   * Gets the effective capacity for a workshop.
+   * Uses venue room capacity if available, otherwise falls back to workshop capacity.
+   *
+   * @param {Object} workshop - Workshop object
+   * @returns {number|null} Effective capacity or null if unlimited
+   */
+  const getEffectiveCapacity = useCallback((workshop) => {
+    const roomCapacity = getVenueRoomCapacity(workshop);
+    return roomCapacity ?? workshop.capacity ?? null;
+  }, [getVenueRoomCapacity]);
+
+  /**
    * Calculates total capacity statistics
    *
    * @returns {Object} Capacity statistics
    */
-  const getCapacityStats = () => {
+  const getCapacityStats = useCallback(() => {
     const totalCapacity = workshops.reduce(
-      (sum, w) => sum + (w.capacity || 0),
+      (sum, w) => sum + (getEffectiveCapacity(w) || 0),
       0
     );
     const totalRegistered = workshops.reduce(
       (sum, w) => sum + (w.registeredCount || 0),
       0
     );
-    const totalAvailable = workshops.reduce(
-      (sum, w) => sum + getRemainingCapacity(w),
-      0
-    );
+    const totalAvailable = workshops.reduce((sum, w) => {
+      const remaining = getRemainingCapacity(w);
+      return sum + (remaining === Infinity ? 0 : remaining);
+    }, 0);
     const fullWorkshops = workshops.filter(
       (w) => getRemainingCapacity(w) === 0
     ).length;
@@ -101,7 +140,7 @@ function AdminWorkshopsPage() {
       totalAvailable,
       fullWorkshops,
     };
-  };
+  }, [workshops, getEffectiveCapacity, getRemainingCapacity]);
 
   const stats = getCapacityStats();
 
@@ -223,10 +262,11 @@ function AdminWorkshopsPage() {
             </thead>
             <tbody>
               {workshops.map((workshop) => {
+                const capacity = getEffectiveCapacity(workshop);
                 const remaining = getRemainingCapacity(workshop);
                 const status = getCapacityStatus(workshop);
-                const fillPercentage = workshop.capacity
-                  ? Math.round(((workshop.registeredCount || 0) / workshop.capacity) * 100)
+                const fillPercentage = capacity
+                  ? Math.round(((workshop.registeredCount || 0) / capacity) * 100)
                   : 0;
 
                 return (
@@ -240,7 +280,7 @@ function AdminWorkshopsPage() {
                       <span className={styles.venue}>{workshop.venue || 'TBA'}</span>
                     </td>
                     <td className={styles.number}>
-                      {workshop.capacity || '∞'}
+                      {capacity || '∞'}
                     </td>
                     <td className={styles.number}>
                       {workshop.registeredCount || 0}
@@ -256,7 +296,7 @@ function AdminWorkshopsPage() {
                           {status === 'available' && 'Available'}
                           {status === 'unlimited' && 'Unlimited'}
                         </span>
-                        {workshop.capacity && (
+                        {capacity && (
                           <div className={styles.progressBar}>
                             <div
                               className={styles.progressFill}
