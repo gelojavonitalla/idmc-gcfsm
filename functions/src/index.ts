@@ -9,7 +9,7 @@ import {setGlobalOptions} from "firebase-functions";
 import {defineString} from "firebase-functions/params";
 import {onDocumentCreated, onDocumentUpdated} from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
-import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {onCall, onRequest, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {ImageAnnotatorClient} from "@google-cloud/vision";
 import {initializeApp} from "firebase-admin/app";
@@ -2268,5 +2268,102 @@ export const getRegistrationWithVerification = onCall(
         qrCodeDataUrl: a.qrCodeDataUrl,
       })),
     };
+  }
+);
+
+// ============================================
+// CSP Reporting Endpoint
+// ============================================
+
+/**
+ * CSP violation report structure from browsers
+ */
+interface CspViolationReport {
+  "csp-report"?: {
+    "document-uri"?: string;
+    "referrer"?: string;
+    "violated-directive"?: string;
+    "effective-directive"?: string;
+    "original-policy"?: string;
+    "blocked-uri"?: string;
+    "source-file"?: string;
+    "line-number"?: number;
+    "column-number"?: number;
+    "status-code"?: number;
+  };
+}
+
+/**
+ * CSP Violation Reporting Endpoint
+ *
+ * Receives Content Security Policy violation reports from browsers
+ * and logs them for security monitoring. This helps identify:
+ * - Attempted XSS attacks
+ * - Misconfigured CSP policies
+ * - Third-party script issues
+ *
+ * The endpoint accepts POST requests with JSON body containing
+ * the CSP violation report in the standard format.
+ */
+export const cspReport = onRequest(
+  {
+    region: "asia-southeast1",
+    maxInstances: 5,
+    cors: false, // CSP reports don't need CORS
+  },
+  async (req, res) => {
+    // Only accept POST requests
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    try {
+      const report = req.body as CspViolationReport;
+      const violation = report["csp-report"];
+
+      if (!violation) {
+        res.status(400).send("Invalid CSP report format");
+        return;
+      }
+
+      // Log the violation for monitoring
+      logger.warn("CSP Violation Detected", {
+        documentUri: violation["document-uri"],
+        violatedDirective: violation["violated-directive"],
+        effectiveDirective: violation["effective-directive"],
+        blockedUri: violation["blocked-uri"],
+        sourceFile: violation["source-file"],
+        lineNumber: violation["line-number"],
+        columnNumber: violation["column-number"],
+        referrer: violation["referrer"],
+      });
+
+      // Store violation in audit log for analysis
+      await logAuditEvent({
+        action: "security.csp_violation",
+        severity: AUDIT_SEVERITY.WARNING,
+        actorId: null,
+        description: `CSP violation: ${violation["violated-directive"]} blocked ${violation["blocked-uri"]}`,
+        metadata: {
+          documentUri: violation["document-uri"],
+          violatedDirective: violation["violated-directive"],
+          effectiveDirective: violation["effective-directive"],
+          blockedUri: violation["blocked-uri"],
+          sourceFile: violation["source-file"],
+          lineNumber: violation["line-number"],
+          columnNumber: violation["column-number"],
+        },
+        ipAddress: req.ip || undefined,
+        userAgent: req.headers["user-agent"] || undefined,
+      });
+
+      // Return 204 No Content (standard response for CSP reports)
+      res.status(204).send();
+    } catch (error) {
+      logger.error("Error processing CSP report:", error);
+      // Still return 204 to not disrupt client
+      res.status(204).send();
+    }
   }
 );

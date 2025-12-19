@@ -24,10 +24,6 @@ import { COLLECTIONS, SESSION_STATUS } from '../constants';
  * @throws {Error} If the Firestore query fails
  */
 export async function getPublishedSessions() {
-  console.log('[sessions] Querying Firestore for published sessions...');
-  console.log('[sessions] Collection:', COLLECTIONS.SESSIONS);
-  console.log('[sessions] Filter: status ==', SESSION_STATUS.PUBLISHED);
-
   const sessionsRef = collection(db, COLLECTIONS.SESSIONS);
   const publishedQuery = query(
     sessionsRef,
@@ -36,7 +32,6 @@ export async function getPublishedSessions() {
   );
 
   const snapshot = await getDocs(publishedQuery);
-  console.log('[sessions] Firestore returned', snapshot.docs.length, 'documents');
 
   return snapshot.docs.map((docSnapshot) => ({
     id: docSnapshot.id,
