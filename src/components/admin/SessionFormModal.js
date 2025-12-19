@@ -25,7 +25,7 @@ const INITIAL_FORM_STATE = {
   startTime: '09:00',
   endTime: '10:00',
   venue: '',
-  speakerNames: '',
+  selectedSpeakerIds: [],
   order: 1,
   status: SESSION_STATUS.DRAFT,
 };
@@ -38,9 +38,11 @@ const INITIAL_FORM_STATE = {
  * @param {Function} props.onClose - Callback to close modal
  * @param {Function} props.onSave - Callback when session is saved
  * @param {Object|null} props.session - Session to edit (null for new)
+ * @param {Array} props.speakers - Available speakers from database
+ * @param {Array} props.venueRooms - Available venue rooms from database
  * @returns {JSX.Element|null} The modal or null if not open
  */
-function SessionFormModal({ isOpen, onClose, onSave, session }) {
+function SessionFormModal({ isOpen, onClose, onSave, session, speakers = [], venueRooms = [] }) {
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -63,7 +65,7 @@ function SessionFormModal({ isOpen, onClose, onSave, session }) {
           startTime: session.startTime || '09:00',
           endTime: session.endTime || '10:00',
           venue: session.venue || '',
-          speakerNames: session.speakerNames?.join(', ') || '',
+          selectedSpeakerIds: session.speakerIds || [],
           order: session.order || 1,
           status: session.status || SESSION_STATUS.DRAFT,
         });
@@ -131,6 +133,24 @@ function SessionFormModal({ isOpen, onClose, onSave, session }) {
   };
 
   /**
+   * Handles speaker checkbox toggle
+   *
+   * @param {string} speakerId - Speaker ID to toggle
+   */
+  const handleSpeakerToggle = (speakerId) => {
+    setFormData((prev) => {
+      const isSelected = prev.selectedSpeakerIds.includes(speakerId);
+      const newSelectedIds = isSelected
+        ? prev.selectedSpeakerIds.filter((id) => id !== speakerId)
+        : [...prev.selectedSpeakerIds, speakerId];
+      return {
+        ...prev,
+        selectedSpeakerIds: newSelectedIds,
+      };
+    });
+  };
+
+  /**
    * Generates a slug from the session title
    *
    * @param {string} title - Session title
@@ -177,10 +197,13 @@ function SessionFormModal({ isOpen, onClose, onSave, session }) {
         throw new Error('Session title is required to generate an ID');
       }
 
-      const speakerNamesArray = formData.speakerNames
-        .split(',')
-        .map((name) => name.trim())
-        .filter((name) => name.length > 0);
+      // Derive speaker names from selected speaker IDs
+      const speakerNamesArray = formData.selectedSpeakerIds
+        .map((id) => {
+          const speaker = speakers.find((s) => s.id === id);
+          return speaker?.name || null;
+        })
+        .filter((name) => name !== null);
 
       const durationMinutes = calculateDuration(
         formData.startTime,
@@ -197,7 +220,7 @@ function SessionFormModal({ isOpen, onClose, onSave, session }) {
         endTime: formData.endTime,
         durationMinutes,
         venue: formData.venue,
-        speakerIds: session?.speakerIds || [],
+        speakerIds: formData.selectedSpeakerIds,
         speakerNames: speakerNamesArray,
         order: formData.order,
         status: formData.status,
@@ -292,15 +315,33 @@ function SessionFormModal({ isOpen, onClose, onSave, session }) {
                 <label htmlFor="venue" className={styles.label}>
                   Venue
                 </label>
-                <input
-                  type="text"
-                  id="venue"
-                  name="venue"
-                  value={formData.venue}
-                  onChange={handleChange}
-                  className={styles.input}
-                  placeholder="e.g., Worship Hall"
-                />
+                {venueRooms.length > 0 ? (
+                  <select
+                    id="venue"
+                    name="venue"
+                    value={formData.venue}
+                    onChange={handleChange}
+                    className={styles.select}
+                  >
+                    <option value="">Select a venue</option>
+                    {venueRooms.map((room) => (
+                      <option key={room.id} value={room.name}>
+                        {room.name}
+                        {room.capacity ? ` (Capacity: ${room.capacity})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    id="venue"
+                    name="venue"
+                    value={formData.venue}
+                    onChange={handleChange}
+                    className={styles.input}
+                    placeholder="e.g., Worship Hall"
+                  />
+                )}
               </div>
 
               {/* Start Time */}
@@ -388,22 +429,42 @@ function SessionFormModal({ isOpen, onClose, onSave, session }) {
                 </select>
               </div>
 
-              {/* Speaker Names */}
+              {/* Speakers */}
               <div className={`${styles.field} ${styles.fullWidth}`}>
-                <label htmlFor="speakerNames" className={styles.label}>
-                  Speaker Names
+                <label className={styles.label}>
+                  Speakers
                 </label>
-                <input
-                  type="text"
-                  id="speakerNames"
-                  name="speakerNames"
-                  value={formData.speakerNames}
-                  onChange={handleChange}
-                  className={styles.input}
-                  placeholder="e.g., Rev. Dr. John Smith, Teacher Jane Doe"
-                />
+                {speakers.length > 0 ? (
+                  <div className={styles.speakerSelector}>
+                    {speakers.map((speaker) => (
+                      <label
+                        key={speaker.id}
+                        className={`${styles.speakerOption} ${
+                          formData.selectedSpeakerIds.includes(speaker.id)
+                            ? styles.speakerOptionSelected
+                            : ''
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.selectedSpeakerIds.includes(speaker.id)}
+                          onChange={() => handleSpeakerToggle(speaker.id)}
+                          className={styles.speakerCheckbox}
+                        />
+                        <span className={styles.speakerName}>{speaker.name}</span>
+                        {speaker.title && (
+                          <span className={styles.speakerTitle}>{speaker.title}</span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={styles.noSpeakers}>
+                    No speakers available. Add speakers in the Speakers page first.
+                  </div>
+                )}
                 <span className={styles.hint}>
-                  Separate multiple names with commas
+                  Select one or more speakers for this session
                 </span>
               </div>
 
@@ -480,10 +541,26 @@ SessionFormModal.propTypes = {
     order: PropTypes.number,
     status: PropTypes.string,
   }),
+  speakers: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+      title: PropTypes.string,
+    })
+  ),
+  venueRooms: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+      capacity: PropTypes.number,
+    })
+  ),
 };
 
 SessionFormModal.defaultProps = {
   session: null,
+  speakers: [],
+  venueRooms: [],
 };
 
 export default SessionFormModal;
