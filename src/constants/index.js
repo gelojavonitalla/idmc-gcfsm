@@ -177,7 +177,7 @@ export const ADMIN_NAV_GROUPS = [
     items: [
       { label: 'Registrations', path: ADMIN_ROUTES.REGISTRATIONS, icon: 'people' },
       { label: 'Check-In', path: ADMIN_ROUTES.CHECKIN, icon: 'checkin' },
-      { label: 'Check-In Monitor', path: ADMIN_ROUTES.CHECKIN_MONITOR, icon: 'dashboard' },
+      { label: 'Check-In Monitor', path: ADMIN_ROUTES.CHECKIN_MONITOR, icon: 'monitor' },
       { label: 'Inquiries', path: ADMIN_ROUTES.INQUIRIES, icon: 'mail' },
     ],
   },
