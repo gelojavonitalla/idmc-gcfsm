@@ -75,11 +75,6 @@ export {
   updatePricingTier,
   deletePricingTier,
   getActivePricingTierFromDb,
-  getRegistrationCategories,
-  getActiveRegistrationCategories,
-  createRegistrationCategory,
-  updateRegistrationCategory,
-  deleteRegistrationCategory,
 } from './settings';
 
 export {
