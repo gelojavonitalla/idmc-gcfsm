@@ -22,3 +22,4 @@ export { default as AdminCheckInPage } from './AdminCheckInPage';
 export { default as AdminCheckInMonitorPage } from './AdminCheckInMonitorPage';
 export { default as AdminInquiriesPage } from './AdminInquiriesPage';
 export { default as AdminBankAccountsPage } from './AdminBankAccountsPage';
+export { default as AdminFoodMenuPage } from './AdminFoodMenuPage';
