@@ -13,10 +13,12 @@ import {
 } from '../../components/admin';
 import {
   getAllSessions,
+  getAllSpeakers,
   saveSession,
   updateSession,
   deleteSession,
 } from '../../services/maintenance';
+import { getVenueRooms } from '../../services/venue';
 import { useAdminAuth } from '../../context';
 import { SESSION_STATUS, SESSION_TYPES, SESSION_TYPE_LABELS } from '../../constants';
 import styles from './AdminSchedulePage.module.css';
@@ -29,6 +31,8 @@ import styles from './AdminSchedulePage.module.css';
 function AdminSchedulePage() {
   const { admin } = useAdminAuth();
   const [sessions, setSessions] = useState([]);
+  const [speakers, setSpeakers] = useState([]);
+  const [venueRooms, setVenueRooms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,29 +41,35 @@ function AdminSchedulePage() {
   const [filterType, setFilterType] = useState('all');
 
   /**
-   * Fetches all sessions
+   * Fetches all sessions, speakers, and venue rooms
    */
-  const fetchSessions = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const data = await getAllSessions();
-      setSessions(data);
+      const [sessionsData, speakersData, roomsData] = await Promise.all([
+        getAllSessions(),
+        getAllSpeakers(),
+        getVenueRooms(),
+      ]);
+      setSessions(sessionsData);
+      setSpeakers(speakersData);
+      setVenueRooms(roomsData);
     } catch (fetchError) {
-      console.error('Failed to fetch sessions:', fetchError);
-      setError('Failed to load sessions. Please try again.');
+      console.error('Failed to fetch data:', fetchError);
+      setError('Failed to load data. Please try again.');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   /**
-   * Fetch sessions on mount
+   * Fetch data on mount
    */
   useEffect(() => {
-    fetchSessions();
-  }, [fetchSessions]);
+    fetchData();
+  }, [fetchData]);
 
   /**
    * Handles opening modal for new session
@@ -87,7 +97,7 @@ function AdminSchedulePage() {
    */
   const handleSaveSession = async (sessionId, sessionData) => {
     await saveSession(sessionId, sessionData, admin?.id, admin?.email);
-    await fetchSessions();
+    await fetchData();
   };
 
   /**
@@ -191,7 +201,7 @@ function AdminSchedulePage() {
         <div className={styles.headerActions}>
           <button
             className={styles.refreshButton}
-            onClick={fetchSessions}
+            onClick={fetchData}
             disabled={isLoading}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -297,6 +307,8 @@ function AdminSchedulePage() {
         }}
         onSave={handleSaveSession}
         session={editingSession}
+        speakers={speakers}
+        venueRooms={venueRooms}
       />
     </AdminLayout>
   );
