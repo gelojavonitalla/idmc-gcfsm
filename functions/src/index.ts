@@ -96,7 +96,74 @@ const COLLECTIONS = {
   ADMINS: "admins",
   REGISTRATIONS: "registrations",
   SETTINGS: "settings",
+  CONFERENCES: "conferences",
 };
+
+/**
+ * SMS settings interface
+ */
+interface SmsSettings {
+  enabled: boolean;
+  gatewayDomain: string;
+  gatewayEmail: string;
+}
+
+/**
+ * Default SMS settings
+ */
+const DEFAULT_SMS_SETTINGS: SmsSettings = {
+  enabled: false,
+  gatewayDomain: "1.onewaysms.asia",
+  gatewayEmail: "",
+};
+
+/**
+ * Retrieves SMS settings from Firestore conference settings
+ * Falls back to environment variables if Firestore settings not found
+ *
+ * @return {Promise<SmsSettings>} SMS configuration settings
+ */
+async function getSmsSettings(): Promise<SmsSettings> {
+  try {
+    const db = getFirestore();
+    const settingsDoc = await db
+      .collection(COLLECTIONS.CONFERENCES)
+      .doc("conference-settings")
+      .get();
+
+    if (settingsDoc.exists) {
+      const data = settingsDoc.data();
+      if (data?.sms) {
+        return {
+          enabled: data.sms.enabled ?? DEFAULT_SMS_SETTINGS.enabled,
+          gatewayDomain: data.sms.gatewayDomain ||
+            DEFAULT_SMS_SETTINGS.gatewayDomain,
+          gatewayEmail: data.sms.gatewayEmail ||
+            DEFAULT_SMS_SETTINGS.gatewayEmail,
+        };
+      }
+    }
+
+    // Fallback to environment variables for backward compatibility
+    return {
+      enabled: useOneWaySms.value().toLowerCase() === "true",
+      gatewayDomain: smsGatewayDomain.value() ||
+        DEFAULT_SMS_SETTINGS.gatewayDomain,
+      gatewayEmail: smsGatewayEmail.value() ||
+        DEFAULT_SMS_SETTINGS.gatewayEmail,
+    };
+  } catch (error) {
+    logger.warn("Could not fetch SMS settings from Firestore:", error);
+    // Fallback to environment variables
+    return {
+      enabled: useOneWaySms.value().toLowerCase() === "true",
+      gatewayDomain: smsGatewayDomain.value() ||
+        DEFAULT_SMS_SETTINGS.gatewayDomain,
+      gatewayEmail: smsGatewayEmail.value() ||
+        DEFAULT_SMS_SETTINGS.gatewayEmail,
+    };
+  }
+}
 
 /**
  * Registration status constants
@@ -332,15 +399,6 @@ function isSendGridEnabled(): boolean {
 }
 
 /**
- * Checks if OneWaySMS is enabled and configured
- *
- * @return {boolean} boolean indicating if OneWaySMS should be used
- */
-function isOneWaySmsEnabled(): boolean {
-  return useOneWaySms.value().toLowerCase() === "true";
-}
-
-/**
  * Formats a Philippine phone number to international format
  * Handles various input formats: 09XX, 9XX, +639XX, 639XX
  *
@@ -385,6 +443,7 @@ function isValidPhilippinePhone(phone: string): boolean {
  *
  * OneWaySMS works by sending an email to a specific gateway address.
  * The email is then converted to an SMS and sent to the recipient.
+ * Settings are read from Firestore conference settings.
  *
  * @param {string} phoneNumber - Recipient phone number (any Philippine format)
  * @param {string} message - SMS message content (max 160 chars for single SMS)
@@ -394,7 +453,10 @@ async function sendSmsViaOneWaySms(
   phoneNumber: string,
   message: string
 ): Promise<boolean> {
-  if (!isOneWaySmsEnabled()) {
+  // Get SMS settings from Firestore
+  const smsSettings = await getSmsSettings();
+
+  if (!smsSettings.enabled) {
     logger.info("OneWaySMS not enabled, skipping SMS");
     return false;
   }
@@ -422,18 +484,15 @@ async function sendSmsViaOneWaySms(
     return false;
   }
 
-  // Get gateway email address
+  // Get gateway email address from Firestore settings
   // Format: either direct gateway email or phone@gateway.domain
-  const gatewayEmail = smsGatewayEmail.value();
-  const gatewayDomain = smsGatewayDomain.value();
-
   let toEmail: string;
-  if (gatewayEmail) {
+  if (smsSettings.gatewayEmail) {
     // Direct gateway email provided (OneWaySMS may use this format)
-    toEmail = gatewayEmail;
-  } else if (gatewayDomain) {
+    toEmail = smsSettings.gatewayEmail;
+  } else if (smsSettings.gatewayDomain) {
     // Standard email-to-SMS format: phone@gateway.domain
-    toEmail = `${formattedPhone}@${gatewayDomain}`;
+    toEmail = `${formattedPhone}@${smsSettings.gatewayDomain}`;
   } else {
     logger.error("No SMS gateway configured");
     return false;
@@ -1423,8 +1482,8 @@ export const onRegistrationCreated = onDocumentCreated(
       logger.info("SendGrid not enabled, skipping confirmation email");
     }
 
-    // Send confirmation SMS if OneWaySMS is enabled and phone is available
-    if (isOneWaySmsEnabled() && phone) {
+    // Send confirmation SMS if phone is available
+    if (phone) {
       try {
         const smsMessage = SMS_TEMPLATES.registrationConfirmation(
           registrationData.primaryAttendee.firstName,
@@ -1441,8 +1500,6 @@ export const onRegistrationCreated = onDocumentCreated(
       } catch (error) {
         logger.error(`Error sending confirmation SMS for ${registrationId}:`, error);
       }
-    } else if (!isOneWaySmsEnabled()) {
-      logger.info("OneWaySMS not enabled, skipping confirmation SMS");
     }
 
     // Update document with notification status
@@ -1568,8 +1625,8 @@ export const onPaymentConfirmed = onDocumentUpdated(
       logger.info("SendGrid not enabled, skipping ticket email");
     }
 
-    // Send confirmation SMS if OneWaySMS is enabled and phone is available
-    if (isOneWaySmsEnabled() && primaryPhone) {
+    // Send confirmation SMS if phone is available
+    if (primaryPhone) {
       try {
         const smsMessage = SMS_TEMPLATES.paymentConfirmed(
           after.primaryAttendee.firstName,
@@ -1583,8 +1640,6 @@ export const onPaymentConfirmed = onDocumentUpdated(
       } catch (error) {
         logger.error(`Error sending payment confirmation SMS for ${registrationId}:`, error);
       }
-    } else if (!isOneWaySmsEnabled()) {
-      logger.info("OneWaySMS not enabled, skipping ticket SMS");
     }
 
     // Update document with notification status
