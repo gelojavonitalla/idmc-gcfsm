@@ -461,6 +461,28 @@
   gap: var(--spacing-2);
 }
 
+.input {
+  width: 100%;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  color: var(--color-text);
+  background: white;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.input:disabled {
+  background: var(--color-background-secondary);
+  cursor: not-allowed;
+}
+
 .balanceOwed {
   color: var(--color-warning-700, #c2410c);
   font-weight: var(--font-weight-semibold);

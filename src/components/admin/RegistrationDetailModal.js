@@ -185,10 +185,10 @@ function RegistrationDetailModal({
       setSelectedStatus(registration.status || REGISTRATION_STATUS.PENDING_PAYMENT);
       setNotes(registration.notes || '');
       setIsEditingNotes(false);
-      // Reset payment verification states
+      // Pre-populate payment verification states from registration data
       setAmountPaid(registration.totalAmount || 0);
-      setPaymentMethod('');
-      setReferenceNumber('');
+      setPaymentMethod(registration.paymentMethod || '');
+      setReferenceNumber(registration.paymentReference || '');
       setRejectionReason('');
     }
   }, [registration]);
