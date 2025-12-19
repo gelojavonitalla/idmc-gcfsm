@@ -109,7 +109,7 @@ function AdminSettingsPage() {
   };
 
   return (
-    <AdminLayout title="Settings">
+    <AdminLayout>
       {/* Page Header */}
       <div className={styles.header}>
         <div>

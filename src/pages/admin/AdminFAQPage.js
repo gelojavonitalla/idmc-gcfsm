@@ -180,7 +180,7 @@ function AdminFAQPage() {
   const stats = getStats();
 
   return (
-    <AdminLayout title="FAQ Management">
+    <AdminLayout>
       {/* Page Header */}
       <div className={styles.header}>
         <div>

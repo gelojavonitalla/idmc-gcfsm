@@ -178,7 +178,7 @@ function AdminDownloadsPage() {
   const stats = getStats();
 
   return (
-    <AdminLayout title="Downloads Management">
+    <AdminLayout>
       {/* Page Header */}
       <div className={styles.header}>
         <div>

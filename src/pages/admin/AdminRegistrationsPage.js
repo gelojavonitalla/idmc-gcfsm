@@ -430,7 +430,7 @@ function AdminRegistrationsPage() {
   const displayRegistrations = getDisplayRegistrations();
 
   return (
-    <AdminLayout title="Registrations Management">
+    <AdminLayout>
       {/* Page Header */}
       <div className={styles.header}>
         <div>

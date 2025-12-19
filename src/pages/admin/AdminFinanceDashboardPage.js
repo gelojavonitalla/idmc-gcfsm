@@ -239,7 +239,7 @@ function AdminFinanceDashboardPage() {
   };
 
   return (
-    <AdminLayout title="Finance Dashboard">
+    <AdminLayout>
       <div className={styles.page}>
         <div className={styles.header}>
           <h1>Finance Dashboard</h1>

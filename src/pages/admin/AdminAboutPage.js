@@ -264,7 +264,7 @@ function AdminAboutPage() {
   };
 
   return (
-    <AdminLayout title="About Pages">
+    <AdminLayout>
       {/* Page Header */}
       <div className={styles.header}>
         <div>

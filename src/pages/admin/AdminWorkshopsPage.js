@@ -145,7 +145,7 @@ function AdminWorkshopsPage() {
   const stats = getCapacityStats();
 
   return (
-    <AdminLayout title="Workshop Management">
+    <AdminLayout>
       {/* Header Section */}
       <div className={styles.header}>
         <div>

@@ -68,7 +68,7 @@ function AdminDashboardPage() {
   }, [fetchDashboardData]);
 
   return (
-    <AdminLayout title="Dashboard">
+    <AdminLayout>
       {/* Welcome Section */}
       <div className={styles.welcome}>
         <div>

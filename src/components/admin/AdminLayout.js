@@ -6,21 +6,41 @@
  */
 
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
+import { ADMIN_NAV_GROUPS } from '../../constants';
 import styles from './AdminLayout.module.css';
+
+/**
+ * Gets the menu category label for the current path
+ *
+ * @param {string} pathname - Current URL pathname
+ * @returns {string} The category label (e.g., "Content", "Operations")
+ */
+function getMenuCategory(pathname) {
+  for (const group of ADMIN_NAV_GROUPS) {
+    for (const item of group.items) {
+      if (pathname === item.path || pathname.startsWith(`${item.path}/`)) {
+        return group.label;
+      }
+    }
+  }
+  return 'Main';
+}
 
 /**
  * AdminLayout Component
  *
  * @param {Object} props - Component props
  * @param {React.ReactNode} props.children - Page content
- * @param {string} props.title - Page title for header
  * @returns {JSX.Element} The admin layout component
  */
-function AdminLayout({ children, title }) {
+function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const menuCategory = getMenuCategory(location.pathname);
 
   /**
    * Toggles sidebar visibility on mobile
@@ -40,7 +60,7 @@ function AdminLayout({ children, title }) {
     <div className={styles.layout}>
       <AdminSidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
       <div className={styles.main}>
-        <AdminHeader onMenuClick={handleMenuClick} title={title} />
+        <AdminHeader onMenuClick={handleMenuClick} title={menuCategory} />
         <main className={styles.content}>{children}</main>
       </div>
     </div>
@@ -49,11 +69,6 @@ function AdminLayout({ children, title }) {
 
 AdminLayout.propTypes = {
   children: PropTypes.node.isRequired,
-  title: PropTypes.string,
-};
-
-AdminLayout.defaultProps = {
-  title: 'Dashboard',
 };
 
 export default AdminLayout;
