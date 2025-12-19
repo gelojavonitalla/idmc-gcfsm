@@ -10,6 +10,8 @@ import {
   PAYMENT_METHODS,
   BANK_ACCOUNT_TYPES,
   BANK_NAMES,
+  REGISTRATION_CATEGORIES,
+  REGISTRATION_CATEGORY_LABELS,
 } from '../constants';
 import {
   generateRegistrationId,
@@ -111,11 +113,12 @@ const INITIAL_FORM_DATA = {
  * @returns {JSX.Element} The registration page component
  */
 /**
- * Registration category options derived from pricing tier
+ * Public registration categories (excludes admin-only categories like Volunteer and Speaker)
+ * Derived from the REGISTRATION_CATEGORIES constant
  */
-const REGISTRATION_CATEGORIES = [
-  { key: 'regular', name: 'Regular' },
-  { key: 'student', name: 'Student' },
+const PUBLIC_REGISTRATION_CATEGORY_KEYS = [
+  REGISTRATION_CATEGORIES.REGULAR,
+  REGISTRATION_CATEGORIES.STUDENT_SENIOR,
 ];
 
 function RegisterPage() {
@@ -127,11 +130,10 @@ function RegisterPage() {
    */
   const initialFormData = useMemo(() => {
     const categoryParam = searchParams.get('category');
-    // Validate category param against available categories
-    const validCategoryKeys = REGISTRATION_CATEGORIES.map((cat) => cat.key);
-    const category = validCategoryKeys.includes(categoryParam)
+    // Validate category param against available public categories
+    const category = PUBLIC_REGISTRATION_CATEGORY_KEYS.includes(categoryParam)
       ? categoryParam
-      : 'regular'; // Default to 'regular'
+      : REGISTRATION_CATEGORIES.REGULAR; // Default to 'regular'
 
     return {
       ...INITIAL_FORM_DATA,
@@ -440,12 +442,12 @@ function RegisterPage() {
   /**
    * Gets the price for a registration category key from the active pricing tier
    *
-   * @param {string} categoryKey - The category key ('regular' or 'student')
+   * @param {string} categoryKey - The category key ('regular' or 'student_senior')
    * @returns {number} Category price or 0 if not found
    */
   const getCategoryPrice = useCallback((categoryKey) => {
     if (!activePricingTier) return 0;
-    if (categoryKey === 'student') {
+    if (categoryKey === REGISTRATION_CATEGORIES.STUDENT_SENIOR) {
       return activePricingTier.studentPrice || 0;
     }
     return activePricingTier.regularPrice || 0;
@@ -458,8 +460,7 @@ function RegisterPage() {
    * @returns {string} Category name or the key if not found
    */
   const getCategoryName = useCallback((categoryKey) => {
-    const category = REGISTRATION_CATEGORIES.find((cat) => cat.key === categoryKey);
-    return category ? category.name : categoryKey;
+    return REGISTRATION_CATEGORY_LABELS[categoryKey] || categoryKey;
   }, []);
 
   /**
@@ -1240,9 +1241,9 @@ function RegisterPage() {
                       value={formData.primaryAttendee.category}
                       onChange={(e) => updatePrimaryAttendee('category', e.target.value)}
                     >
-                      {REGISTRATION_CATEGORIES.map((category) => (
-                        <option key={category.key} value={category.key}>
-                          {category.name} - {formatPrice(getCategoryPrice(category.key))}
+                      {PUBLIC_REGISTRATION_CATEGORY_KEYS.map((categoryKey) => (
+                        <option key={categoryKey} value={categoryKey}>
+                          {REGISTRATION_CATEGORY_LABELS[categoryKey]} - {formatPrice(getCategoryPrice(categoryKey))}
                         </option>
                       ))}
                     </select>
