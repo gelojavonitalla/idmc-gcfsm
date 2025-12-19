@@ -18,6 +18,7 @@ import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {SecretManagerServiceClient} from "@google-cloud/secret-manager";
 import * as sgMail from "@sendgrid/mail";
 import * as QRCode from "qrcode";
+import {verifyFinanceAdmin, verifyAdminRole} from "./auth";
 
 // Initialize Firebase Admin SDK
 initializeApp();
@@ -1448,6 +1449,9 @@ export const ocrReceipt = onCall(
     timeoutSeconds: 60,
   },
   async (request) => {
+    // Verify user is an active admin (any role can use OCR for verification)
+    await verifyAdminRole(request.auth?.uid);
+
     const {image} = request.data as {image?: string};
 
     if (!image) {
@@ -1707,12 +1711,12 @@ export const sendInvoiceEmail = onCall(
   async (request) => {
     const {registrationId} = request.data;
 
-    // Validate admin authentication
-    if (!request.auth) {
-      throw new HttpsError("unauthenticated", "User must be authenticated");
-    }
+    // Verify user is a finance admin or superadmin
+    const {admin} = await verifyFinanceAdmin(request.auth?.uid);
 
-    logger.info(`Processing invoice email request for registration: ${registrationId}`);
+    logger.info(
+      `Processing invoice email for ${registrationId} by ${admin.email}`
+    );
 
     // Check if SendGrid is enabled
     if (!isSendGridEnabled()) {
@@ -1845,7 +1849,7 @@ export const sendInvoiceEmail = onCall(
       await registrationRef.update({
         "invoice.status": INVOICE_STATUS.SENT,
         "invoice.sentAt": FieldValue.serverTimestamp(),
-        "invoice.sentBy": request.auth.token.email || "unknown",
+        "invoice.sentBy": admin.email,
         "invoice.emailDeliveryStatus": "sent",
         "updatedAt": FieldValue.serverTimestamp(),
       });
@@ -1994,6 +1998,9 @@ export const lookupRegistrationSecure = onCall(
   {
     region: "asia-southeast1",
     maxInstances: 10,
+    // Enable App Check enforcement once configured in Firebase Console
+    // This helps prevent API abuse from non-app sources
+    // enforceAppCheck: true,
   },
   async (request) => {
     const {identifier} = request.data as {identifier?: string};
@@ -2157,6 +2164,8 @@ export const getRegistrationWithVerification = onCall(
   {
     region: "asia-southeast1",
     maxInstances: 10,
+    // Enable App Check enforcement once configured in Firebase Console
+    // enforceAppCheck: true,
   },
   async (request) => {
     const {registrationId, verificationCode} = request.data as {
