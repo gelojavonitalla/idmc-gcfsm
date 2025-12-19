@@ -138,8 +138,14 @@ create_index "registrations" \
     "field-path=createdAt,order=descending" \
     "field-path=__name__,order=descending"
 
+# Index 12: registrations (status ASC, paymentDeadline ASC, __name__ ASC)
+create_index "registrations" \
+    "field-path=status,order=ascending" \
+    "field-path=paymentDeadline,order=ascending" \
+    "field-path=__name__,order=ascending"
+
 # === BANK ACCOUNTS ===
-# Index 12: bankAccounts (isActive ASC, displayOrder ASC, __name__ ASC)
+# Index 13: bankAccounts (isActive ASC, displayOrder ASC, __name__ ASC)
 create_index "bankAccounts" \
     "field-path=isActive,order=ascending" \
     "field-path=displayOrder,order=ascending" \
