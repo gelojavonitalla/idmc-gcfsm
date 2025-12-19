@@ -297,14 +297,15 @@ export const VENUE = {
 
 /**
  * Pricing configuration
- * Single pricing tier with Regular and Student/Senior rates
+ * Default pricing tier with Early Bird, Member, and Regular rates
  */
 export const PRICING_TIERS = [
   {
     id: 'standard',
     name: 'Standard',
+    earlyBirdPrice: 350,
+    memberPrice: 350,
     regularPrice: 500,
-    studentPrice: 300,
     startDate: '2025-01-01',
     endDate: '2026-03-28',
     isActive: true,
@@ -485,30 +486,27 @@ export const WORKSHOP_TRACKS = [
  * Registration categories for attendee pricing
  */
 export const REGISTRATION_CATEGORIES = {
+  EARLY_BIRD: 'early_bird',
+  MEMBER: 'member',
   REGULAR: 'regular',
-  STUDENT_SENIOR: 'student_senior',
-  VOLUNTEER: 'volunteer',
-  SPEAKER: 'speaker',
 };
 
 /**
  * Registration category labels for display
  */
 export const REGISTRATION_CATEGORY_LABELS = {
+  [REGISTRATION_CATEGORIES.EARLY_BIRD]: 'Early Bird',
+  [REGISTRATION_CATEGORIES.MEMBER]: 'Member',
   [REGISTRATION_CATEGORIES.REGULAR]: 'Regular',
-  [REGISTRATION_CATEGORIES.STUDENT_SENIOR]: 'Student / Senior Citizen',
-  [REGISTRATION_CATEGORIES.VOLUNTEER]: 'Volunteer',
-  [REGISTRATION_CATEGORIES.SPEAKER]: 'Speaker',
 };
 
 /**
  * Registration category descriptions
  */
 export const REGISTRATION_CATEGORY_DESCRIPTIONS = {
-  [REGISTRATION_CATEGORIES.REGULAR]: 'For working professionals and general attendees',
-  [REGISTRATION_CATEGORIES.STUDENT_SENIOR]: 'For students with valid ID and senior citizens (60+)',
-  [REGISTRATION_CATEGORIES.VOLUNTEER]: 'For event volunteers (ushers, coordinators, etc.) - No payment required, subject to verification',
-  [REGISTRATION_CATEGORIES.SPEAKER]: 'For event speakers - Admin registration only',
+  [REGISTRATION_CATEGORIES.EARLY_BIRD]: 'Discounted rate for early registrants',
+  [REGISTRATION_CATEGORIES.MEMBER]: 'Special rate for GCF members',
+  [REGISTRATION_CATEGORIES.REGULAR]: 'Standard registration rate',
 };
 
 /**

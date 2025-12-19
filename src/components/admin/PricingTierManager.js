@@ -242,7 +242,7 @@ function PricingTierManager({ tiers, onCreate, onUpdate, onDelete, isLoading }) 
                       </span>
                     </div>
                     <div className={styles.priceRow}>
-                      <span className={styles.priceLabel}>Student/Senior:</span>
+                      <span className={styles.priceLabel}>Student:</span>
                       <span className={styles.priceValue}>
                         {formatPrice(tier.studentPrice)}
                       </span>
@@ -352,7 +352,7 @@ function TierForm({ tier, onSave, onCancel, isSaving, isNew }) {
         </div>
         <div className={styles.formField}>
           <label htmlFor="studentPrice" className={styles.formLabel}>
-            Student/Senior Price (PHP)
+            Student Price (PHP)
           </label>
           <input
             type="number"

@@ -187,12 +187,7 @@ function HomePage() {
             Choose the registration category that applies to you
           </p>
           <div className={styles.pricingGrid}>
-            {Object.entries(REGISTRATION_CATEGORIES)
-              .filter(([, value]) =>
-                value !== REGISTRATION_CATEGORIES.SPEAKER &&
-                value !== REGISTRATION_CATEGORIES.VOLUNTEER
-              )
-              .map(([key, value]) => {
+            {Object.entries(REGISTRATION_CATEGORIES).map(([key, value]) => {
                 const price = calculatePrice(value, activePricingTier);
                 return (
                   <div key={key} className={styles.pricingCard}>

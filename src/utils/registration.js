@@ -44,7 +44,7 @@ export function getCurrentPricingTier() {
 /**
  * Calculates the registration price based on category and pricing tier.
  *
- * @param {string} category - The registration category (regular, student_senior, volunteer, speaker)
+ * @param {string} category - The registration category (early_bird, member, regular)
  * @param {Object} tier - The pricing tier object (optional, defaults to current tier)
  * @returns {number} The calculated price
  */
@@ -52,11 +52,10 @@ export function calculatePrice(category, tier = null) {
   const pricingTier = tier || getCurrentPricingTier();
 
   switch (category) {
-    case REGISTRATION_CATEGORIES.STUDENT_SENIOR:
-      return pricingTier.studentPrice;
-    case REGISTRATION_CATEGORIES.VOLUNTEER:
-    case REGISTRATION_CATEGORIES.SPEAKER:
-      return 0; // Free registration for volunteers and speakers
+    case REGISTRATION_CATEGORIES.EARLY_BIRD:
+      return pricingTier.earlyBirdPrice;
+    case REGISTRATION_CATEGORIES.MEMBER:
+      return pricingTier.memberPrice;
     case REGISTRATION_CATEGORIES.REGULAR:
     default:
       return pricingTier.regularPrice;
@@ -202,12 +201,14 @@ export function formatDate(date) {
 
 /**
  * Checks if a category requires proof/verification.
+ * Currently no categories require proof.
  *
  * @param {string} category - The registration category
  * @returns {boolean} True if proof is required
  */
 export function requiresProof(category) {
-  return category === REGISTRATION_CATEGORIES.STUDENT_SENIOR;
+  // None of the current categories (early_bird, member, regular) require proof
+  return false;
 }
 
 /**
