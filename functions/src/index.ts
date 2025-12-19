@@ -36,15 +36,6 @@ const appUrl = defineString("APP_URL", {default: ""});
 // Flag to enable/disable SendGrid (set to "true" to use SendGrid)
 const useSendGrid = defineString("USE_SENDGRID", {default: "false"});
 
-// OneWaySMS email-to-SMS gateway configuration
-// SMS is sent by emailing: phone@{ONEWAYSMS_GATEWAY_DOMAIN}
-// The SUBJECT line contains the SMS message content
-const smsGatewayDomain = defineString("ONEWAYSMS_GATEWAY_DOMAIN", {
-  default: "1.onewaysms.asia",
-});
-const smsGatewayEmail = defineString("ONEWAYSMS_GATEWAY_EMAIL", {default: ""});
-const useOneWaySms = defineString("USE_ONEWAYSMS", {default: "false"});
-
 /**
  * Generates a QR code as a base64 data URL
  *
@@ -124,7 +115,7 @@ const DEFAULT_SMS_SETTINGS: SmsSettings = {
 
 /**
  * Retrieves SMS settings from Firestore conference settings
- * Falls back to environment variables if Firestore settings not found
+ * Falls back to defaults if Firestore settings not found
  *
  * @return {Promise<SmsSettings>} SMS configuration settings
  */
@@ -149,24 +140,12 @@ async function getSmsSettings(): Promise<SmsSettings> {
       }
     }
 
-    // Fallback to environment variables for backward compatibility
-    return {
-      enabled: useOneWaySms.value().toLowerCase() === "true",
-      gatewayDomain: smsGatewayDomain.value() ||
-        DEFAULT_SMS_SETTINGS.gatewayDomain,
-      gatewayEmail: smsGatewayEmail.value() ||
-        DEFAULT_SMS_SETTINGS.gatewayEmail,
-    };
+    // Return defaults if no Firestore settings found
+    logger.info("No SMS settings in Firestore, using defaults (SMS disabled)");
+    return DEFAULT_SMS_SETTINGS;
   } catch (error) {
     logger.warn("Could not fetch SMS settings from Firestore:", error);
-    // Fallback to environment variables
-    return {
-      enabled: useOneWaySms.value().toLowerCase() === "true",
-      gatewayDomain: smsGatewayDomain.value() ||
-        DEFAULT_SMS_SETTINGS.gatewayDomain,
-      gatewayEmail: smsGatewayEmail.value() ||
-        DEFAULT_SMS_SETTINGS.gatewayEmail,
-    };
+    return DEFAULT_SMS_SETTINGS;
   }
 }
 

@@ -98,6 +98,13 @@ const SETTINGS_DATA = {
     subtitle: 'Watch the highlights from our previous conference',
     youtubeVideoId: 'emGTZDXOaZY',
   },
+  // SMS Gateway Configuration (OneWaySMS via SendGrid email-to-SMS)
+  // These settings can be updated in Firestore without redeploying
+  sms: {
+    enabled: false, // USE_ONEWAYSMS - Set to true to enable SMS notifications
+    gatewayDomain: '1.onewaysms.asia', // ONEWAYSMS_GATEWAY_DOMAIN
+    gatewayEmail: '', // ONEWAYSMS_GATEWAY_EMAIL - Optional: direct gateway email (leave empty to use phone@domain format)
+  },
 };
 
 /**
@@ -181,6 +188,10 @@ async function seedSettings(db) {
   console.log(`    About IDMC: ${SETTINGS_DATA.aboutIdmc.milestones.length} milestones`);
   console.log(`    About GCF: ${SETTINGS_DATA.aboutGcf.coreValues.length} core values`);
   console.log(`    Previous IDMC: ${SETTINGS_DATA.idmc2025.title}`);
+  console.log('\n  - SMS Gateway Configuration:');
+  console.log(`    Enabled: ${SETTINGS_DATA.sms.enabled}`);
+  console.log(`    Gateway Domain: ${SETTINGS_DATA.sms.gatewayDomain}`);
+  console.log(`    Gateway Email: ${SETTINGS_DATA.sms.gatewayEmail || '(not set - using phone@domain format)'}`);
 }
 
 /**
