@@ -127,14 +127,6 @@ function AdminDashboardPage() {
           isLoading={isLoading}
         />
         <StatsCard
-          label="Total Revenue"
-          value={stats?.totalRevenue}
-          icon="revenue"
-          variant="purple"
-          isCurrency
-          isLoading={isLoading}
-        />
-        <StatsCard
           label="Checked In"
           value={stats?.checkedIn}
           icon="checkin"
