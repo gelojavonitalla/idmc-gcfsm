@@ -25,6 +25,8 @@ import {
   REGISTRATION_ERROR_CODES,
 } from '../services';
 import { getPublishedWorkshops } from '../services/workshops';
+import { getFoodMenuSettings, getAllFoodMenuItems } from '../services/foodMenu';
+import { FOOD_MENU_STATUS } from '../constants';
 import { processReceipt } from '../tesseract';
 import WorkshopSelector from '../components/workshops/WorkshopSelector';
 import styles from './RegisterPage.module.css';
@@ -53,6 +55,7 @@ const createEmptyAdditionalAttendee = () => {
     ministryRole: '',
     category: 'regular', // Default category key - will be validated against database categories
     workshopSelections: [], // Array of { sessionId, sessionTitle, timeSlot }
+    foodChoice: '', // Selected food menu item ID
   };
 };
 
@@ -78,6 +81,7 @@ const INITIAL_FORM_DATA = {
     ministryRole: '',
     category: 'regular', // Default category key - will be validated against database categories
     workshopSelections: [], // Array of { sessionId, sessionTitle, timeSlot }
+    foodChoice: '', // Selected food menu item ID
   },
 
   // Additional attendees (required: phone; optional: email)
@@ -159,6 +163,9 @@ function RegisterPage() {
   const [loadingBankAccounts, setLoadingBankAccounts] = useState(false);
   const [workshops, setWorkshops] = useState([]);
   const [loadingWorkshops, setLoadingWorkshops] = useState(false);
+  const [foodMenuItems, setFoodMenuItems] = useState([]);
+  const [foodSelectionEnabled, setFoodSelectionEnabled] = useState(false);
+  const [loadingFoodMenu, setLoadingFoodMenu] = useState(false);
 
   // OCR-related state
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
@@ -215,6 +222,34 @@ function RegisterPage() {
     };
 
     fetchWorkshops();
+  }, []);
+
+  /**
+   * Fetches food menu settings and published items on component mount
+   */
+  useEffect(() => {
+    const fetchFoodMenu = async () => {
+      setLoadingFoodMenu(true);
+      try {
+        const settings = await getFoodMenuSettings();
+        setFoodSelectionEnabled(settings.foodSelectionEnabled || false);
+
+        if (settings.foodSelectionEnabled) {
+          const items = await getAllFoodMenuItems();
+          // Filter to only show published items
+          const publishedItems = items.filter(
+            (item) => item.status === FOOD_MENU_STATUS.PUBLISHED
+          );
+          setFoodMenuItems(publishedItems);
+        }
+      } catch (error) {
+        console.error('Failed to fetch food menu:', error);
+      } finally {
+        setLoadingFoodMenu(false);
+      }
+    };
+
+    fetchFoodMenu();
   }, []);
 
   /**
@@ -570,6 +605,9 @@ function RegisterPage() {
     if (!primary.ministryRole) {
       newPrimaryErrors.ministryRole = 'Ministry role is required';
     }
+    if (foodSelectionEnabled && foodMenuItems.length > 0 && !primary.foodChoice) {
+      newPrimaryErrors.foodChoice = 'Food preference is required';
+    }
 
     // Validate additional attendees (phone required, email optional)
     (formData.additionalAttendees || []).forEach((attendee, index) => {
@@ -593,6 +631,9 @@ function RegisterPage() {
       if (!attendee.ministryRole) {
         attendeeErr.ministryRole = 'Ministry role is required';
       }
+      if (foodSelectionEnabled && foodMenuItems.length > 0 && !attendee.foodChoice) {
+        attendeeErr.foodChoice = 'Food preference is required';
+      }
 
       if (Object.keys(attendeeErr).length > 0) {
         newAdditionalErrors[index] = attendeeErr;
@@ -608,7 +649,7 @@ function RegisterPage() {
       Object.keys(newPrimaryErrors).length === 0 &&
       Object.keys(newAdditionalErrors).length === 0
     );
-  }, [formData]);
+  }, [formData, foodSelectionEnabled, foodMenuItems]);
 
   /**
    * Validates the ticket selection step
@@ -772,6 +813,7 @@ function RegisterPage() {
           ministryRole: formData.primaryAttendee.ministryRole,
           category: formData.primaryAttendee.category,
           workshopSelection: formData.primaryAttendee.workshopSelection || '',
+          foodChoice: formData.primaryAttendee.foodChoice || '',
         },
         additionalAttendees: (formData.additionalAttendees || []).map((attendee) => ({
           lastName: attendee.lastName,
@@ -781,6 +823,7 @@ function RegisterPage() {
           email: attendee.email || '',
           ministryRole: attendee.ministryRole,
           category: attendee.category,
+          foodChoice: attendee.foodChoice || '',
         })),
         church: {
           name: formData.churchName,
@@ -1249,6 +1292,31 @@ function RegisterPage() {
                   </div>
                 </div>
 
+                {/* Food Selection for Primary Attendee */}
+                {foodSelectionEnabled && foodMenuItems.length > 0 && (
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>
+                      Food Preference <span className={styles.required}>*</span>
+                    </label>
+                    <select
+                      className={`${styles.select} ${primaryErrors.foodChoice ? styles.inputError : ''}`}
+                      value={formData.primaryAttendee.foodChoice}
+                      onChange={(e) => updatePrimaryAttendee('foodChoice', e.target.value)}
+                      disabled={loadingFoodMenu}
+                    >
+                      <option value="">Select food preference</option>
+                      {foodMenuItems.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                    {primaryErrors.foodChoice && (
+                      <span className={styles.errorMessage}>{primaryErrors.foodChoice}</span>
+                    )}
+                  </div>
+                )}
+
                 {/* Workshop Selection for Primary Attendee */}
                 {workshops.length > 0 && (
                   <div className={styles.workshopSection}>
@@ -1402,6 +1470,31 @@ function RegisterPage() {
                       </select>
                     </div>
                   </div>
+
+                  {/* Food Selection for Additional Attendee */}
+                  {foodSelectionEnabled && foodMenuItems.length > 0 && (
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>
+                        Food Preference <span className={styles.required}>*</span>
+                      </label>
+                      <select
+                        className={`${styles.select} ${additionalErrors[index]?.foodChoice ? styles.inputError : ''}`}
+                        value={attendee.foodChoice}
+                        onChange={(e) => updateAdditionalAttendee(index, 'foodChoice', e.target.value)}
+                        disabled={loadingFoodMenu}
+                      >
+                        <option value="">Select food preference</option>
+                        {foodMenuItems.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                      </select>
+                      {additionalErrors[index]?.foodChoice && (
+                        <span className={styles.errorMessage}>{additionalErrors[index].foodChoice}</span>
+                      )}
+                    </div>
+                  )}
 
                   {/* Workshop Selection for Additional Attendee */}
                   {workshops.length > 0 && (
