@@ -161,6 +161,11 @@ function SchedulePage() {
           <p className={styles.heroSubtitle}>
             IDMC {CONFERENCE.YEAR} - March 28, 2026
           </p>
+          <p className={styles.heroLinks}>
+            <Link to={ROUTES.DOWNLOADS} className={styles.heroLink}>
+              View Conference Materials & Downloads →
+            </Link>
+          </p>
         </div>
       </section>
 

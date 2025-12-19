@@ -32,6 +32,23 @@
   line-height: 1.5;
 }
 
+.heroLinks {
+  margin: var(--spacing-4) auto 0;
+  max-width: 600px;
+}
+
+.heroLink {
+  color: white;
+  text-decoration: underline;
+  font-size: var(--font-size-sm);
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+
+.heroLink:hover {
+  opacity: 1;
+}
+
 /* Content Section */
 .contentSection {
   padding: var(--spacing-16) 0;
