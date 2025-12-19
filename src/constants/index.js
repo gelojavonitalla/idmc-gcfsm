@@ -48,6 +48,7 @@ export const ADMIN_ROUTES = {
   BANK_ACCOUNTS: '/admin/bank-accounts',
   INVOICES: '/admin/invoices',
   FINANCE_DASHBOARD: '/admin/finance-dashboard',
+  FOOD_MENU: '/admin/food-menu',
 };
 
 /**
@@ -164,6 +165,7 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Speakers', path: ADMIN_ROUTES.SPEAKERS, icon: 'mic' },
       { label: 'Schedule', path: ADMIN_ROUTES.SCHEDULE, icon: 'calendar' },
       { label: 'Venue', path: ADMIN_ROUTES.VENUE, icon: 'location' },
+      { label: 'Food Menu', path: ADMIN_ROUTES.FOOD_MENU, icon: 'utensils' },
       { label: 'FAQ', path: ADMIN_ROUTES.FAQ, icon: 'messageCircle' },
       { label: 'Downloads', path: ADMIN_ROUTES.DOWNLOADS, icon: 'download' },
       { label: 'About', path: ADMIN_ROUTES.ABOUT_CONTENT, icon: 'users' },
@@ -224,6 +226,7 @@ export const COLLECTIONS = {
   VENUE_AMENITIES: 'venueAmenities',
   CHECK_IN_LOGS: 'checkInLogs',
   BANK_ACCOUNTS: 'bankAccounts',
+  FOOD_MENU: 'foodMenu',
 };
 
 /**
@@ -1221,6 +1224,14 @@ export const DOWNLOAD_CATEGORY_LABELS = {
  * Download status values
  */
 export const DOWNLOAD_STATUS = Object.freeze({
+  DRAFT: 'draft',
+  PUBLISHED: 'published',
+});
+
+/**
+ * Food menu item status values
+ */
+export const FOOD_MENU_STATUS = Object.freeze({
   DRAFT: 'draft',
   PUBLISHED: 'published',
 });

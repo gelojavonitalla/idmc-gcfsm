@@ -65,6 +65,7 @@ export const ENTITY_TYPES = Object.freeze({
   SETTINGS: 'settings',
   PRICING: 'pricing',
   CONTACT_INQUIRY: 'contact-inquiry',
+  FOOD_MENU: 'food-menu',
 });
 
 /**
