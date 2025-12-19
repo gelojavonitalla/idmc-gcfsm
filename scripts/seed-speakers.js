@@ -136,6 +136,24 @@ const SPEAKERS_DATA = [
     socialLinks: null,
     createdBy: 'seed-script',
   },
+  {
+    speakerId: 'edwin-ea-sindayen',
+    conferenceId: CONFERENCE_ID,
+    name: 'Deacon Edwin & Ea Sindayen',
+    title: 'Couples Ministry Leaders',
+    organization: 'GCF South Metro',
+    bio: 'Deacon Edwin and Ea Sindayen serve as leaders of the Couples ministry at GCF South Metro Church. They are passionate about helping married couples grow in their faith and strengthen their relationships through biblical principles and intentional discipleship.',
+    photoUrl: null,
+    sessionType: SESSION_TYPES.WORKSHOP,
+    sessionTitle: 'Overcoming Pitfalls in the Discipleship of Couples',
+    sessionIds: [],
+    sessionTitles: ['Overcoming Pitfalls in the Discipleship of Couples'],
+    featured: true,
+    order: 6,
+    status: SPEAKER_STATUS.PUBLISHED,
+    socialLinks: null,
+    createdBy: 'seed-script',
+  },
 ];
 
 /**
