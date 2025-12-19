@@ -206,9 +206,14 @@
   color: #10b981;
 }
 
-.confirmButton:hover {
+.confirmButton:hover:not(:disabled) {
   background: #10b981;
   color: white;
+}
+
+.confirmButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .viewButton svg,
