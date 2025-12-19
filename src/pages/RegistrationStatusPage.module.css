@@ -658,6 +658,7 @@
 
 .uploadIcon {
   font-size: 2rem;
+  color: var(--color-primary);
 }
 
 .uploadOptionButton span:last-child {
