@@ -123,7 +123,7 @@ const WORKSHOPS_DATA = [
     endTime: '15:00',
     durationMinutes: 105,
     timeSlot: WORKSHOP_TIME_SLOTS.DAY1_AFTERNOON,
-    venue: 'YDT',
+    venue: 'Youth Center',
     capacity: 60,
     registeredCount: 0,
     speakerIds: ['gilbert-bayang'],
