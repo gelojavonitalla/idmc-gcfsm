@@ -37,14 +37,27 @@ export async function signInAdmin(email, password) {
 
   const adminData = adminDoc.data();
 
-  if (adminData.status !== 'active') {
+  // Auto-activate pending admins on first successful login
+  // (they have completed password setup via invitation link)
+  if (adminData.status === 'pending') {
+    await updateDoc(doc(db, COLLECTIONS.ADMINS, user.uid), {
+      status: 'active',
+      lastLoginAt: serverTimestamp(),
+      activatedAt: serverTimestamp(),
+    });
+  } else if (adminData.status !== 'active') {
+    // Reject login for inactive or suspended accounts
     await firebaseSignOut(auth);
     throw new Error('Your admin account is inactive. Please contact a super admin.');
+  } else {
+    // Active user - just update lastLoginAt
+    await updateDoc(doc(db, COLLECTIONS.ADMINS, user.uid), {
+      lastLoginAt: serverTimestamp(),
+    });
   }
 
-  await updateDoc(doc(db, COLLECTIONS.ADMINS, user.uid), {
-    lastLoginAt: serverTimestamp(),
-  });
+  // Determine the final status (pending users were just activated)
+  const finalStatus = adminData.status === 'pending' ? 'active' : adminData.status;
 
   // Log the login activity
   await logActivity({
@@ -62,6 +75,7 @@ export async function signInAdmin(email, password) {
       id: user.uid,
       email: user.email,
       ...adminData,
+      status: finalStatus,
     },
   };
 }
