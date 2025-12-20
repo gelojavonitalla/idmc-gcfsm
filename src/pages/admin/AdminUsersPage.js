@@ -19,6 +19,7 @@ import {
   activateAdmin,
   deactivateAdmin,
   resendInvitation,
+  revokeInvitation,
   ADMIN_ERROR_CODES,
 } from '../../services';
 import styles from './AdminUsersPage.module.css';
@@ -97,6 +98,11 @@ function AdminUsersPage() {
     try {
       await resendInvitation(userId, user?.uid);
 
+      // Wait for Cloud Function to process the new document and migrate it
+      // This prevents race condition where fetchUsers returns stale temp ID
+      const CLOUD_FUNCTION_DELAY_MS = 3000;
+      await new Promise((resolve) => setTimeout(resolve, CLOUD_FUNCTION_DELAY_MS));
+
       // Refresh the user list
       await fetchUsers();
 
@@ -105,6 +111,33 @@ function AdminUsersPage() {
     } catch (err) {
       console.error('Failed to resend invitation:', err);
       setError(err.message || 'Failed to resend invitation. Please try again.');
+    }
+  };
+
+  /**
+   * Handles revoking a pending invitation
+   *
+   * @param {string} userId - User ID to revoke invitation for
+   * @param {string} userEmail - User email for confirmation message
+   * @param {string} displayName - User display name for confirmation message
+   */
+  const handleRevokeInvitation = async (userId, userEmail, displayName) => {
+    const confirmMessage = `Are you sure you want to revoke the invitation for ${displayName || userEmail}? This action cannot be undone.`;
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      await revokeInvitation(userId, user?.uid, user?.email);
+
+      // Refresh the user list
+      await fetchUsers();
+
+      setError(null);
+    } catch (err) {
+      console.error('Failed to revoke invitation:', err);
+      setError(err.message || 'Failed to revoke invitation. Please try again.');
     }
   };
 
@@ -239,6 +272,7 @@ function AdminUsersPage() {
         onUpdateRole={handleUpdateRole}
         onToggleStatus={handleToggleStatus}
         onResendInvitation={handleResendInvitation}
+        onRevokeInvitation={handleRevokeInvitation}
         currentUserId={admin?.id}
         isLoading={isLoading}
       />

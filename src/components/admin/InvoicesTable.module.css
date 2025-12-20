@@ -99,7 +99,16 @@
 }
 
 .statusIcon {
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+}
+
+.statusIcon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .statusLabel {

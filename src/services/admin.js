@@ -359,18 +359,71 @@ export async function deactivateAdmin(adminId, deactivatedBy = null, deactivated
 }
 
 /**
+ * Revokes a pending invitation by deleting the admin record
+ * This removes the pending admin and invalidates their invitation.
+ *
+ * @param {string} adminId - Admin user ID to revoke
+ * @param {string} revokedBy - UID of the admin performing the revocation
+ * @param {string} revokedByEmail - Email of the admin performing the revocation
+ * @returns {Promise<void>}
+ * @throws {Error} If admin not found or not in pending status
+ */
+export async function revokeInvitation(adminId, revokedBy, revokedByEmail) {
+  const admin = await getAdmin(adminId);
+
+  if (!admin) {
+    const error = new Error('Admin not found');
+    error.code = ADMIN_ERROR_CODES.ADMIN_NOT_FOUND;
+    throw error;
+  }
+
+  if (admin.status !== 'pending') {
+    throw new Error('Can only revoke pending invitations');
+  }
+
+  const adminEmail = admin.email;
+
+  // Delete the admin document
+  await deleteDoc(doc(db, COLLECTIONS.ADMINS, adminId));
+
+  // Log the activity
+  if (revokedBy && revokedByEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.DELETE,
+      entityType: ENTITY_TYPES.USER,
+      entityId: adminId,
+      description: `Revoked invitation for: ${adminEmail}`,
+      adminId: revokedBy,
+      adminEmail: revokedByEmail,
+    });
+  }
+}
+
+/**
  * Checks if a user has a specific permission
+ * Falls back to role-based permissions if admin.permissions is not set
  *
  * @param {Object} admin - Admin user object
  * @param {string} permission - Permission key to check
  * @returns {boolean} True if admin has the permission
  */
 export function hasPermission(admin, permission) {
-  if (!admin || !admin.permissions) {
+  if (!admin) {
     return false;
   }
 
-  return admin.permissions[permission] === true;
+  // Use stored permissions if available
+  if (admin.permissions) {
+    return admin.permissions[permission] === true;
+  }
+
+  // Fall back to role-based permissions for backwards compatibility
+  const rolePermissions = ADMIN_ROLE_PERMISSIONS[admin.role];
+  if (rolePermissions) {
+    return rolePermissions[permission] === true;
+  }
+
+  return false;
 }
 
 /**

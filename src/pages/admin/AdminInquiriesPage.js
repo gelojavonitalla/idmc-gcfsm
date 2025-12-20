@@ -10,6 +10,7 @@ import {
   AdminLayout,
   InquiriesTable,
   InquiryDetailModal,
+  ReplyInquiryModal,
 } from '../../components/admin';
 import {
   getAllContactInquiries,
@@ -32,6 +33,8 @@ function AdminInquiriesPage() {
   const [error, setError] = useState(null);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isReplyModalOpen, setIsReplyModalOpen] = useState(false);
+  const [replyInquiry, setReplyInquiry] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
@@ -139,6 +142,46 @@ function AdminInquiriesPage() {
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     setSelectedInquiry(null);
+  }, []);
+
+  /**
+   * Opens the reply modal for an inquiry
+   *
+   * @param {Object} inquiry - Inquiry to reply to
+   */
+  const handleOpenReplyModal = useCallback((inquiry) => {
+    setReplyInquiry(inquiry);
+    setIsReplyModalOpen(true);
+  }, []);
+
+  /**
+   * Closes the reply modal
+   */
+  const handleCloseReplyModal = useCallback(() => {
+    setIsReplyModalOpen(false);
+    setReplyInquiry(null);
+  }, []);
+
+  /**
+   * Handles when a reply is successfully sent
+   *
+   * @param {string} inquiryId - ID of the inquiry that was replied to
+   */
+  const handleReplySent = useCallback((inquiryId) => {
+    // Update the inquiry status locally
+    setInquiries((prev) =>
+      prev.map((inq) =>
+        inq.id === inquiryId
+          ? { ...inq, status: CONTACT_INQUIRY_STATUS.REPLIED }
+          : inq
+      )
+    );
+    // Update modal view if open
+    setSelectedInquiry((prev) =>
+      prev && prev.id === inquiryId
+        ? { ...prev, status: CONTACT_INQUIRY_STATUS.REPLIED }
+        : prev
+    );
   }, []);
 
   /**
@@ -274,6 +317,7 @@ function AdminInquiriesPage() {
         onView={handleViewInquiry}
         onUpdateStatus={handleUpdateStatus}
         onDelete={handleDeleteInquiry}
+        onReply={handleOpenReplyModal}
         isLoading={isLoading}
       />
 
@@ -283,6 +327,15 @@ function AdminInquiriesPage() {
         onClose={handleCloseModal}
         inquiry={selectedInquiry}
         onUpdateStatus={handleUpdateStatus}
+        onReply={handleOpenReplyModal}
+      />
+
+      {/* Reply Inquiry Modal */}
+      <ReplyInquiryModal
+        isOpen={isReplyModalOpen}
+        onClose={handleCloseReplyModal}
+        inquiry={replyInquiry}
+        onReplySent={handleReplySent}
       />
     </AdminLayout>
   );

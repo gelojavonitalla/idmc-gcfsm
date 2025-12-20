@@ -242,6 +242,12 @@
   background: #ecfdf5;
 }
 
+.revokeButton:hover:not(:disabled) {
+  color: #dc2626;
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .table th,

@@ -19,7 +19,7 @@ import {
   runTransaction,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { COLLECTIONS, INVOICE_STATUS, REGISTRATION_STATUS } from '../constants';
+import { COLLECTIONS, INVOICE_STATUS, REGISTRATION_STATUS, CONFERENCE } from '../constants';
 
 /**
  * Error codes for invoice operations
@@ -36,31 +36,32 @@ export const INVOICE_ERROR_CODES = {
 
 /**
  * Generates the next invoice number using atomic Firestore transaction
- * Invoice numbers follow the format: INV-YYYY-NNNN (e.g., INV-2025-0001)
+ * Invoice numbers follow the format: INV-YYYY-NNNN (e.g., INV-2026-0001)
+ * Uses the conference year from settings to ensure consistency.
  *
- * @returns {Promise<string>} The generated invoice number (e.g., "INV-2025-0042")
+ * @returns {Promise<string>} The generated invoice number (e.g., "INV-2026-0042")
  * @throws {Error} If the transaction fails
  *
  * @example
  * const invoiceNumber = await generateInvoiceNumber();
- * // Returns: "INV-2025-0001"
+ * // Returns: "INV-2026-0001"
  */
 async function generateInvoiceNumber() {
   const counterRef = doc(db, 'settings', 'invoiceCounter');
-  const currentYear = new Date().getFullYear();
+  const conferenceYear = CONFERENCE.YEAR;
 
   try {
     const invoiceNumber = await runTransaction(db, async (transaction) => {
       const counterDoc = await transaction.get(counterRef);
 
-      if (!counterDoc.exists() || counterDoc.data().year !== currentYear) {
+      if (!counterDoc.exists() || counterDoc.data().year !== conferenceYear) {
         // Reset counter for new year or first invoice
         transaction.set(counterRef, {
-          year: currentYear,
+          year: conferenceYear,
           lastNumber: 1,
           updatedAt: new Date(),
         });
-        return `INV-${currentYear}-0001`;
+        return `INV-${conferenceYear}-0001`;
       }
 
       const nextNumber = counterDoc.data().lastNumber + 1;
@@ -69,7 +70,7 @@ async function generateInvoiceNumber() {
         updatedAt: new Date(),
       });
 
-      return `INV-${currentYear}-${String(nextNumber).padStart(4, '0')}`;
+      return `INV-${conferenceYear}-${String(nextNumber).padStart(4, '0')}`;
     });
 
     return invoiceNumber;

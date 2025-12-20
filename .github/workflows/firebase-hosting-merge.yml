@@ -92,6 +92,7 @@ jobs:
           echo "SENDER_NAME=${{ vars.SENDER_NAME }}" >> functions/.env
           echo "APP_URL=${{ vars.APP_URL }}" >> functions/.env
           echo "USE_SENDGRID=${{ vars.USE_SENDGRID }}" >> functions/.env
+          echo "REPLY_TO_EMAIL=${{ vars.REPLY_TO_EMAIL }}" >> functions/.env
 
           npm install -g firebase-tools
           firebase deploy --only functions --project ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }} --force

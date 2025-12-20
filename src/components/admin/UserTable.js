@@ -17,11 +17,12 @@ import styles from './UserTable.module.css';
  * @param {Function} props.onUpdateRole - Callback to update user role
  * @param {Function} props.onToggleStatus - Callback to toggle user status
  * @param {Function} props.onResendInvitation - Callback to resend invitation email
+ * @param {Function} props.onRevokeInvitation - Callback to revoke invitation
  * @param {string} props.currentUserId - Current logged-in user ID
  * @param {boolean} props.isLoading - Loading state
  * @returns {JSX.Element} The user table
  */
-function UserTable({ users, onUpdateRole, onToggleStatus, onResendInvitation, currentUserId, isLoading }) {
+function UserTable({ users, onUpdateRole, onToggleStatus, onResendInvitation, onRevokeInvitation, currentUserId, isLoading }) {
   /**
    * Formats date for display
    *
@@ -166,6 +167,19 @@ function UserTable({ users, onUpdateRole, onToggleStatus, onResendInvitation, cu
                           </svg>
                         </button>
                       )}
+                      {user.status === 'pending' && onRevokeInvitation && (
+                        <button
+                          className={`${styles.actionButton} ${styles.revokeButton}`}
+                          onClick={() => onRevokeInvitation(user.id, user.email, user.displayName)}
+                          title="Revoke invitation"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                          </svg>
+                        </button>
+                      )}
                       {user.status === 'active' ? (
                         <button
                           className={styles.actionButton}
@@ -218,6 +232,7 @@ UserTable.propTypes = {
   onUpdateRole: PropTypes.func.isRequired,
   onToggleStatus: PropTypes.func.isRequired,
   onResendInvitation: PropTypes.func,
+  onRevokeInvitation: PropTypes.func,
   currentUserId: PropTypes.string,
   isLoading: PropTypes.bool,
 };
@@ -225,6 +240,7 @@ UserTable.propTypes = {
 UserTable.defaultProps = {
   users: [],
   onResendInvitation: null,
+  onRevokeInvitation: null,
   currentUserId: null,
   isLoading: false,
 };

@@ -44,10 +44,11 @@ function formatDate(timestamp) {
  * @param {Function} props.onView - Callback when view is clicked
  * @param {Function} props.onUpdateStatus - Callback when status is changed
  * @param {Function} props.onDelete - Callback when delete is clicked
+ * @param {Function} props.onReply - Callback when reply is clicked
  * @param {boolean} props.isLoading - Loading state
  * @returns {JSX.Element} The inquiries table
  */
-function InquiriesTable({ inquiries, onView, onUpdateStatus, onDelete, isLoading }) {
+function InquiriesTable({ inquiries, onView, onUpdateStatus, onDelete, onReply, isLoading }) {
   /**
    * Gets status badge class
    *
@@ -159,16 +160,16 @@ function InquiriesTable({ inquiries, onView, onUpdateStatus, onDelete, isLoading
                         <circle cx="12" cy="12" r="3" />
                       </svg>
                     </button>
-                    <a
+                    <button
                       className={styles.replyButton}
-                      href={`mailto:${inquiry.email}?subject=Re: ${encodeURIComponent(inquiry.subject)}`}
+                      onClick={() => onReply(inquiry)}
                       title="Reply via email"
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="9 17 4 12 9 7" />
                         <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
                       </svg>
-                    </a>
+                    </button>
                     <button
                       className={styles.deleteButton}
                       onClick={() => onDelete(inquiry.id, inquiry.name)}
@@ -205,6 +206,7 @@ InquiriesTable.propTypes = {
   onView: PropTypes.func.isRequired,
   onUpdateStatus: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
+  onReply: PropTypes.func.isRequired,
   isLoading: PropTypes.bool,
 };
 

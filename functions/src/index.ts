@@ -48,8 +48,16 @@ const appUrl = defineString("APP_URL", {default: ""});
 // Flag to enable/disable SendGrid (set to "true" to use SendGrid)
 const useSendGrid = defineString("USE_SENDGRID", {default: "false"});
 
+// Reply-to email for contact inquiry responses (info@ address for replies)
+const replyToEmail = defineString("REPLY_TO_EMAIL", {default: ""});
+
 // SendGrid API key (stored in Secret Manager, accessed via defineSecret)
 const sendgridApiKey = defineSecret("SENDGRID_API_KEY");
+
+// Conference configuration constants
+const CONFERENCE_YEAR = 2026;
+const CONFERENCE_NAME = `IDMC GCFSM ${CONFERENCE_YEAR}`;
+const INVOICE_CONTACT_EMAIL = "info@idmc-gcfsm.org";
 
 /**
  * Generates a QR code as a base64 data URL
@@ -104,6 +112,7 @@ const COLLECTIONS = {
   REGISTRATIONS: "registrations",
   SETTINGS: "settings",
   CONFERENCES: "conferences",
+  CONTACT_INQUIRIES: "contactInquiries",
 };
 
 /**
@@ -615,6 +624,15 @@ export const onAdminCreated = onDocumentCreated(
     // Only process pending invitations
     if (adminData.status !== "pending") {
       logger.info(`Admin ${adminId} is not pending, skipping invitation email`);
+      return;
+    }
+
+    // Skip if invitation was already processed
+    // Prevents duplicate emails during document migration from temp ID to UID
+    if (adminData.invitationSentAt) {
+      logger.info(
+        `Admin ${adminId} already processed, skipping duplicate email`
+      );
       return;
     }
 
@@ -1845,7 +1863,7 @@ function generateInvoiceEmailText(
   return `
 Dear ${data.invoiceName},
 
-Thank you for your registration to IDMC GCFSM 2025.
+Thank you for your registration to ${CONFERENCE_NAME}.
 
 Please find attached your invoice for:
 - Registration ID: ${data.registrationId}
@@ -1853,7 +1871,7 @@ Please find attached your invoice for:
 - Amount Paid: ₱${data.amountPaid.toLocaleString()}
 - Attendee: ${data.primaryAttendee.firstName} ${data.primaryAttendee.lastName}
 
-If you have any questions regarding your invoice, please contact us at ${senderEmail.value()}.
+If you have any questions regarding your invoice, please contact us at ${INVOICE_CONTACT_EMAIL}.
 
 Best regards,
 IDMC GCFSM Finance Team
@@ -1962,7 +1980,7 @@ function generateInvoiceEmailHtml(
   <div class="content">
     <p>Dear ${data.invoiceName},</p>
 
-    <p>Thank you for your registration to <strong>IDMC GCFSM 2025</strong>.</p>
+    <p>Thank you for your registration to <strong>${CONFERENCE_NAME}</strong>.</p>
 
     <div class="attachment-notice">
       <strong>📎 Invoice Attached</strong><br>
@@ -1988,7 +2006,7 @@ function generateInvoiceEmailHtml(
       </div>
     </div>
 
-    <p>If you have any questions regarding your invoice, please contact us at <a href="mailto:${senderEmail.value()}">${senderEmail.value()}</a>.</p>
+    <p>If you have any questions regarding your invoice, please contact us at <a href="mailto:${INVOICE_CONTACT_EMAIL}">${INVOICE_CONTACT_EMAIL}</a>.</p>
 
     <div class="footer">
       <p><strong>IDMC GCFSM Finance Team</strong></p>
@@ -2093,8 +2111,9 @@ export const sendInvoiceEmail = onCall(
       }
 
       // Download invoice file from Storage
+      // Use the idmc-2026 bucket, not the default project bucket
       const {getStorage} = await import("firebase-admin/storage");
-      const bucket = getStorage().bucket();
+      const bucket = getStorage().bucket(DATABASE_ID);
 
       // Extract file path from URL
       const invoiceUrl = registration.invoice.invoiceUrl;
@@ -2122,7 +2141,7 @@ export const sendInvoiceEmail = onCall(
           email: fromEmail,
           name: senderName.value() || "IDMC Finance Team",
         },
-        subject: `Invoice ${registration.invoice.invoiceNumber} - IDMC GCFSM 2025`,
+        subject: `Invoice ${registration.invoice.invoiceNumber} - ${CONFERENCE_NAME}`,
         text: generateInvoiceEmailText({
           invoiceName: registration.invoice.name,
           registrationId: registration.registrationId,
@@ -2177,14 +2196,40 @@ export const sendInvoiceEmail = onCall(
         message: `Invoice sent successfully to ${primaryEmail}`,
       };
     } catch (error) {
-      logger.error(`Error sending invoice email for ${registrationId}:`, error);
+      // Extract detailed error information from SendGrid response
+      let errorMessage = error instanceof Error ? error.message : "Unknown error";
+      let errorDetails = "";
+
+      // SendGrid errors have response.body.errors with detailed messages
+      const sgError = error as {
+        code?: number;
+        response?: {
+          body?: {
+            errors?: Array<{field?: string; message?: string; help?: string}>;
+          };
+        };
+      };
+
+      if (sgError.response?.body?.errors) {
+        const errors = sgError.response.body.errors;
+        errorDetails = errors.map((e) =>
+          `${e.field || "error"}: ${e.message || "unknown"}${e.help ? ` (${e.help})` : ""}`
+        ).join("; ");
+        errorMessage = `SendGrid error (${sgError.code}): ${errorDetails}`;
+      }
+
+      logger.error(`Error sending invoice email for ${registrationId}: ${errorMessage}`, {
+        errorCode: sgError.code,
+        errorDetails,
+        fullError: error,
+      });
 
       // Update status to failed
       try {
         await registrationRef.update({
           "invoice.status": INVOICE_STATUS.FAILED,
           "invoice.emailDeliveryStatus": "failed",
-          "invoice.errorMessage": error instanceof Error ? error.message : "Unknown error",
+          "invoice.errorMessage": errorMessage,
           "updatedAt": FieldValue.serverTimestamp(),
         });
       } catch (updateError) {
@@ -2198,7 +2243,340 @@ export const sendInvoiceEmail = onCall(
 
       throw new HttpsError(
         "internal",
-        `Failed to send invoice email: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to send invoice email: ${errorMessage}`
+      );
+    }
+  }
+);
+
+/**
+ * Contact inquiry status constants
+ */
+const CONTACT_INQUIRY_STATUS = {
+  NEW: "new",
+  READ: "read",
+  REPLIED: "replied",
+};
+
+/**
+ * Generates the HTML email template for contact inquiry replies
+ *
+ * @param {string} recipientName - Name of the inquiry sender
+ * @param {string} subject - Email subject
+ * @param {string} message - Reply message content
+ * @param {string} originalSubject - Original inquiry subject
+ * @param {string} originalMessage - Original inquiry message
+ * @return {string} HTML string for the email
+ */
+function generateInquiryReplyHtml(
+  recipientName: string,
+  subject: string,
+  message: string,
+  originalSubject: string,
+  originalMessage: string
+): string {
+  // Convert newlines to <br> for HTML display
+  const formattedMessage = message.replace(/\n/g, "<br>");
+  const formattedOriginalMessage = originalMessage.replace(/\n/g, "<br>");
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${subject}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 20px; text-align: center; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 12px 12px 0 0;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
+                GCFSM IDMC
+              </h1>
+              <p style="margin: 8px 0 0; color: #bfdbfe; font-size: 14px;">
+                GCF South Metro
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                Dear ${recipientName},
+              </p>
+              <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                Thank you for reaching out to us. Here is our response to your inquiry:
+              </p>
+
+              <!-- Reply Message -->
+              <div style="margin: 24px 0; padding: 20px; background-color: #f9fafb; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                <p style="margin: 0; color: #1f2937; font-size: 16px; line-height: 1.7;">
+                  ${formattedMessage}
+                </p>
+              </div>
+
+              <!-- Original Inquiry -->
+              <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
+                <p style="margin: 0 0 12px; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                  Your Original Inquiry
+                </p>
+                <p style="margin: 0 0 8px; color: #9ca3af; font-size: 14px;">
+                  <strong>Subject:</strong> ${originalSubject}
+                </p>
+                <div style="margin: 0; padding: 16px; background-color: #f3f4f6; border-radius: 6px;">
+                  <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+                    ${formattedOriginalMessage}
+                  </p>
+                </div>
+              </div>
+
+              <p style="margin: 32px 0 0; color: #4b5563; font-size: 14px; line-height: 1.6;">
+                If you have any further questions, please don't hesitate to reply to this email.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 12px 12px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; color: #6b7280; font-size: 12px; text-align: center; line-height: 1.5;">
+                GCFSM IDMC<br>
+                Daang Hari Road, Versailles, Almanza Dos<br>
+                Las Piñas, 1750 PHL
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+}
+
+/**
+ * Generates plain text version of inquiry reply email
+ *
+ * @param {string} recipientName - Name of the inquiry sender
+ * @param {string} message - Reply message content
+ * @param {string} originalSubject - Original inquiry subject
+ * @param {string} originalMessage - Original inquiry message
+ * @return {string} Plain text string for the email
+ */
+function generateInquiryReplyText(
+  recipientName: string,
+  message: string,
+  originalSubject: string,
+  originalMessage: string
+): string {
+  return `
+Dear ${recipientName},
+
+Thank you for reaching out to us. Here is our response to your inquiry:
+
+${message}
+
+---
+Your Original Inquiry:
+Subject: ${originalSubject}
+
+${originalMessage}
+---
+
+If you have any further questions, please don't hesitate to reply to this email.
+
+Best regards,
+GCFSM IDMC
+Daang Hari Road, Versailles, Almanza Dos
+Las Piñas, 1750 PHL
+  `.trim();
+}
+
+/**
+ * Callable Cloud Function to send reply to a contact inquiry via SendGrid
+ *
+ * This function:
+ * 1. Validates the inquiry exists
+ * 2. Sends reply email via SendGrid with reply-to header
+ * 3. Updates inquiry status to 'replied'
+ * 4. Stores reply history on the inquiry document
+ *
+ * @param request - Contains inquiryId, subject, message
+ */
+export const sendInquiryReply = onCall(
+  {cors: true, secrets: [sendgridApiKey]},
+  async (request) => {
+    const {inquiryId, subject, message} = request.data as {
+      inquiryId?: string;
+      subject?: string;
+      message?: string;
+    };
+
+    // Validate admin authentication
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "User must be authenticated");
+    }
+
+    // Validate required parameters
+    if (!inquiryId) {
+      throw new HttpsError("invalid-argument", "Missing required parameter: inquiryId");
+    }
+    if (!subject || !subject.trim()) {
+      throw new HttpsError("invalid-argument", "Missing required parameter: subject");
+    }
+    if (!message || !message.trim()) {
+      throw new HttpsError("invalid-argument", "Missing required parameter: message");
+    }
+
+    logger.info(`Processing inquiry reply for: ${inquiryId}`);
+
+    // Check if SendGrid is enabled
+    if (!isSendGridEnabled()) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Email service is not configured. Please contact support."
+      );
+    }
+
+    const db = getFirestore(DATABASE_ID);
+    const inquiryRef = db.collection(COLLECTIONS.CONTACT_INQUIRIES).doc(inquiryId);
+
+    try {
+      // Get inquiry document
+      const inquiryDoc = await inquiryRef.get();
+      if (!inquiryDoc.exists) {
+        throw new HttpsError("not-found", "Inquiry not found");
+      }
+
+      const inquiry = inquiryDoc.data();
+      if (!inquiry) {
+        throw new HttpsError("not-found", "Inquiry data is empty");
+      }
+
+      const recipientEmail = inquiry.email;
+      const recipientName = inquiry.name;
+
+      if (!recipientEmail) {
+        throw new HttpsError("failed-precondition", "Inquiry has no email address");
+      }
+
+      // Get SendGrid API key
+      const apiKey = getSendGridApiKey();
+      if (!apiKey) {
+        throw new HttpsError(
+          "failed-precondition",
+          "SendGrid API key is not configured"
+        );
+      }
+
+      sgMail.setApiKey(apiKey);
+
+      const fromEmail = senderEmail.value();
+      if (!fromEmail) {
+        throw new HttpsError("failed-precondition", "SENDER_EMAIL is not configured");
+      }
+
+      // Get reply-to email (info@ address), fallback to sender email
+      const replyTo = replyToEmail.value() || fromEmail;
+
+      // Prepare email
+      const msg = {
+        to: recipientEmail,
+        from: {
+          email: fromEmail,
+          name: senderName.value() || "GCFSM IDMC",
+        },
+        replyTo: {
+          email: replyTo,
+          name: "GCFSM IDMC",
+        },
+        subject: subject.trim(),
+        text: generateInquiryReplyText(
+          recipientName,
+          message.trim(),
+          inquiry.subject,
+          inquiry.message
+        ),
+        html: generateInquiryReplyHtml(
+          recipientName,
+          subject.trim(),
+          message.trim(),
+          inquiry.subject,
+          inquiry.message
+        ),
+      };
+
+      // Send email
+      await sgMail.send(msg);
+      logger.info(`Inquiry reply sent successfully to ${recipientEmail}`);
+
+      // Get current replies array or initialize empty
+      const existingReplies = inquiry.replies || [];
+
+      // Add new reply to history
+      const newReply = {
+        subject: subject.trim(),
+        message: message.trim(),
+        sentAt: new Date().toISOString(),
+        sentBy: request.auth.token.email || "unknown",
+      };
+
+      // Update inquiry document
+      await inquiryRef.update({
+        status: CONTACT_INQUIRY_STATUS.REPLIED,
+        replies: [...existingReplies, newReply],
+        lastRepliedAt: FieldValue.serverTimestamp(),
+        lastRepliedBy: request.auth.token.email || "unknown",
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      return {
+        success: true,
+        message: `Reply sent successfully to ${recipientEmail}`,
+      };
+    } catch (error) {
+      // Extract detailed error information from SendGrid response
+      let errorMessage = error instanceof Error ? error.message : "Unknown error";
+      let errorDetails = "";
+
+      const sgError = error as {
+        code?: number;
+        response?: {
+          body?: {
+            errors?: Array<{field?: string; message?: string; help?: string}>;
+          };
+        };
+      };
+
+      if (sgError.response?.body?.errors) {
+        const errors = sgError.response.body.errors;
+        errorDetails = errors.map((e) =>
+          `${e.field || "error"}: ${e.message || "unknown"}${e.help ? ` (${e.help})` : ""}`
+        ).join("; ");
+        errorMessage = `SendGrid error (${sgError.code}): ${errorDetails}`;
+      }
+
+      logger.error(`Error sending inquiry reply for ${inquiryId}: ${errorMessage}`, {
+        errorCode: sgError.code,
+        errorDetails,
+        fullError: error,
+      });
+
+      // Re-throw as HttpsError if not already one
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      throw new HttpsError(
+        "internal",
+        `Failed to send reply: ${errorMessage}`
       );
     }
   }
