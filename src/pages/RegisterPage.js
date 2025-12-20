@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useSettings } from '../context';
 import {
   REGISTRATION_STEPS,
@@ -1150,7 +1150,7 @@ function RegisterPage() {
                 <h2>Lost Your Confirmation?</h2>
                 <p>
                   You can retrieve your registration anytime.{' '}
-                  <a href={ROUTES.REGISTRATION_STATUS}>Check Registration Status</a>
+                  <Link to={`${ROUTES.REGISTRATION_STATUS}?id=${shortCode}`}>Check Registration Status</Link>
                 </p>
                 <p>Use your email, phone number, or registration ID to look up your registration.</p>
               </div>
