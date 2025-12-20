@@ -268,3 +268,45 @@
     justify-content: center;
   }
 }
+
+/* Sync Stats Button */
+.syncButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--color-gray-100);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-gray-700);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: var(--spacing-2);
+}
+
+.syncButton:hover:not(:disabled) {
+  background: var(--color-gray-200);
+  border-color: var(--color-gray-400);
+}
+
+.syncButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.syncSuccess {
+  display: inline-block;
+  margin-left: var(--spacing-2);
+  color: var(--color-green-600);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.syncError {
+  display: inline-block;
+  margin-left: var(--spacing-2);
+  color: var(--color-red-600);
+  font-size: var(--font-size-sm);
+}
