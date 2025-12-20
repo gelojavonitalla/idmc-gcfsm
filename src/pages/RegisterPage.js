@@ -343,11 +343,43 @@ function RegisterPage() {
    * @param {*} value - The new value
    */
   const updatePrimaryAttendee = useCallback((field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      primaryAttendee: { ...prev.primaryAttendee, [field]: value },
-    }));
-    setPrimaryErrors((prev) => ({ ...prev, [field]: null }));
+    setFormData((prev) => {
+      const updatedAttendee = { ...prev.primaryAttendee, [field]: value };
+
+      // Validate email matching in real-time when either email field changes
+      if (field === 'email' || field === 'emailConfirm') {
+        const email = field === 'email' ? value : prev.primaryAttendee.email;
+        const emailConfirm = field === 'emailConfirm' ? value : prev.primaryAttendee.emailConfirm;
+
+        // Only validate matching if both fields have values
+        if (email.trim() && emailConfirm.trim()) {
+          if (email.trim().toLowerCase() !== emailConfirm.trim().toLowerCase()) {
+            setPrimaryErrors((prevErrors) => ({
+              ...prevErrors,
+              [field]: null,
+              emailConfirm: 'Email addresses do not match',
+            }));
+          } else {
+            // Clear both email errors when they match
+            setPrimaryErrors((prevErrors) => ({
+              ...prevErrors,
+              email: null,
+              emailConfirm: null,
+            }));
+          }
+        } else {
+          // Clear only the current field's error if one field is empty
+          setPrimaryErrors((prevErrors) => ({ ...prevErrors, [field]: null }));
+        }
+      } else {
+        setPrimaryErrors((prevErrors) => ({ ...prevErrors, [field]: null }));
+      }
+
+      return {
+        ...prev,
+        primaryAttendee: updatedAttendee,
+      };
+    });
   }, []);
 
   /**
