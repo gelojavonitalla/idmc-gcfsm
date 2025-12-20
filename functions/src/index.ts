@@ -38,6 +38,11 @@ const useSendGrid = defineString("USE_SENDGRID", {default: "false"});
 // SendGrid API key (stored in Secret Manager, accessed via defineSecret)
 const sendgridApiKey = defineSecret("SENDGRID_API_KEY");
 
+// Conference configuration constants
+const CONFERENCE_YEAR = 2026;
+const CONFERENCE_NAME = `IDMC GCFSM ${CONFERENCE_YEAR}`;
+const INVOICE_CONTACT_EMAIL = "info@idmc-gcfsm.org";
+
 /**
  * Generates a QR code as a base64 data URL
  *
@@ -1829,7 +1834,7 @@ function generateInvoiceEmailText(
   return `
 Dear ${data.invoiceName},
 
-Thank you for your registration to IDMC GCFSM 2025.
+Thank you for your registration to ${CONFERENCE_NAME}.
 
 Please find attached your invoice for:
 - Registration ID: ${data.registrationId}
@@ -1837,7 +1842,7 @@ Please find attached your invoice for:
 - Amount Paid: ₱${data.amountPaid.toLocaleString()}
 - Attendee: ${data.primaryAttendee.firstName} ${data.primaryAttendee.lastName}
 
-If you have any questions regarding your invoice, please contact us at ${senderEmail.value()}.
+If you have any questions regarding your invoice, please contact us at ${INVOICE_CONTACT_EMAIL}.
 
 Best regards,
 IDMC GCFSM Finance Team
@@ -1946,7 +1951,7 @@ function generateInvoiceEmailHtml(
   <div class="content">
     <p>Dear ${data.invoiceName},</p>
 
-    <p>Thank you for your registration to <strong>IDMC GCFSM 2025</strong>.</p>
+    <p>Thank you for your registration to <strong>${CONFERENCE_NAME}</strong>.</p>
 
     <div class="attachment-notice">
       <strong>📎 Invoice Attached</strong><br>
@@ -1972,7 +1977,7 @@ function generateInvoiceEmailHtml(
       </div>
     </div>
 
-    <p>If you have any questions regarding your invoice, please contact us at <a href="mailto:${senderEmail.value()}">${senderEmail.value()}</a>.</p>
+    <p>If you have any questions regarding your invoice, please contact us at <a href="mailto:${INVOICE_CONTACT_EMAIL}">${INVOICE_CONTACT_EMAIL}</a>.</p>
 
     <div class="footer">
       <p><strong>IDMC GCFSM Finance Team</strong></p>
@@ -2107,7 +2112,7 @@ export const sendInvoiceEmail = onCall(
           email: fromEmail,
           name: senderName.value() || "IDMC Finance Team",
         },
-        subject: `Invoice ${registration.invoice.invoiceNumber} - IDMC GCFSM 2025`,
+        subject: `Invoice ${registration.invoice.invoiceNumber} - ${CONFERENCE_NAME}`,
         text: generateInvoiceEmailText({
           invoiceName: registration.invoice.name,
           registrationId: registration.registrationId,
