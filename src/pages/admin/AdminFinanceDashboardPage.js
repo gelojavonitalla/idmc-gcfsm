@@ -455,7 +455,8 @@ function AdminFinanceDashboardPage() {
                       <th>Name</th>
                       <th>Church</th>
                       <th>Amount</th>
-                      <th>Payment Date</th>
+                      <th>Reference Number</th>
+                      <th>Payment Date/Time</th>
                       <th>Status</th>
                     </tr>
                   </thead>
@@ -468,9 +469,10 @@ function AdminFinanceDashboardPage() {
                         </td>
                         <td>{reg.church?.name}</td>
                         <td>{formatPrice(reg.payment?.amountPaid || 0)}</td>
+                        <td>{reg.payment?.referenceNumber || 'N/A'}</td>
                         <td>
                           {reg.payment?.paymentDate
-                            ? new Date(reg.payment.paymentDate).toLocaleDateString()
+                            ? `${new Date(reg.payment.paymentDate).toLocaleDateString()}${reg.payment?.paymentTime ? ` ${reg.payment.paymentTime}` : ''}`
                             : 'N/A'}
                         </td>
                         <td>
