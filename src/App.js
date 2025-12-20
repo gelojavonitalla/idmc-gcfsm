@@ -112,7 +112,7 @@ function App() {
             <Route
               path={ADMIN_ROUTES.ACTIVITY}
               element={
-                <AdminProtectedRoute>
+                <AdminProtectedRoute requiredPermission="viewActivityLog">
                   <Suspense fallback={<AdminLoadingFallback />}>
                     <AdminActivityPage />
                   </Suspense>
