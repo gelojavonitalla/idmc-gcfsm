@@ -1,10 +1,6 @@
 import { useMemo } from 'react';
 import PropTypes from 'prop-types';
-import {
-  WORKSHOP_CATEGORY_LABELS,
-  WORKSHOP_CATEGORY_COLORS,
-  WORKSHOP_TIME_SLOT_LABELS,
-} from '../../constants';
+import { WORKSHOP_CATEGORY_LABELS, WORKSHOP_CATEGORY_COLORS } from '../../constants';
 import {
   groupWorkshopsByTimeSlot,
   hasAvailableCapacity,
@@ -107,12 +103,9 @@ function WorkshopSelector({ workshops, selections, onSelectionChange, disabled =
       {timeSlotKeys.map((timeSlot) => {
         const slotWorkshops = groupedWorkshops[timeSlot];
         const selectedId = getSelectedWorkshopId(timeSlot);
-        const slotLabel = WORKSHOP_TIME_SLOT_LABELS[timeSlot] || timeSlot;
 
         return (
           <div key={timeSlot} className={styles.timeSlotSection}>
-            <h4 className={styles.timeSlotLabel}>{slotLabel}</h4>
-
             <div className={styles.workshopOptions}>
               {/* Workshop options */}
               {slotWorkshops.map((workshop) => {
