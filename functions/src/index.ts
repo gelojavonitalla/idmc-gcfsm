@@ -1521,6 +1521,109 @@ export const onRegistrationCreated = onDocumentCreated(
     if (Object.keys(updateData).length > 0) {
       await snapshot.ref.update(updateData);
     }
+
+    // Update conference stats for new registration
+    const confirmedStatuses = [
+      REGISTRATION_STATUS.CONFIRMED,
+      REGISTRATION_STATUS.PENDING_VERIFICATION,
+    ];
+
+    if (confirmedStatuses.includes(registrationData.status)) {
+      try {
+        const db = getFirestore(DATABASE_ID);
+        const attendeeCount = 1 + (registrationData.additionalAttendees?.length || 0);
+
+        // Prepare stats update
+        const statsUpdate: Record<string, unknown> = {
+          registeredAttendeeCount: FieldValue.increment(attendeeCount),
+          lastUpdatedAt: FieldValue.serverTimestamp(),
+        };
+
+        // Track registration status counts
+        if (registrationData.status === REGISTRATION_STATUS.CONFIRMED) {
+          statsUpdate.confirmedRegistrationCount = FieldValue.increment(1);
+        } else if (registrationData.status === REGISTRATION_STATUS.PENDING_VERIFICATION) {
+          statsUpdate.pendingVerificationCount = FieldValue.increment(1);
+        }
+
+        // Track finance stats if payment exists
+        if (registrationData.payment?.amountPaid) {
+          const amount = registrationData.payment.amountPaid;
+          if (registrationData.status === REGISTRATION_STATUS.CONFIRMED) {
+            statsUpdate.totalConfirmedPayments = FieldValue.increment(amount);
+          } else if (registrationData.status === REGISTRATION_STATUS.PENDING_VERIFICATION) {
+            statsUpdate.totalPendingPayments = FieldValue.increment(amount);
+          }
+
+          // Track per-bank-account stats
+          if (registrationData.payment.bankAccountId) {
+            const bankId = registrationData.payment.bankAccountId;
+            if (registrationData.status === REGISTRATION_STATUS.CONFIRMED) {
+              statsUpdate[`bankAccountStats.${bankId}.confirmed`] =
+                FieldValue.increment(amount);
+            } else {
+              statsUpdate[`bankAccountStats.${bankId}.pending`] =
+                FieldValue.increment(amount);
+            }
+            statsUpdate[`bankAccountStats.${bankId}.count`] =
+              FieldValue.increment(1);
+          }
+        }
+
+        // Update stats document
+        const statsRef = db.collection(COLLECTIONS.STATS).doc(STATS_DOC_ID);
+        await statsRef.set(statsUpdate, {merge: true});
+
+        logger.info(
+          `Updated stats for new registration ${registrationId}: +${attendeeCount} attendees`
+        );
+
+        // Update workshop counts
+        const allWorkshopSelections: string[] = [];
+
+        if (registrationData.primaryAttendee?.workshopSelections) {
+          registrationData.primaryAttendee.workshopSelections.forEach(
+            (selection: {sessionId?: string}) => {
+              if (selection.sessionId) {
+                allWorkshopSelections.push(selection.sessionId);
+              }
+            }
+          );
+        }
+
+        if (registrationData.additionalAttendees) {
+          registrationData.additionalAttendees.forEach(
+            (attendee: {workshopSelections?: Array<{sessionId?: string}>}) => {
+              if (attendee.workshopSelections) {
+                attendee.workshopSelections.forEach(
+                  (selection: {sessionId?: string}) => {
+                    if (selection.sessionId) {
+                      allWorkshopSelections.push(selection.sessionId);
+                    }
+                  }
+                );
+              }
+            }
+          );
+        }
+
+        if (allWorkshopSelections.length > 0) {
+          const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
+          for (const sessionId of allWorkshopSelections) {
+            await sessionsCollection.doc(sessionId).update({
+              registeredCount: FieldValue.increment(1),
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+          }
+          logger.info(
+            `Updated ${allWorkshopSelections.length} workshop counts for new registration`
+          );
+        }
+      } catch (statsError) {
+        logger.error(`Error updating stats for new registration ${registrationId}:`, statsError);
+        // Don't throw - stats update failure shouldn't fail the registration
+      }
+    }
   }
 );
 
