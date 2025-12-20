@@ -2553,3 +2553,250 @@ export const sendInquiryReply = onCall(
     }
   }
 );
+
+/**
+ * Scheduled function that runs daily to sync capacity counts
+ * Recounts all confirmed attendees and updates:
+ * - Conference settings registeredAttendeeCount
+ * - Workshop registeredCount for each session
+ * Runs every day at 2:00 AM Asia/Manila time
+ */
+export const syncCapacityCounts = onSchedule(
+  {
+    schedule: "0 2 * * *",
+    timeZone: "Asia/Manila",
+    region: "asia-southeast1",
+  },
+  async () => {
+    logger.info("Running scheduled task: syncCapacityCounts");
+
+    const db = getFirestore(DATABASE_ID);
+
+    try {
+      // Query all confirmed and pending_verification registrations
+      const confirmedQuery = await db.collection(COLLECTIONS.REGISTRATIONS)
+        .where("status", "in", [
+          REGISTRATION_STATUS.CONFIRMED,
+          REGISTRATION_STATUS.PENDING_VERIFICATION,
+        ])
+        .get();
+
+      // Count total attendees (primary + additional)
+      let totalAttendees = 0;
+      const workshopCounts: Record<string, number> = {};
+
+      confirmedQuery.forEach((docSnapshot) => {
+        const data = docSnapshot.data();
+
+        // Count primary attendee
+        totalAttendees += 1;
+
+        // Count additional attendees
+        const additionalCount = data.additionalAttendees?.length || 0;
+        totalAttendees += additionalCount;
+
+        // Count workshop selections for primary attendee
+        if (data.primaryAttendee?.workshopSelections) {
+          data.primaryAttendee.workshopSelections.forEach(
+            (selection: {sessionId?: string}) => {
+              if (selection.sessionId) {
+                workshopCounts[selection.sessionId] =
+                  (workshopCounts[selection.sessionId] || 0) + 1;
+              }
+            }
+          );
+        }
+
+        // Count workshop selections for additional attendees
+        if (data.additionalAttendees) {
+          data.additionalAttendees.forEach(
+            (attendee: {workshopSelections?: Array<{sessionId?: string}>}) => {
+              if (attendee.workshopSelections) {
+                attendee.workshopSelections.forEach(
+                  (selection: {sessionId?: string}) => {
+                    if (selection.sessionId) {
+                      workshopCounts[selection.sessionId] =
+                        (workshopCounts[selection.sessionId] || 0) + 1;
+                    }
+                  }
+                );
+              }
+            }
+          );
+        }
+      });
+
+      logger.info(`Total confirmed attendees: ${totalAttendees}`);
+      logger.info(`Workshop counts: ${JSON.stringify(workshopCounts)}`);
+
+      // Update conference settings with total attendee count
+      const settingsRef = db
+        .collection(COLLECTIONS.CONFERENCES)
+        .doc("conference-settings");
+
+      await settingsRef.update({
+        registeredAttendeeCount: totalAttendees,
+        capacityLastSyncedAt: FieldValue.serverTimestamp(),
+      });
+
+      logger.info("Updated conference registeredAttendeeCount");
+
+      // Update workshop registered counts
+      const sessionsCollection = db.collection("sessions");
+      const batch = db.batch();
+      let updateCount = 0;
+
+      for (const [sessionId, count] of Object.entries(workshopCounts)) {
+        const sessionRef = sessionsCollection.doc(sessionId);
+        batch.update(sessionRef, {
+          registeredCount: count,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        updateCount++;
+      }
+
+      // Also reset workshops not in the counts (to handle cancelled registrations)
+      const allWorkshops = await sessionsCollection
+        .where("sessionType", "==", "workshop")
+        .get();
+
+      allWorkshops.forEach((workshopDoc) => {
+        const workshopId = workshopDoc.id;
+        if (!(workshopId in workshopCounts)) {
+          // Workshop has no registrations, reset to 0
+          batch.update(workshopDoc.ref, {
+            registeredCount: 0,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+          updateCount++;
+        }
+      });
+
+      if (updateCount > 0) {
+        await batch.commit();
+        logger.info(`Updated ${updateCount} workshop counts`);
+      }
+
+      logger.info("Capacity sync completed successfully");
+    } catch (error) {
+      logger.error("Error syncing capacity counts:", error);
+      throw error;
+    }
+  }
+);
+
+/**
+ * Firestore trigger that updates capacity counts when registration status changes
+ * Handles:
+ * - New confirmed registrations (increment count)
+ * - Cancelled registrations (decrement count)
+ * - Status changes between confirmed/cancelled states
+ */
+export const onRegistrationCapacityUpdate = onDocumentUpdated(
+  {
+    document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
+    region: "asia-southeast1",
+    database: DATABASE_ID,
+  },
+  async (event) => {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+
+    if (!before || !after) {
+      return;
+    }
+
+    const confirmedStatuses = [
+      REGISTRATION_STATUS.CONFIRMED,
+      REGISTRATION_STATUS.PENDING_VERIFICATION,
+    ];
+
+    const wasConfirmed = confirmedStatuses.includes(before.status);
+    const isConfirmed = confirmedStatuses.includes(after.status);
+
+    // Only process if status changed between confirmed/non-confirmed
+    if (wasConfirmed === isConfirmed) {
+      return;
+    }
+
+    const registrationId = event.params.registrationId;
+    logger.info(
+      `Registration ${registrationId} status changed: ${before.status} -> ${after.status}`
+    );
+
+    const db = getFirestore(DATABASE_ID);
+
+    // Calculate attendee count for this registration
+    const attendeeCount = 1 + (after.additionalAttendees?.length || 0);
+
+    // Determine if we're incrementing or decrementing
+    const delta = isConfirmed ? attendeeCount : -attendeeCount;
+
+    try {
+      // Update conference registered attendee count
+      const settingsRef = db
+        .collection(COLLECTIONS.CONFERENCES)
+        .doc("conference-settings");
+
+      await settingsRef.update({
+        registeredAttendeeCount: FieldValue.increment(delta),
+        capacityLastUpdatedAt: FieldValue.serverTimestamp(),
+      });
+
+      logger.info(
+        `Updated conference attendee count by ${delta} for registration ${registrationId}`
+      );
+
+      // Update workshop counts
+      const allWorkshopSelections: string[] = [];
+
+      // Collect primary attendee workshop selections
+      if (after.primaryAttendee?.workshopSelections) {
+        after.primaryAttendee.workshopSelections.forEach(
+          (selection: {sessionId?: string}) => {
+            if (selection.sessionId) {
+              allWorkshopSelections.push(selection.sessionId);
+            }
+          }
+        );
+      }
+
+      // Collect additional attendees workshop selections
+      if (after.additionalAttendees) {
+        after.additionalAttendees.forEach(
+          (attendee: {workshopSelections?: Array<{sessionId?: string}>}) => {
+            if (attendee.workshopSelections) {
+              attendee.workshopSelections.forEach(
+                (selection: {sessionId?: string}) => {
+                  if (selection.sessionId) {
+                    allWorkshopSelections.push(selection.sessionId);
+                  }
+                }
+              );
+            }
+          }
+        );
+      }
+
+      // Update each workshop's registered count
+      if (allWorkshopSelections.length > 0) {
+        const workshopDelta = isConfirmed ? 1 : -1;
+        const sessionsCollection = db.collection("sessions");
+
+        for (const sessionId of allWorkshopSelections) {
+          await sessionsCollection.doc(sessionId).update({
+            registeredCount: FieldValue.increment(workshopDelta),
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
+
+        logger.info(
+          `Updated ${allWorkshopSelections.length} workshop counts by ${workshopDelta}`
+        );
+      }
+    } catch (error) {
+      logger.error(`Error updating capacity for registration ${registrationId}:`, error);
+      throw error;
+    }
+  }
+);

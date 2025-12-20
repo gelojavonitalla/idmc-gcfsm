@@ -502,6 +502,24 @@ function SettingsForm({ settings, onSave, isLoading }) {
               closed automatically.
             </p>
           </div>
+          <div className={styles.field}>
+            <label className={styles.label}>
+              Current Registered Attendees
+            </label>
+            <div className={styles.readOnlyValue}>
+              {settings?.registeredAttendeeCount ?? 0}
+              {formData.conferenceCapacity && (
+                <span className={styles.capacityRatio}>
+                  {' '}/ {formData.conferenceCapacity} ({
+                    Math.round(((settings?.registeredAttendeeCount ?? 0) / formData.conferenceCapacity) * 100)
+                  }%)
+                </span>
+              )}
+            </div>
+            <p className={styles.fieldHint}>
+              This count is automatically maintained by Cloud Functions and synced daily at 2 AM.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -785,6 +803,7 @@ SettingsForm.propTypes = {
     timezone: PropTypes.string,
     registrationOpen: PropTypes.bool,
     conferenceCapacity: PropTypes.number,
+    registeredAttendeeCount: PropTypes.number,
     heroImageUrl: PropTypes.string,
     heroVideoUrl: PropTypes.string,
     venue: PropTypes.shape({

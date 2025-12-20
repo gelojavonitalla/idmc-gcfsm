@@ -22,7 +22,6 @@ import {
   uploadPaymentProof,
   getRegistrationByEmail,
   getActiveBankAccounts,
-  getTotalConfirmedAttendeeCount,
   REGISTRATION_ERROR_CODES,
 } from '../services';
 import { getPublishedWorkshops } from '../services/workshops';
@@ -270,27 +269,14 @@ function RegisterPage() {
   }, []);
 
   /**
-   * Fetches conference capacity settings and current attendee count
+   * Updates conference capacity state from settings context
+   * Uses the stored registeredAttendeeCount which is maintained by Cloud Functions
    */
   useEffect(() => {
-    const fetchCapacityData = async () => {
-      setLoadingCapacity(true);
-      try {
-        // Get conference capacity from settings (already available in context)
-        setConferenceCapacity(settings?.conferenceCapacity || null);
-
-        // Get current confirmed attendee count
-        const totalAttendees = await getTotalConfirmedAttendeeCount();
-        setCurrentAttendeeCount(totalAttendees);
-      } catch (error) {
-        console.error('Failed to fetch capacity data:', error);
-      } finally {
-        setLoadingCapacity(false);
-      }
-    };
-
-    fetchCapacityData();
-  }, [settings?.conferenceCapacity]);
+    setConferenceCapacity(settings?.conferenceCapacity ?? null);
+    setCurrentAttendeeCount(settings?.registeredAttendeeCount ?? 0);
+    setLoadingCapacity(false);
+  }, [settings?.conferenceCapacity, settings?.registeredAttendeeCount]);
 
   /**
    * Updates a form field value

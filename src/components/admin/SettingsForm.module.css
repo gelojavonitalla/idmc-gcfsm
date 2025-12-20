@@ -173,6 +173,19 @@
   margin: var(--spacing-1) 0 0 0;
 }
 
+.readOnlyValue {
+  font-size: var(--font-size-2xl);
+  font-weight: 600;
+  color: var(--color-primary);
+  padding: var(--spacing-2) 0;
+}
+
+.capacityRatio {
+  font-size: var(--font-size-base);
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
 .input:disabled,
 .select:disabled {
   background-color: #f9fafb;
