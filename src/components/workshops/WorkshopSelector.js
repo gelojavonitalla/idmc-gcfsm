@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import {
   WORKSHOP_CATEGORY_LABELS,
   WORKSHOP_CATEGORY_COLORS,
-  WORKSHOP_CATEGORIES,
   WORKSHOP_TIME_SLOT_LABELS,
 } from '../../constants';
 import {
@@ -68,13 +67,22 @@ function WorkshopSelector({ workshops, selections, onSelectionChange, disabled =
   };
 
   /**
+   * Default colors for workshops without a defined category
+   */
+  const DEFAULT_CATEGORY_COLORS = {
+    background: '#f3f4f6',
+    border: '#9ca3af',
+    text: '#374151',
+  };
+
+  /**
    * Gets category colors for styling
    *
    * @param {string} category - The category identifier
    * @returns {Object} Color object with background, border, and text
    */
   const getCategoryColors = (category) => {
-    return WORKSHOP_CATEGORY_COLORS[category] || WORKSHOP_CATEGORY_COLORS[WORKSHOP_CATEGORIES.OTHER];
+    return WORKSHOP_CATEGORY_COLORS[category] || DEFAULT_CATEGORY_COLORS;
   };
 
   const timeSlotKeys = Object.keys(groupedWorkshops);
