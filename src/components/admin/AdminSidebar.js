@@ -224,7 +224,7 @@ NavIcon.propTypes = {
  * @returns {JSX.Element} The admin sidebar component
  */
 function AdminSidebar({ isOpen, onClose }) {
-  const { admin, hasRole } = useAdminAuth();
+  const { admin, hasRole, checkPermission } = useAdminAuth();
   const location = useLocation();
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
@@ -251,16 +251,19 @@ function AdminSidebar({ isOpen, onClose }) {
   };
 
   /**
-   * Filters nav items based on user role
+   * Filters nav items based on user role and permissions
    *
    * @param {Object} item - Navigation item
    * @returns {boolean} Whether to show the item
    */
   const shouldShowNavItem = (item) => {
-    if (!item.requiresRole) {
-      return true;
+    if (item.requiresRole && !hasRole(item.requiresRole)) {
+      return false;
     }
-    return hasRole(item.requiresRole);
+    if (item.requiresPermission && !checkPermission(item.requiresPermission)) {
+      return false;
+    }
+    return true;
   };
 
   /**
