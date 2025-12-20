@@ -610,6 +610,15 @@ export const onAdminCreated = onDocumentCreated(
       return;
     }
 
+    // Skip if invitation was already processed
+    // Prevents duplicate emails during document migration from temp ID to UID
+    if (adminData.invitationSentAt) {
+      logger.info(
+        `Admin ${adminId} already processed, skipping duplicate email`
+      );
+      return;
+    }
+
     const {email, displayName, role} = adminData;
 
     if (!email) {
