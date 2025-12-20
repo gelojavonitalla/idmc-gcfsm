@@ -45,9 +45,10 @@ function formatDate(timestamp) {
  * @param {Function} props.onClose - Callback to close modal
  * @param {Object} props.inquiry - Inquiry data to display
  * @param {Function} props.onUpdateStatus - Callback when status is changed
+ * @param {Function} props.onReply - Callback when reply is clicked
  * @returns {JSX.Element|null} The modal component or null if not open
  */
-function InquiryDetailModal({ isOpen, onClose, inquiry, onUpdateStatus }) {
+function InquiryDetailModal({ isOpen, onClose, inquiry, onUpdateStatus, onReply }) {
   /**
    * Handle escape key to close modal
    */
@@ -164,16 +165,16 @@ function InquiryDetailModal({ isOpen, onClose, inquiry, onUpdateStatus }) {
 
         {/* Footer */}
         <div className={styles.footer}>
-          <a
+          <button
             className={styles.replyButton}
-            href={`mailto:${inquiry.email}?subject=Re: ${encodeURIComponent(inquiry.subject)}`}
+            onClick={() => onReply(inquiry)}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="9 17 4 12 9 7" />
               <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
             </svg>
             Reply via Email
-          </a>
+          </button>
           <button className={styles.closeButtonSecondary} onClick={onClose}>
             Close
           </button>
@@ -196,6 +197,7 @@ InquiryDetailModal.propTypes = {
     createdAt: PropTypes.object,
   }),
   onUpdateStatus: PropTypes.func.isRequired,
+  onReply: PropTypes.func.isRequired,
 };
 
 InquiryDetailModal.defaultProps = {
