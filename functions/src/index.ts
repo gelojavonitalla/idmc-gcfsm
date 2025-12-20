@@ -1531,7 +1531,9 @@ export const onRegistrationCreated = onDocumentCreated(
     if (confirmedStatuses.includes(registrationData.status)) {
       try {
         const db = getFirestore(DATABASE_ID);
-        const attendeeCount = 1 + (registrationData.additionalAttendees?.length || 0);
+        const additionalAttendees = registrationData.additionalAttendees;
+        const additionalCount = additionalAttendees?.length || 0;
+        const attendeeCount = 1 + additionalCount;
 
         // Prepare stats update
         const statsUpdate: Record<string, unknown> = {
@@ -1542,7 +1544,9 @@ export const onRegistrationCreated = onDocumentCreated(
         // Track registration status counts
         if (registrationData.status === REGISTRATION_STATUS.CONFIRMED) {
           statsUpdate.confirmedRegistrationCount = FieldValue.increment(1);
-        } else if (registrationData.status === REGISTRATION_STATUS.PENDING_VERIFICATION) {
+        } else if (
+          registrationData.status === REGISTRATION_STATUS.PENDING_VERIFICATION
+        ) {
           statsUpdate.pendingVerificationCount = FieldValue.increment(1);
         }
 
@@ -1551,7 +1555,9 @@ export const onRegistrationCreated = onDocumentCreated(
           const amount = registrationData.payment.amountPaid;
           if (registrationData.status === REGISTRATION_STATUS.CONFIRMED) {
             statsUpdate.totalConfirmedPayments = FieldValue.increment(amount);
-          } else if (registrationData.status === REGISTRATION_STATUS.PENDING_VERIFICATION) {
+          } else if (
+            registrationData.status === REGISTRATION_STATUS.PENDING_VERIFICATION
+          ) {
             statsUpdate.totalPendingPayments = FieldValue.increment(amount);
           }
 
@@ -2528,7 +2534,9 @@ export const sendInquiryReply = onCall(
     }
 
     const db = getFirestore(DATABASE_ID);
-    const inquiryRef = db.collection(COLLECTIONS.CONTACT_INQUIRIES).doc(inquiryId);
+    const inquiryRef = db
+      .collection(COLLECTIONS.CONTACT_INQUIRIES)
+      .doc(inquiryId);
 
     try {
       // Get inquiry document
@@ -2668,7 +2676,7 @@ export const sendInquiryReply = onCall(
  * Helper function to count checked-in attendees in a registration
  *
  * @param {object} data - Registration document data
- * @returns {number} Number of checked-in attendees
+ * @return {number} Number of checked-in attendees
  */
 function getCheckedInAttendeeCount(
   data: {
@@ -2871,7 +2879,7 @@ export const syncConferenceStats = onSchedule(
         updateCount++;
       }
 
-      // Also reset workshops not in the counts (to handle cancelled registrations)
+      // Also reset workshops not in counts (handle cancelled registrations)
       const allWorkshops = await sessionsCollection
         .where("sessionType", "==", "workshop")
         .get();
@@ -3222,7 +3230,7 @@ export const triggerStatsSync = onCall(
 );
 
 /**
- * Firestore trigger that updates check-in stats when a registration is checked in
+ * Firestore trigger that updates check-in stats when registration is checked in
  * Updates the stats document with incremented check-in counts
  */
 export const onCheckInStatsUpdate = onDocumentUpdated(
@@ -3272,8 +3280,10 @@ export const onCheckInStatsUpdate = onDocumentUpdated(
     // Determine registration-level check-in status changes
     const wasFullyCheckedIn = beforeCheckedIn === attendeeCount;
     const isFullyCheckedIn = afterCheckedIn === attendeeCount;
-    const wasPartiallyCheckedIn = beforeCheckedIn > 0 && beforeCheckedIn < attendeeCount;
-    const isPartiallyCheckedIn = afterCheckedIn > 0 && afterCheckedIn < attendeeCount;
+    const wasPartiallyCheckedIn =
+      beforeCheckedIn > 0 && beforeCheckedIn < attendeeCount;
+    const isPartiallyCheckedIn =
+      afterCheckedIn > 0 && afterCheckedIn < attendeeCount;
 
     const updates: Record<string, unknown> = {
       checkedInAttendeeCount: FieldValue.increment(checkInDelta),
@@ -3293,7 +3303,9 @@ export const onCheckInStatsUpdate = onDocumentUpdated(
       }
     } else if (!wasPartiallyCheckedIn && isPartiallyCheckedIn) {
       updates.partiallyCheckedInCount = FieldValue.increment(1);
-    } else if (wasPartiallyCheckedIn && !isPartiallyCheckedIn && !isFullyCheckedIn) {
+    } else if (
+      wasPartiallyCheckedIn && !isPartiallyCheckedIn && !isFullyCheckedIn
+    ) {
       updates.partiallyCheckedInCount = FieldValue.increment(-1);
     }
 
