@@ -9,6 +9,8 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import MediaUpload from './MediaUpload';
 import { uploadHeroImage, uploadHeroVideo, deleteFile } from '../../services/storage';
+import { useAdminAuth } from '../../context';
+import { ADMIN_ROLES } from '../../constants';
 import styles from './SettingsForm.module.css';
 
 /**
@@ -62,6 +64,9 @@ const DEFAULT_SETTINGS = {
 };
 
 function SettingsForm({ settings, onSave, isLoading }) {
+  const { hasRole } = useAdminAuth();
+  const isSuperAdmin = hasRole(ADMIN_ROLES.SUPERADMIN);
+
   const [formData, setFormData] = useState({
     title: settings?.title || DEFAULT_SETTINGS.title,
     theme: settings?.theme || DEFAULT_SETTINGS.theme,
@@ -637,67 +642,69 @@ function SettingsForm({ settings, onSave, isLoading }) {
         </div>
       </section>
 
-      {/* SMS Notifications Section */}
-      <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>SMS Notifications</h3>
-        <p className={styles.sectionDescription}>
-          Configure OneWaySMS email-to-SMS gateway for sending text message notifications.
-        </p>
-        <div className={styles.grid}>
-          <div className={styles.fieldFull}>
-            <label className={styles.checkboxLabel}>
+      {/* SMS Notifications Section - SuperAdmin only */}
+      {isSuperAdmin && (
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>SMS Notifications</h3>
+          <p className={styles.sectionDescription}>
+            Configure OneWaySMS email-to-SMS gateway for sending text message notifications.
+          </p>
+          <div className={styles.grid}>
+            <div className={styles.fieldFull}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  name="sms.enabled"
+                  checked={formData.sms.enabled}
+                  onChange={handleChange}
+                  className={styles.checkbox}
+                />
+                <span>Enable SMS Notifications</span>
+              </label>
+              <p className={styles.fieldHint}>
+                When enabled, SMS notifications will be sent for registration confirmations and
+                payment confirmations.
+              </p>
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="sms.gatewayDomain" className={styles.label}>
+                Gateway Domain
+              </label>
               <input
-                type="checkbox"
-                name="sms.enabled"
-                checked={formData.sms.enabled}
+                type="text"
+                id="sms.gatewayDomain"
+                name="sms.gatewayDomain"
+                value={formData.sms.gatewayDomain}
                 onChange={handleChange}
-                className={styles.checkbox}
+                className={styles.input}
+                placeholder="1.onewaysms.asia"
+                disabled={!formData.sms.enabled}
               />
-              <span>Enable SMS Notifications</span>
-            </label>
-            <p className={styles.fieldHint}>
-              When enabled, SMS notifications will be sent for registration confirmations and
-              payment confirmations.
-            </p>
+              <p className={styles.fieldHint}>
+                SMS gateway domain (e.g., 1.onewaysms.asia)
+              </p>
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="sms.gatewayEmail" className={styles.label}>
+                Gateway Email (Optional)
+              </label>
+              <input
+                type="email"
+                id="sms.gatewayEmail"
+                name="sms.gatewayEmail"
+                value={formData.sms.gatewayEmail}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="Leave empty to use phone@domain format"
+                disabled={!formData.sms.enabled}
+              />
+              <p className={styles.fieldHint}>
+                Direct gateway email if required by your SMS provider
+              </p>
+            </div>
           </div>
-          <div className={styles.field}>
-            <label htmlFor="sms.gatewayDomain" className={styles.label}>
-              Gateway Domain
-            </label>
-            <input
-              type="text"
-              id="sms.gatewayDomain"
-              name="sms.gatewayDomain"
-              value={formData.sms.gatewayDomain}
-              onChange={handleChange}
-              className={styles.input}
-              placeholder="1.onewaysms.asia"
-              disabled={!formData.sms.enabled}
-            />
-            <p className={styles.fieldHint}>
-              SMS gateway domain (e.g., 1.onewaysms.asia)
-            </p>
-          </div>
-          <div className={styles.field}>
-            <label htmlFor="sms.gatewayEmail" className={styles.label}>
-              Gateway Email (Optional)
-            </label>
-            <input
-              type="email"
-              id="sms.gatewayEmail"
-              name="sms.gatewayEmail"
-              value={formData.sms.gatewayEmail}
-              onChange={handleChange}
-              className={styles.input}
-              placeholder="Leave empty to use phone@domain format"
-              disabled={!formData.sms.enabled}
-            />
-            <p className={styles.fieldHint}>
-              Direct gateway email if required by your SMS provider
-            </p>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Submit Button */}
       <div className={styles.actions}>
