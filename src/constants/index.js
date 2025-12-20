@@ -99,6 +99,8 @@ export const ADMIN_ROLE_PERMISSIONS = {
     viewActivityLog: true,
     manageContent: true,
     manageFinance: true,
+    manageWorkshops: true,
+    manageInquiries: true,
   },
   [ADMIN_ROLES.ADMIN]: {
     manageConference: true,
@@ -111,18 +113,22 @@ export const ADMIN_ROLE_PERMISSIONS = {
     viewActivityLog: true,
     manageContent: true,
     manageFinance: true,
+    manageWorkshops: true,
+    manageInquiries: true,
   },
   [ADMIN_ROLES.FINANCE]: {
     manageConference: false,
     manageSpeakers: false,
     manageSchedule: false,
     manageRegistrations: true,
-    manageCheckIn: false,
+    manageCheckIn: true,
     manageUsers: false,
     viewAnalytics: true,
     viewActivityLog: false,
     manageContent: false,
     manageFinance: true,
+    manageWorkshops: false,
+    manageInquiries: false,
   },
   [ADMIN_ROLES.MEDIA]: {
     manageConference: true,
@@ -135,6 +141,8 @@ export const ADMIN_ROLE_PERMISSIONS = {
     viewActivityLog: false,
     manageContent: true,
     manageFinance: false,
+    manageWorkshops: false,
+    manageInquiries: false,
   },
   [ADMIN_ROLES.VOLUNTEER]: {
     manageConference: false,
@@ -147,6 +155,8 @@ export const ADMIN_ROLE_PERMISSIONS = {
     viewActivityLog: false,
     manageContent: false,
     manageFinance: false,
+    manageWorkshops: false,
+    manageInquiries: false,
   },
 };
 
@@ -182,10 +192,10 @@ export const ADMIN_NAV_GROUPS = [
     label: 'Operations',
     items: [
       { label: 'Registrations', path: ADMIN_ROUTES.REGISTRATIONS, icon: 'people', requiresPermission: 'manageRegistrations' },
-      { label: 'Workshops', path: ADMIN_ROUTES.WORKSHOPS, icon: 'hammer', requiresPermission: 'manageRegistrations' },
+      { label: 'Workshops', path: ADMIN_ROUTES.WORKSHOPS, icon: 'hammer', requiresPermission: 'manageWorkshops' },
       { label: 'Check-In', path: ADMIN_ROUTES.CHECKIN, icon: 'checkin', requiresPermission: 'manageCheckIn' },
       { label: 'Check-In Monitor', path: ADMIN_ROUTES.CHECKIN_MONITOR, icon: 'monitor', requiresPermission: 'manageCheckIn' },
-      { label: 'Inquiries', path: ADMIN_ROUTES.INQUIRIES, icon: 'mail', requiresPermission: 'manageRegistrations' },
+      { label: 'Inquiries', path: ADMIN_ROUTES.INQUIRIES, icon: 'mail', requiresPermission: 'manageInquiries' },
     ],
   },
   {
