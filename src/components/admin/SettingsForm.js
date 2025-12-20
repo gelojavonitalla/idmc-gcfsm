@@ -36,6 +36,7 @@ const DEFAULT_SETTINGS = {
   endTime: '17:30',
   timezone: 'Asia/Manila',
   registrationOpen: true,
+  conferenceCapacity: null,
   heroImageUrl: null,
   heroVideoUrl: null,
   venue: {
@@ -78,6 +79,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
     endTime: settings?.endTime || DEFAULT_SETTINGS.endTime,
     timezone: settings?.timezone || DEFAULT_SETTINGS.timezone,
     registrationOpen: settings?.registrationOpen ?? DEFAULT_SETTINGS.registrationOpen,
+    conferenceCapacity: settings?.conferenceCapacity ?? DEFAULT_SETTINGS.conferenceCapacity,
     heroImageUrl: settings?.heroImageUrl || DEFAULT_SETTINGS.heroImageUrl,
     heroVideoUrl: settings?.heroVideoUrl || DEFAULT_SETTINGS.heroVideoUrl,
     venue: {
@@ -467,6 +469,42 @@ function SettingsForm({ settings, onSave, isLoading }) {
         </div>
       </section>
 
+      {/* Capacity Settings Section */}
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>Capacity Settings</h3>
+        <p className={styles.sectionDescription}>
+          Set the maximum number of attendees for the conference. This is the capacity of the main
+          worship hall where everyone convenes. Leave empty for unlimited capacity.
+        </p>
+        <div className={styles.grid}>
+          <div className={styles.field}>
+            <label htmlFor="conferenceCapacity" className={styles.label}>
+              Conference Capacity (Main Worship Hall)
+            </label>
+            <input
+              type="number"
+              id="conferenceCapacity"
+              name="conferenceCapacity"
+              value={formData.conferenceCapacity || ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData((prev) => ({
+                  ...prev,
+                  conferenceCapacity: value === '' ? null : parseInt(value, 10),
+                }));
+              }}
+              className={styles.input}
+              min="1"
+              placeholder="Leave empty for unlimited"
+            />
+            <p className={styles.fieldHint}>
+              Maximum number of attendees allowed. When this limit is reached, registration will be
+              closed automatically.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Venue Section */}
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Venue</h3>
@@ -746,6 +784,7 @@ SettingsForm.propTypes = {
     endTime: PropTypes.string,
     timezone: PropTypes.string,
     registrationOpen: PropTypes.bool,
+    conferenceCapacity: PropTypes.number,
     heroImageUrl: PropTypes.string,
     heroVideoUrl: PropTypes.string,
     venue: PropTypes.shape({

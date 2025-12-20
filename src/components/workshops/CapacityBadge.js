@@ -47,7 +47,7 @@ function CapacityBadge({ capacity, registeredCount = 0, showRemaining = true, co
       return 'Open';
     }
     if (isClosed) {
-      return 'Closed';
+      return '0 spots left';
     }
     if (compact) {
       return 'Open';

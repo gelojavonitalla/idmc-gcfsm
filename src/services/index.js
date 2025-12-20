@@ -103,6 +103,7 @@ export {
   markEmailSent,
   lookupRegistration,
   incrementWorkshopCount,
+  getTotalConfirmedAttendeeCount,
 } from './registration';
 
 export {
