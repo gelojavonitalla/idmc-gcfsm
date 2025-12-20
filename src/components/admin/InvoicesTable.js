@@ -10,13 +10,35 @@ import { INVOICE_STATUS, INVOICE_STATUS_LABELS } from '../../constants';
 import styles from './InvoicesTable.module.css';
 
 /**
- * Status icon configuration
+ * Status icon configuration using SVG outline icons
  */
 const STATUS_ICONS = {
-  [INVOICE_STATUS.PENDING]: '🔔',
-  [INVOICE_STATUS.UPLOADED]: '📄',
-  [INVOICE_STATUS.SENT]: '✅',
-  [INVOICE_STATUS.FAILED]: '❌',
+  [INVOICE_STATUS.PENDING]: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  ),
+  [INVOICE_STATUS.UPLOADED]: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  ),
+  [INVOICE_STATUS.SENT]: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  ),
+  [INVOICE_STATUS.FAILED]: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="15" y1="9" x2="9" y2="15" />
+      <line x1="9" y1="9" x2="15" y2="15" />
+    </svg>
+  ),
 };
 
 /**
