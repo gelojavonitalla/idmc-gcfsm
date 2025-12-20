@@ -2150,14 +2150,40 @@ export const sendInvoiceEmail = onCall(
         message: `Invoice sent successfully to ${primaryEmail}`,
       };
     } catch (error) {
-      logger.error(`Error sending invoice email for ${registrationId}:`, error);
+      // Extract detailed error information from SendGrid response
+      let errorMessage = error instanceof Error ? error.message : "Unknown error";
+      let errorDetails = "";
+
+      // SendGrid errors have response.body.errors with detailed messages
+      const sgError = error as {
+        code?: number;
+        response?: {
+          body?: {
+            errors?: Array<{field?: string; message?: string; help?: string}>;
+          };
+        };
+      };
+
+      if (sgError.response?.body?.errors) {
+        const errors = sgError.response.body.errors;
+        errorDetails = errors.map((e) =>
+          `${e.field || "error"}: ${e.message || "unknown"}${e.help ? ` (${e.help})` : ""}`
+        ).join("; ");
+        errorMessage = `SendGrid error (${sgError.code}): ${errorDetails}`;
+      }
+
+      logger.error(`Error sending invoice email for ${registrationId}: ${errorMessage}`, {
+        errorCode: sgError.code,
+        errorDetails,
+        fullError: error,
+      });
 
       // Update status to failed
       try {
         await registrationRef.update({
           "invoice.status": INVOICE_STATUS.FAILED,
           "invoice.emailDeliveryStatus": "failed",
-          "invoice.errorMessage": error instanceof Error ? error.message : "Unknown error",
+          "invoice.errorMessage": errorMessage,
           "updatedAt": FieldValue.serverTimestamp(),
         });
       } catch (updateError) {
@@ -2171,7 +2197,7 @@ export const sendInvoiceEmail = onCall(
 
       throw new HttpsError(
         "internal",
-        `Failed to send invoice email: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to send invoice email: ${errorMessage}`
       );
     }
   }
