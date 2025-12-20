@@ -2562,9 +2562,33 @@ export const sendInquiryReply = onCall(
 );
 
 /**
+ * Helper function to count checked-in attendees in a registration
+ *
+ * @param {object} data - Registration document data
+ * @returns {number} Number of checked-in attendees
+ */
+function getCheckedInAttendeeCount(
+  data: {
+    checkedIn?: boolean;
+    attendeeCheckIns?: Record<string, boolean>;
+    additionalAttendees?: Array<unknown>;
+  }
+): number {
+  // If using per-attendee tracking
+  if (data.attendeeCheckIns && typeof data.attendeeCheckIns === "object") {
+    return Object.values(data.attendeeCheckIns).filter(Boolean).length;
+  }
+  // Legacy: if checkedIn is true, count all attendees as checked in
+  if (data.checkedIn) {
+    return 1 + (data.additionalAttendees?.length || 0);
+  }
+  return 0;
+}
+
+/**
  * Scheduled function that runs daily to sync all conference stats
  * Recounts all confirmed attendees and updates:
- * - Stats document with registeredAttendeeCount and workshopCounts
+ * - Stats document with registration, check-in, and workshop counts
  * - Workshop registeredCount for each session
  * Runs every day at 2:00 AM Asia/Manila time
  */
@@ -2588,12 +2612,37 @@ export const syncConferenceStats = onSchedule(
         ])
         .get();
 
-      // Count total attendees (primary + additional)
+      // Registration stats
       let totalAttendees = 0;
+      let confirmedRegistrationCount = 0;
+      let pendingVerificationCount = 0;
       const workshopCounts: Record<string, number> = {};
+
+      // Check-in stats
+      let checkedInRegistrationCount = 0;
+      let checkedInAttendeeCount = 0;
+      let partiallyCheckedInCount = 0;
+
+      // Finance stats
+      let totalConfirmedPayments = 0;
+      let totalPendingPayments = 0;
+      const bankAccountStats: Record<string, {
+        confirmed: number;
+        pending: number;
+        count: number;
+      }> = {};
 
       confirmedQuery.forEach((docSnapshot) => {
         const data = docSnapshot.data();
+        const isConfirmed = data.status === REGISTRATION_STATUS.CONFIRMED;
+        const isPendingVerification =
+          data.status === REGISTRATION_STATUS.PENDING_VERIFICATION;
+
+        if (isConfirmed) {
+          confirmedRegistrationCount++;
+        } else if (isPendingVerification) {
+          pendingVerificationCount++;
+        }
 
         // Count primary attendee
         totalAttendees += 1;
@@ -2601,6 +2650,44 @@ export const syncConferenceStats = onSchedule(
         // Count additional attendees
         const additionalCount = data.additionalAttendees?.length || 0;
         totalAttendees += additionalCount;
+        const attendeeCount = 1 + additionalCount;
+
+        // Count check-ins
+        const checkedInCount = getCheckedInAttendeeCount(data);
+        checkedInAttendeeCount += checkedInCount;
+
+        if (checkedInCount === attendeeCount) {
+          checkedInRegistrationCount++;
+        } else if (checkedInCount > 0) {
+          partiallyCheckedInCount++;
+        }
+
+        // Finance stats
+        const paymentAmount = data.payment?.amountPaid || 0;
+        const bankAccountId = data.payment?.bankAccountId;
+
+        if (isConfirmed) {
+          totalConfirmedPayments += paymentAmount;
+        } else if (isPendingVerification) {
+          totalPendingPayments += paymentAmount;
+        }
+
+        // Per-bank-account stats
+        if (bankAccountId) {
+          if (!bankAccountStats[bankAccountId]) {
+            bankAccountStats[bankAccountId] = {
+              confirmed: 0,
+              pending: 0,
+              count: 0,
+            };
+          }
+          bankAccountStats[bankAccountId].count++;
+          if (isConfirmed) {
+            bankAccountStats[bankAccountId].confirmed += paymentAmount;
+          } else if (isPendingVerification) {
+            bankAccountStats[bankAccountId].pending += paymentAmount;
+          }
+        }
 
         // Count workshop selections for primary attendee
         if (data.primaryAttendee?.workshopSelections) {
@@ -2633,8 +2720,13 @@ export const syncConferenceStats = onSchedule(
         }
       });
 
-      logger.info(`Total confirmed attendees: ${totalAttendees}`);
-      logger.info(`Workshop counts: ${JSON.stringify(workshopCounts)}`);
+      logger.info(`Total confirmed registrations: ${confirmedRegistrationCount}`);
+      logger.info(`Pending verification: ${pendingVerificationCount}`);
+      logger.info(`Total attendees: ${totalAttendees}`);
+      logger.info(`Checked-in registrations: ${checkedInRegistrationCount}`);
+      logger.info(`Checked-in attendees: ${checkedInAttendeeCount}`);
+      logger.info(`Total confirmed payments: ${totalConfirmedPayments}`);
+      logger.info(`Bank account stats: ${JSON.stringify(bankAccountStats)}`);
 
       // Update stats document with all counts
       const statsRef = db
@@ -2642,8 +2734,20 @@ export const syncConferenceStats = onSchedule(
         .doc(STATS_DOC_ID);
 
       await statsRef.set({
+        // Registration stats
         registeredAttendeeCount: totalAttendees,
+        confirmedRegistrationCount,
+        pendingVerificationCount,
         workshopCounts,
+        // Check-in stats
+        checkedInRegistrationCount,
+        checkedInAttendeeCount,
+        partiallyCheckedInCount,
+        // Finance stats
+        totalConfirmedPayments,
+        totalPendingPayments,
+        bankAccountStats,
+        // Timestamps
         lastSyncedAt: FieldValue.serverTimestamp(),
         lastUpdatedAt: FieldValue.serverTimestamp(),
       }, {merge: true});
@@ -2805,6 +2909,296 @@ export const onRegistrationStatsUpdate = onDocumentUpdated(
       }
     } catch (error) {
       logger.error(`Error updating stats for registration ${registrationId}:`, error);
+      throw error;
+    }
+  }
+);
+
+/**
+ * Callable function to manually trigger stats sync
+ * Useful after deployment or for manual verification
+ * Only accessible by authenticated admin users
+ */
+export const triggerStatsSync = onCall(
+  {
+    region: "asia-southeast1",
+  },
+  async (request) => {
+    // Verify the caller is authenticated
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "User must be authenticated");
+    }
+
+    const db = getFirestore(DATABASE_ID);
+
+    // Verify the caller is an admin
+    const adminDoc = await db.collection(COLLECTIONS.ADMINS)
+      .doc(request.auth.uid)
+      .get();
+
+    if (!adminDoc.exists) {
+      throw new HttpsError("permission-denied", "Only admins can trigger stats sync");
+    }
+
+    logger.info(`Manual stats sync triggered by admin: ${request.auth.uid}`);
+
+    try {
+      // Query all confirmed and pending_verification registrations
+      const confirmedQuery = await db.collection(COLLECTIONS.REGISTRATIONS)
+        .where("status", "in", [
+          REGISTRATION_STATUS.CONFIRMED,
+          REGISTRATION_STATUS.PENDING_VERIFICATION,
+        ])
+        .get();
+
+      // Registration stats
+      let totalAttendees = 0;
+      let confirmedRegistrationCount = 0;
+      let pendingVerificationCount = 0;
+      const workshopCounts: Record<string, number> = {};
+
+      // Check-in stats
+      let checkedInRegistrationCount = 0;
+      let checkedInAttendeeCount = 0;
+      let partiallyCheckedInCount = 0;
+
+      // Finance stats
+      let totalConfirmedPayments = 0;
+      let totalPendingPayments = 0;
+      const bankAccountStats: Record<string, {
+        confirmed: number;
+        pending: number;
+        count: number;
+      }> = {};
+
+      confirmedQuery.forEach((docSnapshot) => {
+        const data = docSnapshot.data();
+        const isConfirmed = data.status === REGISTRATION_STATUS.CONFIRMED;
+        const isPendingVerification =
+          data.status === REGISTRATION_STATUS.PENDING_VERIFICATION;
+
+        if (isConfirmed) {
+          confirmedRegistrationCount++;
+        } else if (isPendingVerification) {
+          pendingVerificationCount++;
+        }
+
+        // Count attendees
+        totalAttendees += 1;
+        const additionalCount = data.additionalAttendees?.length || 0;
+        totalAttendees += additionalCount;
+        const attendeeCount = 1 + additionalCount;
+
+        // Count check-ins
+        const checkedInCount = getCheckedInAttendeeCount(data);
+        checkedInAttendeeCount += checkedInCount;
+
+        if (checkedInCount === attendeeCount) {
+          checkedInRegistrationCount++;
+        } else if (checkedInCount > 0) {
+          partiallyCheckedInCount++;
+        }
+
+        // Finance stats
+        const paymentAmount = data.payment?.amountPaid || 0;
+        const bankAccountId = data.payment?.bankAccountId;
+
+        if (isConfirmed) {
+          totalConfirmedPayments += paymentAmount;
+        } else if (isPendingVerification) {
+          totalPendingPayments += paymentAmount;
+        }
+
+        if (bankAccountId) {
+          if (!bankAccountStats[bankAccountId]) {
+            bankAccountStats[bankAccountId] = {
+              confirmed: 0,
+              pending: 0,
+              count: 0,
+            };
+          }
+          bankAccountStats[bankAccountId].count++;
+          if (isConfirmed) {
+            bankAccountStats[bankAccountId].confirmed += paymentAmount;
+          } else if (isPendingVerification) {
+            bankAccountStats[bankAccountId].pending += paymentAmount;
+          }
+        }
+
+        // Count workshop selections
+        if (data.primaryAttendee?.workshopSelections) {
+          data.primaryAttendee.workshopSelections.forEach(
+            (selection: {sessionId?: string}) => {
+              if (selection.sessionId) {
+                workshopCounts[selection.sessionId] =
+                  (workshopCounts[selection.sessionId] || 0) + 1;
+              }
+            }
+          );
+        }
+
+        if (data.additionalAttendees) {
+          data.additionalAttendees.forEach(
+            (attendee: {workshopSelections?: Array<{sessionId?: string}>}) => {
+              if (attendee.workshopSelections) {
+                attendee.workshopSelections.forEach(
+                  (selection: {sessionId?: string}) => {
+                    if (selection.sessionId) {
+                      workshopCounts[selection.sessionId] =
+                        (workshopCounts[selection.sessionId] || 0) + 1;
+                    }
+                  }
+                );
+              }
+            }
+          );
+        }
+      });
+
+      // Update stats document
+      const statsRef = db.collection(COLLECTIONS.STATS).doc(STATS_DOC_ID);
+      await statsRef.set({
+        registeredAttendeeCount: totalAttendees,
+        confirmedRegistrationCount,
+        pendingVerificationCount,
+        workshopCounts,
+        checkedInRegistrationCount,
+        checkedInAttendeeCount,
+        partiallyCheckedInCount,
+        totalConfirmedPayments,
+        totalPendingPayments,
+        bankAccountStats,
+        lastSyncedAt: FieldValue.serverTimestamp(),
+        lastUpdatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+
+      // Update workshop counts
+      const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
+      const batch = db.batch();
+
+      for (const [sessionId, count] of Object.entries(workshopCounts)) {
+        const sessionRef = sessionsCollection.doc(sessionId);
+        batch.update(sessionRef, {
+          registeredCount: count,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
+
+      const allWorkshops = await sessionsCollection
+        .where("sessionType", "==", "workshop")
+        .get();
+
+      allWorkshops.forEach((workshopDoc) => {
+        if (!(workshopDoc.id in workshopCounts)) {
+          batch.update(workshopDoc.ref, {
+            registeredCount: 0,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
+      });
+
+      await batch.commit();
+
+      logger.info("Manual stats sync completed successfully");
+
+      return {
+        success: true,
+        stats: {
+          registeredAttendeeCount: totalAttendees,
+          confirmedRegistrationCount,
+          checkedInRegistrationCount,
+          checkedInAttendeeCount,
+          partiallyCheckedInCount,
+        },
+      };
+    } catch (error) {
+      logger.error("Error in manual stats sync:", error);
+      throw new HttpsError("internal", "Failed to sync stats");
+    }
+  }
+);
+
+/**
+ * Firestore trigger that updates check-in stats when a registration is checked in
+ * Updates the stats document with incremented check-in counts
+ */
+export const onCheckInStatsUpdate = onDocumentUpdated(
+  {
+    document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
+    region: "asia-southeast1",
+    database: DATABASE_ID,
+  },
+  async (event) => {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+
+    if (!before || !after) {
+      return;
+    }
+
+    // Only process confirmed registrations
+    const confirmedStatuses = [
+      REGISTRATION_STATUS.CONFIRMED,
+      REGISTRATION_STATUS.PENDING_VERIFICATION,
+    ];
+
+    if (!confirmedStatuses.includes(after.status)) {
+      return;
+    }
+
+    // Calculate check-in changes
+    const beforeCheckedIn = getCheckedInAttendeeCount(before);
+    const afterCheckedIn = getCheckedInAttendeeCount(after);
+
+    // Skip if no check-in change
+    if (beforeCheckedIn === afterCheckedIn) {
+      return;
+    }
+
+    const registrationId = event.params.registrationId;
+    const attendeeCount = 1 + (after.additionalAttendees?.length || 0);
+    const checkInDelta = afterCheckedIn - beforeCheckedIn;
+
+    logger.info(
+      `Check-in update for ${registrationId}: ${beforeCheckedIn} -> ${afterCheckedIn} attendees`
+    );
+
+    const db = getFirestore(DATABASE_ID);
+    const statsRef = db.collection(COLLECTIONS.STATS).doc(STATS_DOC_ID);
+
+    // Determine registration-level check-in status changes
+    const wasFullyCheckedIn = beforeCheckedIn === attendeeCount;
+    const isFullyCheckedIn = afterCheckedIn === attendeeCount;
+    const wasPartiallyCheckedIn = beforeCheckedIn > 0 && beforeCheckedIn < attendeeCount;
+    const isPartiallyCheckedIn = afterCheckedIn > 0 && afterCheckedIn < attendeeCount;
+
+    const updates: Record<string, unknown> = {
+      checkedInAttendeeCount: FieldValue.increment(checkInDelta),
+      lastUpdatedAt: FieldValue.serverTimestamp(),
+    };
+
+    // Update registration-level counts
+    if (!wasFullyCheckedIn && isFullyCheckedIn) {
+      updates.checkedInRegistrationCount = FieldValue.increment(1);
+      if (wasPartiallyCheckedIn) {
+        updates.partiallyCheckedInCount = FieldValue.increment(-1);
+      }
+    } else if (wasFullyCheckedIn && !isFullyCheckedIn) {
+      updates.checkedInRegistrationCount = FieldValue.increment(-1);
+      if (isPartiallyCheckedIn) {
+        updates.partiallyCheckedInCount = FieldValue.increment(1);
+      }
+    } else if (!wasPartiallyCheckedIn && isPartiallyCheckedIn) {
+      updates.partiallyCheckedInCount = FieldValue.increment(1);
+    } else if (wasPartiallyCheckedIn && !isPartiallyCheckedIn && !isFullyCheckedIn) {
+      updates.partiallyCheckedInCount = FieldValue.increment(-1);
+    }
+
+    try {
+      await statsRef.set(updates, {merge: true});
+      logger.info(`Updated check-in stats for registration ${registrationId}`);
+    } catch (error) {
+      logger.error(`Error updating check-in stats for ${registrationId}:`, error);
       throw error;
     }
   }

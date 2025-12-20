@@ -10,7 +10,7 @@ import { useState, useEffect } from 'react';
 import { AdminLayout } from '../../components/admin';
 import { CheckInStats, RecentCheckIns } from '../../components/checkin';
 import {
-  subscribeToCheckInStats,
+  subscribeToCheckInStatsFromCollection,
   subscribeToRecentCheckIns,
 } from '../../services';
 import styles from './AdminCheckInMonitorPage.module.css';
@@ -26,12 +26,13 @@ function AdminCheckInMonitorPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   /**
-   * Subscribe to real-time stats and recent check-ins
+   * Subscribe to real-time stats from stats collection and recent check-ins
    */
   useEffect(() => {
     setIsLoading(true);
 
-    const unsubscribeStats = subscribeToCheckInStats((newStats) => {
+    // Use stats from the dedicated stats collection (maintained by Cloud Functions)
+    const unsubscribeStats = subscribeToCheckInStatsFromCollection((newStats) => {
       setStats(newStats);
       setIsLoading(false);
     });

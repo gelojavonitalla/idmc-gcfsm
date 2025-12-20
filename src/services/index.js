@@ -137,6 +137,7 @@ export {
   getCheckInStats,
   getRecentCheckIns,
   subscribeToCheckInStats,
+  subscribeToCheckInStatsFromCollection,
   subscribeToRecentCheckIns,
   getCheckInsByHour,
   undoCheckIn,

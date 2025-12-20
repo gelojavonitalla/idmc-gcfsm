@@ -22,7 +22,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { COLLECTIONS, REGISTRATION_STATUS } from '../constants';
+import { COLLECTIONS, REGISTRATION_STATUS, STATS_DOC_ID } from '../constants';
 import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from './activityLog';
 
 /**
@@ -984,4 +984,75 @@ export async function undoCheckIn(registrationId, adminId, reason, attendeeIndex
       updatedAt: serverTimestamp(),
     });
   }
+}
+
+/**
+ * Subscribes to real-time check-in stats from the stats collection
+ * This uses pre-computed stats maintained by Cloud Functions for efficiency
+ *
+ * @param {Function} callback - Callback function receiving stats updates
+ * @returns {Function} Unsubscribe function
+ */
+export function subscribeToCheckInStatsFromCollection(callback) {
+  const statsRef = doc(db, COLLECTIONS.STATS, STATS_DOC_ID);
+
+  return onSnapshot(
+    statsRef,
+    (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        const totalConfirmed = data.confirmedRegistrationCount || 0;
+        const checkedIn = data.checkedInRegistrationCount || 0;
+        const partiallyCheckedIn = data.partiallyCheckedInCount || 0;
+        const totalAttendees = data.registeredAttendeeCount || 0;
+        const checkedInAttendees = data.checkedInAttendeeCount || 0;
+
+        const percentage = totalConfirmed > 0
+          ? Math.round((checkedIn / totalConfirmed) * 100)
+          : 0;
+        const attendeePercentage = totalAttendees > 0
+          ? Math.round((checkedInAttendees / totalAttendees) * 100)
+          : 0;
+
+        callback({
+          totalConfirmed,
+          checkedIn,
+          partiallyCheckedIn,
+          pending: totalConfirmed - checkedIn - partiallyCheckedIn,
+          percentage,
+          totalAttendees,
+          checkedInAttendees,
+          pendingAttendees: totalAttendees - checkedInAttendees,
+          attendeePercentage,
+        });
+      } else {
+        // Return default empty stats
+        callback({
+          totalConfirmed: 0,
+          checkedIn: 0,
+          partiallyCheckedIn: 0,
+          pending: 0,
+          percentage: 0,
+          totalAttendees: 0,
+          checkedInAttendees: 0,
+          pendingAttendees: 0,
+          attendeePercentage: 0,
+        });
+      }
+    },
+    (error) => {
+      console.error('Error subscribing to check-in stats:', error);
+      callback({
+        totalConfirmed: 0,
+        checkedIn: 0,
+        partiallyCheckedIn: 0,
+        pending: 0,
+        percentage: 0,
+        totalAttendees: 0,
+        checkedInAttendees: 0,
+        pendingAttendees: 0,
+        attendeePercentage: 0,
+      });
+    }
+  );
 }

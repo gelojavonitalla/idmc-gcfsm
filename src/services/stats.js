@@ -14,8 +14,23 @@ import { COLLECTIONS, STATS_DOC_ID } from '../constants';
  * Default stats object when document doesn't exist
  */
 const DEFAULT_STATS = {
+  // Registration stats
   registeredAttendeeCount: 0,
+  confirmedRegistrationCount: 0,
+  pendingVerificationCount: 0,
   workshopCounts: {},
+
+  // Check-in stats
+  checkedInRegistrationCount: 0,
+  checkedInAttendeeCount: 0,
+  partiallyCheckedInCount: 0,
+
+  // Finance stats
+  totalConfirmedPayments: 0,
+  totalPendingPayments: 0,
+  bankAccountStats: {}, // { [bankAccountId]: { confirmed: number, pending: number, count: number } }
+
+  // Timestamps
   lastSyncedAt: null,
   lastUpdatedAt: null,
 };
