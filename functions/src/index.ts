@@ -2446,7 +2446,8 @@ export const sendInquiryReply = onCall(
     }
 
     const db = getFirestore(DATABASE_ID);
-    const inquiryRef = db.collection(COLLECTIONS.CONTACT_INQUIRIES).doc(inquiryId);
+    const inquiriesCol = db.collection(COLLECTIONS.CONTACT_INQUIRIES);
+    const inquiryRef = inquiriesCol.doc(inquiryId);
 
     try {
       // Get inquiry document
