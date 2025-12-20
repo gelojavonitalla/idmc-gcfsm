@@ -401,17 +401,29 @@ export async function revokeInvitation(adminId, revokedBy, revokedByEmail) {
 
 /**
  * Checks if a user has a specific permission
+ * Falls back to role-based permissions if admin.permissions is not set
  *
  * @param {Object} admin - Admin user object
  * @param {string} permission - Permission key to check
  * @returns {boolean} True if admin has the permission
  */
 export function hasPermission(admin, permission) {
-  if (!admin || !admin.permissions) {
+  if (!admin) {
     return false;
   }
 
-  return admin.permissions[permission] === true;
+  // Use stored permissions if available
+  if (admin.permissions) {
+    return admin.permissions[permission] === true;
+  }
+
+  // Fall back to role-based permissions for backwards compatibility
+  const rolePermissions = ADMIN_ROLE_PERMISSIONS[admin.role];
+  if (rolePermissions) {
+    return rolePermissions[permission] === true;
+  }
+
+  return false;
 }
 
 /**
