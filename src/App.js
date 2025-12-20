@@ -142,7 +142,7 @@ function App() {
             <Route
               path={ADMIN_ROUTES.WORKSHOPS}
               element={
-                <AdminProtectedRoute>
+                <AdminProtectedRoute requiredPermission="manageWorkshops">
                   <Suspense fallback={<AdminLoadingFallback />}>
                     <AdminWorkshopsPage />
                   </Suspense>
@@ -232,7 +232,7 @@ function App() {
             <Route
               path={ADMIN_ROUTES.INQUIRIES}
               element={
-                <AdminProtectedRoute>
+                <AdminProtectedRoute requiredPermission="manageInquiries">
                   <Suspense fallback={<AdminLoadingFallback />}>
                     <AdminInquiriesPage />
                   </Suspense>
