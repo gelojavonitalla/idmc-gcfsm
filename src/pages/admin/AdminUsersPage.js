@@ -98,6 +98,11 @@ function AdminUsersPage() {
     try {
       await resendInvitation(userId, user?.uid);
 
+      // Wait for Cloud Function to process the new document and migrate it
+      // This prevents race condition where fetchUsers returns stale temp ID
+      const CLOUD_FUNCTION_DELAY_MS = 3000;
+      await new Promise((resolve) => setTimeout(resolve, CLOUD_FUNCTION_DELAY_MS));
+
       // Refresh the user list
       await fetchUsers();
 
