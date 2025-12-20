@@ -24,6 +24,7 @@ import {
   getActiveBankAccounts,
   REGISTRATION_ERROR_CODES,
 } from '../services';
+import { getConferenceStats } from '../services/stats';
 import { getPublishedWorkshops } from '../services/workshops';
 import { getFoodMenuSettings, getAllFoodMenuItems } from '../services/foodMenu';
 import { FOOD_MENU_STATUS } from '../constants';
@@ -172,6 +173,11 @@ function RegisterPage() {
   const [foodSelectionEnabled, setFoodSelectionEnabled] = useState(false);
   const [loadingFoodMenu, setLoadingFoodMenu] = useState(false);
 
+  // Conference capacity state
+  const [conferenceCapacity, setConferenceCapacity] = useState(null);
+  const [currentAttendeeCount, setCurrentAttendeeCount] = useState(0);
+  const [loadingCapacity, setLoadingCapacity] = useState(false);
+
   // OCR-related state
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState(null);
@@ -242,10 +248,10 @@ function RegisterPage() {
     const fetchFoodMenu = async () => {
       setLoadingFoodMenu(true);
       try {
-        const settings = await getFoodMenuSettings();
-        setFoodSelectionEnabled(settings.foodSelectionEnabled || false);
+        const foodSettings = await getFoodMenuSettings();
+        setFoodSelectionEnabled(foodSettings.foodSelectionEnabled || false);
 
-        if (settings.foodSelectionEnabled) {
+        if (foodSettings.foodSelectionEnabled) {
           const items = await getAllFoodMenuItems();
           // Filter to only show published items
           const publishedItems = items.filter(
@@ -262,6 +268,31 @@ function RegisterPage() {
 
     fetchFoodMenu();
   }, []);
+
+  /**
+   * Fetches conference capacity from settings and stats
+   * Conference capacity limit is in settings, current count is in stats collection
+   */
+  useEffect(() => {
+    const fetchCapacityData = async () => {
+      setLoadingCapacity(true);
+      try {
+        // Conference capacity limit comes from settings
+        setConferenceCapacity(settings?.conferenceCapacity ?? null);
+
+        // Current count comes from stats collection
+        const stats = await getConferenceStats();
+        setCurrentAttendeeCount(stats?.registeredAttendeeCount ?? 0);
+      } catch (error) {
+        console.error('Failed to fetch capacity stats:', error);
+        setCurrentAttendeeCount(0);
+      } finally {
+        setLoadingCapacity(false);
+      }
+    };
+
+    fetchCapacityData();
+  }, [settings?.conferenceCapacity]);
 
   /**
    * Updates a form field value
@@ -543,6 +574,45 @@ function RegisterPage() {
   }, [formData.additionalAttendees?.length]);
 
   /**
+   * Checks if the conference has available capacity for new attendees
+   *
+   * @returns {boolean} True if capacity is available
+   */
+  const hasConferenceCapacity = useCallback(() => {
+    // If no capacity limit set, always has capacity
+    if (conferenceCapacity === null || conferenceCapacity === undefined) {
+      return true;
+    }
+    // Check if current registrations + new attendees would exceed capacity
+    const newAttendeesCount = getTotalAttendeeCount();
+    return (currentAttendeeCount + newAttendeesCount) <= conferenceCapacity;
+  }, [conferenceCapacity, currentAttendeeCount, getTotalAttendeeCount]);
+
+  /**
+   * Gets remaining conference slots
+   *
+   * @returns {number|null} Remaining slots or null if unlimited
+   */
+  const getRemainingConferenceSlots = useCallback(() => {
+    if (conferenceCapacity === null || conferenceCapacity === undefined) {
+      return null;
+    }
+    return Math.max(0, conferenceCapacity - currentAttendeeCount);
+  }, [conferenceCapacity, currentAttendeeCount]);
+
+  /**
+   * Checks if the conference is at full capacity
+   *
+   * @returns {boolean} True if at full capacity
+   */
+  const isConferenceFull = useCallback(() => {
+    if (conferenceCapacity === null || conferenceCapacity === undefined) {
+      return false;
+    }
+    return currentAttendeeCount >= conferenceCapacity;
+  }, [conferenceCapacity, currentAttendeeCount]);
+
+  /**
    * Handles GCF checkbox toggle - Auto-fills church information with GCF details
    * Used for booth registrations to speed up the process
    *
@@ -649,6 +719,12 @@ function RegisterPage() {
       }
     });
 
+    // Check conference capacity
+    if (!hasConferenceCapacity()) {
+      const remaining = getRemainingConferenceSlots();
+      newErrors.capacity = `Conference capacity exceeded. Only ${remaining} slot${remaining === 1 ? '' : 's'} remaining.`;
+    }
+
     setErrors(newErrors);
     setPrimaryErrors(newPrimaryErrors);
     setAdditionalErrors(newAdditionalErrors);
@@ -658,7 +734,7 @@ function RegisterPage() {
       Object.keys(newPrimaryErrors).length === 0 &&
       Object.keys(newAdditionalErrors).length === 0
     );
-  }, [formData, foodSelectionEnabled, foodMenuItems]);
+  }, [formData, foodSelectionEnabled, foodMenuItems, hasConferenceCapacity, getRemainingConferenceSlots]);
 
   /**
    * Validates the ticket selection step
@@ -915,6 +991,32 @@ function RegisterPage() {
     );
   }
 
+  // Conference at full capacity state
+  if (isConferenceFull() && !loadingCapacity) {
+    return (
+      <div className={styles.page}>
+        <section className={styles.heroSection}>
+          <h1 className={styles.heroTitle}>Registration Full</h1>
+          <p className={styles.heroSubtitle}>{settings.title}</p>
+        </section>
+        <section className={styles.contentSection}>
+          <div className={styles.container}>
+            <div className={styles.closedMessage}>
+              <p>
+                We have reached our maximum capacity for {settings.title}. Thank you for your
+                interest!
+              </p>
+              <p>
+                If you have any questions or would like to be added to a waitlist, please contact us at{' '}
+                <a href={`mailto:${settings.contact?.email}`}>{settings.contact?.email}</a>
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   // Submitted/Confirmation state
   if (isSubmitted) {
     const totalAmount = calculateTotalPrice();
@@ -1055,6 +1157,21 @@ function RegisterPage() {
               </a>
             </p>
           </div>
+
+          {/* Conference Capacity Indicator */}
+          {conferenceCapacity !== null && !loadingCapacity && (
+            <div className={`${styles.capacityIndicator} ${
+              getRemainingConferenceSlots() <= 50 ? styles.capacityLimited : ''
+            }`}>
+              <span className={styles.capacityLabel}>Available Slots:</span>
+              <span className={styles.capacityValue}>
+                {getRemainingConferenceSlots()} of {conferenceCapacity}
+              </span>
+              {getRemainingConferenceSlots() <= 50 && getRemainingConferenceSlots() > 0 && (
+                <span className={styles.capacityWarning}>Limited slots remaining!</span>
+              )}
+            </div>
+          )}
 
           {/* Progress Steps */}
           <div className={styles.progressBar}>
@@ -1519,13 +1636,29 @@ function RegisterPage() {
                 </div>
               ))}
 
-              <button
-                type="button"
-                className={styles.addButton}
-                onClick={addAdditionalAttendee}
-              >
-                + Add Another Attendee
-              </button>
+              {/* Add Attendee Button - Disabled if would exceed capacity */}
+              {(() => {
+                const remainingSlots = getRemainingConferenceSlots();
+                const canAddMore = remainingSlots === null || (getTotalAttendeeCount() + 1) <= remainingSlots + currentAttendeeCount;
+
+                return (
+                  <>
+                    <button
+                      type="button"
+                      className={styles.addButton}
+                      onClick={addAdditionalAttendee}
+                      disabled={!canAddMore}
+                    >
+                      + Add Another Attendee
+                    </button>
+                    {!canAddMore && remainingSlots !== null && (
+                      <p className={styles.capacityExceeded}>
+                        Cannot add more attendees. Only {remainingSlots} conference slots remaining.
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
 
               <div className={styles.subtotalBox}>
                 <span>Subtotal ({getTotalAttendeeCount()} attendee{getTotalAttendeeCount() > 1 ? 's' : ''})</span>

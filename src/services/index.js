@@ -103,6 +103,7 @@ export {
   markEmailSent,
   lookupRegistration,
   incrementWorkshopCount,
+  getTotalConfirmedAttendeeCount,
 } from './registration';
 
 export {
@@ -136,6 +137,7 @@ export {
   getCheckInStats,
   getRecentCheckIns,
   subscribeToCheckInStats,
+  subscribeToCheckInStatsFromCollection,
   subscribeToRecentCheckIns,
   getCheckInsByHour,
   undoCheckIn,
@@ -168,3 +170,8 @@ export {
   getInvoiceRequestCounts,
   searchInvoiceRequests,
 } from './invoice';
+
+export {
+  getConferenceStats,
+  subscribeToConferenceStats,
+} from './stats';
