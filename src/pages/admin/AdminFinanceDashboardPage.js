@@ -370,14 +370,37 @@ function AdminFinanceDashboardPage() {
                           </p>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        className={styles.exportButtonSmall}
-                        onClick={() => handleExportBank(bankAccountId)}
-                        disabled={isExporting}
-                      >
-                        Export
-                      </button>
+                      <div className={styles.bankGroupActions}>
+                        <button
+                          type="button"
+                          className={styles.exportButtonSmall}
+                          onClick={() => handleExportBank(bankAccountId)}
+                          disabled={isExporting}
+                        >
+                          Export
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.filterIconButton}
+                          onClick={() => setSelectedBankAccountId(bankAccountId)}
+                          title="Filter by this bank account"
+                          aria-label={`Filter by ${group.account ? BANK_LABELS[group.account.bankName] : 'this bank account'}`}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                     <div className={styles.bankGroupStats}>
                       <div className={styles.bankGroupStat}>
