@@ -16,7 +16,8 @@ import {
   orderBy,
   serverTimestamp,
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../lib/firebase';
 import { COLLECTIONS, CONTACT_INQUIRY_STATUS } from '../constants';
 import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from './activityLog';
 
@@ -180,4 +181,59 @@ export async function deleteContactInquiry(inquiryId, adminId = null, adminEmail
       adminEmail,
     });
   }
+}
+
+/**
+ * Sends a reply to a contact inquiry via SendGrid.
+ * Calls the sendInquiryReply Cloud Function.
+ *
+ * @param {Object} replyData - The reply data
+ * @param {string} replyData.inquiryId - The ID of the inquiry to reply to
+ * @param {string} replyData.subject - The email subject
+ * @param {string} replyData.message - The reply message content
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
+ * @returns {Promise<Object>} Result with success status and message
+ * @throws {Error} If the Cloud Function call fails
+ */
+export async function sendInquiryReply(replyData, adminId = null, adminEmail = null) {
+  const { inquiryId, subject, message } = replyData;
+
+  if (!inquiryId) {
+    throw new Error('Inquiry ID is required');
+  }
+
+  if (!subject || !subject.trim()) {
+    throw new Error('Subject is required');
+  }
+
+  if (!message || !message.trim()) {
+    throw new Error('Message is required');
+  }
+
+  // Get inquiry data before sending for logging
+  const inquiries = await getAllContactInquiries();
+  const inquiry = inquiries.find((inq) => inq.id === inquiryId);
+
+  // Call Cloud Function
+  const sendInquiryReplyFn = httpsCallable(functions, 'sendInquiryReply');
+  const result = await sendInquiryReplyFn({
+    inquiryId,
+    subject: subject.trim(),
+    message: message.trim(),
+  });
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.CONTACT_INQUIRY,
+      entityId: inquiryId,
+      description: `Replied to contact inquiry: ${inquiry?.subject?.substring(0, 50) || inquiryId}`,
+      adminId,
+      adminEmail,
+    });
+  }
+
+  return result.data;
 }
