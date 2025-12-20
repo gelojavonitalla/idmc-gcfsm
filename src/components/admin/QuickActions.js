@@ -1,16 +1,17 @@
 /**
  * QuickActions Component
- * Displays quick action buttons for common admin tasks.
+ * Displays quick action buttons for common admin tasks based on user permissions.
  *
  * @module components/admin/QuickActions
  */
 
 import { Link } from 'react-router-dom';
 import { ADMIN_ROUTES } from '../../constants';
+import { useAdminAuth } from '../../context';
 import styles from './QuickActions.module.css';
 
 /**
- * Quick action items configuration
+ * Quick action items configuration with permission requirements
  */
 const QUICK_ACTIONS = [
   {
@@ -18,6 +19,7 @@ const QUICK_ACTIONS = [
     label: 'View Registrations',
     description: 'Manage attendee registrations',
     path: ADMIN_ROUTES.REGISTRATIONS,
+    requiresPermission: 'manageRegistrations',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -29,10 +31,25 @@ const QUICK_ACTIONS = [
     color: '#06b84b',
   },
   {
+    id: 'checkin',
+    label: 'Check-In',
+    description: 'Scan and check in attendees',
+    path: ADMIN_ROUTES.CHECKIN,
+    requiresPermission: 'manageCheckIn',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+        <polyline points="22 4 12 14.01 9 11.01" />
+      </svg>
+    ),
+    color: '#10b981',
+  },
+  {
     id: 'speakers',
     label: 'Manage Speakers',
     description: 'Add or edit speakers',
     path: ADMIN_ROUTES.SPEAKERS,
+    requiresPermission: 'manageSpeakers',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
@@ -48,6 +65,7 @@ const QUICK_ACTIONS = [
     label: 'Edit Schedule',
     description: 'Update conference sessions',
     path: ADMIN_ROUTES.SCHEDULE,
+    requiresPermission: 'manageSchedule',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -59,14 +77,30 @@ const QUICK_ACTIONS = [
     color: '#f59e0b',
   },
   {
-    id: 'settings',
-    label: 'Conference Settings',
-    description: 'Configure event details',
-    path: ADMIN_ROUTES.SETTINGS,
+    id: 'finance',
+    label: 'Finance Dashboard',
+    description: 'View payments and invoices',
+    path: ADMIN_ROUTES.FINANCE_DASHBOARD,
+    requiresPermission: 'manageFinance',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        <line x1="12" y1="1" x2="12" y2="23" />
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+      </svg>
+    ),
+    color: '#059669',
+  },
+  {
+    id: 'settings',
+    label: 'Site Settings',
+    description: 'Configure site content',
+    path: ADMIN_ROUTES.SETTINGS,
+    requiresPermission: 'manageContent',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="2" y1="12" x2="22" y2="12" />
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
       </svg>
     ),
     color: '#8b5cf6',
@@ -75,15 +109,37 @@ const QUICK_ACTIONS = [
 
 /**
  * QuickActions Component
+ * Displays role-specific quick actions based on user permissions.
  *
- * @returns {JSX.Element} The quick actions component
+ * @returns {JSX.Element|null} The quick actions component or null if no actions available
  */
 function QuickActions() {
+  const { checkPermission } = useAdminAuth();
+
+  /**
+   * Filters actions based on user permissions
+   *
+   * @param {Object} action - Action configuration
+   * @returns {boolean} Whether user has permission for this action
+   */
+  const hasActionPermission = (action) => {
+    if (!action.requiresPermission) {
+      return true;
+    }
+    return checkPermission(action.requiresPermission);
+  };
+
+  const visibleActions = QUICK_ACTIONS.filter(hasActionPermission);
+
+  if (visibleActions.length === 0) {
+    return null;
+  }
+
   return (
     <div className={styles.container}>
       <h3 className={styles.title}>Quick Actions</h3>
       <div className={styles.grid}>
-        {QUICK_ACTIONS.map((action) => (
+        {visibleActions.map((action) => (
           <Link
             key={action.id}
             to={action.path}

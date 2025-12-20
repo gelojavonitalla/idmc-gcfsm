@@ -105,7 +105,7 @@ export const ADMIN_ROLE_PERMISSIONS = {
     manageSchedule: true,
     manageRegistrations: true,
     manageCheckIn: true,
-    manageUsers: false,
+    manageUsers: true,
     viewAnalytics: true,
     manageContent: true,
     manageFinance: true,
@@ -196,7 +196,7 @@ export const ADMIN_NAV_GROUPS = [
     id: 'system',
     label: 'System',
     items: [
-      { label: 'Users', path: ADMIN_ROUTES.USERS, icon: 'admin', requiresRole: ADMIN_ROLES.SUPERADMIN },
+      { label: 'Users', path: ADMIN_ROUTES.USERS, icon: 'admin', requiresPermission: 'manageUsers' },
       { label: 'Activity Log', path: ADMIN_ROUTES.ACTIVITY, icon: 'history', requiresPermission: 'viewAnalytics' },
     ],
   },
