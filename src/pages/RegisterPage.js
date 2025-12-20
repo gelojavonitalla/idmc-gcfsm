@@ -295,6 +295,29 @@ function RegisterPage() {
   }, [settings?.conferenceCapacity]);
 
   /**
+   * Sets default pricing tier category when pricing tiers load.
+   * This handles the case where initial form data was set before pricing tiers were fetched.
+   */
+  useEffect(() => {
+    if (availablePricingTiers.length > 0) {
+      const validTierIds = availablePricingTiers.map(tier => tier.id);
+      const currentCategory = formData.primaryAttendee.category;
+
+      // If current category is empty or not in available tiers, set to first available tier
+      if (!currentCategory || !validTierIds.includes(currentCategory)) {
+        const defaultTierId = validTierIds[0];
+        setFormData((prev) => ({
+          ...prev,
+          primaryAttendee: {
+            ...prev.primaryAttendee,
+            category: defaultTierId,
+          },
+        }));
+      }
+    }
+  }, [availablePricingTiers, formData.primaryAttendee.category]);
+
+  /**
    * Updates a form field value
    *
    * @param {string} field - The field name to update
