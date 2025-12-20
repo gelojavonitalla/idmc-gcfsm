@@ -169,3 +169,8 @@ export {
   getInvoiceRequestCounts,
   searchInvoiceRequests,
 } from './invoice';
+
+export {
+  getConferenceStats,
+  subscribeToConferenceStats,
+} from './stats';

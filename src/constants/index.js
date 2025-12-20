@@ -227,7 +227,13 @@ export const COLLECTIONS = {
   CHECK_IN_LOGS: 'checkInLogs',
   BANK_ACCOUNTS: 'bankAccounts',
   FOOD_MENU: 'foodMenu',
+  STATS: 'stats',
 };
+
+/**
+ * Stats document ID (singleton for conference stats)
+ */
+export const STATS_DOC_ID = 'conference-stats';
 
 /**
  * Firebase Storage path constants

@@ -5,10 +5,11 @@
  * @module components/admin/SettingsForm
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import MediaUpload from './MediaUpload';
 import { uploadHeroImage, uploadHeroVideo, deleteFile } from '../../services/storage';
+import { getConferenceStats } from '../../services/stats';
 import { useAdminAuth } from '../../context';
 import { ADMIN_ROLES } from '../../constants';
 import styles from './SettingsForm.module.css';
@@ -108,6 +109,24 @@ function SettingsForm({ settings, onSave, isLoading }) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Stats from stats collection
+  const [registeredAttendeeCount, setRegisteredAttendeeCount] = useState(0);
+
+  /**
+   * Fetches conference stats from the stats collection on mount
+   */
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const stats = await getConferenceStats();
+        setRegisteredAttendeeCount(stats?.registeredAttendeeCount ?? 0);
+      } catch (error) {
+        console.error('Failed to fetch conference stats:', error);
+      }
+    };
+    fetchStats();
+  }, []);
 
   // Media upload states
   const [heroImageUploading, setHeroImageUploading] = useState(false);
@@ -507,17 +526,17 @@ function SettingsForm({ settings, onSave, isLoading }) {
               Current Registered Attendees
             </label>
             <div className={styles.readOnlyValue}>
-              {settings?.registeredAttendeeCount ?? 0}
+              {registeredAttendeeCount}
               {formData.conferenceCapacity && (
                 <span className={styles.capacityRatio}>
                   {' '}/ {formData.conferenceCapacity} ({
-                    Math.round(((settings?.registeredAttendeeCount ?? 0) / formData.conferenceCapacity) * 100)
+                    Math.round((registeredAttendeeCount / formData.conferenceCapacity) * 100)
                   }%)
                 </span>
               )}
             </div>
             <p className={styles.fieldHint}>
-              This count is automatically maintained by Cloud Functions and synced daily at 2 AM.
+              This count is stored in the stats collection and maintained by Cloud Functions.
             </p>
           </div>
         </div>
@@ -803,7 +822,6 @@ SettingsForm.propTypes = {
     timezone: PropTypes.string,
     registrationOpen: PropTypes.bool,
     conferenceCapacity: PropTypes.number,
-    registeredAttendeeCount: PropTypes.number,
     heroImageUrl: PropTypes.string,
     heroVideoUrl: PropTypes.string,
     venue: PropTypes.shape({

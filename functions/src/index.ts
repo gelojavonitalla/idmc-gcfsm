@@ -100,7 +100,14 @@ const COLLECTIONS = {
   SETTINGS: "settings",
   CONFERENCES: "conferences",
   CONTACT_INQUIRIES: "contactInquiries",
+  SESSIONS: "sessions",
+  STATS: "stats",
 };
+
+/**
+ * Stats document ID (singleton for conference stats)
+ */
+const STATS_DOC_ID = "conference-stats";
 
 /**
  * SMS settings interface
@@ -2555,20 +2562,20 @@ export const sendInquiryReply = onCall(
 );
 
 /**
- * Scheduled function that runs daily to sync capacity counts
+ * Scheduled function that runs daily to sync all conference stats
  * Recounts all confirmed attendees and updates:
- * - Conference settings registeredAttendeeCount
+ * - Stats document with registeredAttendeeCount and workshopCounts
  * - Workshop registeredCount for each session
  * Runs every day at 2:00 AM Asia/Manila time
  */
-export const syncCapacityCounts = onSchedule(
+export const syncConferenceStats = onSchedule(
   {
     schedule: "0 2 * * *",
     timeZone: "Asia/Manila",
     region: "asia-southeast1",
   },
   async () => {
-    logger.info("Running scheduled task: syncCapacityCounts");
+    logger.info("Running scheduled task: syncConferenceStats");
 
     const db = getFirestore(DATABASE_ID);
 
@@ -2629,20 +2636,22 @@ export const syncCapacityCounts = onSchedule(
       logger.info(`Total confirmed attendees: ${totalAttendees}`);
       logger.info(`Workshop counts: ${JSON.stringify(workshopCounts)}`);
 
-      // Update conference settings with total attendee count
-      const settingsRef = db
-        .collection(COLLECTIONS.CONFERENCES)
-        .doc("conference-settings");
+      // Update stats document with all counts
+      const statsRef = db
+        .collection(COLLECTIONS.STATS)
+        .doc(STATS_DOC_ID);
 
-      await settingsRef.update({
+      await statsRef.set({
         registeredAttendeeCount: totalAttendees,
-        capacityLastSyncedAt: FieldValue.serverTimestamp(),
-      });
+        workshopCounts,
+        lastSyncedAt: FieldValue.serverTimestamp(),
+        lastUpdatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
 
-      logger.info("Updated conference registeredAttendeeCount");
+      logger.info("Updated conference stats document");
 
-      // Update workshop registered counts
-      const sessionsCollection = db.collection("sessions");
+      // Update workshop registered counts in sessions collection
+      const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
       const batch = db.batch();
       let updateCount = 0;
 
@@ -2677,22 +2686,22 @@ export const syncCapacityCounts = onSchedule(
         logger.info(`Updated ${updateCount} workshop counts`);
       }
 
-      logger.info("Capacity sync completed successfully");
+      logger.info("Stats sync completed successfully");
     } catch (error) {
-      logger.error("Error syncing capacity counts:", error);
+      logger.error("Error syncing conference stats:", error);
       throw error;
     }
   }
 );
 
 /**
- * Firestore trigger that updates capacity counts when registration status changes
+ * Firestore trigger that updates stats when registration status changes
  * Handles:
  * - New confirmed registrations (increment count)
  * - Cancelled registrations (decrement count)
  * - Status changes between confirmed/cancelled states
  */
-export const onRegistrationCapacityUpdate = onDocumentUpdated(
+export const onRegistrationStatsUpdate = onDocumentUpdated(
   {
     document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
     region: "asia-southeast1",
@@ -2733,18 +2742,18 @@ export const onRegistrationCapacityUpdate = onDocumentUpdated(
     const delta = isConfirmed ? attendeeCount : -attendeeCount;
 
     try {
-      // Update conference registered attendee count
-      const settingsRef = db
-        .collection(COLLECTIONS.CONFERENCES)
-        .doc("conference-settings");
+      // Update stats document with attendee count
+      const statsRef = db
+        .collection(COLLECTIONS.STATS)
+        .doc(STATS_DOC_ID);
 
-      await settingsRef.update({
+      await statsRef.set({
         registeredAttendeeCount: FieldValue.increment(delta),
-        capacityLastUpdatedAt: FieldValue.serverTimestamp(),
-      });
+        lastUpdatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
 
       logger.info(
-        `Updated conference attendee count by ${delta} for registration ${registrationId}`
+        `Updated stats attendee count by ${delta} for registration ${registrationId}`
       );
 
       // Update workshop counts
@@ -2781,7 +2790,7 @@ export const onRegistrationCapacityUpdate = onDocumentUpdated(
       // Update each workshop's registered count
       if (allWorkshopSelections.length > 0) {
         const workshopDelta = isConfirmed ? 1 : -1;
-        const sessionsCollection = db.collection("sessions");
+        const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
 
         for (const sessionId of allWorkshopSelections) {
           await sessionsCollection.doc(sessionId).update({
@@ -2795,7 +2804,7 @@ export const onRegistrationCapacityUpdate = onDocumentUpdated(
         );
       }
     } catch (error) {
-      logger.error(`Error updating capacity for registration ${registrationId}:`, error);
+      logger.error(`Error updating stats for registration ${registrationId}:`, error);
       throw error;
     }
   }

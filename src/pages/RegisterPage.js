@@ -24,6 +24,7 @@ import {
   getActiveBankAccounts,
   REGISTRATION_ERROR_CODES,
 } from '../services';
+import { getConferenceStats } from '../services/stats';
 import { getPublishedWorkshops } from '../services/workshops';
 import { getFoodMenuSettings, getAllFoodMenuItems } from '../services/foodMenu';
 import { FOOD_MENU_STATUS } from '../constants';
@@ -269,14 +270,29 @@ function RegisterPage() {
   }, []);
 
   /**
-   * Updates conference capacity state from settings context
-   * Uses the stored registeredAttendeeCount which is maintained by Cloud Functions
+   * Fetches conference capacity from settings and stats
+   * Conference capacity limit is in settings, current count is in stats collection
    */
   useEffect(() => {
-    setConferenceCapacity(settings?.conferenceCapacity ?? null);
-    setCurrentAttendeeCount(settings?.registeredAttendeeCount ?? 0);
-    setLoadingCapacity(false);
-  }, [settings?.conferenceCapacity, settings?.registeredAttendeeCount]);
+    const fetchCapacityData = async () => {
+      setLoadingCapacity(true);
+      try {
+        // Conference capacity limit comes from settings
+        setConferenceCapacity(settings?.conferenceCapacity ?? null);
+
+        // Current count comes from stats collection
+        const stats = await getConferenceStats();
+        setCurrentAttendeeCount(stats?.registeredAttendeeCount ?? 0);
+      } catch (error) {
+        console.error('Failed to fetch capacity stats:', error);
+        setCurrentAttendeeCount(0);
+      } finally {
+        setLoadingCapacity(false);
+      }
+    };
+
+    fetchCapacityData();
+  }, [settings?.conferenceCapacity]);
 
   /**
    * Updates a form field value

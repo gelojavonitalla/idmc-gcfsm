@@ -41,7 +41,6 @@ const DEFAULT_SETTINGS = {
   endTime: '17:30',
   timezone: 'Asia/Manila',
   conferenceCapacity: null, // null = unlimited, number = max attendees for the main worship hall
-  registeredAttendeeCount: 0, // Stored count of confirmed attendees, synced by Cloud Function
   venue: {
     name: 'GCF South Metro',
     address: 'Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines',
