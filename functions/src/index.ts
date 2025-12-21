@@ -1702,8 +1702,11 @@ export const onPaymentConfirmed = onDocumentUpdated(
     const db = getFirestore(DATABASE_ID);
     const defaultSettings = {
       title: "IDMC 2026",
-      startDate: new Date().toISOString(),
-      venue: {name: "TBD", address: "TBD"},
+      startDate: "2026-03-28",
+      venue: {
+        name: "GCF South Metro",
+        address: "Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines",
+      },
     };
     let settings: typeof defaultSettings = defaultSettings;
     try {
@@ -1713,7 +1716,10 @@ export const onPaymentConfirmed = onDocumentUpdated(
         settings = {
           title: data.title || defaultSettings.title,
           startDate: data.startDate || defaultSettings.startDate,
-          venue: data.venue || defaultSettings.venue,
+          venue: {
+            name: data.venue?.name || defaultSettings.venue.name,
+            address: data.venue?.address || defaultSettings.venue.address,
+          },
         };
       }
     } catch (error) {
