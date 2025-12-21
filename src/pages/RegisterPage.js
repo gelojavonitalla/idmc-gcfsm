@@ -164,6 +164,7 @@ function RegisterPage() {
   const [submitError, setSubmitError] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [duplicateRegistration, setDuplicateRegistration] = useState(null);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [isFromGCF, setIsFromGCF] = useState(false);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [loadingBankAccounts, setLoadingBankAccounts] = useState(false);
@@ -358,6 +359,52 @@ function RegisterPage() {
       }
     }
   }, [ocrParsedFields]);
+
+  /**
+   * Debounced check for duplicate email registration.
+   * Runs when the primary attendee email changes and is valid.
+   * Provides early feedback in Step 1 instead of waiting until final submission.
+   */
+  useEffect(() => {
+    const email = formData.primaryAttendee.email.trim();
+    let isCancelled = false;
+
+    // Clear duplicate state if email is empty or invalid
+    if (!email || !isValidEmail(email)) {
+      setDuplicateRegistration(null);
+      setIsCheckingEmail(false);
+      return;
+    }
+
+    // Debounce the check to avoid excessive API calls
+    setIsCheckingEmail(true);
+    const timeoutId = setTimeout(async () => {
+      try {
+        const existing = await getRegistrationByEmail(email);
+        // Prevent state updates if effect was cleaned up
+        if (isCancelled) return;
+
+        if (existing) {
+          setDuplicateRegistration(existing);
+        } else {
+          setDuplicateRegistration(null);
+        }
+      } catch (error) {
+        console.error('Error checking email:', error);
+        // Don't block registration on check failure - will be caught at submission
+      } finally {
+        if (!isCancelled) {
+          setIsCheckingEmail(false);
+        }
+      }
+    }, 500);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timeoutId);
+      setIsCheckingEmail(false);
+    };
+  }, [formData.primaryAttendee.email]);
 
   /**
    * Updates primary attendee field value
@@ -739,6 +786,8 @@ function RegisterPage() {
       newPrimaryErrors.email = 'Email is required';
     } else if (!isValidEmail(primary.email)) {
       newPrimaryErrors.email = 'Please enter a valid email address';
+    } else if (duplicateRegistration) {
+      newPrimaryErrors.email = 'This email is already registered';
     }
     if (!primary.emailConfirm.trim()) {
       newPrimaryErrors.emailConfirm = 'Please confirm your email';
@@ -798,7 +847,7 @@ function RegisterPage() {
       Object.keys(newPrimaryErrors).length === 0 &&
       Object.keys(newAdditionalErrors).length === 0
     );
-  }, [formData, foodSelectionEnabled, foodMenuItems, hasConferenceCapacity, getRemainingConferenceSlots]);
+  }, [formData, foodSelectionEnabled, foodMenuItems, hasConferenceCapacity, getRemainingConferenceSlots, duplicateRegistration]);
 
   /**
    * Validates the ticket selection step
@@ -1405,8 +1454,18 @@ function RegisterPage() {
                       onChange={(e) => updatePrimaryAttendee('email', e.target.value)}
                       placeholder="email@example.com"
                     />
+                    {isCheckingEmail && (
+                      <span className={styles.fieldHint}>Checking email...</span>
+                    )}
                     {primaryErrors.email && (
                       <span className={styles.errorMessage}>{primaryErrors.email}</span>
+                    )}
+                    {duplicateRegistration && primaryErrors.email && (
+                      <div className={styles.duplicateEmailHelp}>
+                        <Link to={`${ROUTES.REGISTRATION_STATUS}?email=${encodeURIComponent(formData.primaryAttendee.email)}`}>
+                          Check your existing registration
+                        </Link>
+                      </div>
                     )}
                   </div>
 
