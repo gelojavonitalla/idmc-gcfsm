@@ -490,6 +490,30 @@
   cursor: not-allowed;
 }
 
+.textarea {
+  width: 100%;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  color: var(--color-text);
+  background: white;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.textarea:disabled {
+  background: var(--color-background-secondary);
+  cursor: not-allowed;
+}
+
 .balanceOwed {
   color: var(--color-warning-700, #c2410c);
   font-weight: var(--font-weight-semibold);
@@ -545,6 +569,27 @@
 }
 
 .rejectButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancelRejectionButton {
+  flex: 1;
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-background-secondary);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancelRejectionButton:hover:not(:disabled) {
+  background-color: var(--color-border);
+}
+
+.cancelRejectionButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

@@ -176,6 +176,7 @@ function RegistrationDetailModal({
   const [referenceNumber, setReferenceNumber] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [showRejectionInput, setShowRejectionInput] = useState(false);
 
   /**
    * Sync state when registration changes
@@ -191,6 +192,7 @@ function RegistrationDetailModal({
       setPaymentMethod(registration.payment?.method || '');
       setReferenceNumber(registration.payment?.referenceNumber || '');
       setRejectionReason('');
+      setShowRejectionInput(false);
     }
   }, [registration]);
 
@@ -274,11 +276,26 @@ function RegistrationDetailModal({
   };
 
   /**
+   * Shows the rejection input form
+   */
+  const handleShowRejectionInput = () => {
+    setShowRejectionInput(true);
+    setRejectionReason('');
+  };
+
+  /**
+   * Cancels the rejection and hides the input form
+   */
+  const handleCancelRejection = () => {
+    setShowRejectionInput(false);
+    setRejectionReason('');
+  };
+
+  /**
    * Handles payment rejection with reason
    */
-  const handleRejectPayment = async () => {
-    const reason = prompt('Enter rejection reason (shown to user):');
-    if (!reason || !reason.trim()) {
+  const handleConfirmRejection = async () => {
+    if (!rejectionReason || !rejectionReason.trim()) {
       return;
     }
 
@@ -293,7 +310,7 @@ function RegistrationDetailModal({
           referenceNumber: '',
           verifiedBy: admin.email,
           notes: '',
-          rejectionReason: reason,
+          rejectionReason: rejectionReason.trim(),
         },
         admin.uid,
         admin.email
@@ -678,32 +695,71 @@ function RegistrationDetailModal({
                   </div>
                 )}
 
+                {/* Rejection Reason Input (shown when rejecting) */}
+                {showRejectionInput && (
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Rejection Reason <span className={styles.required}>*</span>
+                    </label>
+                    <textarea
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      placeholder="Enter rejection reason (shown to user)..."
+                      rows={3}
+                      className={styles.textarea}
+                      disabled={isVerifying}
+                      autoFocus
+                    />
+                  </div>
+                )}
+
                 {/* Action Buttons */}
                 <div className={styles.verificationActions}>
-                  <button
-                    onClick={handleVerifyPayment}
-                    disabled={
-                      registration.totalAmount > 0
-                        ? !amountPaid || !paymentMethod || isVerifying
-                        : isVerifying
-                    }
-                    className={styles.verifyButton}
-                  >
-                    {isVerifying
-                      ? 'Processing...'
-                      : registration.totalAmount === 0
-                      ? '✓ Approve Registration'
-                      : amountPaid >= registration.totalAmount
-                      ? '✓ Confirm Full Payment'
-                      : '⚠ Mark as Partial Payment'}
-                  </button>
-                  <button
-                    onClick={handleRejectPayment}
-                    disabled={isVerifying}
-                    className={styles.rejectButton}
-                  >
-                    {registration.totalAmount === 0 ? '✗ Reject Registration' : '✗ Reject Payment'}
-                  </button>
+                  {showRejectionInput ? (
+                    <>
+                      <button
+                        onClick={handleCancelRejection}
+                        disabled={isVerifying}
+                        className={styles.cancelRejectionButton}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleConfirmRejection}
+                        disabled={!rejectionReason?.trim() || isVerifying}
+                        className={styles.rejectButton}
+                      >
+                        {isVerifying ? 'Processing...' : '✗ Confirm Rejection'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleVerifyPayment}
+                        disabled={
+                          registration.totalAmount > 0
+                            ? !amountPaid || !paymentMethod || isVerifying
+                            : isVerifying
+                        }
+                        className={styles.verifyButton}
+                      >
+                        {isVerifying
+                          ? 'Processing...'
+                          : registration.totalAmount === 0
+                          ? '✓ Approve Registration'
+                          : amountPaid >= registration.totalAmount
+                          ? '✓ Confirm Full Payment'
+                          : '⚠ Mark as Partial Payment'}
+                      </button>
+                      <button
+                        onClick={handleShowRejectionInput}
+                        disabled={isVerifying}
+                        className={styles.rejectButton}
+                      >
+                        {registration.totalAmount === 0 ? '✗ Reject Registration' : '✗ Reject Payment'}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
