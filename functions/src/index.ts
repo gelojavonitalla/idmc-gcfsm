@@ -1353,9 +1353,9 @@ async function generateAllAttendeeQRCodes(
   // Helper to extract base64 from data URL
   const extractBase64 = (dataUrl: string): string => {
     const base64Prefix = "data:image/png;base64,";
-    return dataUrl.startsWith(base64Prefix)
-      ? dataUrl.substring(base64Prefix.length)
-      : dataUrl;
+    return dataUrl.startsWith(base64Prefix) ?
+      dataUrl.substring(base64Prefix.length) :
+      dataUrl;
   };
 
   // Generate QR code for primary attendee
