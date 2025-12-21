@@ -1699,6 +1699,8 @@ export const onPaymentConfirmed = onDocumentUpdated(
     const updateData: Record<string, unknown> = {};
 
     // Get conference settings for event details (needed for email)
+    // These fallback values should match frontend DEFAULT_SETTINGS and only be used
+    // if Firestore data is missing - the actual values should come from Firestore
     const db = getFirestore(DATABASE_ID);
     const defaultSettings = {
       title: "IDMC 2026",
@@ -1713,6 +1715,16 @@ export const onPaymentConfirmed = onDocumentUpdated(
       const settingsDoc = await db.collection(COLLECTIONS.CONFERENCES).doc("conference-settings").get();
       const data = settingsDoc.data();
       if (data) {
+        // Log warnings when using fallback values - indicates Firestore data may be incomplete
+        if (!data.startDate) {
+          logger.warn("Conference startDate not found in Firestore, using fallback");
+        }
+        if (!data.venue?.name) {
+          logger.warn("Conference venue name not found in Firestore, using fallback");
+        }
+        if (!data.venue?.address) {
+          logger.warn("Conference venue address not found in Firestore, using fallback");
+        }
         settings = {
           title: data.title || defaultSettings.title,
           startDate: data.startDate || defaultSettings.startDate,
@@ -1721,6 +1733,8 @@ export const onPaymentConfirmed = onDocumentUpdated(
             address: data.venue?.address || defaultSettings.venue.address,
           },
         };
+      } else {
+        logger.warn("Conference settings document not found in Firestore, using fallbacks");
       }
     } catch (error) {
       logger.warn("Could not fetch settings, using defaults:", error);
