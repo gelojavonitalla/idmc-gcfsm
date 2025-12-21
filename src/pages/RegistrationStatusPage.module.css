@@ -292,6 +292,8 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .attendeeNumber {
@@ -301,10 +303,13 @@
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .attendeeInfo {
   flex: 1;
+  min-width: 0;
 }
 
 .attendeeName {
