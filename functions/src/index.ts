@@ -778,6 +778,7 @@ function generateRegistrationConfirmationHtml(
     church: {
       name: string;
     };
+    status: string;
   }
 ): string {
   const {
@@ -787,7 +788,9 @@ function generateRegistrationConfirmationHtml(
     totalAmount,
     paymentDeadline,
     church,
+    status,
   } = registration;
+  const isPendingPayment = status === REGISTRATION_STATUS.PENDING_PAYMENT;
   const formattedDeadline = new Date(paymentDeadline).toLocaleDateString("en-PH", {
     weekday: "long",
     year: "numeric",
@@ -831,7 +834,7 @@ function generateRegistrationConfirmationHtml(
               </p>
               <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
                 We have received your registration for <strong>IDMC 2026</strong> from ${church.name}.
-                Please complete your payment to confirm your registration.
+                ${isPendingPayment ? "Please complete your payment to confirm your registration." : "Your payment proof has been submitted and is being reviewed."}
               </p>
 
               <!-- Registration Details -->
@@ -852,6 +855,7 @@ function generateRegistrationConfirmationHtml(
               </table>
 
               <!-- Payment Info -->
+              ${isPendingPayment ? `
               <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
                 <tr>
                   <td style="padding: 16px 20px;">
@@ -867,6 +871,20 @@ function generateRegistrationConfirmationHtml(
                   </td>
                 </tr>
               </table>
+              ` : `
+              <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #dbeafe; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                <tr>
+                  <td style="padding: 16px 20px;">
+                    <p style="margin: 0 0 8px; color: #1e40af; font-size: 14px; font-weight: 600;">
+                      Payment Under Review
+                    </p>
+                    <p style="margin: 0; color: #1e3a8a; font-size: 14px; line-height: 1.5;">
+                      We have received your payment proof and it is being verified. You will receive a confirmation email once your registration is confirmed.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              `}
 
               <!-- Status Check Link -->
               <p style="margin: 24px 0 0; color: #4b5563; font-size: 14px; line-height: 1.6;">
@@ -1487,6 +1505,7 @@ export const onRegistrationCreated = onDocumentCreated(
           totalAmount: registrationData.totalAmount,
           paymentDeadline: registrationData.paymentDeadline,
           church: registrationData.church,
+          status: registrationData.status,
         });
         updateData.confirmationEmailSent = true;
         updateData.confirmationEmailSentAt = FieldValue.serverTimestamp();
