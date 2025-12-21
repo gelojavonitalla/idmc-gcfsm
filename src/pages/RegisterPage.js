@@ -367,6 +367,7 @@ function RegisterPage() {
    */
   useEffect(() => {
     const email = formData.primaryAttendee.email.trim();
+    let isCancelled = false;
 
     // Clear duplicate state if email is empty or invalid
     if (!email || !isValidEmail(email)) {
@@ -380,31 +381,26 @@ function RegisterPage() {
     const timeoutId = setTimeout(async () => {
       try {
         const existing = await getRegistrationByEmail(email);
+        // Prevent state updates if effect was cleaned up
+        if (isCancelled) return;
+
         if (existing) {
           setDuplicateRegistration(existing);
-          setPrimaryErrors((prev) => ({
-            ...prev,
-            email: 'This email is already registered',
-          }));
         } else {
           setDuplicateRegistration(null);
-          // Only clear the email error if it was a duplicate error
-          setPrimaryErrors((prev) => {
-            if (prev.email === 'This email is already registered') {
-              return { ...prev, email: null };
-            }
-            return prev;
-          });
         }
       } catch (error) {
         console.error('Error checking email:', error);
         // Don't block registration on check failure - will be caught at submission
       } finally {
-        setIsCheckingEmail(false);
+        if (!isCancelled) {
+          setIsCheckingEmail(false);
+        }
       }
     }, 500);
 
     return () => {
+      isCancelled = true;
       clearTimeout(timeoutId);
       setIsCheckingEmail(false);
     };
@@ -1464,7 +1460,7 @@ function RegisterPage() {
                     {primaryErrors.email && (
                       <span className={styles.errorMessage}>{primaryErrors.email}</span>
                     )}
-                    {duplicateRegistration && primaryErrors.email === 'This email is already registered' && (
+                    {duplicateRegistration && primaryErrors.email && (
                       <div className={styles.duplicateEmailHelp}>
                         <Link to={`${ROUTES.REGISTRATION_STATUS}?email=${encodeURIComponent(formData.primaryAttendee.email)}`}>
                           Check your existing registration
