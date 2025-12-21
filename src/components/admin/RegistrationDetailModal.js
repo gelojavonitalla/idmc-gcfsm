@@ -186,9 +186,10 @@ function RegistrationDetailModal({
       setNotes(registration.notes || '');
       setIsEditingNotes(false);
       // Pre-populate payment verification states from registration data
-      setAmountPaid(registration.totalAmount || 0);
-      setPaymentMethod(registration.paymentMethod || '');
-      setReferenceNumber(registration.paymentReference || '');
+      // Use payment.amountPaid if previously verified, otherwise default to totalAmount
+      setAmountPaid(registration.payment?.amountPaid ?? registration.totalAmount ?? 0);
+      setPaymentMethod(registration.payment?.method || '');
+      setReferenceNumber(registration.payment?.referenceNumber || '');
       setRejectionReason('');
     }
   }, [registration]);
@@ -483,25 +484,25 @@ function RegistrationDetailModal({
               <div className={styles.infoItem}>
                 <span className={styles.label}>Payment Method</span>
                 <span className={styles.value}>
-                  {PAYMENT_METHOD_LABELS[registration.paymentMethod] ||
-                    registration.paymentMethod ||
+                  {PAYMENT_METHOD_LABELS[registration.payment?.method] ||
+                    registration.payment?.method ||
                     '—'}
                 </span>
               </div>
               <div className={styles.infoItem}>
                 <span className={styles.label}>Reference Number</span>
                 <span className={styles.value}>
-                  {registration.paymentReference || '—'}
+                  {registration.payment?.referenceNumber || '—'}
                 </span>
               </div>
             </div>
 
             {/* Payment Proof */}
-            {registration.paymentProofUrl && (
+            {registration.payment?.proofUrl && (
               <div className={styles.paymentProof}>
                 <span className={styles.label}>Payment Proof</span>
                 <a
-                  href={registration.paymentProofUrl}
+                  href={registration.payment.proofUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={styles.proofLink}
