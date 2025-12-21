@@ -332,6 +332,25 @@
   margin-top: var(--spacing-1);
 }
 
+.duplicateEmailHelp {
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--color-warning-50, #fffbeb);
+  border: 1px solid var(--color-warning-200, #fde68a);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.duplicateEmailHelp a {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+  text-decoration: underline;
+}
+
+.duplicateEmailHelp a:hover {
+  color: var(--color-primary-dark);
+}
+
 /* Category Cards */
 .categoryCards {
   display: flex;
