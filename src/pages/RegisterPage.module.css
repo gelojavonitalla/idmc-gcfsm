@@ -332,6 +332,13 @@
   margin-top: var(--spacing-1);
 }
 
+.amountWarning {
+  display: block;
+  font-size: var(--font-size-sm);
+  color: var(--color-warning-600, #d97706);
+  margin-top: var(--spacing-1);
+}
+
 /* Category Cards */
 .categoryCards {
   display: flex;
