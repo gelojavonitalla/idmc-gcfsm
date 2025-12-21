@@ -611,6 +611,15 @@ function RegisterPage() {
           paymentTime: parsedFields.time || prev.paymentTime,
           paymentReferenceNumber: parsedFields.referenceNumber || prev.paymentReferenceNumber,
         }));
+
+        // Clear errors for fields that were populated by OCR
+        setErrors((prev) => ({
+          ...prev,
+          paymentAmount: parsedFields.amount ? null : prev.paymentAmount,
+          paymentDate: parsedFields.date ? null : prev.paymentDate,
+          paymentTime: parsedFields.time ? null : prev.paymentTime,
+          paymentReferenceNumber: parsedFields.referenceNumber ? null : prev.paymentReferenceNumber,
+        }));
       } catch (error) {
         console.error('OCR processing error:', error);
         // Continue without OCR - user can enter manually
@@ -2085,6 +2094,13 @@ function RegisterPage() {
                       {errors.paymentAmount && (
                         <span className={styles.errorMessage}>{errors.paymentAmount}</span>
                       )}
+                      {formData.paymentAmount && Number(formData.paymentAmount) !== calculateTotalPrice() && (
+                        <span className={styles.amountWarning}>
+                          {Number(formData.paymentAmount) < calculateTotalPrice()
+                            ? `Amount is less than the total owed (₱${calculateTotalPrice().toLocaleString()})`
+                            : `Amount is more than the total owed (₱${calculateTotalPrice().toLocaleString()})`}
+                        </span>
+                      )}
                     </div>
 
                     <div className={styles.formGroup}>
@@ -2263,6 +2279,13 @@ function RegisterPage() {
                       />
                       {errors.paymentAmount && (
                         <span className={styles.errorMessage}>{errors.paymentAmount}</span>
+                      )}
+                      {formData.paymentAmount && Number(formData.paymentAmount) !== calculateTotalPrice() && (
+                        <span className={styles.amountWarning}>
+                          {Number(formData.paymentAmount) < calculateTotalPrice()
+                            ? `Amount is less than the total owed (₱${calculateTotalPrice().toLocaleString()})`
+                            : `Amount is more than the total owed (₱${calculateTotalPrice().toLocaleString()})`}
+                        </span>
                       )}
                     </div>
 

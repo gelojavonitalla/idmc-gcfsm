@@ -924,6 +924,8 @@ interface AttendeeWithQR {
   lastName: string;
   email?: string;
   qrCodeDataUrl: string;
+  qrCodeBase64: string;
+  contentId: string;
   attendeeIndex: number;
 }
 
@@ -987,7 +989,7 @@ function generateTicketEmailHtml(
     const label = isAdditional ? `Guest ${index}` : "Primary";
     return `
       <div style="display: inline-block; margin: 10px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; text-align: center; vertical-align: top; width: 200px;">
-        <img src="${attendee.qrCodeDataUrl}" alt="QR Code for ${attendee.firstName}" width="150" height="150" style="display: block; margin: 0 auto 8px; border: 2px solid #f3f4f6; border-radius: 4px;" />
+        <img src="cid:${attendee.contentId}" alt="QR Code for ${attendee.firstName}" width="150" height="150" style="display: block; margin: 0 auto 8px; border: 2px solid #f3f4f6; border-radius: 4px;" />
         <p style="margin: 0 0 4px; color: #1f2937; font-size: 14px; font-weight: 600;">
           ${attendee.firstName} ${attendee.lastName}
         </p>
@@ -1211,7 +1213,7 @@ function generateIndividualTicketEmailHtml(
                 <tr>
                   <td style="padding: 24px; text-align: center;">
                     <div style="margin: 20px 0;">
-                      <img src="${attendee.qrCodeDataUrl}" alt="Your Check-in QR Code" width="180" height="180" style="display: block; margin: 0 auto; border: 4px solid #f3f4f6; border-radius: 8px;" />
+                      <img src="cid:${attendee.contentId}" alt="Your Check-in QR Code" width="180" height="180" style="display: block; margin: 0 auto; border: 4px solid #f3f4f6; border-radius: 8px;" />
                       <p style="margin: 8px 0 0; color: #6b7280; font-size: 12px;">
                         Your personal check-in QR code
                       </p>
@@ -1348,14 +1350,25 @@ async function generateAllAttendeeQRCodes(
 ): Promise<AttendeeWithQR[]> {
   const attendeesWithQR: AttendeeWithQR[] = [];
 
+  // Helper to extract base64 from data URL
+  const extractBase64 = (dataUrl: string): string => {
+    const base64Prefix = "data:image/png;base64,";
+    return dataUrl.startsWith(base64Prefix)
+      ? dataUrl.substring(base64Prefix.length)
+      : dataUrl;
+  };
+
   // Generate QR code for primary attendee
   const primaryQrData = `${registrationId}-0`;
   const primaryQrCodeDataUrl = await generateQRCodeDataUrl(primaryQrData);
+  const primaryContentId = `qr-${registrationId}-0`;
   attendeesWithQR.push({
     firstName: primaryAttendee.firstName,
     lastName: primaryAttendee.lastName,
     email: primaryAttendee.email,
     qrCodeDataUrl: primaryQrCodeDataUrl,
+    qrCodeBase64: extractBase64(primaryQrCodeDataUrl),
+    contentId: primaryContentId,
     attendeeIndex: 0,
   });
 
@@ -1365,11 +1378,14 @@ async function generateAllAttendeeQRCodes(
       const attendee = additionalAttendees[i];
       const qrData = `${registrationId}-${i + 1}`;
       const qrCodeDataUrl = await generateQRCodeDataUrl(qrData);
+      const contentId = `qr-${registrationId}-${i + 1}`;
       attendeesWithQR.push({
         firstName: attendee.firstName,
         lastName: attendee.lastName,
         email: attendee.email ?? undefined,
         qrCodeDataUrl,
+        qrCodeBase64: extractBase64(qrCodeDataUrl),
+        contentId,
         attendeeIndex: i + 1,
       });
     }
@@ -1407,6 +1423,15 @@ async function sendTicketEmail(
     return;
   }
 
+  // Create attachments for QR codes
+  const attachments = attendeesWithQR.map((attendee) => ({
+    content: attendee.qrCodeBase64,
+    filename: `qr-${attendee.attendeeIndex}.png`,
+    type: "image/png",
+    disposition: "inline" as const,
+    content_id: attendee.contentId,
+  }));
+
   const msg = {
     to,
     from: {
@@ -1415,6 +1440,7 @@ async function sendTicketEmail(
     },
     subject: `Your IDMC 2026 Ticket${attendeesWithQR.length > 1 ? "s" : ""} - ${registration.registrationId}`,
     html: generateTicketEmailHtml(registration, settings, attendeesWithQR),
+    attachments,
   };
 
   await sgMail.send(msg);
@@ -1455,6 +1481,15 @@ async function sendIndividualTicketEmail(
     return;
   }
 
+  // Create attachment for QR code
+  const attachments = [{
+    content: attendee.qrCodeBase64,
+    filename: `qr-${attendee.attendeeIndex}.png`,
+    type: "image/png",
+    disposition: "inline" as const,
+    content_id: attendee.contentId,
+  }];
+
   const msg = {
     to,
     from: {
@@ -1463,6 +1498,7 @@ async function sendIndividualTicketEmail(
     },
     subject: `Your IDMC 2026 Ticket - ${registration.registrationId}`,
     html: generateIndividualTicketEmailHtml(registration, settings, attendee),
+    attachments,
   };
 
   await sgMail.send(msg);
@@ -1691,7 +1727,7 @@ export const onPaymentConfirmed = onDocumentUpdated(
     };
     let settings: typeof defaultSettings = defaultSettings;
     try {
-      const settingsDoc = await db.collection(COLLECTIONS.SETTINGS).doc("conference").get();
+      const settingsDoc = await db.collection(COLLECTIONS.CONFERENCES).doc("conference-settings").get();
       const data = settingsDoc.data();
       if (data) {
         settings = {
