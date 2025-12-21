@@ -201,6 +201,37 @@ export async function getActivityLogsCount(filters = {}) {
 }
 
 /**
+ * Gets activity logs for a specific entity (e.g., a registration)
+ *
+ * @param {string} entityType - Entity type from ENTITY_TYPES
+ * @param {string} entityId - ID of the entity
+ * @param {number} [count=20] - Maximum number of logs to fetch
+ * @returns {Promise<Array>} Array of activity logs for the entity
+ */
+export async function getEntityActivityLogs(entityType, entityId, count = 20) {
+  try {
+    const logsRef = collection(db, COLLECTIONS.ACTIVITY_LOGS);
+    const logsQuery = query(
+      logsRef,
+      where('entityType', '==', entityType),
+      where('entityId', '==', entityId),
+      orderBy('createdAt', 'desc'),
+      limit(count)
+    );
+
+    const snapshot = await getDocs(logsQuery);
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error('Failed to fetch entity activity logs:', error);
+    return [];
+  }
+}
+
+/**
  * Gets recent activity logs for a specific admin
  *
  * @param {string} adminId - Admin user ID

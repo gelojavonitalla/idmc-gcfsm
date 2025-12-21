@@ -86,6 +86,7 @@ export {
   getActivityLogs,
   getActivityLogsCount,
   getAdminRecentActivity,
+  getEntityActivityLogs,
 } from './activityLog';
 
 export {
