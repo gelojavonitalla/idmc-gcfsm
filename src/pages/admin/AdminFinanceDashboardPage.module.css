@@ -277,6 +277,35 @@
   color: #3b82f6;
 }
 
+/* Back Button */
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s;
+  margin-bottom: 1rem;
+}
+
+.backButton:hover {
+  color: #2563eb;
+}
+
+.backButton:focus {
+  outline: none;
+  text-decoration: underline;
+}
+
+.backButton svg {
+  flex-shrink: 0;
+}
+
 /* Transactions Section */
 .transactionsSection {
   margin-top: 2rem;
