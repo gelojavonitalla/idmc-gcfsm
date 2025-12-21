@@ -443,6 +443,26 @@ function AdminFinanceDashboardPage() {
         {/* Transaction List for Selected Bank */}
         {!isLoading && selectedBankAccountId !== 'all' && (
           <div className={styles.transactionsSection}>
+            <button
+              type="button"
+              className={styles.backButton}
+              onClick={() => setSelectedBankAccountId('all')}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              Bank Accounts
+            </button>
             <h2>Recent Transactions</h2>
             {registrations.length === 0 ? (
               <p className={styles.emptyMessage}>No transactions found for this bank account.</p>
