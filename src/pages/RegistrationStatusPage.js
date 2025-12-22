@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { useSettings } from '../context';
+import { useSettings, DEFAULT_SETTINGS } from '../context';
 import {
   REGISTRATION_STATUS,
   REGISTRATION_CATEGORY_LABELS,
@@ -59,7 +59,9 @@ const CHECKED_IN_STATUS_CONFIG = {
  * @returns {JSX.Element} The registration status lookup page
  */
 function RegistrationStatusPage() {
-  const { settings } = useSettings();
+  const { settings: dbSettings, isLoading: isLoadingSettings } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback only after Firebase has loaded
+  const settings = isLoadingSettings ? null : (dbSettings || DEFAULT_SETTINGS);
   const [searchParams] = useSearchParams();
   const [searchValue, setSearchValue] = useState('');
   const [registration, setRegistration] = useState(null);
@@ -642,21 +644,23 @@ function RegistrationStatusPage() {
               </div>
 
               {/* Event Details */}
-              <div className={styles.eventDetails}>
-                <h3>Event Information</h3>
-                <p><strong>Event:</strong> {settings.title}</p>
-                <p><strong>Theme:</strong> {settings.theme}</p>
-                <p>
-                  <strong>Date:</strong> {new Date(settings.startDate).toLocaleDateString('en-PH', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </p>
-                <p><strong>Venue:</strong> {settings.venue?.name}</p>
-                <p><strong>Address:</strong> {settings.venue?.address}</p>
-              </div>
+              {settings && (
+                <div className={styles.eventDetails}>
+                  <h3>Event Information</h3>
+                  <p><strong>Event:</strong> {settings.title}</p>
+                  <p><strong>Theme:</strong> {settings.theme}</p>
+                  <p>
+                    <strong>Date:</strong> {new Date(settings.startDate).toLocaleDateString('en-PH', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </p>
+                  <p><strong>Venue:</strong> {settings.venue?.name}</p>
+                  <p><strong>Address:</strong> {settings.venue?.address}</p>
+                </div>
+              )}
 
               {/* Confirmed Registration - Download Section with Per-Attendee QR Codes */}
               {isConfirmed && (

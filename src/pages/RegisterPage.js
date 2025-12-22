@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { useSettings } from '../context';
+import { useSettings, DEFAULT_SETTINGS } from '../context';
 import {
   REGISTRATION_STEPS,
   REGISTRATION_STEP_LABELS,
@@ -116,7 +116,9 @@ const INITIAL_FORM_DATA = {
  * @returns {JSX.Element} The registration page component
  */
 function RegisterPage() {
-  const { settings, pricingTiers } = useSettings();
+  const { settings: dbSettings, pricingTiers, isLoading: isLoadingSettings } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback only after Firebase has loaded
+  const settings = isLoadingSettings ? null : (dbSettings || DEFAULT_SETTINGS);
   const [searchParams] = useSearchParams();
 
   /**
@@ -202,7 +204,7 @@ function RegisterPage() {
     return availablePricingTiers.find(tier => tier.id === formData.primaryAttendee.category);
   }, [availablePricingTiers, formData.primaryAttendee.category]);
 
-  const registrationOpen = settings.registrationOpen !== false;
+  const registrationOpen = settings?.registrationOpen !== false;
 
   /**
    * Fetches active bank accounts on component mount
@@ -1077,6 +1079,17 @@ function RegisterPage() {
       setIsSubmitting(false);
     }
   }, [formData, currentTier, calculateTotalPrice, ocrModifiedFields, ocrParsedFields, ocrResult]);
+
+  // Loading state - wait for Firebase settings
+  if (!settings) {
+    return (
+      <div className={styles.page}>
+        <section className={styles.heroSection}>
+          <h1 className={styles.heroTitle}>Loading...</h1>
+        </section>
+      </div>
+    );
+  }
 
   // Registration closed state
   if (!registrationOpen) {

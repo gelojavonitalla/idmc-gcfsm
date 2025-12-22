@@ -10,6 +10,7 @@
 
 /* Hero Section */
 .heroSection {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -18,6 +19,48 @@
   color: white;
   text-align: center;
   padding: var(--spacing-8);
+  overflow: hidden;
+}
+
+.heroVideo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  z-index: 0;
+}
+
+.heroImage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #1a1a1a;
+  z-index: 0;
+}
+
+.heroOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.15);
+  z-index: 1;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 2;
 }
 
 .heroContent h1 {
@@ -52,6 +95,29 @@
 
 .heroButton:hover {
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.heroButtonBottom {
+  position: absolute;
+  bottom: var(--spacing-8);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: inline-block;
+  padding: var(--spacing-4) var(--spacing-8);
+  background: white;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.heroButtonBottom:hover {
+  transform: translateX(-50%) translateY(-2px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
@@ -284,6 +350,7 @@
 .venueSection {
   padding: var(--spacing-20) 0;
   background-color: var(--color-background);
+  text-align: center;
 }
 
 .venueContent {
@@ -365,8 +432,14 @@
 /* Responsive */
 @media (max-width: 768px) {
   .heroSection {
-    min-height: 80vh;
+    min-height: auto;
+    aspect-ratio: 16 / 9;
     padding: var(--spacing-6);
+  }
+
+  .heroImage {
+    background-size: contain;
+    background-position: center;
   }
 
   .heroContent h1 {
@@ -380,6 +453,10 @@
   .heroButton {
     padding: var(--spacing-3) var(--spacing-6);
     font-size: var(--font-size-base);
+  }
+
+  .heroButtonBottom {
+    display: none;
   }
 
   .speakersGrid {
@@ -412,10 +489,23 @@
   }
 }
 
+/* Mobile Landscape */
+@media (max-width: 768px) and (orientation: landscape) {
+  .heroSection {
+    min-height: 100vh;
+    aspect-ratio: auto;
+    max-height: none;
+  }
+
+  .heroImage {
+    background-size: cover;
+  }
+}
+
 /* Small Mobile Styles */
 @media (max-width: 480px) {
   .heroSection {
-    min-height: 70vh;
+    aspect-ratio: 16 / 9;
     padding: var(--spacing-4);
   }
 

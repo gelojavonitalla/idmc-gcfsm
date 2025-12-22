@@ -19,9 +19,11 @@ import {
 const SettingsContext = createContext(null);
 
 /**
- * Default settings used while loading
+ * Default settings used as fallback for public pages only.
+ * Admin pages should always wait for Firebase data.
+ * @constant {Object}
  */
-const DEFAULT_SETTINGS = {
+export const DEFAULT_SETTINGS = {
   title: 'IDMC 2026',
   theme: 'All In for Jesus and His Kingdom',
   tagline: 'Intentional Disciple-Making Churches Conference',
@@ -66,7 +68,9 @@ const DEFAULT_SETTINGS = {
  * @returns {JSX.Element} The settings provider component
  */
 export function SettingsProvider({ children }) {
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  // Initialize settings as null - data always comes from Firebase
+  // Public pages can use DEFAULT_SETTINGS as fallback if needed
+  const [settings, setSettings] = useState(null);
   const [pricingTiers, setPricingTiers] = useState([]);
   const [activePricingTier, setActivePricingTier] = useState(null);
   const [isLoading, setIsLoading] = useState(true);

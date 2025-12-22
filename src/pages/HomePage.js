@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { CountdownTimer } from '../components/ui';
-import { useSettings } from '../context';
+import { useSettings, DEFAULT_SETTINGS } from '../context';
 import { getFeaturedSpeakers } from '../services/speakers';
 import {
   SPEAKERS,
@@ -20,10 +20,13 @@ import styles from './HomePage.module.css';
  * @returns {JSX.Element} The home page component
  */
 function HomePage() {
-  const { settings, pricingTiers } = useSettings();
+  const { settings: dbSettings, pricingTiers, isLoading: isLoadingSettings } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback only after Firebase has loaded and returned no data
+  const settings = dbSettings || DEFAULT_SETTINGS;
   const [speakers, setSpeakers] = useState([]);
   const [isLoadingSpeakers, setIsLoadingSpeakers] = useState(true);
   const [speakersError, setSpeakersError] = useState(null);
+  const [heroMediaFailed, setHeroMediaFailed] = useState(false);
 
   /**
    * Filter pricing tiers to only show active ones within valid date range
@@ -66,6 +69,33 @@ function HomePage() {
     fetchSpeakers();
   }, []);
 
+  /**
+   * Preloads hero image and tracks failure state.
+   * Text content is only shown as fallback when Firebase has loaded
+   * and the hero media fails to load.
+   * Priority: 1) Image, 2) Firestore data, 3) JSON defaults
+   */
+  useEffect(() => {
+    setHeroMediaFailed(false);
+
+    // Don't determine failure state while Firebase is still loading
+    if (isLoadingSettings) {
+      return;
+    }
+
+    if (settings.heroVideoUrl) {
+      return;
+    }
+
+    if (settings.heroImageUrl) {
+      const img = new Image();
+      img.onerror = () => setHeroMediaFailed(true);
+      img.src = settings.heroImageUrl;
+    } else {
+      setHeroMediaFailed(true);
+    }
+  }, [settings.heroImageUrl, settings.heroVideoUrl, isLoadingSettings]);
+
   const plenarySpeakers = speakers.filter(
     (speaker) => speaker.sessionType === SESSION_TYPES.PLENARY
   );
@@ -78,16 +108,45 @@ function HomePage() {
     <div className={styles.page}>
       {/* Hero Section */}
       <section className={styles.heroSection}>
-        <div className={styles.heroContent}>
-          <h1>{settings.title}</h1>
-          <p className={styles.heroTheme}>{settings.theme}</p>
-          <p className={styles.heroSubtext}>
-            {new Date(settings.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} | {settings.venue?.name}
-          </p>
-          <Link to={ROUTES.REGISTER} className={styles.heroButton}>
-            Register Now
-          </Link>
-        </div>
+        {/* Hero Video Background */}
+        {settings.heroVideoUrl && (
+          <video
+            className={styles.heroVideo}
+            autoPlay
+            muted
+            loop
+            playsInline
+            poster={settings.heroImageUrl || undefined}
+            onError={() => setHeroMediaFailed(true)}
+          >
+            <source src={settings.heroVideoUrl} type="video/mp4" />
+          </video>
+        )}
+        {/* Hero Image Background (when no video) */}
+        {!settings.heroVideoUrl && settings.heroImageUrl && (
+          <div
+            className={styles.heroImage}
+            style={{ backgroundImage: `url(${settings.heroImageUrl})` }}
+          />
+        )}
+        {/* Overlay for readability */}
+        {(settings.heroImageUrl || settings.heroVideoUrl) && (
+          <div className={styles.heroOverlay} />
+        )}
+        {/* Text content only shown as fallback when hero media fails to load */}
+        {heroMediaFailed && (
+          <div className={styles.heroContent}>
+            <h1>{settings.title}</h1>
+            <p className={styles.heroTheme}>{settings.theme}</p>
+            <p className={styles.heroSubtext}>
+              {new Date(settings.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} | {settings.venue?.name}
+            </p>
+          </div>
+        )}
+        {/* Desktop-only register button at bottom of hero - always visible */}
+        <Link to={ROUTES.REGISTER} className={styles.heroButtonBottom}>
+          Register Now →
+        </Link>
       </section>
 
       {/* Countdown Timer Section */}
