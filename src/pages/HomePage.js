@@ -26,7 +26,7 @@ function HomePage() {
   const [speakers, setSpeakers] = useState([]);
   const [isLoadingSpeakers, setIsLoadingSpeakers] = useState(true);
   const [speakersError, setSpeakersError] = useState(null);
-  const [isHeroMediaLoaded, setIsHeroMediaLoaded] = useState(false);
+  const [heroMediaFailed, setHeroMediaFailed] = useState(false);
 
   /**
    * Filter pricing tiers to only show active ones within valid date range
@@ -70,23 +70,22 @@ function HomePage() {
   }, []);
 
   /**
-   * Preloads hero image and tracks loading state.
-   * Text will be hidden once the hero media has finished loading.
+   * Preloads hero image and tracks failure state.
+   * Text content is only shown as fallback when the hero media fails to load.
    */
   useEffect(() => {
+    setHeroMediaFailed(false);
+
     if (settings.heroVideoUrl) {
-      setIsHeroMediaLoaded(false);
       return;
     }
 
     if (settings.heroImageUrl) {
-      setIsHeroMediaLoaded(false);
       const img = new Image();
-      img.onload = () => setIsHeroMediaLoaded(true);
-      img.onerror = () => setIsHeroMediaLoaded(false);
+      img.onerror = () => setHeroMediaFailed(true);
       img.src = settings.heroImageUrl;
     } else {
-      setIsHeroMediaLoaded(false);
+      setHeroMediaFailed(true);
     }
   }, [settings.heroImageUrl, settings.heroVideoUrl]);
 
@@ -111,7 +110,7 @@ function HomePage() {
             loop
             playsInline
             poster={settings.heroImageUrl || undefined}
-            onLoadedData={() => setIsHeroMediaLoaded(true)}
+            onError={() => setHeroMediaFailed(true)}
           >
             <source src={settings.heroVideoUrl} type="video/mp4" />
           </video>
@@ -127,25 +126,20 @@ function HomePage() {
         {(settings.heroImageUrl || settings.heroVideoUrl) && (
           <div className={styles.heroOverlay} />
         )}
-        {/* Hide hero content when hero image/video has loaded since the image already contains the text */}
-        {!isHeroMediaLoaded && (
+        {/* Text content only shown as fallback when hero media fails to load */}
+        {heroMediaFailed && (
           <div className={styles.heroContent}>
             <h1>{settings.title}</h1>
             <p className={styles.heroTheme}>{settings.theme}</p>
             <p className={styles.heroSubtext}>
               {new Date(settings.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} | {settings.venue?.name}
             </p>
-            <Link to={ROUTES.REGISTER} className={styles.heroButton}>
-              Register Now
-            </Link>
           </div>
         )}
-        {/* Desktop-only register button at bottom of hero when media is loaded */}
-        {isHeroMediaLoaded && (
-          <Link to={ROUTES.REGISTER} className={styles.heroButtonBottom}>
-            Register Now
-          </Link>
-        )}
+        {/* Desktop-only register button at bottom of hero - always visible */}
+        <Link to={ROUTES.REGISTER} className={styles.heroButtonBottom}>
+          Register Now
+        </Link>
       </section>
 
       {/* Countdown Timer Section */}
