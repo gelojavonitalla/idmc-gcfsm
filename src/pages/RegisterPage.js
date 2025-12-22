@@ -116,9 +116,9 @@ const INITIAL_FORM_DATA = {
  * @returns {JSX.Element} The registration page component
  */
 function RegisterPage() {
-  const { settings: dbSettings, pricingTiers } = useSettings();
-  // Use DEFAULT_SETTINGS as fallback for public pages while Firebase loads
-  const settings = dbSettings || DEFAULT_SETTINGS;
+  const { settings: dbSettings, pricingTiers, isLoading: isLoadingSettings } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback only after Firebase has loaded
+  const settings = isLoadingSettings ? null : (dbSettings || DEFAULT_SETTINGS);
   const [searchParams] = useSearchParams();
 
   /**
@@ -204,7 +204,7 @@ function RegisterPage() {
     return availablePricingTiers.find(tier => tier.id === formData.primaryAttendee.category);
   }, [availablePricingTiers, formData.primaryAttendee.category]);
 
-  const registrationOpen = settings.registrationOpen !== false;
+  const registrationOpen = settings?.registrationOpen !== false;
 
   /**
    * Fetches active bank accounts on component mount
@@ -1079,6 +1079,17 @@ function RegisterPage() {
       setIsSubmitting(false);
     }
   }, [formData, currentTier, calculateTotalPrice, ocrModifiedFields, ocrParsedFields, ocrResult]);
+
+  // Loading state - wait for Firebase settings
+  if (!settings) {
+    return (
+      <div className={styles.page}>
+        <section className={styles.heroSection}>
+          <h1 className={styles.heroTitle}>Loading...</h1>
+        </section>
+      </div>
+    );
+  }
 
   // Registration closed state
   if (!registrationOpen) {

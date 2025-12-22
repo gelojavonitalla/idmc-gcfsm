@@ -53,7 +53,9 @@ const DEFAULT_ABOUT_GCF = {
  * @returns {JSX.Element} The about page component
  */
 function AboutPage() {
-  const { settings } = useSettings();
+  const { settings: dbSettings, isLoading: isLoadingSettings } = useSettings();
+  // Use settings only after Firebase has loaded
+  const settings = isLoadingSettings ? null : dbSettings;
 
   // Get about content from settings or use defaults
   const aboutIdmc = settings?.aboutIdmc || DEFAULT_ABOUT_IDMC;

@@ -59,9 +59,9 @@ const CHECKED_IN_STATUS_CONFIG = {
  * @returns {JSX.Element} The registration status lookup page
  */
 function RegistrationStatusPage() {
-  const { settings: dbSettings } = useSettings();
-  // Use DEFAULT_SETTINGS as fallback for public pages while Firebase loads
-  const settings = dbSettings || DEFAULT_SETTINGS;
+  const { settings: dbSettings, isLoading: isLoadingSettings } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback only after Firebase has loaded
+  const settings = isLoadingSettings ? null : (dbSettings || DEFAULT_SETTINGS);
   const [searchParams] = useSearchParams();
   const [searchValue, setSearchValue] = useState('');
   const [registration, setRegistration] = useState(null);
@@ -644,21 +644,23 @@ function RegistrationStatusPage() {
               </div>
 
               {/* Event Details */}
-              <div className={styles.eventDetails}>
-                <h3>Event Information</h3>
-                <p><strong>Event:</strong> {settings.title}</p>
-                <p><strong>Theme:</strong> {settings.theme}</p>
-                <p>
-                  <strong>Date:</strong> {new Date(settings.startDate).toLocaleDateString('en-PH', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </p>
-                <p><strong>Venue:</strong> {settings.venue?.name}</p>
-                <p><strong>Address:</strong> {settings.venue?.address}</p>
-              </div>
+              {settings && (
+                <div className={styles.eventDetails}>
+                  <h3>Event Information</h3>
+                  <p><strong>Event:</strong> {settings.title}</p>
+                  <p><strong>Theme:</strong> {settings.theme}</p>
+                  <p>
+                    <strong>Date:</strong> {new Date(settings.startDate).toLocaleDateString('en-PH', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </p>
+                  <p><strong>Venue:</strong> {settings.venue?.name}</p>
+                  <p><strong>Address:</strong> {settings.venue?.address}</p>
+                </div>
+              )}
 
               {/* Confirmed Registration - Download Section with Per-Attendee QR Codes */}
               {isConfirmed && (
