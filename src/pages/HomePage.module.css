@@ -408,8 +408,14 @@
 /* Responsive */
 @media (max-width: 768px) {
   .heroSection {
-    min-height: 80vh;
+    min-height: auto;
+    aspect-ratio: 9 / 16;
+    max-height: 80vh;
     padding: var(--spacing-6);
+  }
+
+  .heroImage {
+    background-size: cover;
   }
 
   .heroContent h1 {
@@ -455,10 +461,24 @@
   }
 }
 
+/* Mobile Landscape */
+@media (max-width: 768px) and (orientation: landscape) {
+  .heroSection {
+    min-height: 100vh;
+    aspect-ratio: auto;
+    max-height: none;
+  }
+
+  .heroImage {
+    background-size: cover;
+  }
+}
+
 /* Small Mobile Styles */
 @media (max-width: 480px) {
   .heroSection {
-    min-height: 70vh;
+    aspect-ratio: 9 / 16;
+    max-height: 70vh;
     padding: var(--spacing-4);
   }
 
