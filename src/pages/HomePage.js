@@ -138,6 +138,12 @@ function HomePage() {
             </Link>
           </div>
         )}
+        {/* Desktop-only register button at bottom of hero when media is loaded */}
+        {isHeroMediaLoaded && (
+          <Link to={ROUTES.REGISTER} className={styles.heroButtonBottom}>
+            Register Now
+          </Link>
+        )}
       </section>
 
       {/* Countdown Timer Section */}
