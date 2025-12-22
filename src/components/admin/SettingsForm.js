@@ -111,6 +111,51 @@ function SettingsForm({ settings, onSave, isLoading }) {
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  /**
+   * Syncs form data when settings prop changes (e.g., after initial load from DB)
+   */
+  useEffect(() => {
+    if (settings) {
+      setFormData({
+        title: settings.title || DEFAULT_SETTINGS.title,
+        theme: settings.theme || DEFAULT_SETTINGS.theme,
+        tagline: settings.tagline || DEFAULT_SETTINGS.tagline,
+        year: settings.year || DEFAULT_SETTINGS.year,
+        startDate: settings.startDate || DEFAULT_SETTINGS.startDate,
+        endDate: settings.endDate || DEFAULT_SETTINGS.endDate,
+        startTime: settings.startTime || DEFAULT_SETTINGS.startTime,
+        endTime: settings.endTime || DEFAULT_SETTINGS.endTime,
+        timezone: settings.timezone || DEFAULT_SETTINGS.timezone,
+        registrationOpen: settings.registrationOpen ?? DEFAULT_SETTINGS.registrationOpen,
+        conferenceCapacity: settings.conferenceCapacity ?? DEFAULT_SETTINGS.conferenceCapacity,
+        heroImageUrl: settings.heroImageUrl || DEFAULT_SETTINGS.heroImageUrl,
+        heroVideoUrl: settings.heroVideoUrl || DEFAULT_SETTINGS.heroVideoUrl,
+        venue: {
+          name: settings.venue?.name || DEFAULT_SETTINGS.venue.name,
+          address: settings.venue?.address || DEFAULT_SETTINGS.venue.address,
+          mapUrl: settings.venue?.mapUrl || DEFAULT_SETTINGS.venue.mapUrl,
+          mapEmbedUrl: settings.venue?.mapEmbedUrl || DEFAULT_SETTINGS.venue.mapEmbedUrl,
+        },
+        contact: {
+          email: settings.contact?.email || DEFAULT_SETTINGS.contact.email,
+          phone: settings.contact?.phone || DEFAULT_SETTINGS.contact.phone,
+          mobile: settings.contact?.mobile || DEFAULT_SETTINGS.contact.mobile,
+          website: settings.contact?.website || DEFAULT_SETTINGS.contact.website,
+        },
+        social: {
+          facebook: settings.social?.facebook || DEFAULT_SETTINGS.social.facebook,
+          instagram: settings.social?.instagram || DEFAULT_SETTINGS.social.instagram,
+          youtube: settings.social?.youtube || DEFAULT_SETTINGS.social.youtube,
+        },
+        sms: {
+          enabled: settings.sms?.enabled ?? DEFAULT_SETTINGS.sms.enabled,
+          gatewayDomain: settings.sms?.gatewayDomain || DEFAULT_SETTINGS.sms.gatewayDomain,
+          gatewayEmail: settings.sms?.gatewayEmail || DEFAULT_SETTINGS.sms.gatewayEmail,
+        },
+      });
+    }
+  }, [settings]);
+
   // Stats from stats collection
   const [registeredAttendeeCount, setRegisteredAttendeeCount] = useState(0);
   const [isSyncingStats, setIsSyncingStats] = useState(false);
