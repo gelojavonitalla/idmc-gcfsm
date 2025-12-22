@@ -82,9 +82,9 @@ const TRANSPORT_ICONS = {
  * @returns {JSX.Element} The venue page component
  */
 function VenuePage() {
-  const { settings: dbSettings } = useSettings();
-  // Use DEFAULT_SETTINGS as fallback for public pages while Firebase loads
-  const settings = dbSettings || DEFAULT_SETTINGS;
+  const { settings: dbSettings, isLoading: isLoadingSettings } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback only after Firebase has loaded
+  const settings = isLoadingSettings ? null : (dbSettings || DEFAULT_SETTINGS);
   const [transportOptions, setTransportOptions] = useState([]);
   const [amenities, setAmenities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -118,7 +118,7 @@ function VenuePage() {
         <div className="container">
           <h1 className={styles.heroTitle}>Venue</h1>
           <p className={styles.heroSubtitle}>
-            Join us at {settings.venue?.name} for {settings.title}
+            Join us at {settings?.venue?.name} for {settings?.title}
           </p>
         </div>
       </section>
@@ -128,10 +128,10 @@ function VenuePage() {
         <div className="container">
           <div className={styles.mapContent}>
             <div className={styles.mapInfo}>
-              <h2 className={styles.mapTitle}>{settings.venue?.name}</h2>
-              <p className={styles.mapAddress}>{settings.venue?.address}</p>
+              <h2 className={styles.mapTitle}>{settings?.venue?.name}</h2>
+              <p className={styles.mapAddress}>{settings?.venue?.address}</p>
               <a
-                href={settings.venue?.mapUrl}
+                href={settings?.venue?.mapUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={styles.mapLink}
@@ -141,8 +141,8 @@ function VenuePage() {
             </div>
             <div className={styles.mapEmbed}>
               <iframe
-                src={settings.venue?.mapEmbedUrl}
-                title={`Map of ${settings.venue?.name}`}
+                src={settings?.venue?.mapEmbedUrl}
+                title={`Map of ${settings?.venue?.name}`}
                 className={styles.mapIframe}
                 allowFullScreen
                 loading="lazy"
@@ -215,7 +215,7 @@ function VenuePage() {
         <div className="container">
           <h2 className={styles.ctaTitle}>Ready to Join Us?</h2>
           <p className={styles.ctaText}>
-            Secure your spot at {settings.title} today!
+            Secure your spot at {settings?.title} today!
           </p>
           <div className={styles.ctaButtons}>
             <Link to={ROUTES.REGISTER} className={styles.ctaButtonPrimary}>

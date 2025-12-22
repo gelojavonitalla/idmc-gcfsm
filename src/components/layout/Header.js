@@ -12,9 +12,9 @@ import styles from './Header.module.css';
  * @returns {JSX.Element} The header navigation component
  */
 function Header() {
-  const { settings: dbSettings } = useSettings();
-  // Use DEFAULT_SETTINGS as fallback while Firebase loads
-  const settings = dbSettings || DEFAULT_SETTINGS;
+  const { settings: dbSettings, isLoading } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback only after Firebase has loaded
+  const settings = isLoading ? null : (dbSettings || DEFAULT_SETTINGS);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
@@ -94,7 +94,7 @@ function Header() {
       <div className={styles.container}>
         <Link to="/" className={styles.logo} onClick={closeMenu}>
           <span className={styles.logoText}>IDMC</span>
-          <span className={styles.logoYear}>{settings.year}</span>
+          <span className={styles.logoYear}>{settings?.year || ''}</span>
         </Link>
 
         <button

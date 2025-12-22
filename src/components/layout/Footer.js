@@ -10,10 +10,25 @@ import styles from './Footer.module.css';
  * @returns {JSX.Element} The footer component
  */
 function Footer() {
-  const { settings: dbSettings } = useSettings();
-  // Use DEFAULT_SETTINGS as fallback while Firebase loads
-  const settings = dbSettings || DEFAULT_SETTINGS;
+  const { settings: dbSettings, isLoading } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback only after Firebase has loaded
+  const settings = isLoading ? null : (dbSettings || DEFAULT_SETTINGS);
   const currentYear = new Date().getFullYear();
+
+  // Don't render dynamic content until Firebase has loaded
+  if (!settings) {
+    return (
+      <footer className={styles.footer}>
+        <div className={styles.container}>
+          <div className={styles.bottom}>
+            <p className={styles.copyright}>
+              &copy; {currentYear} {CONTACT.ORGANIZER}. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className={styles.footer}>

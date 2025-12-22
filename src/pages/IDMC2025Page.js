@@ -26,7 +26,9 @@ const DEFAULT_IDMC_2025 = {
  * @returns {JSX.Element} The IDMC 2025 page component
  */
 function IDMC2025Page() {
-  const { settings } = useSettings();
+  const { settings: dbSettings, isLoading: isLoadingSettings } = useSettings();
+  // Use settings only after Firebase has loaded
+  const settings = isLoadingSettings ? null : dbSettings;
 
   const title = settings?.idmc2025?.title || DEFAULT_IDMC_2025.title;
   const subtitle = settings?.idmc2025?.subtitle || DEFAULT_IDMC_2025.subtitle;
