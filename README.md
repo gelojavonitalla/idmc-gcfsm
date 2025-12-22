@@ -148,7 +148,7 @@ idmc-gcfsm/
 │   ├── src/index.ts             # Cloud Function definitions
 │   └── lib/                     # Compiled output
 ├── docs/                         # Documentation
-│   ├── epics/                   # Product requirements (10 epics)
+│   ├── epics/                   # Product requirements (12 epics)
 │   ├── coding_standard.md       # Code style guide
 │   ├── UNIT_TESTING.md          # Testing guide
 │   └── PR_TEMPLATE.md           # PR checklist
@@ -291,6 +291,8 @@ The backend includes the following Cloud Functions:
 | IDMC-EVT-08 | Past Conferences Archive | Historical conference data and galleries |
 | IDMC-EVT-09 | Attendee Management | Registration list, search, export, comms |
 | IDMC-EVT-10 | Check-in & Access Control | QR scanning, manual lookup, real-time stats |
+| IDMC-EVT-11 | Mobile Check-in App | Native mobile QR scanning with offline capability |
+| IDMC-EVT-12 | Authentication & User Management | RBAC, user invitation workflow, session security |
 
 ## Documentation
 
