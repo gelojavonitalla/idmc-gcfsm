@@ -145,7 +145,7 @@ function HomePage() {
         )}
         {/* Desktop-only register button at bottom of hero - always visible */}
         <Link to={ROUTES.REGISTER} className={styles.heroButtonBottom}>
-          Register Now
+          Register Now →
         </Link>
       </section>
 
