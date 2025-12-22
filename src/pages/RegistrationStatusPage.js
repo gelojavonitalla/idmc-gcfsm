@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { useSettings } from '../context';
+import { useSettings, DEFAULT_SETTINGS } from '../context';
 import {
   REGISTRATION_STATUS,
   REGISTRATION_CATEGORY_LABELS,
@@ -59,7 +59,9 @@ const CHECKED_IN_STATUS_CONFIG = {
  * @returns {JSX.Element} The registration status lookup page
  */
 function RegistrationStatusPage() {
-  const { settings } = useSettings();
+  const { settings: dbSettings } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback for public pages while Firebase loads
+  const settings = dbSettings || DEFAULT_SETTINGS;
   const [searchParams] = useSearchParams();
   const [searchValue, setSearchValue] = useState('');
   const [registration, setRegistration] = useState(null);

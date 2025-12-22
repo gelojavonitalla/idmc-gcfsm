@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { CountdownTimer } from '../components/ui';
-import { useSettings } from '../context';
+import { useSettings, DEFAULT_SETTINGS } from '../context';
 import { getFeaturedSpeakers } from '../services/speakers';
 import {
   SPEAKERS,
@@ -20,7 +20,9 @@ import styles from './HomePage.module.css';
  * @returns {JSX.Element} The home page component
  */
 function HomePage() {
-  const { settings, pricingTiers } = useSettings();
+  const { settings: dbSettings, pricingTiers } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback for public pages while Firebase loads
+  const settings = dbSettings || DEFAULT_SETTINGS;
   const [speakers, setSpeakers] = useState([]);
   const [isLoadingSpeakers, setIsLoadingSpeakers] = useState(true);
   const [speakersError, setSpeakersError] = useState(null);
