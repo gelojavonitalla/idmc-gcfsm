@@ -646,6 +646,14 @@ function AdminRegistrationsPage() {
         registration={selectedRegistration}
         onUpdateStatus={handleUpdateStatus}
         onUpdateNotes={handleUpdateNotes}
+        onRefresh={() => {
+          fetchRegistrations(false);
+          if (isSearchMode && searchQuery.trim()) {
+            searchRegistrations(searchQuery.trim(), { status: statusFilter })
+              .then(setSearchResults)
+              .catch(console.error);
+          }
+        }}
         isUpdating={isUpdating}
       />
     </AdminLayout>

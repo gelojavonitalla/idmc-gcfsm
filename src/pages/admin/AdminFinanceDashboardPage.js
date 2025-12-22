@@ -10,6 +10,7 @@ import { AdminLayout } from '../../components/admin';
 import {
   getAllBankAccounts,
   getRegistrationsByBankAccount,
+  subscribeToConferenceStats,
 } from '../../services';
 import { useAdminAuth } from '../../context';
 import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from '../../services/activityLog';
@@ -33,6 +34,9 @@ function AdminFinanceDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState(null);
+
+  // Stats from stats collection (maintained by Cloud Functions)
+  const [conferenceStats, setConferenceStats] = useState(null);
 
   /**
    * Fetches all bank accounts
@@ -90,6 +94,17 @@ function AdminFinanceDashboardPage() {
       fetchRegistrations();
     }
   }, [selectedBankAccountId, bankAccounts, fetchRegistrations]);
+
+  /**
+   * Subscribe to conference stats for real-time finance data
+   */
+  useEffect(() => {
+    const unsubscribe = subscribeToConferenceStats((stats) => {
+      setConferenceStats(stats);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   /**
    * Calculate statistics for the selected bank account
@@ -280,7 +295,7 @@ function AdminFinanceDashboardPage() {
           </button>
         </div>
 
-        {/* Statistics Cards */}
+        {/* Statistics Cards - Use stats collection when viewing all, local calc when filtered */}
         {!isLoading && (
           <div className={styles.statsGrid}>
             <div className={styles.statCard}>
@@ -290,16 +305,34 @@ function AdminFinanceDashboardPage() {
             <div className={styles.statCard}>
               <div className={styles.statLabel}>Confirmed</div>
               <div className={styles.statValue}>{statistics.confirmedTransactions}</div>
-              <div className={styles.statSubvalue}>{formatPrice(statistics.confirmedPayments)}</div>
+              <div className={styles.statSubvalue}>
+                {formatPrice(
+                  selectedBankAccountId === 'all' && conferenceStats
+                    ? conferenceStats.totalConfirmedPayments || 0
+                    : statistics.confirmedPayments
+                )}
+              </div>
             </div>
             <div className={styles.statCard}>
               <div className={styles.statLabel}>Pending Verification</div>
               <div className={styles.statValue}>{statistics.pendingVerification}</div>
-              <div className={styles.statSubvalue}>{formatPrice(statistics.pendingPayments)}</div>
+              <div className={styles.statSubvalue}>
+                {formatPrice(
+                  selectedBankAccountId === 'all' && conferenceStats
+                    ? conferenceStats.totalPendingPayments || 0
+                    : statistics.pendingPayments
+                )}
+              </div>
             </div>
             <div className={`${styles.statCard} ${styles.statCardHighlight}`}>
               <div className={styles.statLabel}>Total Payments</div>
-              <div className={styles.statValue}>{formatPrice(statistics.totalPayments)}</div>
+              <div className={styles.statValue}>
+                {formatPrice(
+                  selectedBankAccountId === 'all' && conferenceStats
+                    ? (conferenceStats.totalConfirmedPayments || 0) + (conferenceStats.totalPendingPayments || 0)
+                    : statistics.totalPayments
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -337,32 +370,66 @@ function AdminFinanceDashboardPage() {
                           </p>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        className={styles.exportButtonSmall}
-                        onClick={() => handleExportBank(bankAccountId)}
-                        disabled={isExporting}
-                      >
-                        Export
-                      </button>
+                      <div className={styles.bankGroupActions}>
+                        <button
+                          type="button"
+                          className={styles.exportButtonSmall}
+                          onClick={() => handleExportBank(bankAccountId)}
+                          disabled={isExporting}
+                        >
+                          Export
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.filterIconButton}
+                          onClick={() => setSelectedBankAccountId(bankAccountId)}
+                          title="Filter by this bank account"
+                          aria-label={`Filter by ${group.account ? BANK_LABELS[group.account.bankName] : 'this bank account'}`}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                     <div className={styles.bankGroupStats}>
                       <div className={styles.bankGroupStat}>
                         <span className={styles.bankGroupStatLabel}>Transactions:</span>
-                        <span className={styles.bankGroupStatValue}>{group.registrations.length}</span>
+                        <span className={styles.bankGroupStatValue}>
+                          {conferenceStats?.bankAccountStats?.[bankAccountId]?.count ?? group.registrations.length}
+                        </span>
                       </div>
                       <div className={styles.bankGroupStat}>
                         <span className={styles.bankGroupStatLabel}>Confirmed:</span>
-                        <span className={styles.bankGroupStatValue}>{formatPrice(group.confirmedAmount)}</span>
+                        <span className={styles.bankGroupStatValue}>
+                          {formatPrice(conferenceStats?.bankAccountStats?.[bankAccountId]?.confirmed ?? group.confirmedAmount)}
+                        </span>
                       </div>
                       <div className={styles.bankGroupStat}>
                         <span className={styles.bankGroupStatLabel}>Pending:</span>
-                        <span className={styles.bankGroupStatValue}>{formatPrice(group.pendingAmount)}</span>
+                        <span className={styles.bankGroupStatValue}>
+                          {formatPrice(conferenceStats?.bankAccountStats?.[bankAccountId]?.pending ?? group.pendingAmount)}
+                        </span>
                       </div>
                       <div className={styles.bankGroupStat}>
                         <span className={styles.bankGroupStatLabel}>Total:</span>
                         <span className={`${styles.bankGroupStatValue} ${styles.bankGroupStatValueHighlight}`}>
-                          {formatPrice(group.totalAmount)}
+                          {formatPrice(
+                            conferenceStats?.bankAccountStats?.[bankAccountId]
+                              ? (conferenceStats.bankAccountStats[bankAccountId].confirmed || 0) +
+                                (conferenceStats.bankAccountStats[bankAccountId].pending || 0)
+                              : group.totalAmount
+                          )}
                         </span>
                       </div>
                     </div>
@@ -376,6 +443,26 @@ function AdminFinanceDashboardPage() {
         {/* Transaction List for Selected Bank */}
         {!isLoading && selectedBankAccountId !== 'all' && (
           <div className={styles.transactionsSection}>
+            <button
+              type="button"
+              className={styles.backButton}
+              onClick={() => setSelectedBankAccountId('all')}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              Bank Accounts
+            </button>
             <h2>Recent Transactions</h2>
             {registrations.length === 0 ? (
               <p className={styles.emptyMessage}>No transactions found for this bank account.</p>
@@ -388,7 +475,8 @@ function AdminFinanceDashboardPage() {
                       <th>Name</th>
                       <th>Church</th>
                       <th>Amount</th>
-                      <th>Payment Date</th>
+                      <th>Reference Number</th>
+                      <th>Payment Date/Time</th>
                       <th>Status</th>
                     </tr>
                   </thead>
@@ -401,9 +489,10 @@ function AdminFinanceDashboardPage() {
                         </td>
                         <td>{reg.church?.name}</td>
                         <td>{formatPrice(reg.payment?.amountPaid || 0)}</td>
+                        <td>{reg.payment?.referenceNumber || 'N/A'}</td>
                         <td>
                           {reg.payment?.paymentDate
-                            ? new Date(reg.payment.paymentDate).toLocaleDateString()
+                            ? `${new Date(reg.payment.paymentDate).toLocaleDateString()}${reg.payment?.paymentTime ? ` ${reg.payment.paymentTime}` : ''}`
                             : 'N/A'}
                         </td>
                         <td>

@@ -13,7 +13,13 @@ import {
   WORKSHOP_CATEGORY_LABELS,
   PAYMENT_METHODS,
 } from '../../constants';
-import { verifyPayment } from '../../services';
+import {
+  verifyPayment,
+  getEntityActivityLogs,
+  ENTITY_TYPES,
+  ACTIVITY_TYPES,
+  ACTIVITY_TYPE_LABELS,
+} from '../../services';
 import { useAdminAuth } from '../../context';
 import styles from './RegistrationDetailModal.module.css';
 
@@ -176,6 +182,11 @@ function RegistrationDetailModal({
   const [referenceNumber, setReferenceNumber] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [showRejectionInput, setShowRejectionInput] = useState(false);
+
+  // Activity history states
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [isLoadingActivity, setIsLoadingActivity] = useState(false);
 
   /**
    * Sync state when registration changes
@@ -186,12 +197,45 @@ function RegistrationDetailModal({
       setNotes(registration.notes || '');
       setIsEditingNotes(false);
       // Pre-populate payment verification states from registration data
-      setAmountPaid(registration.totalAmount || 0);
-      setPaymentMethod(registration.paymentMethod || '');
-      setReferenceNumber(registration.paymentReference || '');
+      // Use payment.amountPaid if previously verified, otherwise default to totalAmount
+      setAmountPaid(registration.payment?.amountPaid ?? registration.totalAmount ?? 0);
+      setPaymentMethod(registration.payment?.method || '');
+      setReferenceNumber(registration.payment?.referenceNumber || '');
       setRejectionReason('');
+      setShowRejectionInput(false);
     }
   }, [registration]);
+
+  /**
+   * Fetch activity logs for this registration
+   */
+  useEffect(() => {
+    async function fetchActivityLogs() {
+      if (!registration?.id) {
+        setActivityLogs([]);
+        return;
+      }
+
+      setIsLoadingActivity(true);
+      try {
+        const logs = await getEntityActivityLogs(
+          ENTITY_TYPES.REGISTRATION,
+          registration.id,
+          10
+        );
+        setActivityLogs(logs);
+      } catch (error) {
+        console.error('Failed to fetch activity logs:', error);
+        setActivityLogs([]);
+      } finally {
+        setIsLoadingActivity(false);
+      }
+    }
+
+    if (isOpen && registration?.id) {
+      fetchActivityLogs();
+    }
+  }, [isOpen, registration?.id]);
 
   if (!isOpen || !registration) {
     return null;
@@ -273,11 +317,26 @@ function RegistrationDetailModal({
   };
 
   /**
+   * Shows the rejection input form
+   */
+  const handleShowRejectionInput = () => {
+    setShowRejectionInput(true);
+    setRejectionReason('');
+  };
+
+  /**
+   * Cancels the rejection and hides the input form
+   */
+  const handleCancelRejection = () => {
+    setShowRejectionInput(false);
+    setRejectionReason('');
+  };
+
+  /**
    * Handles payment rejection with reason
    */
-  const handleRejectPayment = async () => {
-    const reason = prompt('Enter rejection reason (shown to user):');
-    if (!reason || !reason.trim()) {
+  const handleConfirmRejection = async () => {
+    if (!rejectionReason || !rejectionReason.trim()) {
       return;
     }
 
@@ -292,7 +351,7 @@ function RegistrationDetailModal({
           referenceNumber: '',
           verifiedBy: admin.email,
           notes: '',
-          rejectionReason: reason,
+          rejectionReason: rejectionReason.trim(),
         },
         admin.uid,
         admin.email
@@ -326,6 +385,45 @@ function RegistrationDetailModal({
       [REGISTRATION_STATUS.REFUNDED]: styles.statusRefunded,
     };
     return classMap[status] || styles.statusPendingPayment;
+  };
+
+  /**
+   * Gets the CSS class for activity type
+   *
+   * @param {string} type - Activity type
+   * @returns {string} CSS class name
+   */
+  const getActivityClass = (type) => {
+    const classMap = {
+      [ACTIVITY_TYPES.APPROVE]: styles.activityApprove,
+      [ACTIVITY_TYPES.REJECT]: styles.activityReject,
+      [ACTIVITY_TYPES.CREATE]: styles.activityCreate,
+      [ACTIVITY_TYPES.UPDATE]: styles.activityUpdate,
+    };
+    return classMap[type] || styles.activityDefault;
+  };
+
+  /**
+   * Formats activity log date
+   *
+   * @param {Object} timestamp - Firestore timestamp
+   * @returns {string} Formatted date string
+   */
+  const formatActivityDate = (timestamp) => {
+    if (!timestamp) {
+      return '—';
+    }
+    const date = timestamp?.toDate?.() || new Date(timestamp);
+    if (Number.isNaN(date.getTime())) {
+      return '—';
+    }
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   return (
@@ -483,25 +581,25 @@ function RegistrationDetailModal({
               <div className={styles.infoItem}>
                 <span className={styles.label}>Payment Method</span>
                 <span className={styles.value}>
-                  {PAYMENT_METHOD_LABELS[registration.paymentMethod] ||
-                    registration.paymentMethod ||
+                  {PAYMENT_METHOD_LABELS[registration.payment?.method] ||
+                    registration.payment?.method ||
                     '—'}
                 </span>
               </div>
               <div className={styles.infoItem}>
                 <span className={styles.label}>Reference Number</span>
                 <span className={styles.value}>
-                  {registration.paymentReference || '—'}
+                  {registration.payment?.referenceNumber || '—'}
                 </span>
               </div>
             </div>
 
             {/* Payment Proof */}
-            {registration.paymentProofUrl && (
+            {registration.payment?.proofUrl && (
               <div className={styles.paymentProof}>
                 <span className={styles.label}>Payment Proof</span>
                 <a
-                  href={registration.paymentProofUrl}
+                  href={registration.payment.proofUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={styles.proofLink}
@@ -677,36 +775,150 @@ function RegistrationDetailModal({
                   </div>
                 )}
 
+                {/* Rejection Reason Input (shown when rejecting) */}
+                {showRejectionInput && (
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Rejection Reason <span className={styles.required}>*</span>
+                    </label>
+                    <textarea
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      placeholder="Enter rejection reason (shown to user)..."
+                      rows={3}
+                      className={styles.textarea}
+                      disabled={isVerifying}
+                      autoFocus
+                    />
+                  </div>
+                )}
+
                 {/* Action Buttons */}
                 <div className={styles.verificationActions}>
-                  <button
-                    onClick={handleVerifyPayment}
-                    disabled={
-                      registration.totalAmount > 0
-                        ? !amountPaid || !paymentMethod || isVerifying
-                        : isVerifying
-                    }
-                    className={styles.verifyButton}
-                  >
-                    {isVerifying
-                      ? 'Processing...'
-                      : registration.totalAmount === 0
-                      ? '✓ Approve Registration'
-                      : amountPaid >= registration.totalAmount
-                      ? '✓ Confirm Full Payment'
-                      : '⚠ Mark as Partial Payment'}
-                  </button>
-                  <button
-                    onClick={handleRejectPayment}
-                    disabled={isVerifying}
-                    className={styles.rejectButton}
-                  >
-                    {registration.totalAmount === 0 ? '✗ Reject Registration' : '✗ Reject Payment'}
-                  </button>
+                  {showRejectionInput ? (
+                    <>
+                      <button
+                        onClick={handleCancelRejection}
+                        disabled={isVerifying}
+                        className={styles.cancelRejectionButton}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleConfirmRejection}
+                        disabled={!rejectionReason?.trim() || isVerifying}
+                        className={styles.rejectButton}
+                      >
+                        {isVerifying ? 'Processing...' : '✗ Confirm Rejection'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleVerifyPayment}
+                        disabled={
+                          registration.totalAmount > 0
+                            ? !amountPaid || !paymentMethod || isVerifying
+                            : isVerifying
+                        }
+                        className={styles.verifyButton}
+                      >
+                        {isVerifying
+                          ? 'Processing...'
+                          : registration.totalAmount === 0
+                          ? '✓ Approve Registration'
+                          : amountPaid >= registration.totalAmount
+                          ? '✓ Confirm Full Payment'
+                          : '⚠ Mark as Partial Payment'}
+                      </button>
+                      <button
+                        onClick={handleShowRejectionInput}
+                        disabled={isVerifying}
+                        className={styles.rejectButton}
+                      >
+                        {registration.totalAmount === 0 ? '✗ Reject Registration' : '✗ Reject Payment'}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           )}
+
+          {/* Activity History Section */}
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              Activity History
+            </h3>
+            {isLoadingActivity ? (
+              <p className={styles.loadingText}>Loading activity history...</p>
+            ) : activityLogs.length === 0 ? (
+              <p className={styles.emptyText}>No activity recorded yet.</p>
+            ) : (
+              <div className={styles.activityTimeline}>
+                {activityLogs.map((log) => (
+                  <div
+                    key={log.id}
+                    className={`${styles.activityItem} ${getActivityClass(log.type)}`}
+                  >
+                    <div className={styles.activityIcon}>
+                      {log.type === ACTIVITY_TYPES.APPROVE && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                      {log.type === ACTIVITY_TYPES.REJECT && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      )}
+                      {log.type === ACTIVITY_TYPES.CREATE && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="12" y1="5" x2="12" y2="19" />
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                      )}
+                      {log.type === ACTIVITY_TYPES.UPDATE && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      )}
+                      {![
+                        ACTIVITY_TYPES.APPROVE,
+                        ACTIVITY_TYPES.REJECT,
+                        ACTIVITY_TYPES.CREATE,
+                        ACTIVITY_TYPES.UPDATE,
+                      ].includes(log.type) && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className={styles.activityContent}>
+                      <div className={styles.activityHeader}>
+                        <span className={styles.activityType}>
+                          {ACTIVITY_TYPE_LABELS[log.type] || log.type}
+                        </span>
+                        <span className={styles.activityDate}>
+                          {formatActivityDate(log.createdAt)}
+                        </span>
+                      </div>
+                      <p className={styles.activityDescription}>{log.description}</p>
+                      {log.adminEmail && (
+                        <span className={styles.activityAdmin}>by {log.adminEmail}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Additional Attendees (if group registration) */}
           {registration.additionalAttendees?.length > 0 && (

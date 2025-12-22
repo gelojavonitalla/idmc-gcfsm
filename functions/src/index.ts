@@ -34,6 +34,117 @@ import {
 // Initialize Firebase Admin SDK
 initializeApp();
 
+/**
+ * Structured logging utility for Cloud Functions
+ * Provides consistent logging with context, timing, and traceability
+ */
+const cfLogger = {
+  /**
+   * Creates a logger context for a specific function execution
+   *
+   * @param {string} functionName - Name of the cloud function
+   * @param {string} executionId - Optional execution ID for tracing
+   * @return {Object} Logger context with logging methods
+   */
+  createContext: (functionName: string, executionId?: string) => {
+    const startTime = Date.now();
+    const randomPart = Math.random().toString(36).substring(2, 9);
+    const execId = executionId || `exec_${Date.now()}_${randomPart}`;
+
+    const formatMessage = (message: string) => ({
+      function: functionName,
+      executionId: execId,
+      message,
+    });
+
+    return {
+      /**
+       * Log function entry
+       *
+       * @param {Record<string, unknown>} context - Additional context data
+       */
+      start: (context?: Record<string, unknown>) => {
+        logger.info({
+          ...formatMessage("Function execution started"),
+          ...context,
+        });
+      },
+
+      /**
+       * Log informational message
+       *
+       * @param {string} message - Log message
+       * @param {Record<string, unknown>} data - Additional data
+       */
+      info: (message: string, data?: Record<string, unknown>) => {
+        logger.info({
+          ...formatMessage(message),
+          ...data,
+        });
+      },
+
+      /**
+       * Log warning message
+       *
+       * @param {string} message - Warning message
+       * @param {Record<string, unknown>} data - Additional data
+       */
+      warn: (message: string, data?: Record<string, unknown>) => {
+        logger.warn({
+          ...formatMessage(message),
+          ...data,
+        });
+      },
+
+      /**
+       * Log error message
+       *
+       * @param {string} message - Error message
+       * @param {Error | unknown} error - Error object
+       * @param {Record<string, unknown>} data - Additional data
+       */
+      error: (
+        message: string,
+        error?: Error | unknown,
+        data?: Record<string, unknown>
+      ) => {
+        logger.error({
+          ...formatMessage(message),
+          error: error instanceof Error ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+          } : error,
+          ...data,
+        });
+      },
+
+      /**
+       * Log function completion with duration
+       *
+       * @param {boolean} success - Whether execution was successful
+       * @param {Record<string, unknown>} result - Result data
+       */
+      end: (success: boolean, result?: Record<string, unknown>) => {
+        const duration = Date.now() - startTime;
+        logger.info({
+          ...formatMessage(`Function execution ${success ? "completed" : "failed"}`),
+          durationMs: duration,
+          success,
+          ...result,
+        });
+      },
+
+      /**
+       * Get current execution duration
+       *
+       * @return {number} Duration in milliseconds
+       */
+      getDuration: () => Date.now() - startTime,
+    };
+  },
+};
+
 // Set global options for all functions
 setGlobalOptions({
   maxInstances: 10,
@@ -113,7 +224,14 @@ const COLLECTIONS = {
   SETTINGS: "settings",
   CONFERENCES: "conferences",
   CONTACT_INQUIRIES: "contactInquiries",
+  SESSIONS: "sessions",
+  STATS: "stats",
 };
+
+/**
+ * Stats document ID (singleton for conference stats)
+ */
+const STATS_DOC_ID = "conference-stats";
 
 /**
  * SMS settings interface
@@ -612,38 +730,43 @@ export const onAdminCreated = onDocumentCreated(
     secrets: [sendgridApiKey],
   },
   async (event) => {
+    const adminId = event.params.adminId;
+    const log = cfLogger.createContext("onAdminCreated", adminId);
+
     const snapshot = event.data;
     if (!snapshot) {
-      logger.error("No data associated with the event");
+      log.error("No data associated with the event");
+      log.end(false, {reason: "no_data"});
       return;
     }
 
     const adminData = snapshot.data();
-    const adminId = event.params.adminId;
+    log.start({adminId, email: adminData.email, role: adminData.role});
 
     // Only process pending invitations
     if (adminData.status !== "pending") {
-      logger.info(`Admin ${adminId} is not pending, skipping invitation email`);
+      log.info("Admin is not pending, skipping invitation email", {status: adminData.status});
+      log.end(true, {skipped: true, reason: "not_pending"});
       return;
     }
 
     // Skip if invitation was already processed
     // Prevents duplicate emails during document migration from temp ID to UID
     if (adminData.invitationSentAt) {
-      logger.info(
-        `Admin ${adminId} already processed, skipping duplicate email`
-      );
+      log.info("Admin already processed, skipping duplicate email");
+      log.end(true, {skipped: true, reason: "already_processed"});
       return;
     }
 
     const {email, displayName, role} = adminData;
 
     if (!email) {
-      logger.error(`Admin ${adminId} has no email address`);
+      log.error("Admin has no email address");
+      log.end(false, {reason: "no_email"});
       return;
     }
 
-    logger.info(`Processing invitation for admin: ${email}`);
+    log.info("Processing invitation for admin", {email, displayName, role});
 
     const auth = getAuth();
     const db = getFirestore(DATABASE_ID);
@@ -654,26 +777,29 @@ export const onAdminCreated = onDocumentCreated(
       // Check if Firebase Auth user already exists
       try {
         userRecord = await auth.getUserByEmail(email);
-        logger.info(`User already exists for email: ${email}`);
+        log.info("User already exists in Firebase Auth", {uid: userRecord.uid});
       } catch (error: unknown) {
         // User doesn't exist, create one
         if ((error as { code?: string }).code === "auth/user-not-found") {
-          logger.info(`Creating new Firebase Auth user for: ${email}`);
+          log.info("Creating new Firebase Auth user", {email});
           userRecord = await auth.createUser({
             email,
             displayName: displayName || email.split("@")[0],
             disabled: false,
           });
+          log.info("Firebase Auth user created", {uid: userRecord.uid});
         } else {
           throw error;
         }
       }
 
       // Generate password reset link (serves as invitation/setup link)
+      // handleCodeInApp: true redirects to our app with the action code,
+      // allowing us to handle password setup and auto-login
       const baseUrl = appUrl.value() || "https://idmc-gcfsm-dev.web.app";
       const actionCodeSettings = {
-        url: `${baseUrl}/admin/login?setup=complete`,
-        handleCodeInApp: false,
+        url: `${baseUrl}/admin/password-setup`,
+        handleCodeInApp: true,
       };
 
       const inviteLink = await auth.generatePasswordResetLink(
@@ -681,7 +807,7 @@ export const onAdminCreated = onDocumentCreated(
         actionCodeSettings
       );
 
-      logger.info(`Generated invitation link for: ${email}`);
+      log.info("Generated invitation link", {email});
 
       // Calculate expiration (72 hours from now)
       const inviteExpiresAt = new Date();
@@ -700,17 +826,18 @@ export const onAdminCreated = onDocumentCreated(
             inviteLink
           );
           emailSentViaSendGrid = true;
+          log.info("Invitation email sent via SendGrid", {email});
         } catch (sendGridError) {
-          logger.error("SendGrid email failed, storing link for manual sharing:", sendGridError);
+          log.error("SendGrid email failed, storing link for manual sharing", sendGridError);
         }
       }
 
       // If SendGrid not enabled or failed, log for Firebase fallback
       if (!emailSentViaSendGrid) {
-        logger.info(
-          `SendGrid not enabled. Invite link stored in Firestore for ${email}. ` +
-          "Admin can share manually or set USE_SENDGRID=true for automatic emails."
-        );
+        log.info("SendGrid not enabled, invite link stored in Firestore", {
+          email,
+          sendGridEnabled: isSendGridEnabled(),
+        });
       }
 
       // Update the admin document with invitation details
@@ -735,19 +862,23 @@ export const onAdminCreated = onDocumentCreated(
         // Delete the old document with temporary ID
         await snapshot.ref.delete();
 
-        logger.info(
-          `Migrated admin document from ${adminId} to ${userRecord.uid}`
-        );
+        log.info("Migrated admin document", {
+          oldId: adminId,
+          newId: userRecord.uid,
+        });
       } else {
         // Update existing document
         await snapshot.ref.update(updateData);
       }
 
-      logger.info(
-        `Invitation processed for ${email} with role: ${role}. Email sent: ${emailSentViaSendGrid}`
-      );
+      log.end(true, {
+        email,
+        role,
+        emailSent: emailSentViaSendGrid,
+        migrated: adminId !== userRecord.uid,
+      });
     } catch (error) {
-      logger.error(`Error processing invitation for ${email}:`, error);
+      log.error("Error processing invitation", error, {email});
 
       // Update the admin document to reflect the error
       try {
@@ -756,9 +887,10 @@ export const onAdminCreated = onDocumentCreated(
           updatedAt: FieldValue.serverTimestamp(),
         });
       } catch (updateError) {
-        logger.error("Failed to update admin document with error:", updateError);
+        log.error("Failed to update admin document with error", updateError);
       }
 
+      log.end(false, {email, error: (error as Error).message});
       throw error;
     }
   }
@@ -784,6 +916,7 @@ function generateRegistrationConfirmationHtml(
     church: {
       name: string;
     };
+    status: string;
   }
 ): string {
   const {
@@ -793,7 +926,9 @@ function generateRegistrationConfirmationHtml(
     totalAmount,
     paymentDeadline,
     church,
+    status,
   } = registration;
+  const isPendingPayment = status === REGISTRATION_STATUS.PENDING_PAYMENT;
   const formattedDeadline = new Date(paymentDeadline).toLocaleDateString("en-PH", {
     weekday: "long",
     year: "numeric",
@@ -837,7 +972,7 @@ function generateRegistrationConfirmationHtml(
               </p>
               <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
                 We have received your registration for <strong>IDMC 2026</strong> from ${church.name}.
-                Please complete your payment to confirm your registration.
+                ${isPendingPayment ? "Please complete your payment to confirm your registration." : "Your payment proof has been submitted and is being reviewed."}
               </p>
 
               <!-- Registration Details -->
@@ -858,6 +993,7 @@ function generateRegistrationConfirmationHtml(
               </table>
 
               <!-- Payment Info -->
+              ${isPendingPayment ? `
               <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
                 <tr>
                   <td style="padding: 16px 20px;">
@@ -873,6 +1009,20 @@ function generateRegistrationConfirmationHtml(
                   </td>
                 </tr>
               </table>
+              ` : `
+              <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #dbeafe; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                <tr>
+                  <td style="padding: 16px 20px;">
+                    <p style="margin: 0 0 8px; color: #1e40af; font-size: 14px; font-weight: 600;">
+                      Payment Under Review
+                    </p>
+                    <p style="margin: 0; color: #1e3a8a; font-size: 14px; line-height: 1.5;">
+                      We have received your payment proof and it is being verified. You will receive a confirmation email once your registration is confirmed.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              `}
 
               <!-- Status Check Link -->
               <p style="margin: 24px 0 0; color: #4b5563; font-size: 14px; line-height: 1.6;">
@@ -912,6 +1062,8 @@ interface AttendeeWithQR {
   lastName: string;
   email?: string;
   qrCodeDataUrl: string;
+  qrCodeBase64: string;
+  contentId: string;
   attendeeIndex: number;
 }
 
@@ -975,7 +1127,7 @@ function generateTicketEmailHtml(
     const label = isAdditional ? `Guest ${index}` : "Primary";
     return `
       <div style="display: inline-block; margin: 10px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; text-align: center; vertical-align: top; width: 200px;">
-        <img src="${attendee.qrCodeDataUrl}" alt="QR Code for ${attendee.firstName}" width="150" height="150" style="display: block; margin: 0 auto 8px; border: 2px solid #f3f4f6; border-radius: 4px;" />
+        <img src="cid:${attendee.contentId}" alt="QR Code for ${attendee.firstName}" width="150" height="150" style="display: block; margin: 0 auto 8px; border: 2px solid #f3f4f6; border-radius: 4px;" />
         <p style="margin: 0 0 4px; color: #1f2937; font-size: 14px; font-weight: 600;">
           ${attendee.firstName} ${attendee.lastName}
         </p>
@@ -1199,7 +1351,7 @@ function generateIndividualTicketEmailHtml(
                 <tr>
                   <td style="padding: 24px; text-align: center;">
                     <div style="margin: 20px 0;">
-                      <img src="${attendee.qrCodeDataUrl}" alt="Your Check-in QR Code" width="180" height="180" style="display: block; margin: 0 auto; border: 4px solid #f3f4f6; border-radius: 8px;" />
+                      <img src="cid:${attendee.contentId}" alt="Your Check-in QR Code" width="180" height="180" style="display: block; margin: 0 auto; border: 4px solid #f3f4f6; border-radius: 8px;" />
                       <p style="margin: 8px 0 0; color: #6b7280; font-size: 12px;">
                         Your personal check-in QR code
                       </p>
@@ -1336,14 +1488,25 @@ async function generateAllAttendeeQRCodes(
 ): Promise<AttendeeWithQR[]> {
   const attendeesWithQR: AttendeeWithQR[] = [];
 
+  // Helper to extract base64 from data URL
+  const extractBase64 = (dataUrl: string): string => {
+    const base64Prefix = "data:image/png;base64,";
+    return dataUrl.startsWith(base64Prefix) ?
+      dataUrl.substring(base64Prefix.length) :
+      dataUrl;
+  };
+
   // Generate QR code for primary attendee
   const primaryQrData = `${registrationId}-0`;
   const primaryQrCodeDataUrl = await generateQRCodeDataUrl(primaryQrData);
+  const primaryContentId = `qr-${registrationId}-0`;
   attendeesWithQR.push({
     firstName: primaryAttendee.firstName,
     lastName: primaryAttendee.lastName,
     email: primaryAttendee.email,
     qrCodeDataUrl: primaryQrCodeDataUrl,
+    qrCodeBase64: extractBase64(primaryQrCodeDataUrl),
+    contentId: primaryContentId,
     attendeeIndex: 0,
   });
 
@@ -1353,11 +1516,14 @@ async function generateAllAttendeeQRCodes(
       const attendee = additionalAttendees[i];
       const qrData = `${registrationId}-${i + 1}`;
       const qrCodeDataUrl = await generateQRCodeDataUrl(qrData);
+      const contentId = `qr-${registrationId}-${i + 1}`;
       attendeesWithQR.push({
         firstName: attendee.firstName,
         lastName: attendee.lastName,
         email: attendee.email ?? undefined,
         qrCodeDataUrl,
+        qrCodeBase64: extractBase64(qrCodeDataUrl),
+        contentId,
         attendeeIndex: i + 1,
       });
     }
@@ -1395,6 +1561,15 @@ async function sendTicketEmail(
     return;
   }
 
+  // Create attachments for QR codes using Content-ID (CID) for inline display
+  const attachments = attendeesWithQR.map((attendee) => ({
+    content: attendee.qrCodeBase64,
+    filename: `qr-${attendee.contentId}.png`,
+    type: "image/png",
+    disposition: "inline" as const,
+    content_id: attendee.contentId,
+  }));
+
   const msg = {
     to,
     from: {
@@ -1403,6 +1578,7 @@ async function sendTicketEmail(
     },
     subject: `Your IDMC 2026 Ticket${attendeesWithQR.length > 1 ? "s" : ""} - ${registration.registrationId}`,
     html: generateTicketEmailHtml(registration, settings, attendeesWithQR),
+    attachments,
   };
 
   await sgMail.send(msg);
@@ -1443,6 +1619,15 @@ async function sendIndividualTicketEmail(
     return;
   }
 
+  // Create attachment for QR code using Content-ID (CID) for inline display
+  const attachments = [{
+    content: attendee.qrCodeBase64,
+    filename: `qr-${attendee.contentId}.png`,
+    type: "image/png",
+    disposition: "inline" as const,
+    content_id: attendee.contentId,
+  }];
+
   const msg = {
     to,
     from: {
@@ -1451,6 +1636,7 @@ async function sendIndividualTicketEmail(
     },
     subject: `Your IDMC 2026 Ticket - ${registration.registrationId}`,
     html: generateIndividualTicketEmailHtml(registration, settings, attendee),
+    attachments,
   };
 
   await sgMail.send(msg);
@@ -1468,20 +1654,34 @@ export const onRegistrationCreated = onDocumentCreated(
     secrets: [sendgridApiKey],
   },
   async (event) => {
+    const registrationId = event.params.registrationId;
+    const log = cfLogger.createContext("onRegistrationCreated", registrationId);
+
     const snapshot = event.data;
     if (!snapshot) {
-      logger.error("No data associated with the event");
+      log.error("No data associated with the event");
+      log.end(false, {reason: "no_data"});
       return;
     }
 
     const registrationData = snapshot.data();
-    const registrationId = event.params.registrationId;
-
-    logger.info(`Processing new registration: ${registrationId}`);
-
     const email = registrationData.primaryAttendee?.email;
     const phone = registrationData.primaryAttendee?.phone;
+    const additionalCount = registrationData.additionalAttendees?.length || 0;
+
+    log.start({
+      registrationId,
+      shortCode: registrationData.shortCode,
+      status: registrationData.status,
+      email,
+      hasPhone: !!phone,
+      attendeeCount: 1 + additionalCount,
+      totalAmount: registrationData.totalAmount,
+    });
+
     const updateData: Record<string, unknown> = {};
+    let emailSent = false;
+    let smsSent = false;
 
     // Send confirmation email if SendGrid is enabled
     if (isSendGridEnabled() && email) {
@@ -1493,14 +1693,17 @@ export const onRegistrationCreated = onDocumentCreated(
           totalAmount: registrationData.totalAmount,
           paymentDeadline: registrationData.paymentDeadline,
           church: registrationData.church,
+          status: registrationData.status,
         });
         updateData.confirmationEmailSent = true;
         updateData.confirmationEmailSentAt = FieldValue.serverTimestamp();
+        emailSent = true;
+        log.info("Confirmation email sent", {email});
       } catch (error) {
-        logger.error(`Error sending confirmation email for ${registrationId}:`, error);
+        log.error("Error sending confirmation email", error, {email});
       }
     } else if (!isSendGridEnabled()) {
-      logger.info("SendGrid not enabled, skipping confirmation email");
+      log.info("SendGrid not enabled, skipping confirmation email");
     }
 
     // Send confirmation SMS if phone is available
@@ -1513,13 +1716,14 @@ export const onRegistrationCreated = onDocumentCreated(
           registrationData.totalAmount,
           registrationData.paymentDeadline
         );
-        const smsSent = await sendSmsViaOneWaySms(phone, smsMessage);
+        smsSent = await sendSmsViaOneWaySms(phone, smsMessage);
         if (smsSent) {
           updateData.confirmationSmsSent = true;
           updateData.confirmationSmsSentAt = FieldValue.serverTimestamp();
+          log.info("Confirmation SMS sent", {phone: phone.slice(-4)});
         }
       } catch (error) {
-        logger.error(`Error sending confirmation SMS for ${registrationId}:`, error);
+        log.error("Error sending confirmation SMS", error);
       }
     }
 
@@ -1527,6 +1731,122 @@ export const onRegistrationCreated = onDocumentCreated(
     if (Object.keys(updateData).length > 0) {
       await snapshot.ref.update(updateData);
     }
+
+    // Update conference stats for new registration
+    const confirmedStatuses = [
+      REGISTRATION_STATUS.CONFIRMED,
+      REGISTRATION_STATUS.PENDING_VERIFICATION,
+    ];
+
+    let statsUpdated = false;
+    let workshopsUpdated = 0;
+
+    if (confirmedStatuses.includes(registrationData.status)) {
+      try {
+        const db = getFirestore(DATABASE_ID);
+        const additionalAttendees = registrationData.additionalAttendees;
+        const attendeeCount = 1 + (additionalAttendees?.length || 0);
+
+        // Prepare stats update
+        const statsUpdate: Record<string, unknown> = {
+          registeredAttendeeCount: FieldValue.increment(attendeeCount),
+          lastUpdatedAt: FieldValue.serverTimestamp(),
+        };
+
+        // Track registration status counts
+        if (registrationData.status === REGISTRATION_STATUS.CONFIRMED) {
+          statsUpdate.confirmedRegistrationCount = FieldValue.increment(1);
+        } else if (
+          registrationData.status === REGISTRATION_STATUS.PENDING_VERIFICATION
+        ) {
+          statsUpdate.pendingVerificationCount = FieldValue.increment(1);
+        }
+
+        // Track finance stats if payment exists
+        if (registrationData.payment?.amountPaid) {
+          const amount = registrationData.payment.amountPaid;
+          if (registrationData.status === REGISTRATION_STATUS.CONFIRMED) {
+            statsUpdate.totalConfirmedPayments = FieldValue.increment(amount);
+          } else if (
+            registrationData.status === REGISTRATION_STATUS.PENDING_VERIFICATION
+          ) {
+            statsUpdate.totalPendingPayments = FieldValue.increment(amount);
+          }
+
+          // Track per-bank-account stats
+          if (registrationData.payment.bankAccountId) {
+            const bankId = registrationData.payment.bankAccountId;
+            if (registrationData.status === REGISTRATION_STATUS.CONFIRMED) {
+              statsUpdate[`bankAccountStats.${bankId}.confirmed`] =
+                FieldValue.increment(amount);
+            } else {
+              statsUpdate[`bankAccountStats.${bankId}.pending`] =
+                FieldValue.increment(amount);
+            }
+            statsUpdate[`bankAccountStats.${bankId}.count`] =
+              FieldValue.increment(1);
+          }
+        }
+
+        // Update stats document
+        const statsRef = db.collection(COLLECTIONS.STATS).doc(STATS_DOC_ID);
+        await statsRef.set(statsUpdate, {merge: true});
+        statsUpdated = true;
+
+        log.info("Updated stats for new registration", {attendeeCount});
+
+        // Update workshop counts
+        const allWorkshopSelections: string[] = [];
+
+        if (registrationData.primaryAttendee?.workshopSelections) {
+          registrationData.primaryAttendee.workshopSelections.forEach(
+            (selection: {sessionId?: string}) => {
+              if (selection.sessionId) {
+                allWorkshopSelections.push(selection.sessionId);
+              }
+            }
+          );
+        }
+
+        if (registrationData.additionalAttendees) {
+          registrationData.additionalAttendees.forEach(
+            (attendee: {workshopSelections?: Array<{sessionId?: string}>}) => {
+              if (attendee.workshopSelections) {
+                attendee.workshopSelections.forEach(
+                  (selection: {sessionId?: string}) => {
+                    if (selection.sessionId) {
+                      allWorkshopSelections.push(selection.sessionId);
+                    }
+                  }
+                );
+              }
+            }
+          );
+        }
+
+        if (allWorkshopSelections.length > 0) {
+          const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
+          for (const sessionId of allWorkshopSelections) {
+            await sessionsCollection.doc(sessionId).update({
+              registeredCount: FieldValue.increment(1),
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+          }
+          workshopsUpdated = allWorkshopSelections.length;
+          log.info("Updated workshop counts", {workshopCount: workshopsUpdated});
+        }
+      } catch (statsError) {
+        log.error("Error updating stats for new registration", statsError);
+        // Don't throw - stats update failure shouldn't fail the registration
+      }
+    }
+
+    log.end(true, {
+      emailSent,
+      smsSent,
+      statsUpdated,
+      workshopsUpdated,
+    });
   }
 );
 
@@ -1540,47 +1860,85 @@ export const onPaymentConfirmed = onDocumentUpdated(
     secrets: [sendgridApiKey],
   },
   async (event) => {
+    const registrationId = event.params.registrationId;
+    const log = cfLogger.createContext("onPaymentConfirmed", registrationId);
+
     const before = event.data?.before?.data();
     const after = event.data?.after?.data();
 
     if (!before || !after) {
+      log.warn("No before/after data in event");
       return;
     }
 
     // Check if status changed to confirmed
     if (before.status === REGISTRATION_STATUS.CONFIRMED ||
         after.status !== REGISTRATION_STATUS.CONFIRMED) {
+      // Not a status change to confirmed, skip silently
       return;
     }
 
-    const registrationId = event.params.registrationId;
-    logger.info(`Payment confirmed for registration: ${registrationId}`);
+    const additionalCount = after.additionalAttendees?.length || 0;
+    log.start({
+      registrationId,
+      shortCode: after.shortCode,
+      previousStatus: before.status,
+      newStatus: after.status,
+      attendeeCount: 1 + additionalCount,
+      totalAmount: after.totalAmount,
+    });
 
     const primaryEmail = after.primaryAttendee?.email;
     const primaryPhone = after.primaryAttendee?.phone;
     const updateData: Record<string, unknown> = {};
 
     // Get conference settings for event details (needed for email)
+    // These fallback values should match frontend DEFAULT_SETTINGS and only
+    // be used if Firestore data is missing - the actual values should come
+    // from Firestore
     const db = getFirestore(DATABASE_ID);
     const defaultSettings = {
       title: "IDMC 2026",
-      startDate: new Date().toISOString(),
-      venue: {name: "TBD", address: "TBD"},
+      startDate: "2026-03-28",
+      venue: {
+        name: "GCF South Metro",
+        address: "Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines",
+      },
     };
     let settings: typeof defaultSettings = defaultSettings;
     try {
-      const settingsDoc = await db.collection(COLLECTIONS.SETTINGS).doc("conference").get();
+      const settingsDoc = await db.collection(COLLECTIONS.CONFERENCES).doc("conference-settings").get();
       const data = settingsDoc.data();
       if (data) {
+        // Log warnings when using fallback values - indicates Firestore
+        // data may be incomplete
+        if (!data.startDate) {
+          logger.warn("Conference startDate not found in Firestore, using fallback");
+        }
+        if (!data.venue?.name) {
+          logger.warn("Conference venue name not found in Firestore, using fallback");
+        }
+        if (!data.venue?.address) {
+          logger.warn("Conference venue address not found in Firestore, using fallback");
+        }
         settings = {
           title: data.title || defaultSettings.title,
           startDate: data.startDate || defaultSettings.startDate,
-          venue: data.venue || defaultSettings.venue,
+          venue: {
+            name: data.venue?.name || defaultSettings.venue.name,
+            address: data.venue?.address || defaultSettings.venue.address,
+          },
         };
+      } else {
+        logger.warn("Conference settings document not found in Firestore, using fallbacks");
       }
     } catch (error) {
-      logger.warn("Could not fetch settings, using defaults:", error);
+      log.warn("Could not fetch settings, using defaults", {error});
     }
+
+    let ticketEmailSent = false;
+    let additionalEmailsSent = 0;
+    let smsSent = false;
 
     // Send ticket email if SendGrid is enabled
     if (isSendGridEnabled() && primaryEmail) {
@@ -1592,7 +1950,7 @@ export const onPaymentConfirmed = onDocumentUpdated(
           after.additionalAttendees
         );
 
-        logger.info(`Generated ${attendeesWithQR.length} QR codes for registration: ${registrationId}`);
+        log.info("Generated QR codes for all attendees", {qrCodeCount: attendeesWithQR.length});
 
         // Send email to primary attendee with ALL QR codes
         await sendTicketEmail(primaryEmail, {
@@ -1607,10 +1965,11 @@ export const onPaymentConfirmed = onDocumentUpdated(
 
         updateData.ticketEmailSent = true;
         updateData.ticketEmailSentAt = FieldValue.serverTimestamp();
+        ticketEmailSent = true;
+        log.info("Ticket email sent to primary attendee", {email: primaryEmail});
 
         // Send individual emails to additional attendees with emails
         const additionalAttendees = after.additionalAttendees || [];
-        let additionalEmailsSent = 0;
 
         for (let i = 0; i < additionalAttendees.length; i++) {
           const attendee = additionalAttendees[i];
@@ -1636,18 +1995,23 @@ export const onPaymentConfirmed = onDocumentUpdated(
                 additionalEmailsSent++;
               }
             } catch (emailError) {
-              logger.warn(`Failed to send individual email to ${attendeeEmail}:`, emailError);
+              log.error("Failed to send individual email", emailError, {
+                attendeeEmail,
+                attendeeIndex: i + 1,
+              });
             }
           }
         }
 
         updateData.additionalEmailsSent = additionalEmailsSent;
-        logger.info(`Sent ${additionalEmailsSent} additional individual ticket emails for ${registrationId}`);
+        if (additionalEmailsSent > 0) {
+          log.info("Sent individual ticket emails to additional attendees", {count: additionalEmailsSent});
+        }
       } catch (error) {
-        logger.error(`Error sending ticket email for ${registrationId}:`, error);
+        log.error("Error sending ticket email", error);
       }
     } else if (!isSendGridEnabled()) {
-      logger.info("SendGrid not enabled, skipping ticket email");
+      log.info("SendGrid not enabled, skipping ticket email");
     }
 
     // Send confirmation SMS if phone is available
@@ -1657,13 +2021,14 @@ export const onPaymentConfirmed = onDocumentUpdated(
           after.primaryAttendee.firstName,
           after.shortCode
         );
-        const smsSent = await sendSmsViaOneWaySms(primaryPhone, smsMessage);
+        smsSent = await sendSmsViaOneWaySms(primaryPhone, smsMessage);
         if (smsSent) {
           updateData.ticketSmsSent = true;
           updateData.ticketSmsSentAt = FieldValue.serverTimestamp();
+          log.info("Payment confirmation SMS sent", {phone: primaryPhone.slice(-4)});
         }
       } catch (error) {
-        logger.error(`Error sending payment confirmation SMS for ${registrationId}:`, error);
+        log.error("Error sending payment confirmation SMS", error);
       }
     }
 
@@ -1671,6 +2036,12 @@ export const onPaymentConfirmed = onDocumentUpdated(
     if (Object.keys(updateData).length > 0) {
       await event.data?.after?.ref.update(updateData);
     }
+
+    log.end(true, {
+      ticketEmailSent,
+      additionalEmailsSent,
+      smsSent,
+    });
   }
 );
 
@@ -1685,7 +2056,8 @@ export const cancelExpiredRegistrations = onSchedule(
     region: "asia-southeast1",
   },
   async () => {
-    logger.info("Running scheduled task: cancelExpiredRegistrations");
+    const log = cfLogger.createContext("cancelExpiredRegistrations");
+    log.start({schedule: "0 1 * * *", timezone: "Asia/Manila"});
 
     const db = getFirestore(DATABASE_ID);
     const now = new Date();
@@ -1698,14 +2070,16 @@ export const cancelExpiredRegistrations = onSchedule(
         .get();
 
       if (expiredQuery.empty) {
-        logger.info("No expired registrations found");
+        log.info("No expired registrations found");
+        log.end(true, {cancelledCount: 0});
         return;
       }
 
-      logger.info(`Found ${expiredQuery.size} expired registrations to cancel`);
+      log.info("Found expired registrations to cancel", {count: expiredQuery.size});
 
       const batch = db.batch();
       let cancelCount = 0;
+      const cancelledIds: string[] = [];
 
       // Cancel all registrations with PENDING_PAYMENT status past deadline
       // Status is the source of truth:
@@ -1725,12 +2099,18 @@ export const cancelExpiredRegistrations = onSchedule(
           "updatedAt": FieldValue.serverTimestamp(),
         });
         cancelCount++;
+        cancelledIds.push(doc.id);
       });
 
       await batch.commit();
-      logger.info(`Successfully cancelled ${cancelCount} expired registrations`);
+      log.info("Successfully cancelled expired registrations", {
+        count: cancelCount,
+        registrationIds: cancelledIds,
+      });
+      log.end(true, {cancelledCount: cancelCount});
     } catch (error) {
-      logger.error("Error cancelling expired registrations:", error);
+      log.error("Error cancelling expired registrations", error);
+      log.end(false, {error: (error as Error).message});
       throw error;
     }
   }
@@ -1773,25 +2153,35 @@ export const ocrReceipt = onCall(
     timeoutSeconds: 60,
   },
   async (request) => {
+    const log = cfLogger.createContext("ocrReceipt");
+
     // Verify user is an active admin (any role can use OCR for verification)
     await verifyAdminRole(request.auth?.uid);
 
     const {image} = request.data as {image?: string};
 
     if (!image) {
+      log.error("Missing required parameter: image");
+      log.end(false, {reason: "missing_image"});
       throw new HttpsError(
         "invalid-argument",
         "Missing required parameter: image (base64 encoded)"
       );
     }
 
-    logger.info("Processing receipt OCR request");
+    log.start({
+      imageSize: image.length,
+      hasAuth: !!request.auth,
+    });
 
     try {
       const client = getVisionClient();
 
       // Decode base64 image
       const imageBuffer = Buffer.from(image, "base64");
+      log.info("Calling Vision API for text detection", {
+        bufferSize: imageBuffer.length,
+      });
 
       // Call Vision API for text detection
       const [result] = await client.textDetection({
@@ -1801,7 +2191,8 @@ export const ocrReceipt = onCall(
       const detections = result.textAnnotations;
 
       if (!detections || detections.length === 0) {
-        logger.info("No text detected in image");
+        log.info("No text detected in image");
+        log.end(true, {textDetected: false});
         return {
           text: "",
           confidence: 0,
@@ -1819,9 +2210,17 @@ export const ocrReceipt = onCall(
       const hasGoodDetection = wordCount > 5 && fullText.length > 20;
       const estimatedConfidence = hasGoodDetection ? 85 : 50;
 
-      logger.info(
-        `OCR completed: ${fullText.length} chars, ${wordCount} words detected`
-      );
+      log.info("OCR completed", {
+        charCount: fullText.length,
+        wordCount,
+        estimatedConfidence,
+      });
+
+      log.end(true, {
+        charCount: fullText.length,
+        wordCount,
+        confidence: estimatedConfidence,
+      });
 
       return {
         text: fullText.replace(/\s+/g, " ").trim(),
@@ -1829,7 +2228,8 @@ export const ocrReceipt = onCall(
         wordCount,
       };
     } catch (error) {
-      logger.error("Vision API error:", error);
+      log.error("Vision API error", error);
+      log.end(false, {error: (error as Error).message});
       throw new HttpsError(
         "internal",
         "Failed to process image with Vision API"
@@ -2034,16 +2434,20 @@ export const sendInvoiceEmail = onCall(
   {cors: true, secrets: [sendgridApiKey]},
   async (request) => {
     const {registrationId} = request.data;
+    const log = cfLogger.createContext("sendInvoiceEmail", registrationId);
 
     // Verify user is a finance admin or superadmin
     const {admin} = await verifyFinanceAdmin(request.auth?.uid);
 
-    logger.info(
-      `Processing invoice email for ${registrationId} by ${admin.email}`
-    );
+    log.start({
+      registrationId,
+      requestedBy: admin.email,
+    });
 
     // Check if SendGrid is enabled
     if (!isSendGridEnabled()) {
+      log.error("SendGrid not enabled");
+      log.end(false, {reason: "sendgrid_not_enabled"});
       throw new HttpsError(
         "failed-precondition",
         "Email service is not configured. Please contact support."
@@ -2058,16 +2462,27 @@ export const sendInvoiceEmail = onCall(
       // Get registration document
       const registrationDoc = await registrationRef.get();
       if (!registrationDoc.exists) {
+        log.error("Registration not found");
+        log.end(false, {reason: "not_found"});
         throw new HttpsError("not-found", "Registration not found");
       }
 
       const registration = registrationDoc.data();
       if (!registration) {
+        log.error("Registration data is empty");
+        log.end(false, {reason: "empty_data"});
         throw new HttpsError("not-found", "Registration data is empty");
       }
 
+      log.info("Registration found", {
+        invoiceNumber: registration.invoice?.invoiceNumber,
+        status: registration.status,
+      });
+
       // Validate invoice request
       if (!registration.invoice?.requested) {
+        log.error("No invoice requested for registration");
+        log.end(false, {reason: "no_invoice_requested"});
         throw new HttpsError(
           "failed-precondition",
           "No invoice was requested for this registration"
@@ -2075,6 +2490,8 @@ export const sendInvoiceEmail = onCall(
       }
 
       if (!registration.invoice?.invoiceUrl) {
+        log.error("Invoice file not uploaded");
+        log.end(false, {reason: "no_invoice_file"});
         throw new HttpsError(
           "failed-precondition",
           "Invoice file has not been uploaded yet"
@@ -2083,6 +2500,8 @@ export const sendInvoiceEmail = onCall(
 
       // Validate registration is confirmed
       if (registration.status !== REGISTRATION_STATUS.CONFIRMED) {
+        log.error("Registration not confirmed", {status: registration.status});
+        log.end(false, {reason: "not_confirmed"});
         throw new HttpsError(
           "failed-precondition",
           "Registration must be confirmed before sending invoice"
@@ -2091,12 +2510,16 @@ export const sendInvoiceEmail = onCall(
 
       const primaryEmail = registration.primaryAttendee?.email;
       if (!primaryEmail) {
+        log.error("No email address found");
+        log.end(false, {reason: "no_email"});
         throw new HttpsError("failed-precondition", "No email address found");
       }
 
       // Get SendGrid API key
       const apiKey = getSendGridApiKey();
       if (!apiKey) {
+        log.error("SendGrid API key not configured");
+        log.end(false, {reason: "no_api_key"});
         throw new HttpsError(
           "failed-precondition",
           "SendGrid API key is not configured"
@@ -2107,6 +2530,8 @@ export const sendInvoiceEmail = onCall(
 
       const fromEmail = senderEmail.value();
       if (!fromEmail) {
+        log.error("SENDER_EMAIL not configured");
+        log.end(false, {reason: "no_sender_email"});
         throw new HttpsError("failed-precondition", "SENDER_EMAIL is not configured");
       }
 
@@ -2120,7 +2545,7 @@ export const sendInvoiceEmail = onCall(
       const urlParts = invoiceUrl.split("/o/")[1];
       const filePath = decodeURIComponent(urlParts.split("?")[0]);
 
-      logger.info(`Downloading invoice file from: ${filePath}`);
+      log.info("Downloading invoice file from storage", {filePath});
       const file = bucket.file(filePath);
       const [fileBuffer] = await file.download();
       const base64Content = fileBuffer.toString("base64");
@@ -2168,6 +2593,10 @@ export const sendInvoiceEmail = onCall(
 
       // Send email
       await sgMail.send(msg);
+      log.info("Invoice email sent successfully", {
+        email: primaryEmail,
+        invoiceNumber: registration.invoice.invoiceNumber,
+      });
 
       // Update registration with sent status
       await registrationRef.update({
@@ -2189,6 +2618,11 @@ export const sendInvoiceEmail = onCall(
         entityId: registrationId,
         description: `Invoice sent to ${primaryEmail} for ${registrationId}`,
         metadata: {recipientEmail: primaryEmail},
+      });
+
+      log.end(true, {
+        email: primaryEmail,
+        invoiceNumber: registration.invoice.invoiceNumber,
       });
 
       return {
@@ -2218,10 +2652,9 @@ export const sendInvoiceEmail = onCall(
         errorMessage = `SendGrid error (${sgError.code}): ${errorDetails}`;
       }
 
-      logger.error(`Error sending invoice email for ${registrationId}: ${errorMessage}`, {
+      log.error("Error sending invoice email", error, {
         errorCode: sgError.code,
         errorDetails,
-        fullError: error,
       });
 
       // Update status to failed
@@ -2233,8 +2666,10 @@ export const sendInvoiceEmail = onCall(
           "updatedAt": FieldValue.serverTimestamp(),
         });
       } catch (updateError) {
-        logger.error("Failed to update invoice status:", updateError);
+        log.error("Failed to update invoice status", updateError);
       }
+
+      log.end(false, {error: errorMessage});
 
       // Re-throw as HttpsError if not already one
       if (error instanceof HttpsError) {
@@ -2419,26 +2854,43 @@ export const sendInquiryReply = onCall(
       message?: string;
     };
 
+    const log = cfLogger.createContext("sendInquiryReply", inquiryId);
+
     // Validate admin authentication
     if (!request.auth) {
+      log.error("User not authenticated");
+      log.end(false, {reason: "unauthenticated"});
       throw new HttpsError("unauthenticated", "User must be authenticated");
     }
 
     // Validate required parameters
     if (!inquiryId) {
+      log.error("Missing inquiryId");
+      log.end(false, {reason: "missing_inquiry_id"});
       throw new HttpsError("invalid-argument", "Missing required parameter: inquiryId");
     }
     if (!subject || !subject.trim()) {
+      log.error("Missing subject");
+      log.end(false, {reason: "missing_subject"});
       throw new HttpsError("invalid-argument", "Missing required parameter: subject");
     }
     if (!message || !message.trim()) {
+      log.error("Missing message");
+      log.end(false, {reason: "missing_message"});
       throw new HttpsError("invalid-argument", "Missing required parameter: message");
     }
 
-    logger.info(`Processing inquiry reply for: ${inquiryId}`);
+    log.start({
+      inquiryId,
+      requestedBy: request.auth.token.email,
+      subjectLength: subject.length,
+      messageLength: message.length,
+    });
 
     // Check if SendGrid is enabled
     if (!isSendGridEnabled()) {
+      log.error("SendGrid not enabled");
+      log.end(false, {reason: "sendgrid_not_enabled"});
       throw new HttpsError(
         "failed-precondition",
         "Email service is not configured. Please contact support."
@@ -2453,24 +2905,37 @@ export const sendInquiryReply = onCall(
       // Get inquiry document
       const inquiryDoc = await inquiryRef.get();
       if (!inquiryDoc.exists) {
+        log.error("Inquiry not found");
+        log.end(false, {reason: "not_found"});
         throw new HttpsError("not-found", "Inquiry not found");
       }
 
       const inquiry = inquiryDoc.data();
       if (!inquiry) {
+        log.error("Inquiry data is empty");
+        log.end(false, {reason: "empty_data"});
         throw new HttpsError("not-found", "Inquiry data is empty");
       }
 
       const recipientEmail = inquiry.email;
       const recipientName = inquiry.name;
 
+      log.info("Inquiry found", {
+        recipientEmail,
+        originalSubject: inquiry.subject,
+      });
+
       if (!recipientEmail) {
+        log.error("Inquiry has no email address");
+        log.end(false, {reason: "no_email"});
         throw new HttpsError("failed-precondition", "Inquiry has no email address");
       }
 
       // Get SendGrid API key
       const apiKey = getSendGridApiKey();
       if (!apiKey) {
+        log.error("SendGrid API key not configured");
+        log.end(false, {reason: "no_api_key"});
         throw new HttpsError(
           "failed-precondition",
           "SendGrid API key is not configured"
@@ -2481,6 +2946,8 @@ export const sendInquiryReply = onCall(
 
       const fromEmail = senderEmail.value();
       if (!fromEmail) {
+        log.error("SENDER_EMAIL not configured");
+        log.end(false, {reason: "no_sender_email"});
         throw new HttpsError("failed-precondition", "SENDER_EMAIL is not configured");
       }
 
@@ -2516,7 +2983,7 @@ export const sendInquiryReply = onCall(
 
       // Send email
       await sgMail.send(msg);
-      logger.info(`Inquiry reply sent successfully to ${recipientEmail}`);
+      log.info("Inquiry reply sent successfully", {email: recipientEmail});
 
       // Get current replies array or initialize empty
       const existingReplies = inquiry.replies || [];
@@ -2536,6 +3003,11 @@ export const sendInquiryReply = onCall(
         lastRepliedAt: FieldValue.serverTimestamp(),
         lastRepliedBy: request.auth.token.email || "unknown",
         updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      log.end(true, {
+        email: recipientEmail,
+        replyCount: existingReplies.length + 1,
       });
 
       return {
@@ -2564,11 +3036,12 @@ export const sendInquiryReply = onCall(
         errorMessage = `SendGrid error (${sgError.code}): ${errorDetails}`;
       }
 
-      logger.error(`Error sending inquiry reply for ${inquiryId}: ${errorMessage}`, {
+      log.error("Error sending inquiry reply", error, {
         errorCode: sgError.code,
         errorDetails,
-        fullError: error,
       });
+
+      log.end(false, {error: errorMessage});
 
       // Re-throw as HttpsError if not already one
       if (error instanceof HttpsError) {
@@ -3037,6 +3510,714 @@ export const cspReport = onRequest(
       logger.error("Error processing CSP report:", error);
       // Still return 204 to not disrupt client
       res.status(204).send();
+    }
+  }
+);
+
+/**
+ * Helper function to count checked-in attendees in a registration
+ *
+ * @param {object} data - Registration document data
+ * @return {number} Number of checked-in attendees
+ */
+function getCheckedInAttendeeCount(
+  data: {
+    checkedIn?: boolean;
+    attendeeCheckIns?: Record<string, boolean>;
+    additionalAttendees?: Array<unknown>;
+  }
+): number {
+  // If using per-attendee tracking
+  if (data.attendeeCheckIns && typeof data.attendeeCheckIns === "object") {
+    return Object.values(data.attendeeCheckIns).filter(Boolean).length;
+  }
+  // Legacy: if checkedIn is true, count all attendees as checked in
+  if (data.checkedIn) {
+    return 1 + (data.additionalAttendees?.length || 0);
+  }
+  return 0;
+}
+
+/**
+ * Scheduled function that runs daily to sync all conference stats
+ * Recounts all confirmed attendees and updates:
+ * - Stats document with registration, check-in, and workshop counts
+ * - Workshop registeredCount for each session
+ * Runs every day at 2:00 AM Asia/Manila time
+ */
+export const syncConferenceStats = onSchedule(
+  {
+    schedule: "0 2 * * *",
+    timeZone: "Asia/Manila",
+    region: "asia-southeast1",
+  },
+  async () => {
+    const log = cfLogger.createContext("syncConferenceStats");
+    log.start({schedule: "0 2 * * *", timezone: "Asia/Manila"});
+
+    const db = getFirestore(DATABASE_ID);
+
+    try {
+      // Query all confirmed and pending_verification registrations
+      const confirmedQuery = await db.collection(COLLECTIONS.REGISTRATIONS)
+        .where("status", "in", [
+          REGISTRATION_STATUS.CONFIRMED,
+          REGISTRATION_STATUS.PENDING_VERIFICATION,
+        ])
+        .get();
+
+      log.info("Queried registrations", {count: confirmedQuery.size});
+
+      // Registration stats
+      let totalAttendees = 0;
+      let confirmedRegistrationCount = 0;
+      let pendingVerificationCount = 0;
+      const workshopCounts: Record<string, number> = {};
+
+      // Check-in stats
+      let checkedInRegistrationCount = 0;
+      let checkedInAttendeeCount = 0;
+      let partiallyCheckedInCount = 0;
+
+      // Finance stats
+      let totalConfirmedPayments = 0;
+      let totalPendingPayments = 0;
+      const bankAccountStats: Record<string, {
+        confirmed: number;
+        pending: number;
+        count: number;
+      }> = {};
+
+      confirmedQuery.forEach((docSnapshot) => {
+        const data = docSnapshot.data();
+        const isConfirmed = data.status === REGISTRATION_STATUS.CONFIRMED;
+        const isPendingVerification =
+          data.status === REGISTRATION_STATUS.PENDING_VERIFICATION;
+
+        if (isConfirmed) {
+          confirmedRegistrationCount++;
+        } else if (isPendingVerification) {
+          pendingVerificationCount++;
+        }
+
+        // Count primary attendee
+        totalAttendees += 1;
+
+        // Count additional attendees
+        const additionalCount = data.additionalAttendees?.length || 0;
+        totalAttendees += additionalCount;
+        const attendeeCount = 1 + additionalCount;
+
+        // Count check-ins
+        const checkedInCount = getCheckedInAttendeeCount(data);
+        checkedInAttendeeCount += checkedInCount;
+
+        if (checkedInCount === attendeeCount) {
+          checkedInRegistrationCount++;
+        } else if (checkedInCount > 0) {
+          partiallyCheckedInCount++;
+        }
+
+        // Finance stats
+        const paymentAmount = data.payment?.amountPaid || 0;
+        const bankAccountId = data.payment?.bankAccountId;
+
+        if (isConfirmed) {
+          totalConfirmedPayments += paymentAmount;
+        } else if (isPendingVerification) {
+          totalPendingPayments += paymentAmount;
+        }
+
+        // Per-bank-account stats
+        if (bankAccountId) {
+          if (!bankAccountStats[bankAccountId]) {
+            bankAccountStats[bankAccountId] = {
+              confirmed: 0,
+              pending: 0,
+              count: 0,
+            };
+          }
+          bankAccountStats[bankAccountId].count++;
+          if (isConfirmed) {
+            bankAccountStats[bankAccountId].confirmed += paymentAmount;
+          } else if (isPendingVerification) {
+            bankAccountStats[bankAccountId].pending += paymentAmount;
+          }
+        }
+
+        // Count workshop selections for primary attendee
+        if (data.primaryAttendee?.workshopSelections) {
+          data.primaryAttendee.workshopSelections.forEach(
+            (selection: {sessionId?: string}) => {
+              if (selection.sessionId) {
+                workshopCounts[selection.sessionId] =
+                  (workshopCounts[selection.sessionId] || 0) + 1;
+              }
+            }
+          );
+        }
+
+        // Count workshop selections for additional attendees
+        if (data.additionalAttendees) {
+          data.additionalAttendees.forEach(
+            (attendee: {workshopSelections?: Array<{sessionId?: string}>}) => {
+              if (attendee.workshopSelections) {
+                attendee.workshopSelections.forEach(
+                  (selection: {sessionId?: string}) => {
+                    if (selection.sessionId) {
+                      workshopCounts[selection.sessionId] =
+                        (workshopCounts[selection.sessionId] || 0) + 1;
+                    }
+                  }
+                );
+              }
+            }
+          );
+        }
+      });
+
+      log.info("Calculated registration stats", {
+        confirmedRegistrationCount,
+        pendingVerificationCount,
+        totalAttendees,
+        checkedInRegistrationCount,
+        checkedInAttendeeCount,
+        totalConfirmedPayments,
+        bankAccountCount: Object.keys(bankAccountStats).length,
+      });
+
+      // Update stats document with all counts
+      const statsRef = db
+        .collection(COLLECTIONS.STATS)
+        .doc(STATS_DOC_ID);
+
+      await statsRef.set({
+        // Registration stats
+        registeredAttendeeCount: totalAttendees,
+        confirmedRegistrationCount,
+        pendingVerificationCount,
+        workshopCounts,
+        // Check-in stats
+        checkedInRegistrationCount,
+        checkedInAttendeeCount,
+        partiallyCheckedInCount,
+        // Finance stats
+        totalConfirmedPayments,
+        totalPendingPayments,
+        bankAccountStats,
+        // Timestamps
+        lastSyncedAt: FieldValue.serverTimestamp(),
+        lastUpdatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+
+      log.info("Updated conference stats document");
+
+      // Update workshop registered counts in sessions collection
+      const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
+      const batch = db.batch();
+      let updateCount = 0;
+
+      for (const [sessionId, count] of Object.entries(workshopCounts)) {
+        const sessionRef = sessionsCollection.doc(sessionId);
+        batch.update(sessionRef, {
+          registeredCount: count,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        updateCount++;
+      }
+
+      // Also reset workshops not in counts (handle cancelled registrations)
+      const allWorkshops = await sessionsCollection
+        .where("sessionType", "==", "workshop")
+        .get();
+
+      allWorkshops.forEach((workshopDoc) => {
+        const workshopId = workshopDoc.id;
+        if (!(workshopId in workshopCounts)) {
+          // Workshop has no registrations, reset to 0
+          batch.update(workshopDoc.ref, {
+            registeredCount: 0,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+          updateCount++;
+        }
+      });
+
+      if (updateCount > 0) {
+        await batch.commit();
+        log.info("Updated workshop counts", {workshopCount: updateCount});
+      }
+
+      log.end(true, {
+        confirmedRegistrationCount,
+        pendingVerificationCount,
+        totalAttendees,
+        checkedInAttendeeCount,
+        workshopUpdates: updateCount,
+      });
+    } catch (error) {
+      log.error("Error syncing conference stats", error);
+      log.end(false, {error: (error as Error).message});
+      throw error;
+    }
+  }
+);
+
+/**
+ * Firestore trigger that updates stats when registration status changes
+ * Handles:
+ * - New confirmed registrations (increment count)
+ * - Cancelled registrations (decrement count)
+ * - Status changes between confirmed/cancelled states
+ */
+export const onRegistrationStatsUpdate = onDocumentUpdated(
+  {
+    document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
+    region: "asia-southeast1",
+    database: DATABASE_ID,
+  },
+  async (event) => {
+    const registrationId = event.params.registrationId;
+    const log = cfLogger.createContext("onRegistrationStatsUpdate", registrationId);
+
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+
+    if (!before || !after) {
+      return;
+    }
+
+    const confirmedStatuses = [
+      REGISTRATION_STATUS.CONFIRMED,
+      REGISTRATION_STATUS.PENDING_VERIFICATION,
+    ];
+
+    const wasConfirmed = confirmedStatuses.includes(before.status);
+    const isConfirmed = confirmedStatuses.includes(after.status);
+
+    // Only process if status changed between confirmed/non-confirmed
+    if (wasConfirmed === isConfirmed) {
+      return;
+    }
+
+    log.start({
+      registrationId,
+      previousStatus: before.status,
+      newStatus: after.status,
+      wasConfirmed,
+      isConfirmed,
+    });
+
+    const db = getFirestore(DATABASE_ID);
+
+    // Calculate attendee count for this registration
+    const attendeeCount = 1 + (after.additionalAttendees?.length || 0);
+
+    // Determine if we're incrementing or decrementing
+    const delta = isConfirmed ? attendeeCount : -attendeeCount;
+
+    try {
+      // Update stats document with attendee count
+      const statsRef = db
+        .collection(COLLECTIONS.STATS)
+        .doc(STATS_DOC_ID);
+
+      await statsRef.set({
+        registeredAttendeeCount: FieldValue.increment(delta),
+        lastUpdatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+
+      log.info("Updated stats attendee count", {delta, attendeeCount});
+
+      // Update workshop counts
+      const allWorkshopSelections: string[] = [];
+
+      // Collect primary attendee workshop selections
+      if (after.primaryAttendee?.workshopSelections) {
+        after.primaryAttendee.workshopSelections.forEach(
+          (selection: {sessionId?: string}) => {
+            if (selection.sessionId) {
+              allWorkshopSelections.push(selection.sessionId);
+            }
+          }
+        );
+      }
+
+      // Collect additional attendees workshop selections
+      if (after.additionalAttendees) {
+        after.additionalAttendees.forEach(
+          (attendee: {workshopSelections?: Array<{sessionId?: string}>}) => {
+            if (attendee.workshopSelections) {
+              attendee.workshopSelections.forEach(
+                (selection: {sessionId?: string}) => {
+                  if (selection.sessionId) {
+                    allWorkshopSelections.push(selection.sessionId);
+                  }
+                }
+              );
+            }
+          }
+        );
+      }
+
+      // Update each workshop's registered count
+      let workshopsUpdated = 0;
+      if (allWorkshopSelections.length > 0) {
+        const workshopDelta = isConfirmed ? 1 : -1;
+        const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
+
+        for (const sessionId of allWorkshopSelections) {
+          await sessionsCollection.doc(sessionId).update({
+            registeredCount: FieldValue.increment(workshopDelta),
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+          workshopsUpdated++;
+        }
+
+        log.info("Updated workshop counts", {
+          workshopCount: workshopsUpdated,
+          workshopDelta,
+        });
+      }
+
+      log.end(true, {
+        attendeeDelta: delta,
+        workshopsUpdated,
+      });
+    } catch (error) {
+      log.error("Error updating stats", error);
+      log.end(false, {error: (error as Error).message});
+      throw error;
+    }
+  }
+);
+
+/**
+ * Callable function to manually trigger stats sync
+ * Useful after deployment or for manual verification
+ * Only accessible by authenticated admin users
+ */
+export const triggerStatsSync = onCall(
+  {
+    region: "asia-southeast1",
+  },
+  async (request) => {
+    const log = cfLogger.createContext("triggerStatsSync");
+
+    // Verify the caller is authenticated
+    if (!request.auth) {
+      log.error("User not authenticated");
+      log.end(false, {reason: "unauthenticated"});
+      throw new HttpsError("unauthenticated", "User must be authenticated");
+    }
+
+    const db = getFirestore(DATABASE_ID);
+
+    // Verify the caller is an admin
+    const adminDoc = await db.collection(COLLECTIONS.ADMINS)
+      .doc(request.auth.uid)
+      .get();
+
+    if (!adminDoc.exists) {
+      log.error("User is not an admin", {uid: request.auth.uid});
+      log.end(false, {reason: "not_admin"});
+      throw new HttpsError("permission-denied", "Only admins can trigger stats sync");
+    }
+
+    log.start({
+      triggeredBy: request.auth.token.email || request.auth.uid,
+    });
+
+    try {
+      // Query all confirmed and pending_verification registrations
+      const confirmedQuery = await db.collection(COLLECTIONS.REGISTRATIONS)
+        .where("status", "in", [
+          REGISTRATION_STATUS.CONFIRMED,
+          REGISTRATION_STATUS.PENDING_VERIFICATION,
+        ])
+        .get();
+
+      // Registration stats
+      let totalAttendees = 0;
+      let confirmedRegistrationCount = 0;
+      let pendingVerificationCount = 0;
+      const workshopCounts: Record<string, number> = {};
+
+      // Check-in stats
+      let checkedInRegistrationCount = 0;
+      let checkedInAttendeeCount = 0;
+      let partiallyCheckedInCount = 0;
+
+      // Finance stats
+      let totalConfirmedPayments = 0;
+      let totalPendingPayments = 0;
+      const bankAccountStats: Record<string, {
+        confirmed: number;
+        pending: number;
+        count: number;
+      }> = {};
+
+      confirmedQuery.forEach((docSnapshot) => {
+        const data = docSnapshot.data();
+        const isConfirmed = data.status === REGISTRATION_STATUS.CONFIRMED;
+        const isPendingVerification =
+          data.status === REGISTRATION_STATUS.PENDING_VERIFICATION;
+
+        if (isConfirmed) {
+          confirmedRegistrationCount++;
+        } else if (isPendingVerification) {
+          pendingVerificationCount++;
+        }
+
+        // Count attendees
+        totalAttendees += 1;
+        const additionalCount = data.additionalAttendees?.length || 0;
+        totalAttendees += additionalCount;
+        const attendeeCount = 1 + additionalCount;
+
+        // Count check-ins
+        const checkedInCount = getCheckedInAttendeeCount(data);
+        checkedInAttendeeCount += checkedInCount;
+
+        if (checkedInCount === attendeeCount) {
+          checkedInRegistrationCount++;
+        } else if (checkedInCount > 0) {
+          partiallyCheckedInCount++;
+        }
+
+        // Finance stats
+        const paymentAmount = data.payment?.amountPaid || 0;
+        const bankAccountId = data.payment?.bankAccountId;
+
+        if (isConfirmed) {
+          totalConfirmedPayments += paymentAmount;
+        } else if (isPendingVerification) {
+          totalPendingPayments += paymentAmount;
+        }
+
+        if (bankAccountId) {
+          if (!bankAccountStats[bankAccountId]) {
+            bankAccountStats[bankAccountId] = {
+              confirmed: 0,
+              pending: 0,
+              count: 0,
+            };
+          }
+          bankAccountStats[bankAccountId].count++;
+          if (isConfirmed) {
+            bankAccountStats[bankAccountId].confirmed += paymentAmount;
+          } else if (isPendingVerification) {
+            bankAccountStats[bankAccountId].pending += paymentAmount;
+          }
+        }
+
+        // Count workshop selections
+        if (data.primaryAttendee?.workshopSelections) {
+          data.primaryAttendee.workshopSelections.forEach(
+            (selection: {sessionId?: string}) => {
+              if (selection.sessionId) {
+                workshopCounts[selection.sessionId] =
+                  (workshopCounts[selection.sessionId] || 0) + 1;
+              }
+            }
+          );
+        }
+
+        if (data.additionalAttendees) {
+          data.additionalAttendees.forEach(
+            (attendee: {workshopSelections?: Array<{sessionId?: string}>}) => {
+              if (attendee.workshopSelections) {
+                attendee.workshopSelections.forEach(
+                  (selection: {sessionId?: string}) => {
+                    if (selection.sessionId) {
+                      workshopCounts[selection.sessionId] =
+                        (workshopCounts[selection.sessionId] || 0) + 1;
+                    }
+                  }
+                );
+              }
+            }
+          );
+        }
+      });
+
+      // Update stats document
+      const statsRef = db.collection(COLLECTIONS.STATS).doc(STATS_DOC_ID);
+      await statsRef.set({
+        registeredAttendeeCount: totalAttendees,
+        confirmedRegistrationCount,
+        pendingVerificationCount,
+        workshopCounts,
+        checkedInRegistrationCount,
+        checkedInAttendeeCount,
+        partiallyCheckedInCount,
+        totalConfirmedPayments,
+        totalPendingPayments,
+        bankAccountStats,
+        lastSyncedAt: FieldValue.serverTimestamp(),
+        lastUpdatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+
+      // Update workshop counts
+      const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
+      const batch = db.batch();
+
+      for (const [sessionId, count] of Object.entries(workshopCounts)) {
+        const sessionRef = sessionsCollection.doc(sessionId);
+        batch.update(sessionRef, {
+          registeredCount: count,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
+
+      const allWorkshops = await sessionsCollection
+        .where("sessionType", "==", "workshop")
+        .get();
+
+      allWorkshops.forEach((workshopDoc) => {
+        if (!(workshopDoc.id in workshopCounts)) {
+          batch.update(workshopDoc.ref, {
+            registeredCount: 0,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
+      });
+
+      await batch.commit();
+
+      log.info("Manual stats sync completed", {
+        totalAttendees,
+        confirmedRegistrationCount,
+        pendingVerificationCount,
+        checkedInAttendeeCount,
+        workshopCount: Object.keys(workshopCounts).length,
+      });
+
+      log.end(true, {
+        totalAttendees,
+        confirmedRegistrationCount,
+        checkedInAttendeeCount,
+      });
+
+      return {
+        success: true,
+        stats: {
+          registeredAttendeeCount: totalAttendees,
+          confirmedRegistrationCount,
+          checkedInRegistrationCount,
+          checkedInAttendeeCount,
+          partiallyCheckedInCount,
+        },
+      };
+    } catch (error) {
+      log.error("Error in manual stats sync", error);
+      log.end(false, {error: (error as Error).message});
+      throw new HttpsError("internal", "Failed to sync stats");
+    }
+  }
+);
+
+/**
+ * Firestore trigger that updates check-in stats when registration is checked in
+ * Updates the stats document with incremented check-in counts
+ */
+export const onCheckInStatsUpdate = onDocumentUpdated(
+  {
+    document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
+    region: "asia-southeast1",
+    database: DATABASE_ID,
+  },
+  async (event) => {
+    const registrationId = event.params.registrationId;
+    const log = cfLogger.createContext("onCheckInStatsUpdate", registrationId);
+
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+
+    if (!before || !after) {
+      return;
+    }
+
+    // Only process confirmed registrations
+    const confirmedStatuses = [
+      REGISTRATION_STATUS.CONFIRMED,
+      REGISTRATION_STATUS.PENDING_VERIFICATION,
+    ];
+
+    if (!confirmedStatuses.includes(after.status)) {
+      return;
+    }
+
+    // Calculate check-in changes
+    const beforeCheckedIn = getCheckedInAttendeeCount(before);
+    const afterCheckedIn = getCheckedInAttendeeCount(after);
+
+    // Skip if no check-in change
+    if (beforeCheckedIn === afterCheckedIn) {
+      return;
+    }
+
+    const attendeeCount = 1 + (after.additionalAttendees?.length || 0);
+    const checkInDelta = afterCheckedIn - beforeCheckedIn;
+
+    log.start({
+      registrationId,
+      beforeCheckedIn,
+      afterCheckedIn,
+      attendeeCount,
+      checkInDelta,
+    });
+
+    const db = getFirestore(DATABASE_ID);
+    const statsRef = db.collection(COLLECTIONS.STATS).doc(STATS_DOC_ID);
+
+    // Determine registration-level check-in status changes
+    const wasFullyCheckedIn = beforeCheckedIn === attendeeCount;
+    const isFullyCheckedIn = afterCheckedIn === attendeeCount;
+    const wasPartiallyCheckedIn =
+      beforeCheckedIn > 0 && beforeCheckedIn < attendeeCount;
+    const isPartiallyCheckedIn =
+      afterCheckedIn > 0 && afterCheckedIn < attendeeCount;
+
+    const updates: Record<string, unknown> = {
+      checkedInAttendeeCount: FieldValue.increment(checkInDelta),
+      lastUpdatedAt: FieldValue.serverTimestamp(),
+    };
+
+    // Update registration-level counts
+    if (!wasFullyCheckedIn && isFullyCheckedIn) {
+      updates.checkedInRegistrationCount = FieldValue.increment(1);
+      if (wasPartiallyCheckedIn) {
+        updates.partiallyCheckedInCount = FieldValue.increment(-1);
+      }
+    } else if (wasFullyCheckedIn && !isFullyCheckedIn) {
+      updates.checkedInRegistrationCount = FieldValue.increment(-1);
+      if (isPartiallyCheckedIn) {
+        updates.partiallyCheckedInCount = FieldValue.increment(1);
+      }
+    } else if (!wasPartiallyCheckedIn && isPartiallyCheckedIn) {
+      updates.partiallyCheckedInCount = FieldValue.increment(1);
+    } else if (
+      wasPartiallyCheckedIn && !isPartiallyCheckedIn && !isFullyCheckedIn
+    ) {
+      updates.partiallyCheckedInCount = FieldValue.increment(-1);
+    }
+
+    try {
+      await statsRef.set(updates, {merge: true});
+      log.info("Updated check-in stats", {
+        checkInDelta,
+        isFullyCheckedIn,
+        isPartiallyCheckedIn,
+      });
+      log.end(true, {
+        checkInDelta,
+        afterCheckedIn,
+      });
+    } catch (error) {
+      log.error("Error updating check-in stats", error);
+      log.end(false, {error: (error as Error).message});
+      throw error;
     }
   }
 );

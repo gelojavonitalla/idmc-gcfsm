@@ -490,6 +490,30 @@
   cursor: not-allowed;
 }
 
+.textarea {
+  width: 100%;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  color: var(--color-text);
+  background: white;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.textarea:disabled {
+  background: var(--color-background-secondary);
+  cursor: not-allowed;
+}
+
 .balanceOwed {
   color: var(--color-warning-700, #c2410c);
   font-weight: var(--font-weight-semibold);
@@ -549,6 +573,27 @@
   cursor: not-allowed;
 }
 
+.cancelRejectionButton {
+  flex: 1;
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-background-secondary);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancelRejectionButton:hover:not(:disabled) {
+  background-color: var(--color-border);
+}
+
+.cancelRejectionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .required {
   color: var(--color-error-600, #dc2626);
 }
@@ -557,6 +602,145 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin-top: var(--spacing-1);
+}
+
+/* Info Message */
+.infoMessage {
+  padding: var(--spacing-4);
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-4);
+}
+
+.infoMessage p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-2) 0;
+  line-height: 1.5;
+}
+
+.infoMessage p:last-child {
+  margin-bottom: 0;
+}
+
+/* Activity History */
+.loadingText,
+.emptyText {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding: var(--spacing-4);
+  text-align: center;
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+}
+
+.activityTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.activityItem {
+  display: flex;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-border);
+}
+
+.activityItem.activityApprove {
+  border-left-color: #10b981;
+}
+
+.activityItem.activityReject {
+  border-left-color: #ef4444;
+}
+
+.activityItem.activityCreate {
+  border-left-color: #3b82f6;
+}
+
+.activityItem.activityUpdate {
+  border-left-color: #f59e0b;
+}
+
+.activityItem.activityDefault {
+  border-left-color: var(--color-border);
+}
+
+.activityIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: white;
+}
+
+.activityApprove .activityIcon {
+  color: #10b981;
+}
+
+.activityReject .activityIcon {
+  color: #ef4444;
+}
+
+.activityCreate .activityIcon {
+  color: #3b82f6;
+}
+
+.activityUpdate .activityIcon {
+  color: #f59e0b;
+}
+
+.activityDefault .activityIcon {
+  color: var(--color-text-secondary);
+}
+
+.activityIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.activityContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.activityHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-1);
+}
+
+.activityType {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.activityDate {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.activityDescription {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-1) 0;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.activityAdmin {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
 /* Responsive */

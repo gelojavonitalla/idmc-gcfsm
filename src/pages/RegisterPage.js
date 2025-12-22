@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useSettings } from '../context';
 import {
   REGISTRATION_STEPS,
@@ -24,6 +24,7 @@ import {
   getActiveBankAccounts,
   REGISTRATION_ERROR_CODES,
 } from '../services';
+import { getConferenceStats } from '../services/stats';
 import { getPublishedWorkshops } from '../services/workshops';
 import { getFoodMenuSettings, getAllFoodMenuItems } from '../services/foodMenu';
 import { FOOD_MENU_STATUS } from '../constants';
@@ -163,6 +164,7 @@ function RegisterPage() {
   const [submitError, setSubmitError] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [duplicateRegistration, setDuplicateRegistration] = useState(null);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [isFromGCF, setIsFromGCF] = useState(false);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [loadingBankAccounts, setLoadingBankAccounts] = useState(false);
@@ -171,6 +173,11 @@ function RegisterPage() {
   const [foodMenuItems, setFoodMenuItems] = useState([]);
   const [foodSelectionEnabled, setFoodSelectionEnabled] = useState(false);
   const [loadingFoodMenu, setLoadingFoodMenu] = useState(false);
+
+  // Conference capacity state
+  const [conferenceCapacity, setConferenceCapacity] = useState(null);
+  const [currentAttendeeCount, setCurrentAttendeeCount] = useState(0);
+  const [loadingCapacity, setLoadingCapacity] = useState(false);
 
   // OCR-related state
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
@@ -242,10 +249,10 @@ function RegisterPage() {
     const fetchFoodMenu = async () => {
       setLoadingFoodMenu(true);
       try {
-        const settings = await getFoodMenuSettings();
-        setFoodSelectionEnabled(settings.foodSelectionEnabled || false);
+        const foodSettings = await getFoodMenuSettings();
+        setFoodSelectionEnabled(foodSettings.foodSelectionEnabled || false);
 
-        if (settings.foodSelectionEnabled) {
+        if (foodSettings.foodSelectionEnabled) {
           const items = await getAllFoodMenuItems();
           // Filter to only show published items
           const publishedItems = items.filter(
@@ -262,6 +269,54 @@ function RegisterPage() {
 
     fetchFoodMenu();
   }, []);
+
+  /**
+   * Fetches conference capacity from settings and stats
+   * Conference capacity limit is in settings, current count is in stats collection
+   */
+  useEffect(() => {
+    const fetchCapacityData = async () => {
+      setLoadingCapacity(true);
+      try {
+        // Conference capacity limit comes from settings
+        setConferenceCapacity(settings?.conferenceCapacity ?? null);
+
+        // Current count comes from stats collection
+        const stats = await getConferenceStats();
+        setCurrentAttendeeCount(stats?.registeredAttendeeCount ?? 0);
+      } catch (error) {
+        console.error('Failed to fetch capacity stats:', error);
+        setCurrentAttendeeCount(0);
+      } finally {
+        setLoadingCapacity(false);
+      }
+    };
+
+    fetchCapacityData();
+  }, [settings?.conferenceCapacity]);
+
+  /**
+   * Sets default pricing tier category when pricing tiers load.
+   * This handles the case where initial form data was set before pricing tiers were fetched.
+   */
+  useEffect(() => {
+    if (availablePricingTiers.length > 0) {
+      const validTierIds = availablePricingTiers.map(tier => tier.id);
+      const currentCategory = formData.primaryAttendee.category;
+
+      // If current category is empty or not in available tiers, set to first available tier
+      if (!currentCategory || !validTierIds.includes(currentCategory)) {
+        const defaultTierId = validTierIds[0];
+        setFormData((prev) => ({
+          ...prev,
+          primaryAttendee: {
+            ...prev.primaryAttendee,
+            category: defaultTierId,
+          },
+        }));
+      }
+    }
+  }, [availablePricingTiers, formData.primaryAttendee.category]);
 
   /**
    * Updates a form field value
@@ -306,17 +361,95 @@ function RegisterPage() {
   }, [ocrParsedFields]);
 
   /**
+   * Debounced check for duplicate email registration.
+   * Runs when the primary attendee email changes and is valid.
+   * Provides early feedback in Step 1 instead of waiting until final submission.
+   */
+  useEffect(() => {
+    const email = formData.primaryAttendee.email.trim();
+    let isCancelled = false;
+
+    // Clear duplicate state if email is empty or invalid
+    if (!email || !isValidEmail(email)) {
+      setDuplicateRegistration(null);
+      setIsCheckingEmail(false);
+      return;
+    }
+
+    // Debounce the check to avoid excessive API calls
+    setIsCheckingEmail(true);
+    const timeoutId = setTimeout(async () => {
+      try {
+        const existing = await getRegistrationByEmail(email);
+        // Prevent state updates if effect was cleaned up
+        if (isCancelled) return;
+
+        if (existing) {
+          setDuplicateRegistration(existing);
+        } else {
+          setDuplicateRegistration(null);
+        }
+      } catch (error) {
+        console.error('Error checking email:', error);
+        // Don't block registration on check failure - will be caught at submission
+      } finally {
+        if (!isCancelled) {
+          setIsCheckingEmail(false);
+        }
+      }
+    }, 500);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timeoutId);
+      setIsCheckingEmail(false);
+    };
+  }, [formData.primaryAttendee.email]);
+
+  /**
    * Updates primary attendee field value
    *
    * @param {string} field - The field name to update
    * @param {*} value - The new value
    */
   const updatePrimaryAttendee = useCallback((field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      primaryAttendee: { ...prev.primaryAttendee, [field]: value },
-    }));
-    setPrimaryErrors((prev) => ({ ...prev, [field]: null }));
+    setFormData((prev) => {
+      const updatedAttendee = { ...prev.primaryAttendee, [field]: value };
+
+      // Validate email matching in real-time when either email field changes
+      if (field === 'email' || field === 'emailConfirm') {
+        const email = field === 'email' ? value : prev.primaryAttendee.email;
+        const emailConfirm = field === 'emailConfirm' ? value : prev.primaryAttendee.emailConfirm;
+
+        // Only validate matching if both fields have values
+        if (email.trim() && emailConfirm.trim()) {
+          if (email.trim().toLowerCase() !== emailConfirm.trim().toLowerCase()) {
+            setPrimaryErrors((prevErrors) => ({
+              ...prevErrors,
+              [field]: null,
+              emailConfirm: 'Email addresses do not match',
+            }));
+          } else {
+            // Clear both email errors when they match
+            setPrimaryErrors((prevErrors) => ({
+              ...prevErrors,
+              email: null,
+              emailConfirm: null,
+            }));
+          }
+        } else {
+          // Clear only the current field's error if one field is empty
+          setPrimaryErrors((prevErrors) => ({ ...prevErrors, [field]: null }));
+        }
+      } else {
+        setPrimaryErrors((prevErrors) => ({ ...prevErrors, [field]: null }));
+      }
+
+      return {
+        ...prev,
+        primaryAttendee: updatedAttendee,
+      };
+    });
   }, []);
 
   /**
@@ -474,6 +607,15 @@ function RegisterPage() {
           paymentTime: parsedFields.time || prev.paymentTime,
           paymentReferenceNumber: parsedFields.referenceNumber || prev.paymentReferenceNumber,
         }));
+
+        // Clear errors for fields that were populated by OCR
+        setErrors((prev) => ({
+          ...prev,
+          paymentAmount: parsedFields.amount ? null : prev.paymentAmount,
+          paymentDate: parsedFields.date ? null : prev.paymentDate,
+          paymentTime: parsedFields.time ? null : prev.paymentTime,
+          paymentReferenceNumber: parsedFields.referenceNumber ? null : prev.paymentReferenceNumber,
+        }));
       } catch (error) {
         console.error('OCR processing error:', error);
         // Continue without OCR - user can enter manually
@@ -543,6 +685,45 @@ function RegisterPage() {
   }, [formData.additionalAttendees?.length]);
 
   /**
+   * Checks if the conference has available capacity for new attendees
+   *
+   * @returns {boolean} True if capacity is available
+   */
+  const hasConferenceCapacity = useCallback(() => {
+    // If no capacity limit set, always has capacity
+    if (conferenceCapacity === null || conferenceCapacity === undefined) {
+      return true;
+    }
+    // Check if current registrations + new attendees would exceed capacity
+    const newAttendeesCount = getTotalAttendeeCount();
+    return (currentAttendeeCount + newAttendeesCount) <= conferenceCapacity;
+  }, [conferenceCapacity, currentAttendeeCount, getTotalAttendeeCount]);
+
+  /**
+   * Gets remaining conference slots
+   *
+   * @returns {number|null} Remaining slots or null if unlimited
+   */
+  const getRemainingConferenceSlots = useCallback(() => {
+    if (conferenceCapacity === null || conferenceCapacity === undefined) {
+      return null;
+    }
+    return Math.max(0, conferenceCapacity - currentAttendeeCount);
+  }, [conferenceCapacity, currentAttendeeCount]);
+
+  /**
+   * Checks if the conference is at full capacity
+   *
+   * @returns {boolean} True if at full capacity
+   */
+  const isConferenceFull = useCallback(() => {
+    if (conferenceCapacity === null || conferenceCapacity === undefined) {
+      return false;
+    }
+    return currentAttendeeCount >= conferenceCapacity;
+  }, [conferenceCapacity, currentAttendeeCount]);
+
+  /**
    * Handles GCF checkbox toggle - Auto-fills church information with GCF details
    * Used for booth registrations to speed up the process
    *
@@ -605,6 +786,8 @@ function RegisterPage() {
       newPrimaryErrors.email = 'Email is required';
     } else if (!isValidEmail(primary.email)) {
       newPrimaryErrors.email = 'Please enter a valid email address';
+    } else if (duplicateRegistration) {
+      newPrimaryErrors.email = 'This email is already registered';
     }
     if (!primary.emailConfirm.trim()) {
       newPrimaryErrors.emailConfirm = 'Please confirm your email';
@@ -649,6 +832,12 @@ function RegisterPage() {
       }
     });
 
+    // Check conference capacity
+    if (!hasConferenceCapacity()) {
+      const remaining = getRemainingConferenceSlots();
+      newErrors.capacity = `Conference capacity exceeded. Only ${remaining} slot${remaining === 1 ? '' : 's'} remaining.`;
+    }
+
     setErrors(newErrors);
     setPrimaryErrors(newPrimaryErrors);
     setAdditionalErrors(newAdditionalErrors);
@@ -658,7 +847,7 @@ function RegisterPage() {
       Object.keys(newPrimaryErrors).length === 0 &&
       Object.keys(newAdditionalErrors).length === 0
     );
-  }, [formData, foodSelectionEnabled, foodMenuItems]);
+  }, [formData, foodSelectionEnabled, foodMenuItems, hasConferenceCapacity, getRemainingConferenceSlots, duplicateRegistration]);
 
   /**
    * Validates the ticket selection step
@@ -915,6 +1104,32 @@ function RegisterPage() {
     );
   }
 
+  // Conference at full capacity state
+  if (isConferenceFull() && !loadingCapacity) {
+    return (
+      <div className={styles.page}>
+        <section className={styles.heroSection}>
+          <h1 className={styles.heroTitle}>Registration Full</h1>
+          <p className={styles.heroSubtitle}>{settings.title}</p>
+        </section>
+        <section className={styles.contentSection}>
+          <div className={styles.container}>
+            <div className={styles.closedMessage}>
+              <p>
+                We have reached our maximum capacity for {settings.title}. Thank you for your
+                interest!
+              </p>
+              <p>
+                If you have any questions or would like to be added to a waitlist, please contact us at{' '}
+                <a href={`mailto:${settings.contact?.email}`}>{settings.contact?.email}</a>
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   // Submitted/Confirmation state
   if (isSubmitted) {
     const totalAmount = calculateTotalPrice();
@@ -1016,7 +1231,7 @@ function RegisterPage() {
                 <h2>Lost Your Confirmation?</h2>
                 <p>
                   You can retrieve your registration anytime.{' '}
-                  <a href={ROUTES.REGISTRATION_STATUS}>Check Registration Status</a>
+                  <Link to={`${ROUTES.REGISTRATION_STATUS}?id=${shortCode}`}>Check Registration Status</Link>
                 </p>
                 <p>Use your email, phone number, or registration ID to look up your registration.</p>
               </div>
@@ -1055,6 +1270,21 @@ function RegisterPage() {
               </a>
             </p>
           </div>
+
+          {/* Conference Capacity Indicator */}
+          {conferenceCapacity !== null && !loadingCapacity && (
+            <div className={`${styles.capacityIndicator} ${
+              getRemainingConferenceSlots() <= 50 ? styles.capacityLimited : ''
+            }`}>
+              <span className={styles.capacityLabel}>Available Slots:</span>
+              <span className={styles.capacityValue}>
+                {getRemainingConferenceSlots()} of {conferenceCapacity}
+              </span>
+              {getRemainingConferenceSlots() <= 50 && getRemainingConferenceSlots() > 0 && (
+                <span className={styles.capacityWarning}>Limited slots remaining!</span>
+              )}
+            </div>
+          )}
 
           {/* Progress Steps */}
           <div className={styles.progressBar}>
@@ -1224,8 +1454,18 @@ function RegisterPage() {
                       onChange={(e) => updatePrimaryAttendee('email', e.target.value)}
                       placeholder="email@example.com"
                     />
+                    {isCheckingEmail && (
+                      <span className={styles.fieldHint}>Checking email...</span>
+                    )}
                     {primaryErrors.email && (
                       <span className={styles.errorMessage}>{primaryErrors.email}</span>
+                    )}
+                    {duplicateRegistration && primaryErrors.email && (
+                      <div className={styles.duplicateEmailHelp}>
+                        <Link to={`${ROUTES.REGISTRATION_STATUS}?email=${encodeURIComponent(formData.primaryAttendee.email)}`}>
+                          Check your existing registration
+                        </Link>
+                      </div>
                     )}
                   </div>
 
@@ -1519,13 +1759,29 @@ function RegisterPage() {
                 </div>
               ))}
 
-              <button
-                type="button"
-                className={styles.addButton}
-                onClick={addAdditionalAttendee}
-              >
-                + Add Another Attendee
-              </button>
+              {/* Add Attendee Button - Disabled if would exceed capacity */}
+              {(() => {
+                const remainingSlots = getRemainingConferenceSlots();
+                const canAddMore = remainingSlots === null || (getTotalAttendeeCount() + 1) <= remainingSlots + currentAttendeeCount;
+
+                return (
+                  <>
+                    <button
+                      type="button"
+                      className={styles.addButton}
+                      onClick={addAdditionalAttendee}
+                      disabled={!canAddMore}
+                    >
+                      + Add Another Attendee
+                    </button>
+                    {!canAddMore && remainingSlots !== null && (
+                      <p className={styles.capacityExceeded}>
+                        Cannot add more attendees. Only {remainingSlots} conference slots remaining.
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
 
               <div className={styles.subtotalBox}>
                 <span>Subtotal ({getTotalAttendeeCount()} attendee{getTotalAttendeeCount() > 1 ? 's' : ''})</span>
@@ -1834,6 +2090,13 @@ function RegisterPage() {
                       {errors.paymentAmount && (
                         <span className={styles.errorMessage}>{errors.paymentAmount}</span>
                       )}
+                      {formData.paymentAmount && Number(formData.paymentAmount) !== calculateTotalPrice() && (
+                        <span className={styles.amountWarning}>
+                          {Number(formData.paymentAmount) < calculateTotalPrice()
+                            ? `Amount is less than the total owed (₱${calculateTotalPrice().toLocaleString()})`
+                            : `Amount is more than the total owed (₱${calculateTotalPrice().toLocaleString()})`}
+                        </span>
+                      )}
                     </div>
 
                     <div className={styles.formGroup}>
@@ -2012,6 +2275,13 @@ function RegisterPage() {
                       />
                       {errors.paymentAmount && (
                         <span className={styles.errorMessage}>{errors.paymentAmount}</span>
+                      )}
+                      {formData.paymentAmount && Number(formData.paymentAmount) !== calculateTotalPrice() && (
+                        <span className={styles.amountWarning}>
+                          {Number(formData.paymentAmount) < calculateTotalPrice()
+                            ? `Amount is less than the total owed (₱${calculateTotalPrice().toLocaleString()})`
+                            : `Amount is more than the total owed (₱${calculateTotalPrice().toLocaleString()})`}
+                        </span>
                       )}
                     </div>
 

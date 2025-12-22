@@ -787,6 +787,42 @@ async function findRegistrationByPartialShortCode(searchTerm) {
 }
 
 /**
+ * Gets the total number of confirmed attendees for the conference.
+ * Counts both primary attendees and additional attendees from confirmed registrations.
+ * This is used to check against conference capacity limits.
+ *
+ * @returns {Promise<number>} Total number of confirmed attendees
+ */
+export async function getTotalConfirmedAttendeeCount() {
+  try {
+    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+    const confirmedQuery = query(
+      registrationsRef,
+      where('status', 'in', [
+        REGISTRATION_STATUS.CONFIRMED,
+        REGISTRATION_STATUS.PENDING_VERIFICATION,
+      ])
+    );
+
+    const snapshot = await getDocs(confirmedQuery);
+
+    let totalAttendees = 0;
+    snapshot.docs.forEach((docSnap) => {
+      const data = docSnap.data();
+      // Count primary attendee
+      totalAttendees += 1;
+      // Count additional attendees
+      totalAttendees += (data.additionalAttendees?.length || 0);
+    });
+
+    return totalAttendees;
+  } catch (error) {
+    console.error('Failed to get total attendee count:', error);
+    return 0;
+  }
+}
+
+/**
  * Increments workshop registered count atomically
  *
  * @param {string} workshopId - Workshop session ID

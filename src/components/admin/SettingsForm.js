@@ -5,10 +5,12 @@
  * @module components/admin/SettingsForm
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import MediaUpload from './MediaUpload';
 import { uploadHeroImage, uploadHeroVideo, deleteFile } from '../../services/storage';
+import { getConferenceStats } from '../../services/stats';
 import { useAdminAuth } from '../../context';
 import { ADMIN_ROLES } from '../../constants';
 import styles from './SettingsForm.module.css';
@@ -36,6 +38,7 @@ const DEFAULT_SETTINGS = {
   endTime: '17:30',
   timezone: 'Asia/Manila',
   registrationOpen: true,
+  conferenceCapacity: null,
   heroImageUrl: null,
   heroVideoUrl: null,
   venue: {
@@ -78,6 +81,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
     endTime: settings?.endTime || DEFAULT_SETTINGS.endTime,
     timezone: settings?.timezone || DEFAULT_SETTINGS.timezone,
     registrationOpen: settings?.registrationOpen ?? DEFAULT_SETTINGS.registrationOpen,
+    conferenceCapacity: settings?.conferenceCapacity ?? DEFAULT_SETTINGS.conferenceCapacity,
     heroImageUrl: settings?.heroImageUrl || DEFAULT_SETTINGS.heroImageUrl,
     heroVideoUrl: settings?.heroVideoUrl || DEFAULT_SETTINGS.heroVideoUrl,
     venue: {
@@ -106,6 +110,54 @@ function SettingsForm({ settings, onSave, isLoading }) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Stats from stats collection
+  const [registeredAttendeeCount, setRegisteredAttendeeCount] = useState(0);
+  const [isSyncingStats, setIsSyncingStats] = useState(false);
+  const [syncError, setSyncError] = useState(null);
+  const [syncSuccess, setSyncSuccess] = useState(false);
+
+  /**
+   * Fetches conference stats from the stats collection on mount
+   */
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const stats = await getConferenceStats();
+        setRegisteredAttendeeCount(stats?.registeredAttendeeCount ?? 0);
+      } catch (error) {
+        console.error('Failed to fetch conference stats:', error);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  /**
+   * Triggers manual stats sync via Cloud Function
+   */
+  const handleSyncStats = async () => {
+    setIsSyncingStats(true);
+    setSyncError(null);
+    setSyncSuccess(false);
+
+    try {
+      const functions = getFunctions(undefined, 'asia-southeast1');
+      const triggerSync = httpsCallable(functions, 'triggerStatsSync');
+      await triggerSync();
+
+      // Refresh stats after sync
+      const stats = await getConferenceStats();
+      setRegisteredAttendeeCount(stats?.registeredAttendeeCount ?? 0);
+
+      setSyncSuccess(true);
+      setTimeout(() => setSyncSuccess(false), 3000);
+    } catch (error) {
+      console.error('Failed to sync stats:', error);
+      setSyncError('Failed to sync stats. Please try again.');
+    } finally {
+      setIsSyncingStats(false);
+    }
+  };
 
   // Media upload states
   const [heroImageUploading, setHeroImageUploading] = useState(false);
@@ -467,6 +519,74 @@ function SettingsForm({ settings, onSave, isLoading }) {
         </div>
       </section>
 
+      {/* Capacity Settings Section */}
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>Capacity Settings</h3>
+        <p className={styles.sectionDescription}>
+          Set the maximum number of attendees for the conference. This is the capacity of the main
+          worship hall where everyone convenes. Leave empty for unlimited capacity.
+        </p>
+        <div className={styles.grid}>
+          <div className={styles.field}>
+            <label htmlFor="conferenceCapacity" className={styles.label}>
+              Conference Capacity (Main Worship Hall)
+            </label>
+            <input
+              type="number"
+              id="conferenceCapacity"
+              name="conferenceCapacity"
+              value={formData.conferenceCapacity || ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData((prev) => ({
+                  ...prev,
+                  conferenceCapacity: value === '' ? null : parseInt(value, 10),
+                }));
+              }}
+              className={styles.input}
+              min="1"
+              placeholder="Leave empty for unlimited"
+            />
+            <p className={styles.fieldHint}>
+              Maximum number of attendees allowed. When this limit is reached, registration will be
+              closed automatically.
+            </p>
+          </div>
+          <div className={styles.field}>
+            <label className={styles.label}>
+              Current Registered Attendees
+            </label>
+            <div className={styles.readOnlyValue}>
+              {registeredAttendeeCount}
+              {formData.conferenceCapacity && (
+                <span className={styles.capacityRatio}>
+                  {' '}/ {formData.conferenceCapacity} ({
+                    Math.round((registeredAttendeeCount / formData.conferenceCapacity) * 100)
+                  }%)
+                </span>
+              )}
+            </div>
+            <p className={styles.fieldHint}>
+              This count is stored in the stats collection and maintained by Cloud Functions.
+            </p>
+            <button
+              type="button"
+              className={styles.syncButton}
+              onClick={handleSyncStats}
+              disabled={isSyncingStats}
+            >
+              {isSyncingStats ? 'Syncing...' : 'Sync Stats'}
+            </button>
+            {syncSuccess && (
+              <span className={styles.syncSuccess}>Stats synced successfully!</span>
+            )}
+            {syncError && (
+              <span className={styles.syncError}>{syncError}</span>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Venue Section */}
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Venue</h3>
@@ -746,6 +866,7 @@ SettingsForm.propTypes = {
     endTime: PropTypes.string,
     timezone: PropTypes.string,
     registrationOpen: PropTypes.bool,
+    conferenceCapacity: PropTypes.number,
     heroImageUrl: PropTypes.string,
     heroVideoUrl: PropTypes.string,
     venue: PropTypes.shape({
