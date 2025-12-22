@@ -294,6 +294,24 @@ The backend includes the following Cloud Functions:
 | IDMC-EVT-11 | Mobile Check-in App | Native mobile QR scanning with offline capability *(Deferred)* |
 | IDMC-EVT-12 | Authentication & User Management | RBAC, user invitation workflow, session security |
 
+### Additional Implemented Features
+
+The following features have been implemented beyond the original epic scope:
+
+| Feature | Description |
+|---------|-------------|
+| **Finance Dashboard** | Revenue tracking, payment status by bank account, transaction filtering and export |
+| **Bank Account Management** | CRUD for church bank accounts (BDO, BPI, e-wallets), display ordering |
+| **Invoice Management** | Invoice request tracking, upload, email delivery with status workflow |
+| **Contact Inquiries** | Manage public contact form submissions, reply via email, status tracking |
+| **Venue Management** | Room configuration, transportation info, amenities, interactive floor plan |
+| **Food Menu Management** | Catering options, food selection toggle for registration |
+| **Downloads Management** | Downloadable conference materials with file upload and status control |
+| **Legal Documents** | Terms of Service and Privacy Policy content management |
+| **About Page Content** | IDMC mission/vision, GCF organization info, conference history |
+| **Activity Log** | Comprehensive audit trail of all admin actions with filtering and export |
+| **Analytics & Statistics** | Real-time conference stats, registration demographics, payment analysis |
+
 ## Documentation
 
 | Document | Description |
