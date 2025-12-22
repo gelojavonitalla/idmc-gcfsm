@@ -98,6 +98,29 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
+.heroButtonBottom {
+  position: absolute;
+  bottom: var(--spacing-8);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: inline-block;
+  padding: var(--spacing-4) var(--spacing-8);
+  background: white;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.heroButtonBottom:hover {
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
 .sectionTitle {
   font-size: var(--font-size-3xl);
   color: var(--color-text);
@@ -430,6 +453,10 @@
   .heroButton {
     padding: var(--spacing-3) var(--spacing-6);
     font-size: var(--font-size-base);
+  }
+
+  .heroButtonBottom {
+    display: none;
   }
 
   .speakersGrid {
