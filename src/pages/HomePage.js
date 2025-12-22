@@ -24,6 +24,7 @@ function HomePage() {
   const [speakers, setSpeakers] = useState([]);
   const [isLoadingSpeakers, setIsLoadingSpeakers] = useState(true);
   const [speakersError, setSpeakersError] = useState(null);
+  const [isHeroMediaLoaded, setIsHeroMediaLoaded] = useState(false);
 
   /**
    * Filter pricing tiers to only show active ones within valid date range
@@ -66,6 +67,27 @@ function HomePage() {
     fetchSpeakers();
   }, []);
 
+  /**
+   * Preloads hero image and tracks loading state.
+   * Text will be hidden once the hero media has finished loading.
+   */
+  useEffect(() => {
+    if (settings.heroVideoUrl) {
+      setIsHeroMediaLoaded(false);
+      return;
+    }
+
+    if (settings.heroImageUrl) {
+      setIsHeroMediaLoaded(false);
+      const img = new Image();
+      img.onload = () => setIsHeroMediaLoaded(true);
+      img.onerror = () => setIsHeroMediaLoaded(false);
+      img.src = settings.heroImageUrl;
+    } else {
+      setIsHeroMediaLoaded(false);
+    }
+  }, [settings.heroImageUrl, settings.heroVideoUrl]);
+
   const plenarySpeakers = speakers.filter(
     (speaker) => speaker.sessionType === SESSION_TYPES.PLENARY
   );
@@ -87,6 +109,7 @@ function HomePage() {
             loop
             playsInline
             poster={settings.heroImageUrl || undefined}
+            onLoadedData={() => setIsHeroMediaLoaded(true)}
           >
             <source src={settings.heroVideoUrl} type="video/mp4" />
           </video>
@@ -102,16 +125,19 @@ function HomePage() {
         {(settings.heroImageUrl || settings.heroVideoUrl) && (
           <div className={styles.heroOverlay} />
         )}
-        <div className={styles.heroContent}>
-          <h1>{settings.title}</h1>
-          <p className={styles.heroTheme}>{settings.theme}</p>
-          <p className={styles.heroSubtext}>
-            {new Date(settings.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} | {settings.venue?.name}
-          </p>
-          <Link to={ROUTES.REGISTER} className={styles.heroButton}>
-            Register Now
-          </Link>
-        </div>
+        {/* Hide hero content when hero image/video has loaded since the image already contains the text */}
+        {!isHeroMediaLoaded && (
+          <div className={styles.heroContent}>
+            <h1>{settings.title}</h1>
+            <p className={styles.heroTheme}>{settings.theme}</p>
+            <p className={styles.heroSubtext}>
+              {new Date(settings.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} | {settings.venue?.name}
+            </p>
+            <Link to={ROUTES.REGISTER} className={styles.heroButton}>
+              Register Now
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* Countdown Timer Section */}
