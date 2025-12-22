@@ -86,13 +86,11 @@ function Header() {
   };
 
   return (
-    <header className={`${styles.header} ${isScrolled ? styles.scrolled : ''}`}>
+    <header
+      className={`${styles.header} ${isScrolled ? styles.scrolled : ''} ${isHomePage && !isScrolled ? styles.headerHidden : ''}`}
+    >
       <div className={styles.container}>
-        <Link
-          to="/"
-          className={`${styles.logo} ${isHomePage && !isScrolled ? styles.logoHidden : ''}`}
-          onClick={closeMenu}
-        >
+        <Link to="/" className={styles.logo} onClick={closeMenu}>
           <span className={styles.logoText}>IDMC</span>
           <span className={styles.logoYear}>{settings.year}</span>
         </Link>
