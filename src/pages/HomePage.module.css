@@ -456,9 +456,7 @@
   }
 
   .heroButtonBottom {
-    bottom: var(--spacing-4);
-    padding: var(--spacing-3) var(--spacing-6);
-    font-size: var(--font-size-base);
+    display: none;
   }
 
   .speakersGrid {
