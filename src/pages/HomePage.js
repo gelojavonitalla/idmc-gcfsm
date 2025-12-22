@@ -78,6 +78,30 @@ function HomePage() {
     <div className={styles.page}>
       {/* Hero Section */}
       <section className={styles.heroSection}>
+        {/* Hero Video Background */}
+        {settings.heroVideoUrl && (
+          <video
+            className={styles.heroVideo}
+            autoPlay
+            muted
+            loop
+            playsInline
+            poster={settings.heroImageUrl || undefined}
+          >
+            <source src={settings.heroVideoUrl} type="video/mp4" />
+          </video>
+        )}
+        {/* Hero Image Background (when no video) */}
+        {!settings.heroVideoUrl && settings.heroImageUrl && (
+          <div
+            className={styles.heroImage}
+            style={{ backgroundImage: `url(${settings.heroImageUrl})` }}
+          />
+        )}
+        {/* Overlay for readability */}
+        {(settings.heroImageUrl || settings.heroVideoUrl) && (
+          <div className={styles.heroOverlay} />
+        )}
         <div className={styles.heroContent}>
           <h1>{settings.title}</h1>
           <p className={styles.heroTheme}>{settings.theme}</p>
