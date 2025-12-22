@@ -30,6 +30,7 @@ import './index.css';
  * reducing initial bundle size for public website visitors.
  */
 const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'));
+const AdminPasswordSetupPage = lazy(() => import('./pages/admin/AdminPasswordSetupPage'));
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
 const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
@@ -72,6 +73,14 @@ function App() {
               element={
                 <Suspense fallback={<AdminLoadingFallback />}>
                   <AdminLoginPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path={ADMIN_ROUTES.PASSWORD_SETUP}
+              element={
+                <Suspense fallback={<AdminLoadingFallback />}>
+                  <AdminPasswordSetupPage />
                 </Suspense>
               }
             />

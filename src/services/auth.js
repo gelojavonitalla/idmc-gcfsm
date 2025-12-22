@@ -10,6 +10,8 @@ import {
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
   onAuthStateChanged,
+  verifyPasswordResetCode as firebaseVerifyPasswordResetCode,
+  confirmPasswordReset as firebaseConfirmPasswordReset,
 } from 'firebase/auth';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
@@ -164,4 +166,27 @@ export function subscribeToAuthState(callback) {
  */
 export function getCurrentUser() {
   return auth.currentUser;
+}
+
+/**
+ * Verifies a password reset code and returns the associated email
+ *
+ * @param {string} oobCode - The out-of-band code from the password reset link
+ * @returns {Promise<string>} The email address associated with the code
+ * @throws {Error} If the code is invalid or expired
+ */
+export async function verifyPasswordResetCode(oobCode) {
+  return firebaseVerifyPasswordResetCode(auth, oobCode);
+}
+
+/**
+ * Confirms the password reset with a new password
+ *
+ * @param {string} oobCode - The out-of-band code from the password reset link
+ * @param {string} newPassword - The new password to set
+ * @returns {Promise<void>}
+ * @throws {Error} If the code is invalid or the password is too weak
+ */
+export async function confirmPasswordReset(oobCode, newPassword) {
+  return firebaseConfirmPasswordReset(auth, oobCode, newPassword);
 }
