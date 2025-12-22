@@ -192,6 +192,10 @@ export async function createAdmin(adminId, adminData, invitedBy, invitedByEmail 
  * Resends invitation email to a pending admin
  * This creates a new admin document to trigger the Cloud Function again.
  *
+ * IMPORTANT: The old document must be deleted BEFORE creating the new one
+ * to prevent a race condition where the Cloud Function creates a new UID doc
+ * that gets deleted by this function.
+ *
  * @param {string} adminId - Admin user ID
  * @param {string} resendBy - UID of the admin requesting the resend
  * @returns {Promise<Object>} Updated admin data
@@ -213,10 +217,11 @@ export async function resendInvitation(adminId, resendBy) {
   // Generate a new temporary ID for the new document
   const newTempId = `pending_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-  // Create new admin document to trigger Cloud Function
-  const docRef = doc(db, COLLECTIONS.ADMINS, newTempId);
   const timestamp = serverTimestamp();
 
+  // Only copy essential fields - explicitly exclude invite-related fields
+  // (invitationSentAt, inviteExpiresAt, inviteLink, emailSent) to ensure
+  // the Cloud Function processes this as a fresh invitation
   const data = {
     email: admin.email,
     displayName: admin.displayName,
@@ -232,10 +237,14 @@ export async function resendInvitation(adminId, resendBy) {
     lastLoginAt: null,
   };
 
-  await setDoc(docRef, data);
-
-  // Delete the old document
+  // IMPORTANT: Delete the old document FIRST to prevent race condition
+  // The Cloud Function will create a new document with the Firebase Auth UID
+  // If we delete after creating, we might delete the doc the CF just created
   await deleteDoc(doc(db, COLLECTIONS.ADMINS, adminId));
+
+  // Create new admin document to trigger Cloud Function
+  const docRef = doc(db, COLLECTIONS.ADMINS, newTempId);
+  await setDoc(docRef, data);
 
   return {
     id: newTempId,
