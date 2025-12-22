@@ -20,8 +20,8 @@ import styles from './HomePage.module.css';
  * @returns {JSX.Element} The home page component
  */
 function HomePage() {
-  const { settings: dbSettings, pricingTiers } = useSettings();
-  // Use DEFAULT_SETTINGS as fallback for public pages while Firebase loads
+  const { settings: dbSettings, pricingTiers, isLoading: isLoadingSettings } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback only after Firebase has loaded and returned no data
   const settings = dbSettings || DEFAULT_SETTINGS;
   const [speakers, setSpeakers] = useState([]);
   const [isLoadingSpeakers, setIsLoadingSpeakers] = useState(true);
@@ -71,10 +71,17 @@ function HomePage() {
 
   /**
    * Preloads hero image and tracks failure state.
-   * Text content is only shown as fallback when the hero media fails to load.
+   * Text content is only shown as fallback when Firebase has loaded
+   * and the hero media fails to load.
+   * Priority: 1) Image, 2) Firestore data, 3) JSON defaults
    */
   useEffect(() => {
     setHeroMediaFailed(false);
+
+    // Don't determine failure state while Firebase is still loading
+    if (isLoadingSettings) {
+      return;
+    }
 
     if (settings.heroVideoUrl) {
       return;
@@ -87,7 +94,7 @@ function HomePage() {
     } else {
       setHeroMediaFailed(true);
     }
-  }, [settings.heroImageUrl, settings.heroVideoUrl]);
+  }, [settings.heroImageUrl, settings.heroVideoUrl, isLoadingSettings]);
 
   const plenarySpeakers = speakers.filter(
     (speaker) => speaker.sessionType === SESSION_TYPES.PLENARY
