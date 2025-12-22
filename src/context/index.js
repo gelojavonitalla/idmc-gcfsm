@@ -5,5 +5,5 @@
 
 export { AuthProvider, useAuth } from './AuthContext';
 export { AdminAuthProvider, useAdminAuth } from './AdminAuthContext';
-export { SettingsProvider, useSettings } from './SettingsContext';
+export { SettingsProvider, useSettings, DEFAULT_SETTINGS } from './SettingsContext';
 export { ToastProvider, useToast } from './ToastContext';

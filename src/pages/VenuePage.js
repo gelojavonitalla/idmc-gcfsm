@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FloorPlan } from '../components/venue';
-import { useSettings } from '../context';
+import { useSettings, DEFAULT_SETTINGS } from '../context';
 import { getVenueTransport, getVenueAmenities } from '../services/venue';
 import { ROUTES, SCHEDULE, WORKSHOPS } from '../constants';
 import styles from './VenuePage.module.css';
@@ -82,7 +82,9 @@ const TRANSPORT_ICONS = {
  * @returns {JSX.Element} The venue page component
  */
 function VenuePage() {
-  const { settings } = useSettings();
+  const { settings: dbSettings } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback for public pages while Firebase loads
+  const settings = dbSettings || DEFAULT_SETTINGS;
   const [transportOptions, setTransportOptions] = useState([]);
   const [amenities, setAmenities] = useState([]);
   const [loading, setLoading] = useState(true);

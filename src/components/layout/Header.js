@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useSettings } from '../../context';
+import { useSettings, DEFAULT_SETTINGS } from '../../context';
 import { NAV_ITEMS } from '../../constants';
 import styles from './Header.module.css';
 
@@ -12,7 +12,9 @@ import styles from './Header.module.css';
  * @returns {JSX.Element} The header navigation component
  */
 function Header() {
-  const { settings } = useSettings();
+  const { settings: dbSettings } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback while Firebase loads
+  const settings = dbSettings || DEFAULT_SETTINGS;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();

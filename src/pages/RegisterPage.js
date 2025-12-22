@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { useSettings } from '../context';
+import { useSettings, DEFAULT_SETTINGS } from '../context';
 import {
   REGISTRATION_STEPS,
   REGISTRATION_STEP_LABELS,
@@ -116,7 +116,9 @@ const INITIAL_FORM_DATA = {
  * @returns {JSX.Element} The registration page component
  */
 function RegisterPage() {
-  const { settings, pricingTiers } = useSettings();
+  const { settings: dbSettings, pricingTiers } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback for public pages while Firebase loads
+  const settings = dbSettings || DEFAULT_SETTINGS;
   const [searchParams] = useSearchParams();
 
   /**

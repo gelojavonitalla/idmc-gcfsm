@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useSettings } from '../../context';
+import { useSettings, DEFAULT_SETTINGS } from '../../context';
 import { ROUTES, CONTACT } from '../../constants';
 import styles from './Footer.module.css';
 
@@ -10,7 +10,9 @@ import styles from './Footer.module.css';
  * @returns {JSX.Element} The footer component
  */
 function Footer() {
-  const { settings } = useSettings();
+  const { settings: dbSettings } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback while Firebase loads
+  const settings = dbSettings || DEFAULT_SETTINGS;
   const currentYear = new Date().getFullYear();
 
   return (
