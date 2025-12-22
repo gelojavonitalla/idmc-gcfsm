@@ -57,6 +57,12 @@
   opacity: 0.8;
 }
 
+/* Hide logo on homepage when hero is visible to avoid duplicate title */
+.logoHidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Hamburger Menu Button */
 .hamburger {
   display: none;
