@@ -781,10 +781,12 @@ export const onAdminCreated = onDocumentCreated(
       }
 
       // Generate password reset link (serves as invitation/setup link)
+      // handleCodeInApp: true redirects to our app with the action code,
+      // allowing us to handle password setup and auto-login
       const baseUrl = appUrl.value() || "https://idmc-gcfsm-dev.web.app";
       const actionCodeSettings = {
-        url: `${baseUrl}/admin/login?setup=complete`,
-        handleCodeInApp: false,
+        url: `${baseUrl}/admin/password-setup`,
+        handleCodeInApp: true,
       };
 
       const inviteLink = await auth.generatePasswordResetLink(
