@@ -63,6 +63,21 @@ function WorkshopSelector({ workshops, selections, onSelectionChange, disabled =
   };
 
   /**
+   * Formats time from 24-hour format to 12-hour format
+   *
+   * @param {string} time - Time in HH:MM format
+   * @returns {string} Formatted time (e.g., "1:15 PM")
+   */
+  const formatTime = (time) => {
+    if (!time) return '';
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  /**
    * Default colors for workshops without a defined category
    */
   const DEFAULT_CATEGORY_COLORS = {
@@ -162,8 +177,8 @@ function WorkshopSelector({ workshops, selections, onSelectionChange, disabled =
                         </span>
                       )}
                       <span className={styles.optionVenue}>
-                        {workshop.venue} | {workshop.time}
-                        {workshop.endTime && ` - ${workshop.endTime}`}
+                        {workshop.venue} | {formatTime(workshop.startTime)}
+                        {workshop.endTime && ` - ${formatTime(workshop.endTime)}`}
                       </span>
                     </div>
                   </label>
@@ -182,7 +197,7 @@ WorkshopSelector.propTypes = {
     PropTypes.shape({
       id: PropTypes.string.isRequired,
       title: PropTypes.string.isRequired,
-      time: PropTypes.string.isRequired,
+      startTime: PropTypes.string.isRequired,
       endTime: PropTypes.string,
       venue: PropTypes.string,
       category: PropTypes.string,

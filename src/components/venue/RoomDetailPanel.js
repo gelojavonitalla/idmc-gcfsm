@@ -24,6 +24,21 @@ import styles from './RoomDetailPanel.module.css';
  */
 function RoomDetailPanel({ room, sessions, isOpen, onClose }) {
   /**
+   * Formats time from 24-hour format to 12-hour format
+   *
+   * @param {string} time - Time in HH:MM format
+   * @returns {string} Formatted time (e.g., "1:15 PM")
+   */
+  const formatTime = (time) => {
+    if (!time) return '';
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  /**
    * Handles keyboard events for accessibility
    * Closes panel on Escape key press
    *
@@ -190,8 +205,8 @@ function RoomDetailPanel({ room, sessions, isOpen, onClose }) {
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12 6 12 12 16 14" />
                       </svg>
-                      {session.time}
-                      {session.endTime && ` - ${session.endTime}`}
+                      {formatTime(session.startTime)}
+                      {session.endTime && ` - ${formatTime(session.endTime)}`}
                     </div>
                     <h4 className={styles.sessionTitle}>{session.title}</h4>
                     {session.speakerNames && session.speakerNames.length > 0 && (
