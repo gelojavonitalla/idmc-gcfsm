@@ -13,7 +13,7 @@ function Footer() {
   const { settings: dbSettings, isLoading } = useSettings();
   // Use DEFAULT_SETTINGS as fallback only after Firebase has loaded
   const settings = isLoading ? null : (dbSettings || DEFAULT_SETTINGS);
-  const currentYear = new Date().getFullYear();
+  const currentYear = 2026;
 
   // Don't render dynamic content until Firebase has loaded
   if (!settings) {
