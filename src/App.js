@@ -20,6 +20,7 @@ import {
   TermsOfServicePage,
   IDMC2025Page,
   MaintenancePage,
+  FeedbackPage,
 } from './pages';
 import { ROUTES, ADMIN_ROUTES, IDMC_TEAM_ROLES } from './constants';
 import './index.css';
@@ -342,6 +343,7 @@ function App() {
                     <Route path={ROUTES.PRIVACY} element={<PrivacyPolicyPage />} />
                     <Route path={ROUTES.TERMS} element={<TermsOfServicePage />} />
                     <Route path={ROUTES.IDMC_2025} element={<IDMC2025Page />} />
+                    <Route path={ROUTES.FEEDBACK} element={<FeedbackPage />} />
                     <Route
                       path={ROUTES.MAINTENANCE}
                       element={

@@ -57,6 +57,10 @@ export const DEFAULT_SETTINGS = {
     subtitle: 'Watch the highlights from our previous conference',
     youtubeVideoId: 'emGTZDXOaZY',
   },
+  feedback: {
+    enabled: false,
+    closingDate: null,
+  },
 };
 
 /**
