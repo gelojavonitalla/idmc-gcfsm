@@ -329,6 +329,105 @@ The project uses GitHub Actions for CI/CD:
 - **Pull Requests**: Automated linting, type checking, and tests
 - **Merge to main**: Production deployment to Firebase Hosting
 
+### GitHub Actions Service Account Setup
+
+For CI/CD to work properly, you need a dedicated GitHub Actions service account in each GCP project with the appropriate IAM roles.
+
+#### 1. Create the Service Account
+
+```bash
+PROJECT_ID="idmc-gcfsm"  # Change to your project ID
+
+# Create the service account
+gcloud iam service-accounts create github-action \
+  --display-name="GitHub Actions" \
+  --project=$PROJECT_ID
+```
+
+#### 2. Grant Required IAM Roles
+
+```bash
+SA_EMAIL="github-action@${PROJECT_ID}.iam.gserviceaccount.com"
+
+# Grant all required roles
+ROLES=(
+  "roles/apikeys.viewer"
+  "roles/artifactregistry.reader"
+  "roles/cloudbuild.builds.editor"
+  "roles/cloudfunctions.admin"
+  "roles/cloudfunctions.developer"
+  "roles/cloudscheduler.admin"
+  "roles/datastore.indexAdmin"
+  "roles/datastore.user"
+  "roles/eventarc.eventReceiver"
+  "roles/eventarc.serviceAgent"
+  "roles/firebaseauth.admin"
+  "roles/firebaseextensions.admin"
+  "roles/firebaseextensions.viewer"
+  "roles/firebasehosting.admin"
+  "roles/iam.serviceAccountTokenCreator"
+  "roles/iam.serviceAccountUser"
+  "roles/runtimeconfig.admin"
+  "roles/run.invoker"
+  "roles/run.viewer"
+  "roles/secretmanager.admin"
+  "roles/secretmanager.secretVersionManager"
+  "roles/serviceusage.serviceUsageConsumer"
+  "roles/serviceusage.serviceUsageViewer"
+  "roles/storage.admin"
+)
+
+for ROLE in "${ROLES[@]}"; do
+  gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$SA_EMAIL" \
+    --role="$ROLE"
+done
+```
+
+#### 3. Create and Download Key
+
+```bash
+gcloud iam service-accounts keys create github-action-key.json \
+  --iam-account=$SA_EMAIL
+
+# IMPORTANT: Keep this file secure and delete after uploading to GitHub
+```
+
+#### 4. Configure GitHub Secrets
+
+1. Go to your GitHub repository → Settings → Secrets and variables → Actions
+2. Add the following secrets for each environment (development/production):
+   - `FIREBASE_SERVICE_ACCOUNT`: Contents of `github-action-key.json`
+   - `SENDGRID_API_KEY`: Your SendGrid API key
+   - `REACT_APP_FIREBASE_API_KEY`: Firebase API key
+
+#### IAM Roles Reference
+
+| Role | Purpose |
+|------|---------|
+| API Keys Viewer | Read API keys for the project |
+| Artifact Registry Reader | Read container images for Cloud Functions |
+| Cloud Build Editor | Create and manage Cloud Build jobs |
+| Cloud Datastore Index Admin | Manage Firestore indexes |
+| Cloud Datastore User | Read/write Firestore data |
+| Cloud Functions Admin | Full Cloud Functions management |
+| Cloud Functions Developer | Deploy Cloud Functions |
+| Cloud Run Invoker | Invoke Cloud Run services |
+| Cloud Run Viewer | View Cloud Run resources |
+| Cloud RuntimeConfig Admin | Manage runtime configuration |
+| Cloud Scheduler Admin | Manage scheduled jobs |
+| Eventarc Event Receiver | Receive Eventarc events |
+| Eventarc Service Agent | Eventarc service operations |
+| Firebase Authentication Admin | Manage Firebase Auth |
+| Firebase Extensions Admin/Viewer | Manage Firebase Extensions |
+| Firebase Hosting Admin | Deploy to Firebase Hosting |
+| Secret Manager Admin | Create and manage secrets |
+| Secret Manager Secret Version Manager | Add versions to existing secrets |
+| Service Account Token Creator | Create OAuth tokens |
+| Service Account User | Act as service accounts |
+| Service Usage Consumer/Viewer | Consume and view GCP services |
+| Storage Admin | Full Cloud Storage access |
+
 ### Manual Deployment
 
 ```bash
