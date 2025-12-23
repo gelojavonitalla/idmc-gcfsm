@@ -101,6 +101,7 @@ export async function saveDownload(downloadId, downloadData) {
       fileType: downloadData.fileType || 'PDF',
       category: downloadData.category || DOWNLOAD_CATEGORIES.BOOKLET,
       downloadUrl: downloadData.downloadUrl || '',
+      thumbnailUrl: downloadData.thumbnailUrl || '',
       order: downloadData.order || 1,
       status: downloadData.status || DOWNLOAD_STATUS.DRAFT,
       updatedAt: serverTimestamp(),
