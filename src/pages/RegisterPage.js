@@ -1984,9 +1984,9 @@ function RegisterPage() {
                       <path d="M18 10h.01" />
                     </svg>
                   </div>
-                  <h3 className={styles.paymentMethodTitle}>Online Bank Transfer</h3>
+                  <h3 className={styles.paymentMethodTitle}>Bank Transfer/Deposit</h3>
                   <p className={styles.paymentMethodDescription}>
-                    Transfer to our bank account and upload your proof of payment
+                    Transfer or deposit to our bank account and upload your proof of payment
                   </p>
                   {formData.paymentMethod === PAYMENT_METHODS.BANK_TRANSFER && (
                     <div className={styles.selectedIndicator}>✓</div>

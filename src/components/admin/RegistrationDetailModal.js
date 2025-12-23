@@ -39,7 +39,7 @@ const STATUS_OPTIONS = [
  */
 const PAYMENT_METHOD_LABELS = {
   [PAYMENT_METHODS.GCASH]: 'GCash',
-  [PAYMENT_METHODS.BANK_TRANSFER]: 'Bank Transfer',
+  [PAYMENT_METHODS.BANK_TRANSFER]: 'Bank Transfer/Deposit',
   [PAYMENT_METHODS.CASH]: 'Cash',
 };
 
