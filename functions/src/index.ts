@@ -1872,7 +1872,8 @@ export const onRegistrationCreated = onDocumentCreated(
         // Track church stats
         const churchName = registrationData.church?.name || "Unknown Church";
         const churchCity = registrationData.church?.city || "";
-        // Use a sanitized key (replace dots and slashes which are invalid in Firestore paths)
+        // Use a sanitized key (replace dots and slashes which are
+        // invalid in Firestore paths)
         const churchKey = `${churchName}|${churchCity}`
           .replace(/\./g, "_")
           .replace(/\//g, "_");
