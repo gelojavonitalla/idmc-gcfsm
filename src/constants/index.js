@@ -288,11 +288,11 @@ export const MAX_FILE_SIZES = {
 
 /**
  * Recommended thumbnail dimensions in pixels
- * Optimized for download cards and list displays
+ * Optimized for book cover style display (portrait orientation)
  */
 export const THUMBNAIL_DIMENSIONS = {
-  WIDTH: 400,
-  HEIGHT: 300,
+  WIDTH: 300,
+  HEIGHT: 400,
 };
 
 /**
