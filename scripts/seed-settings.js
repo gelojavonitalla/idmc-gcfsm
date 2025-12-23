@@ -33,8 +33,8 @@ const DATABASE_ID = 'idmc-2026';
  * Default conference settings seed data
  */
 const SETTINGS_DATA = {
-  title: 'IDMC 2026',
-  theme: 'All In for Jesus and His Kingdom',
+  title: 'IDMC MANILA',
+  theme: 'EMPOWERED IN WARFARE, WEAKNESS, AND WITNESS',
   tagline: 'Intentional Disciple-Making Churches Conference',
   year: 2026,
   startDate: '2026-03-28',
