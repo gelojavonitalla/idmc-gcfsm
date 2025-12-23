@@ -12,7 +12,6 @@ import {
   PricingTierManager,
   FoodMenuManager,
   WhatToBringManager,
-  FeedbackSettingsManager,
 } from '../../components/admin';
 import {
   getConferenceSettings,
@@ -190,15 +189,6 @@ function AdminSettingsPage() {
           </svg>
           What to Bring
         </button>
-        <button
-          className={`${styles.tab} ${activeTab === 'feedback' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('feedback')}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-          Feedback
-        </button>
       </div>
 
       {/* Tab Content */}
@@ -224,9 +214,6 @@ function AdminSettingsPage() {
         )}
         {activeTab === 'whatToBring' && (
           <WhatToBringManager isLoading={isLoading} />
-        )}
-        {activeTab === 'feedback' && (
-          <FeedbackSettingsManager isLoading={isLoading} />
         )}
       </div>
     </AdminLayout>
