@@ -36,3 +36,5 @@ export { default as InvoiceDetailModal } from './InvoiceDetailModal';
 export { default as AdminLoadingFallback } from './AdminLoadingFallback';
 export { default as FoodMenuTable } from './FoodMenuTable';
 export { default as FoodItemFormModal } from './FoodItemFormModal';
+export { default as WhatToBringTable } from './WhatToBringTable';
+export { default as WhatToBringItemFormModal } from './WhatToBringItemFormModal';
