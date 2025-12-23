@@ -23,8 +23,8 @@ import styles from './SessionDetailModal.module.css';
  * @param {string} props.session.id - Unique session identifier
  * @param {string} props.session.title - Session title
  * @param {string} [props.session.description] - Session description
- * @param {string} props.session.time - Session start time
- * @param {string} [props.session.endTime] - Session end time
+ * @param {string} props.session.startTime - Session start time in HH:MM format
+ * @param {string} [props.session.endTime] - Session end time in HH:MM format
  * @param {string} props.session.sessionType - Session type identifier
  * @param {string} [props.session.venue] - Venue/room name
  * @param {Array<string>} [props.session.speakerIds] - Array of speaker IDs
@@ -99,16 +99,33 @@ function SessionDetailModal({ session, speakers = [], isOpen, onClose }) {
   };
 
   /**
+   * Formats time from 24-hour format to 12-hour format
+   *
+   * @param {string} time - Time in HH:MM format
+   * @returns {string} Formatted time (e.g., "1:15 PM")
+   */
+  const formatTime = (time) => {
+    if (!time) return '';
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  /**
    * Formats the time range for display
    *
    * @returns {string} Formatted time range
    */
   const getTimeDisplay = () => {
     if (!session) return '';
-    if (session.endTime) {
-      return `${session.time} - ${session.endTime}`;
+    const startTimeFormatted = formatTime(session.startTime);
+    const endTimeFormatted = formatTime(session.endTime);
+    if (startTimeFormatted && endTimeFormatted) {
+      return `${startTimeFormatted} - ${endTimeFormatted}`;
     }
-    return session.time;
+    return startTimeFormatted || '';
   };
 
   /**
@@ -326,7 +343,7 @@ SessionDetailModal.propTypes = {
     id: PropTypes.string.isRequired,
     title: PropTypes.string.isRequired,
     description: PropTypes.string,
-    time: PropTypes.string.isRequired,
+    startTime: PropTypes.string.isRequired,
     endTime: PropTypes.string,
     sessionType: PropTypes.string.isRequired,
     venue: PropTypes.string,

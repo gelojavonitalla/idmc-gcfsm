@@ -51,6 +51,8 @@ const AdminInvoicesPage = lazy(() => import('./pages/admin/AdminInvoicesPage'));
 const AdminFinanceDashboardPage = lazy(() => import('./pages/admin/AdminFinanceDashboardPage'));
 const AdminWorkshopsPage = lazy(() => import('./pages/admin/AdminWorkshopsPage'));
 const AdminFoodMenuPage = lazy(() => import('./pages/admin/AdminFoodMenuPage'));
+const AdminWhatToBringPage = lazy(() => import('./pages/admin/AdminWhatToBringPage'));
+const AdminChurchesPage = lazy(() => import('./pages/admin/AdminChurchesPage'));
 
 /**
  * App Component
@@ -284,6 +286,26 @@ function App() {
                 <AdminProtectedRoute>
                   <Suspense fallback={<AdminLoadingFallback />}>
                     <AdminFoodMenuPage />
+                  </Suspense>
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path={ADMIN_ROUTES.WHAT_TO_BRING}
+              element={
+                <AdminProtectedRoute>
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminWhatToBringPage />
+                  </Suspense>
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path={ADMIN_ROUTES.CHURCHES_BREAKDOWN}
+              element={
+                <AdminProtectedRoute>
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminChurchesPage />
                   </Suspense>
                 </AdminProtectedRoute>
               }

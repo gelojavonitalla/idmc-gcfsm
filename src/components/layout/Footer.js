@@ -89,11 +89,6 @@ function Footer() {
                     Check Status
                   </Link>
                 </li>
-                <li>
-                  <Link to={ROUTES.CONTACT} className={styles.link}>
-                    Contact Us
-                  </Link>
-                </li>
               </ul>
             </nav>
           </div>
@@ -161,6 +156,9 @@ function Footer() {
                 </a>
               )}
             </div>
+            <Link to={ROUTES.CONTACT} className={styles.contactLink}>
+              Have questions? Send us a message &rarr;
+            </Link>
           </div>
         </div>
 

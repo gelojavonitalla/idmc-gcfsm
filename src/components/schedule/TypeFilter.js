@@ -3,6 +3,12 @@ import { SESSION_TYPES, SESSION_TYPE_LABELS } from '../../constants';
 import styles from './TypeFilter.module.css';
 
 /**
+ * Session types available for filtering.
+ * Only shows the main session types: Plenary and Workshop.
+ */
+const FILTER_TYPES = [SESSION_TYPES.PLENARY, SESSION_TYPES.WORKSHOP];
+
+/**
  * TypeFilter Component
  * Dropdown filter for selecting session types to display in the schedule.
  *
@@ -34,7 +40,7 @@ function TypeFilter({ selectedType, onChange }) {
         aria-label="Filter sessions by type"
       >
         <option value="">All Sessions</option>
-        {Object.values(SESSION_TYPES).map((type) => (
+        {FILTER_TYPES.map((type) => (
           <option key={type} value={type}>
             {SESSION_TYPE_LABELS[type]}
           </option>

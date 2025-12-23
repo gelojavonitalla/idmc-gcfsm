@@ -27,6 +27,7 @@ import {
 import { getConferenceStats } from '../services/stats';
 import { getPublishedWorkshops } from '../services/workshops';
 import { getFoodMenuSettings, getAllFoodMenuItems } from '../services/foodMenu';
+import { getPublishedWhatToBringItems } from '../services/whatToBring';
 import { FOOD_MENU_STATUS } from '../constants';
 import { processReceipt } from '../tesseract';
 import WorkshopSelector from '../components/workshops/WorkshopSelector';
@@ -181,6 +182,9 @@ function RegisterPage() {
   const [currentAttendeeCount, setCurrentAttendeeCount] = useState(0);
   const [loadingCapacity, setLoadingCapacity] = useState(false);
 
+  // What to Bring items state
+  const [whatToBringItems, setWhatToBringItems] = useState([]);
+
   // OCR-related state
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState(null);
@@ -270,6 +274,22 @@ function RegisterPage() {
     };
 
     fetchFoodMenu();
+  }, []);
+
+  /**
+   * Fetches published "What to Bring" items on component mount
+   */
+  useEffect(() => {
+    const fetchWhatToBringItems = async () => {
+      try {
+        const items = await getPublishedWhatToBringItems();
+        setWhatToBringItems(items);
+      } catch (error) {
+        console.error('Failed to fetch what to bring items:', error);
+      }
+    };
+
+    fetchWhatToBringItems();
   }, []);
 
   /**
@@ -1255,6 +1275,17 @@ function RegisterPage() {
                 <p><strong>Venue:</strong> {settings.venue?.name}</p>
                 <p><strong>Address:</strong> {settings.venue?.address}</p>
               </div>
+
+              {whatToBringItems.length > 0 && (
+                <div className={styles.whatToBringSection}>
+                  <h2>What to Bring on Event Day</h2>
+                  <ul className={styles.whatToBringList}>
+                    {whatToBringItems.map((item) => (
+                      <li key={item.id}>{item.text}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -1953,37 +1984,42 @@ function RegisterPage() {
                       <path d="M18 10h.01" />
                     </svg>
                   </div>
-                  <h3 className={styles.paymentMethodTitle}>Online Bank Transfer</h3>
+                  <h3 className={styles.paymentMethodTitle}>Bank Transfer/Deposit</h3>
                   <p className={styles.paymentMethodDescription}>
-                    Transfer to our bank account and upload your proof of payment
+                    Transfer or deposit to our bank account and upload your proof of payment
                   </p>
                   {formData.paymentMethod === PAYMENT_METHODS.BANK_TRANSFER && (
                     <div className={styles.selectedIndicator}>✓</div>
                   )}
                 </div>
 
-                <div
-                  className={`${styles.paymentMethodCard} ${
-                    (formData.paymentMethod === PAYMENT_METHODS.GCASH || formData.paymentMethod === PAYMENT_METHODS.PAYMAYA) ? styles.selectedPaymentMethod : ''
-                  }`}
-                  onClick={() => updateField('paymentMethod', PAYMENT_METHODS.GCASH)}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className={styles.paymentMethodIcon}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="5" width="20" height="14" rx="2" />
-                      <path d="M2 10h20" />
-                    </svg>
+                {bankAccounts.some((account) =>
+                  account.accountType === BANK_ACCOUNT_TYPES.EWALLET &&
+                  (account.bankName === BANK_NAMES.GCASH || account.bankName === BANK_NAMES.MAYA)
+                ) && (
+                  <div
+                    className={`${styles.paymentMethodCard} ${
+                      (formData.paymentMethod === PAYMENT_METHODS.GCASH || formData.paymentMethod === PAYMENT_METHODS.PAYMAYA) ? styles.selectedPaymentMethod : ''
+                    }`}
+                    onClick={() => updateField('paymentMethod', PAYMENT_METHODS.GCASH)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className={styles.paymentMethodIcon}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="5" width="20" height="14" rx="2" />
+                        <path d="M2 10h20" />
+                      </svg>
+                    </div>
+                    <h3 className={styles.paymentMethodTitle}>E-Wallet (GCash/Maya)</h3>
+                    <p className={styles.paymentMethodDescription}>
+                      Send payment via GCash or Maya and upload your proof of payment
+                    </p>
+                    {(formData.paymentMethod === PAYMENT_METHODS.GCASH || formData.paymentMethod === PAYMENT_METHODS.PAYMAYA) && (
+                      <div className={styles.selectedIndicator}>✓</div>
+                    )}
                   </div>
-                  <h3 className={styles.paymentMethodTitle}>E-Wallet (GCash/Maya)</h3>
-                  <p className={styles.paymentMethodDescription}>
-                    Send payment via GCash or Maya and upload your proof of payment
-                  </p>
-                  {(formData.paymentMethod === PAYMENT_METHODS.GCASH || formData.paymentMethod === PAYMENT_METHODS.PAYMAYA) && (
-                    <div className={styles.selectedIndicator}>✓</div>
-                  )}
-                </div>
+                )}
               </div>
 
               {/* Bank Account Selection - Only for Bank Transfer */}

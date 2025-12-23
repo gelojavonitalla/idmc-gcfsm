@@ -8,12 +8,14 @@
 import {
   collection,
   getDocs,
+  getDoc,
+  doc,
   query,
   orderBy,
   limit,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { COLLECTIONS, REGISTRATION_STATUS, PRICING_TIERS } from '../constants';
+import { COLLECTIONS, REGISTRATION_STATUS, PRICING_TIERS, STATS_DOC_ID } from '../constants';
 
 /**
  * Fetches dashboard statistics
@@ -168,4 +170,150 @@ export function getActivePricingTier() {
     const endDate = new Date(tier.endDate);
     return tier.isActive && now >= startDate && now <= endDate;
   }) || null;
+}
+
+/**
+ * Fetches church statistics from pre-aggregated stats document
+ * Returns churches sorted by delegate count (descending)
+ *
+ * @param {number} [limitCount] - Optional limit for number of churches to return
+ * @returns {Promise<Object>} Church stats object with churches array and total count
+ */
+export async function getChurchStats(limitCount = null) {
+  try {
+    const statsRef = doc(db, COLLECTIONS.STATS, STATS_DOC_ID);
+    const statsDoc = await getDoc(statsRef);
+
+    if (!statsDoc.exists()) {
+      return {
+        churches: [],
+        totalChurches: 0,
+        totalDelegates: 0,
+      };
+    }
+
+    const data = statsDoc.data();
+    const churchStats = data.churchStats || {};
+
+    // Convert object to array and sort by delegate count
+    const churches = Object.values(churchStats)
+      .map((church) => ({
+        name: church.name || 'Unknown Church',
+        city: church.city || '',
+        delegateCount: church.delegateCount || 0,
+        registrationCount: church.registrationCount || 0,
+      }))
+      .sort((a, b) => b.delegateCount - a.delegateCount);
+
+    const totalChurches = churches.length;
+    const totalDelegates = churches.reduce((sum, c) => sum + c.delegateCount, 0);
+    const limitedChurches = limitCount ? churches.slice(0, limitCount) : churches;
+
+    return {
+      churches: limitedChurches,
+      totalChurches,
+      totalDelegates,
+    };
+  } catch (error) {
+    console.error('Failed to fetch church stats:', error);
+    return {
+      churches: [],
+      totalChurches: 0,
+      totalDelegates: 0,
+    };
+  }
+}
+
+/**
+ * Fetches food choice statistics from pre-aggregated stats document
+ *
+ * @returns {Promise<Object>} Food stats object with distribution array
+ */
+export async function getFoodStats() {
+  try {
+    // Fetch pre-aggregated stats and food menu items in parallel
+    const [statsDoc, foodMenuSnapshot] = await Promise.all([
+      getDoc(doc(db, COLLECTIONS.STATS, STATS_DOC_ID)),
+      getDocs(collection(db, COLLECTIONS.FOOD_MENU)),
+    ]);
+
+    if (!statsDoc.exists()) {
+      return {
+        distribution: [],
+        totalWithChoice: 0,
+        totalWithoutChoice: 0,
+        totalAttendees: 0,
+      };
+    }
+
+    const data = statsDoc.data();
+    const foodStats = data.foodStats || {};
+    const totalWithChoice = data.totalWithFoodChoice || 0;
+    const totalWithoutChoice = data.totalWithoutFoodChoice || 0;
+
+    // Build food menu name lookup
+    const foodMenuItems = new Map();
+    foodMenuSnapshot.docs.forEach((menuDoc) => {
+      foodMenuItems.set(menuDoc.id, menuDoc.data().name || menuDoc.id);
+    });
+
+    // Convert to array with names
+    const distribution = Object.entries(foodStats)
+      .map(([id, count]) => ({
+        id,
+        name: foodMenuItems.get(id) || id,
+        count: count || 0,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    return {
+      distribution,
+      totalWithChoice,
+      totalWithoutChoice,
+      totalAttendees: totalWithChoice + totalWithoutChoice,
+    };
+  } catch (error) {
+    console.error('Failed to fetch food stats:', error);
+    return {
+      distribution: [],
+      totalWithChoice: 0,
+      totalWithoutChoice: 0,
+      totalAttendees: 0,
+    };
+  }
+}
+
+/**
+ * Fetches download statistics
+ *
+ * @returns {Promise<Object>} Download stats object with items and totals
+ */
+export async function getDownloadStats() {
+  try {
+    const downloadsRef = collection(db, COLLECTIONS.DOWNLOADS);
+    const downloadsQuery = query(downloadsRef, orderBy('order', 'asc'));
+    const snapshot = await getDocs(downloadsQuery);
+
+    const items = snapshot.docs.map((downloadDoc) => ({
+      id: downloadDoc.id,
+      title: downloadDoc.data().title || downloadDoc.id,
+      downloadCount: downloadDoc.data().downloadCount || 0,
+      status: downloadDoc.data().status,
+    }));
+
+    const totalDownloads = items.reduce((sum, item) => sum + item.downloadCount, 0);
+
+    return {
+      items,
+      totalDownloads,
+      totalFiles: items.length,
+    };
+  } catch (error) {
+    console.error('Failed to fetch download stats:', error);
+    return {
+      items: [],
+      totalDownloads: 0,
+      totalFiles: 0,
+    };
+  }
 }

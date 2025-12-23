@@ -73,6 +73,11 @@ on:
         required: false
         default: false
         type: boolean
+      seed_what_to_bring:
+        description: 'Seed what to bring checklist items'
+        required: false
+        default: false
+        type: boolean
       seed_all:
         description: 'Seed ALL data (overrides individual options)'
         required: false
@@ -117,7 +122,7 @@ jobs:
           echo "✅ Firestore indexes deployed successfully to ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}!"
 
   seed_data:
-    if: ${{ inputs.seed_speakers || inputs.seed_sessions || inputs.seed_schedule || inputs.seed_faq || inputs.seed_settings || inputs.seed_about || inputs.seed_downloads || inputs.seed_legal || inputs.seed_registrations || inputs.seed_venue || inputs.seed_bank_accounts || inputs.seed_invoice_requests || inputs.seed_bank_transactions || inputs.seed_all }}
+    if: ${{ inputs.seed_speakers || inputs.seed_sessions || inputs.seed_schedule || inputs.seed_faq || inputs.seed_settings || inputs.seed_about || inputs.seed_downloads || inputs.seed_legal || inputs.seed_registrations || inputs.seed_venue || inputs.seed_bank_accounts || inputs.seed_invoice_requests || inputs.seed_bank_transactions || inputs.seed_what_to_bring || inputs.seed_all }}
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
     steps:
@@ -316,10 +321,23 @@ jobs:
         env:
           GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
+      - name: Seed What to Bring Data
+        if: ${{ inputs.seed_what_to_bring || inputs.seed_all }}
+        run: |
+          if [ "${{ inputs.clear_existing }}" == "true" ]; then
+            echo "Clearing and re-seeding what to bring items..."
+            node scripts/seed-what-to-bring.js --clear
+          else
+            echo "Seeding what to bring items (preserving existing)..."
+            node scripts/seed-what-to-bring.js
+          fi
+        env:
+          GCLOUD_PROJECT: idmc-gcfsm-dev
+
       - name: Seed Complete
         run: |
           echo "✅ Firestore seeding complete!"
           echo "🎯 Environment: ${{ github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOPMENT' }}"
           echo "🗄️ Project: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}"
-          echo "Seeded: speakers=${{ inputs.seed_speakers || inputs.seed_all }}, sessions=${{ inputs.seed_sessions || inputs.seed_all }}, schedule=${{ inputs.seed_schedule || inputs.seed_all }}, faq=${{ inputs.seed_faq || inputs.seed_all }}, settings=${{ inputs.seed_settings || inputs.seed_all }}, about=${{ inputs.seed_about || inputs.seed_all }}, downloads=${{ inputs.seed_downloads || inputs.seed_all }}, legal=${{ inputs.seed_legal || inputs.seed_all }}, registrations=${{ inputs.seed_registrations }}, venue=${{ inputs.seed_venue || inputs.seed_all }}, bank_accounts=${{ inputs.seed_bank_accounts || inputs.seed_all }}, invoice_requests=${{ inputs.seed_invoice_requests }}, bank_transactions=${{ inputs.seed_bank_transactions }}"
+          echo "Seeded: speakers=${{ inputs.seed_speakers || inputs.seed_all }}, sessions=${{ inputs.seed_sessions || inputs.seed_all }}, schedule=${{ inputs.seed_schedule || inputs.seed_all }}, faq=${{ inputs.seed_faq || inputs.seed_all }}, settings=${{ inputs.seed_settings || inputs.seed_all }}, about=${{ inputs.seed_about || inputs.seed_all }}, downloads=${{ inputs.seed_downloads || inputs.seed_all }}, legal=${{ inputs.seed_legal || inputs.seed_all }}, registrations=${{ inputs.seed_registrations }}, venue=${{ inputs.seed_venue || inputs.seed_all }}, bank_accounts=${{ inputs.seed_bank_accounts || inputs.seed_all }}, invoice_requests=${{ inputs.seed_invoice_requests }}, bank_transactions=${{ inputs.seed_bank_transactions }}, what_to_bring=${{ inputs.seed_what_to_bring || inputs.seed_all }}"
           echo "Cleared existing: ${{ inputs.clear_existing }}"

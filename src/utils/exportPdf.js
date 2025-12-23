@@ -22,26 +22,18 @@ const SESSION_TYPE_PDF_COLORS = {
 };
 
 /**
- * Converts 12-hour time format to 24-hour for sorting
+ * Formats time from 24-hour format to 12-hour format
  *
- * @param {string} time12h - Time string in 12-hour format (e.g., "9:00 AM")
- * @returns {string} Time in 24-hour format for sorting
+ * @param {string} time - Time in HH:MM format
+ * @returns {string} Formatted time (e.g., "1:15 PM")
  */
-function convertTo24Hour(time12h) {
-  if (!time12h) {
-    return '00:00';
-  }
-  const [time, modifier] = time12h.split(' ');
-  const [hoursStr, minutes] = time.split(':');
-  let hours = hoursStr;
-
-  if (hours === '12') {
-    hours = modifier === 'AM' ? '00' : '12';
-  } else if (modifier === 'PM') {
-    hours = parseInt(hours, 10) + 12;
-  }
-
-  return `${String(hours).padStart(2, '0')}:${minutes}`;
+function formatTime(time) {
+  if (!time) return '';
+  const [hours, minutes] = time.split(':');
+  const hour = parseInt(hours, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minutes} ${ampm}`;
 }
 
 /**
@@ -54,17 +46,16 @@ function groupSessionsByTime(sessions) {
   const groups = {};
 
   sessions.forEach((session) => {
-    const timeKey = session.time;
+    const timeKey = session.startTime;
     if (!groups[timeKey]) {
       groups[timeKey] = [];
     }
     groups[timeKey].push(session);
   });
 
+  // Sort by startTime (already in 24-hour format)
   return Object.entries(groups).sort((a, b) => {
-    const timeA = convertTo24Hour(a[0]);
-    const timeB = convertTo24Hour(b[0]);
-    return timeA.localeCompare(timeB);
+    return a[0].localeCompare(b[0]);
   });
 }
 
@@ -180,7 +171,9 @@ export function generateSchedulePdf(sessions, options = {}) {
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    const timeText = session.endTime ? `${session.time} - ${session.endTime}` : session.time;
+    const startFormatted = formatTime(session.startTime);
+    const endFormatted = formatTime(session.endTime);
+    const timeText = endFormatted ? `${startFormatted} - ${endFormatted}` : startFormatted;
     pdf.text(`${timeText} | ${session.venue || 'TBA'}`, margin, yPosition);
 
     // Speaker names (if any)

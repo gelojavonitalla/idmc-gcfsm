@@ -17,7 +17,7 @@ import {getAuth} from "firebase-admin/auth";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import sgMail from "@sendgrid/mail";
 import * as QRCode from "qrcode";
-import {verifyFinanceAdmin, verifyAdminRole} from "./auth";
+import {verifyFinanceAdmin} from "./auth";
 import {
   checkRateLimit,
   cleanupExpiredRateLimits,
@@ -162,6 +162,9 @@ const useSendGrid = defineString("USE_SENDGRID", {default: "false"});
 // Reply-to email for contact inquiry responses (info@ address for replies)
 const replyToEmail = defineString("REPLY_TO_EMAIL", {default: ""});
 
+// Storage bucket name (defaults to database ID for backwards compatibility)
+const storageBucketName = defineString("STORAGE_BUCKET", {default: "idmc-2026"});
+
 // SendGrid API key (stored in Secret Manager, accessed via defineSecret)
 const sendgridApiKey = defineSecret("SENDGRID_API_KEY");
 
@@ -226,6 +229,7 @@ const COLLECTIONS = {
   CONTACT_INQUIRIES: "contactInquiries",
   SESSIONS: "sessions",
   STATS: "stats",
+  WHAT_TO_BRING: "whatToBring",
 };
 
 /**
@@ -317,6 +321,67 @@ const ROLE_LABELS: Record<string, string> = {
   media: "Media",
   volunteer: "Volunteer",
 };
+
+/**
+ * What to Bring item interface
+ */
+interface WhatToBringItem {
+  id: string;
+  text: string;
+  order: number;
+  status: string;
+}
+
+/**
+ * Default "What to Bring" items used as fallback
+ */
+const DEFAULT_WHAT_TO_BRING_ITEMS: WhatToBringItem[] = [
+  {id: "default-1", text: "Your personal QR code (screenshot or printed)", order: 1, status: "published"},
+  {id: "default-2", text: "Bible", order: 2, status: "published"},
+  {id: "default-3", text: "Pen for note-taking", order: 3, status: "published"},
+  {id: "default-4", text: "Tumbler (to stay hydrated)", order: 4, status: "published"},
+];
+
+/**
+ * Fetches published "What to Bring" items from Firestore
+ *
+ * @return {Promise<WhatToBringItem[]>} Array of published what to bring items
+ */
+async function getPublishedWhatToBringItems(): Promise<WhatToBringItem[]> {
+  try {
+    const db = getFirestore(DATABASE_ID);
+    const snapshot = await db
+      .collection(COLLECTIONS.WHAT_TO_BRING)
+      .where("status", "==", "published")
+      .orderBy("order", "asc")
+      .get();
+
+    if (snapshot.empty) {
+      logger.info("No published What to Bring items found, using defaults");
+      return DEFAULT_WHAT_TO_BRING_ITEMS;
+    }
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      text: doc.data().text || "",
+      order: doc.data().order || 0,
+      status: doc.data().status || "published",
+    }));
+  } catch (error) {
+    logger.warn("Could not fetch What to Bring items, using defaults:", error);
+    return DEFAULT_WHAT_TO_BRING_ITEMS;
+  }
+}
+
+/**
+ * Generates HTML list items for "What to Bring" section
+ *
+ * @param {WhatToBringItem[]} items - Array of what to bring items
+ * @return {string} HTML string for list items
+ */
+function generateWhatToBringListHtml(items: WhatToBringItem[]): string {
+  return items.map((item) => `<li>${item.text}</li>`).join("\n                ");
+}
 
 /**
  * Generates the HTML email template for admin invitations
@@ -1074,6 +1139,7 @@ interface AttendeeWithQR {
  * @param {Object} registration - Registration data
  * @param {Object} settings - Event settings data
  * @param {AttendeeWithQR[]} attendeesWithQR - Array of attendees with QR codes
+ * @param {WhatToBringItem[]} whatToBringItems - Array of what to bring items
  * @return {string} HTML string for the email
  */
 function generateTicketEmailHtml(
@@ -1104,7 +1170,8 @@ function generateTicketEmailHtml(
       address: string;
     };
   },
-  attendeesWithQR: AttendeeWithQR[]
+  attendeesWithQR: AttendeeWithQR[],
+  whatToBringItems: WhatToBringItem[] = DEFAULT_WHAT_TO_BRING_ITEMS
 ): string {
   const {
     registrationId,
@@ -1229,8 +1296,7 @@ function generateTicketEmailHtml(
                 What to bring on event day:
               </p>
               <ul style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.8;">
-                <li>Your personal QR code (screenshot or printed)</li>
-                <li>Valid ID for verification</li>
+                ${generateWhatToBringListHtml(whatToBringItems)}
               </ul>
 
               <!-- View Ticket Link -->
@@ -1271,6 +1337,7 @@ function generateTicketEmailHtml(
  * @param {Object} registration - Registration data
  * @param {Object} settings - Event settings data
  * @param {AttendeeWithQR} attendee - Attendee info with QR code
+ * @param {WhatToBringItem[]} whatToBringItems - Array of what to bring items
  * @return {string} HTML string for the email
  */
 function generateIndividualTicketEmailHtml(
@@ -1293,7 +1360,8 @@ function generateIndividualTicketEmailHtml(
       address: string;
     };
   },
-  attendee: AttendeeWithQR
+  attendee: AttendeeWithQR,
+  whatToBringItems: WhatToBringItem[] = DEFAULT_WHAT_TO_BRING_ITEMS
 ): string {
   const {
     registrationId,
@@ -1394,8 +1462,7 @@ function generateIndividualTicketEmailHtml(
                 What to bring on event day:
               </p>
               <ul style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.8;">
-                <li>This QR code (screenshot or printed)</li>
-                <li>Valid ID for verification</li>
+                ${generateWhatToBringListHtml(whatToBringItems)}
               </ul>
 
               <!-- View Ticket Link -->
@@ -1539,13 +1606,15 @@ async function generateAllAttendeeQRCodes(
  * @param {Object} registration - Registration data
  * @param {Object} settings - Event settings data
  * @param {AttendeeWithQR[]} attendeesWithQR - All attendees with their QR codes
+ * @param {WhatToBringItem[]} whatToBringItems - Array of what to bring items
  * @return {Promise<void>} Promise that resolves when email is sent
  */
 async function sendTicketEmail(
   to: string,
   registration: Parameters<typeof generateTicketEmailHtml>[0],
   settings: Parameters<typeof generateTicketEmailHtml>[1],
-  attendeesWithQR: AttendeeWithQR[]
+  attendeesWithQR: AttendeeWithQR[],
+  whatToBringItems: WhatToBringItem[] = DEFAULT_WHAT_TO_BRING_ITEMS
 ): Promise<void> {
   const apiKey = getSendGridApiKey();
   if (!apiKey) {
@@ -1577,7 +1646,12 @@ async function sendTicketEmail(
       name: senderName.value() || "IDMC Registration",
     },
     subject: `Your IDMC 2026 Ticket${attendeesWithQR.length > 1 ? "s" : ""} - ${registration.registrationId}`,
-    html: generateTicketEmailHtml(registration, settings, attendeesWithQR),
+    html: generateTicketEmailHtml(
+      registration,
+      settings,
+      attendeesWithQR,
+      whatToBringItems
+    ),
     attachments,
   };
 
@@ -1592,6 +1666,7 @@ async function sendTicketEmail(
  * @param {Object} registration - Registration data
  * @param {Object} settings - Event settings data
  * @param {AttendeeWithQR} attendee - Attendee info with their QR code
+ * @param {WhatToBringItem[]} whatToBringItems - Array of what to bring items
  * @return {Promise<void>} Promise that resolves when email is sent
  */
 async function sendIndividualTicketEmail(
@@ -1603,7 +1678,8 @@ async function sendIndividualTicketEmail(
     primaryAttendee: {firstName: string; lastName: string};
   },
   settings: Parameters<typeof generateIndividualTicketEmailHtml>[1],
-  attendee: AttendeeWithQR
+  attendee: AttendeeWithQR,
+  whatToBringItems: WhatToBringItem[] = DEFAULT_WHAT_TO_BRING_ITEMS
 ): Promise<void> {
   const apiKey = getSendGridApiKey();
   if (!apiKey) {
@@ -1635,7 +1711,12 @@ async function sendIndividualTicketEmail(
       name: senderName.value() || "IDMC Registration",
     },
     subject: `Your IDMC 2026 Ticket - ${registration.registrationId}`,
-    html: generateIndividualTicketEmailHtml(registration, settings, attendee),
+    html: generateIndividualTicketEmailHtml(
+      registration,
+      settings,
+      attendee,
+      whatToBringItems
+    ),
     attachments,
   };
 
@@ -1788,6 +1869,44 @@ export const onRegistrationCreated = onDocumentCreated(
           }
         }
 
+        // Track church stats
+        const churchName = registrationData.church?.name || "Unknown Church";
+        const churchCity = registrationData.church?.city || "";
+        // Use a sanitized key (replace dots and slashes which are invalid in Firestore paths)
+        const churchKey = `${churchName}|${churchCity}`
+          .replace(/\./g, "_")
+          .replace(/\//g, "_");
+        statsUpdate[`churchStats.${churchKey}.name`] = churchName;
+        statsUpdate[`churchStats.${churchKey}.city`] = churchCity;
+        statsUpdate[`churchStats.${churchKey}.delegateCount`] =
+          FieldValue.increment(attendeeCount);
+        statsUpdate[`churchStats.${churchKey}.registrationCount`] =
+          FieldValue.increment(1);
+
+        // Track food stats for primary attendee
+        const primaryFood = registrationData.primaryAttendee?.foodChoice;
+        if (primaryFood) {
+          statsUpdate[`foodStats.${primaryFood}`] = FieldValue.increment(1);
+          statsUpdate.totalWithFoodChoice = FieldValue.increment(1);
+        } else {
+          statsUpdate.totalWithoutFoodChoice = FieldValue.increment(1);
+        }
+
+        // Track food stats for additional attendees
+        if (registrationData.additionalAttendees) {
+          registrationData.additionalAttendees.forEach(
+            (attendee: {foodChoice?: string}) => {
+              if (attendee.foodChoice) {
+                statsUpdate[`foodStats.${attendee.foodChoice}`] =
+                  FieldValue.increment(1);
+                statsUpdate.totalWithFoodChoice = FieldValue.increment(1);
+              } else {
+                statsUpdate.totalWithoutFoodChoice = FieldValue.increment(1);
+              }
+            }
+          );
+        }
+
         // Update stats document
         const statsRef = db.collection(COLLECTIONS.STATS).doc(STATS_DOC_ID);
         await statsRef.set(statsUpdate, {merge: true});
@@ -1936,6 +2055,15 @@ export const onPaymentConfirmed = onDocumentUpdated(
       log.warn("Could not fetch settings, using defaults", {error});
     }
 
+    // Fetch "What to Bring" items
+    let whatToBringItems: WhatToBringItem[] = DEFAULT_WHAT_TO_BRING_ITEMS;
+    try {
+      whatToBringItems = await getPublishedWhatToBringItems();
+      log.info("Fetched What to Bring items", {count: whatToBringItems.length});
+    } catch (error) {
+      log.warn("Could not fetch What to Bring items, using defaults", {error});
+    }
+
     let ticketEmailSent = false;
     let additionalEmailsSent = 0;
     let smsSent = false;
@@ -1961,7 +2089,7 @@ export const onPaymentConfirmed = onDocumentUpdated(
           totalAmount: after.totalAmount,
           church: after.church,
           additionalAttendees: after.additionalAttendees,
-        }, settings, attendeesWithQR);
+        }, settings, attendeesWithQR, whatToBringItems);
 
         updateData.ticketEmailSent = true;
         updateData.ticketEmailSentAt = FieldValue.serverTimestamp();
@@ -1990,7 +2118,8 @@ export const onPaymentConfirmed = onDocumentUpdated(
                     primaryAttendee: after.primaryAttendee,
                   },
                   settings,
-                  attendeeWithQR
+                  attendeeWithQR,
+                  whatToBringItems
                 );
                 additionalEmailsSent++;
               }
@@ -2155,8 +2284,15 @@ export const ocrReceipt = onCall(
   async (request) => {
     const log = cfLogger.createContext("ocrReceipt");
 
-    // Verify user is an active admin (any role can use OCR for verification)
-    await verifyAdminRole(request.auth?.uid);
+    // Only require authentication - any logged-in user can use OCR
+    // This is needed for regular users during registration to scan receipts
+    if (!request.auth?.uid) {
+      log.warn("Unauthenticated request to ocrReceipt");
+      throw new HttpsError(
+        "unauthenticated",
+        "You must be logged in to use OCR"
+      );
+    }
 
     const {image} = request.data as {image?: string};
 
@@ -2536,9 +2672,9 @@ export const sendInvoiceEmail = onCall(
       }
 
       // Download invoice file from Storage
-      // Use the idmc-2026 bucket, not the default project bucket
+      // Use the configured storage bucket, not the default project bucket
       const {getStorage} = await import("firebase-admin/storage");
-      const bucket = getStorage().bucket(DATABASE_ID);
+      const bucket = getStorage().bucket(storageBucketName.value());
 
       // Extract file path from URL
       const invoiceUrl = registration.invoice.invoiceUrl;

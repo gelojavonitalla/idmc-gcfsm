@@ -50,6 +50,8 @@ export const ADMIN_ROUTES = {
   INVOICES: '/admin/invoices',
   FINANCE_DASHBOARD: '/admin/finance-dashboard',
   FOOD_MENU: '/admin/food-menu',
+  WHAT_TO_BRING: '/admin/what-to-bring',
+  CHURCHES_BREAKDOWN: '/admin/churches',
 };
 
 /**
@@ -181,7 +183,6 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Speakers', path: ADMIN_ROUTES.SPEAKERS, icon: 'mic', requiresPermission: 'manageSpeakers' },
       { label: 'Schedule', path: ADMIN_ROUTES.SCHEDULE, icon: 'calendar', requiresPermission: 'manageSchedule' },
       { label: 'Venue', path: ADMIN_ROUTES.VENUE, icon: 'location', requiresPermission: 'manageContent' },
-      { label: 'Food Menu', path: ADMIN_ROUTES.FOOD_MENU, icon: 'utensils', requiresPermission: 'manageContent' },
       { label: 'FAQ', path: ADMIN_ROUTES.FAQ, icon: 'question', requiresPermission: 'manageContent' },
       { label: 'Downloads', path: ADMIN_ROUTES.DOWNLOADS, icon: 'download', requiresPermission: 'manageContent' },
       { label: 'About', path: ADMIN_ROUTES.ABOUT_CONTENT, icon: 'church', requiresPermission: 'manageContent' },
@@ -243,6 +244,7 @@ export const COLLECTIONS = {
   CHECK_IN_LOGS: 'checkInLogs',
   BANK_ACCOUNTS: 'bankAccounts',
   FOOD_MENU: 'foodMenu',
+  WHAT_TO_BRING: 'whatToBring',
   STATS: 'stats',
 };
 
@@ -287,11 +289,11 @@ export const MAX_FILE_SIZES = {
 
 /**
  * Recommended thumbnail dimensions in pixels
- * Optimized for download cards and list displays
+ * Optimized for book cover style display (portrait orientation)
  */
 export const THUMBNAIL_DIMENSIONS = {
-  WIDTH: 400,
-  HEIGHT: 300,
+  WIDTH: 300,
+  HEIGHT: 400,
 };
 
 /**
@@ -341,6 +343,7 @@ export const NAV_ITEMS = [
   { label: 'Home', path: ROUTES.HOME, isAnchor: false },
   { label: 'Speakers', path: ROUTES.SPEAKERS, isAnchor: false },
   { label: 'Schedule', path: ROUTES.SCHEDULE, isAnchor: false },
+  { label: 'Downloads', path: ROUTES.DOWNLOADS, isAnchor: false },
   { label: 'IDMC 2025', path: ROUTES.IDMC_2025, isAnchor: false },
   { label: 'Check Status', path: ROUTES.REGISTRATION_STATUS, isAnchor: false },
   { label: 'Register', path: ROUTES.REGISTER, isAnchor: false, isPrimary: true },
@@ -1252,6 +1255,14 @@ export const DOWNLOAD_STATUS = Object.freeze({
  * Food menu item status values
  */
 export const FOOD_MENU_STATUS = Object.freeze({
+  DRAFT: 'draft',
+  PUBLISHED: 'published',
+});
+
+/**
+ * What to bring item status values
+ */
+export const WHAT_TO_BRING_STATUS = Object.freeze({
   DRAFT: 'draft',
   PUBLISHED: 'published',
 });

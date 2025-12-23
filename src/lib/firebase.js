@@ -18,10 +18,11 @@ import {
 
 /**
  * Firebase database and storage configuration
+ * Values are loaded from environment variables for flexibility across environments
  */
 const FIREBASE_CONFIG = {
-  DATABASE_ID: 'idmc-2026',
-  STORAGE_BUCKET: 'idmc-2026',
+  DATABASE_ID: process.env.REACT_APP_FIREBASE_DATABASE_ID || 'idmc-2026',
+  STORAGE_BUCKET: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || 'idmc-2026',
 };
 
 /**

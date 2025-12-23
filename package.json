@@ -55,6 +55,8 @@
     "seed:bank-transactions:clear": "node scripts/seed-bank-transactions.js --clear",
     "seed:food-menu": "node scripts/seed-food-menu.js",
     "seed:food-menu:clear": "node scripts/seed-food-menu.js --clear",
+    "seed:what-to-bring": "node scripts/seed-what-to-bring.js",
+    "seed:what-to-bring:clear": "node scripts/seed-what-to-bring.js --clear",
     "emulators": "firebase emulators:start",
     "seed:emulator": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-speakers.js --clear",
     "seed:emulator:sessions": "FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/seed-sessions.js --clear",
