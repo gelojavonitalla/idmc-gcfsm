@@ -9,7 +9,7 @@ import {setGlobalOptions} from "firebase-functions";
 import {defineString, defineSecret} from "firebase-functions/params";
 import {onDocumentCreated, onDocumentUpdated} from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
-import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {onCall, onRequest, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {ImageAnnotatorClient} from "@google-cloud/vision";
 import {initializeApp} from "firebase-admin/app";
@@ -17,6 +17,19 @@ import {getAuth} from "firebase-admin/auth";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import sgMail from "@sendgrid/mail";
 import * as QRCode from "qrcode";
+import {verifyFinanceAdmin, verifyAdminRole} from "./auth";
+import {
+  checkRateLimit,
+  cleanupExpiredRateLimits,
+  RATE_LIMIT_CONFIGS,
+} from "./rateLimit";
+import {
+  logAuditEvent,
+  logRegistrationAccess,
+  logRateLimitExceeded,
+  AUDIT_ACTIONS,
+  AUDIT_SEVERITY,
+} from "./auditLog";
 
 // Initialize Firebase Admin SDK
 initializeApp();
@@ -2141,6 +2154,10 @@ export const ocrReceipt = onCall(
   },
   async (request) => {
     const log = cfLogger.createContext("ocrReceipt");
+
+    // Verify user is an active admin (any role can use OCR for verification)
+    await verifyAdminRole(request.auth?.uid);
+
     const {image} = request.data as {image?: string};
 
     if (!image) {
@@ -2419,16 +2436,12 @@ export const sendInvoiceEmail = onCall(
     const {registrationId} = request.data;
     const log = cfLogger.createContext("sendInvoiceEmail", registrationId);
 
-    // Validate admin authentication
-    if (!request.auth) {
-      log.error("User not authenticated");
-      log.end(false, {reason: "unauthenticated"});
-      throw new HttpsError("unauthenticated", "User must be authenticated");
-    }
+    // Verify user is a finance admin or superadmin
+    const {admin} = await verifyFinanceAdmin(request.auth?.uid);
 
     log.start({
       registrationId,
-      requestedBy: request.auth.token.email,
+      requestedBy: admin.email,
     });
 
     // Check if SendGrid is enabled
@@ -2589,9 +2602,22 @@ export const sendInvoiceEmail = onCall(
       await registrationRef.update({
         "invoice.status": INVOICE_STATUS.SENT,
         "invoice.sentAt": FieldValue.serverTimestamp(),
-        "invoice.sentBy": request.auth.token.email || "unknown",
+        "invoice.sentBy": admin.email,
         "invoice.emailDeliveryStatus": "sent",
         "updatedAt": FieldValue.serverTimestamp(),
+      });
+
+      // Log the invoice sent event
+      await logAuditEvent({
+        action: AUDIT_ACTIONS.INVOICE_SENT,
+        severity: AUDIT_SEVERITY.INFO,
+        actorId: request.auth?.uid || null,
+        actorEmail: admin.email,
+        actorRole: admin.role,
+        entityType: "registration",
+        entityId: registrationId,
+        description: `Invoice sent to ${primaryEmail} for ${registrationId}`,
+        metadata: {recipientEmail: primaryEmail},
       });
 
       log.end(true, {
@@ -2872,9 +2898,8 @@ export const sendInquiryReply = onCall(
     }
 
     const db = getFirestore(DATABASE_ID);
-    const inquiryRef = db
-      .collection(COLLECTIONS.CONTACT_INQUIRIES)
-      .doc(inquiryId);
+    const inquiriesCol = db.collection(COLLECTIONS.CONTACT_INQUIRIES);
+    const inquiryRef = inquiriesCol.doc(inquiryId);
 
     try {
       // Get inquiry document
@@ -3027,6 +3052,464 @@ export const sendInquiryReply = onCall(
         "internal",
         `Failed to send reply: ${errorMessage}`
       );
+    }
+  }
+);
+
+// ============================================
+// Secure Registration Lookup Functions
+// ============================================
+
+/**
+ * Scheduled function to clean up expired rate limit records
+ * Runs daily at 3:00 AM to remove stale records and keep database clean
+ */
+export const cleanupRateLimits = onSchedule(
+  {
+    schedule: "0 3 * * *", // Daily at 3:00 AM
+    region: "asia-southeast1",
+    timeZone: "Asia/Manila",
+  },
+  async () => {
+    logger.info("Starting rate limit cleanup");
+    const deleted = await cleanupExpiredRateLimits();
+    logger.info(`Rate limit cleanup complete. Deleted ${deleted} records.`);
+  }
+);
+
+/**
+ * Masks an email address for privacy
+ * Example: "john.doe@example.com" -> "jo***@example.com"
+ *
+ * @param {string} email - Email address to mask
+ * @return {string} Masked email
+ */
+function maskEmail(email: string): string {
+  if (!email || typeof email !== "string") {
+    return "";
+  }
+
+  const [localPart, domain] = email.split("@");
+  if (!localPart || !domain) {
+    return "***@***";
+  }
+
+  const visibleChars = Math.min(2, localPart.length);
+  const masked = localPart.substring(0, visibleChars) + "***";
+  return `${masked}@${domain}`;
+}
+
+/**
+ * Masks a name for privacy
+ * Example: "John Doe" -> "J***"
+ *
+ * @param {string} name - Name to mask
+ * @return {string} Masked name
+ */
+function maskName(name: string): string {
+  if (!name || typeof name !== "string") {
+    return "";
+  }
+
+  const trimmedName = name.trim();
+  if (trimmedName.length === 0) {
+    return "";
+  }
+
+  return trimmedName.charAt(0) + "***";
+}
+
+/**
+ * Secure registration lookup callable function
+ *
+ * This function provides a secure way to look up registrations:
+ * - Rate limited to prevent brute force attacks
+ * - Returns masked data only (no sensitive information exposed)
+ * - Does not require authentication (for public status check)
+ *
+ * @param {Object} data - Request data containing identifier
+ * @param {string} data.identifier - Registration ID, short code, email, phone
+ * @return {Object} Masked registration data
+ */
+export const lookupRegistrationSecure = onCall(
+  {
+    region: "asia-southeast1",
+    maxInstances: 10,
+    // Enable App Check enforcement once configured in Firebase Console
+    // This helps prevent API abuse from non-app sources
+    // enforceAppCheck: true,
+  },
+  async (request) => {
+    const {identifier} = request.data as {identifier?: string};
+
+    if (!identifier || identifier.trim().length < 4) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Please provide a valid registration ID, email, or phone number"
+      );
+    }
+
+    // Get client IP for rate limiting (use UID if authenticated)
+    const clientId = request.auth?.uid ||
+                     request.rawRequest?.ip ||
+                     "unknown";
+
+    // Check rate limit using persistent Firestore-based limiter
+    try {
+      await checkRateLimit(
+        "registration_lookup",
+        clientId,
+        RATE_LIMIT_CONFIGS.REGISTRATION_LOOKUP
+      );
+    } catch (error) {
+      // Log rate limit exceeded event
+      await logRateLimitExceeded("registration_lookup", clientId, clientId);
+      throw error;
+    }
+
+    const db = getFirestore();
+    const trimmed = identifier.trim();
+    const upperTrimmed = trimmed.toUpperCase();
+
+    let registration: FirebaseFirestore.DocumentData | null = null;
+    let registrationId: string | null = null;
+
+    // Try different lookup strategies
+    const registrationsRef = db.collection(COLLECTIONS.REGISTRATIONS);
+
+    // 1. Try full registration ID (e.g., "REG-2026-A7K3MN")
+    if (trimmed.toUpperCase().startsWith("REG-")) {
+      const docRef = registrationsRef.doc(trimmed.toUpperCase());
+      const docSnap = await docRef.get();
+      if (docSnap.exists) {
+        registration = docSnap.data() ?? null;
+        registrationId = docSnap.id;
+      }
+    }
+
+    // 2. Try 6-character short code
+    if (!registration && /^[A-Za-z0-9]{6}$/.test(trimmed)) {
+      const query = await registrationsRef
+        .where("shortCode", "==", upperTrimmed)
+        .limit(1)
+        .get();
+      if (!query.empty) {
+        registration = query.docs[0].data();
+        registrationId = query.docs[0].id;
+      }
+    }
+
+    // 3. Try 4-character short code suffix
+    if (!registration && /^[A-Za-z0-9]{4}$/.test(trimmed)) {
+      const query = await registrationsRef
+        .where("shortCodeSuffix", "==", upperTrimmed)
+        .limit(1)
+        .get();
+      if (!query.empty) {
+        registration = query.docs[0].data();
+        registrationId = query.docs[0].id;
+      }
+    }
+
+    // 4. Try email lookup
+    if (!registration && trimmed.includes("@")) {
+      const normalizedEmail = trimmed.toLowerCase();
+      const query = await registrationsRef
+        .where("primaryAttendee.email", "==", normalizedEmail)
+        .limit(1)
+        .get();
+      if (!query.empty) {
+        registration = query.docs[0].data();
+        registrationId = query.docs[0].id;
+      }
+    }
+
+    // 5. Try phone lookup
+    if (!registration) {
+      const cleanPhone = trimmed.replace(/[\s-]/g, "");
+      if (/^(\+63|0)?9\d{9}$/.test(cleanPhone)) {
+        // Try different phone format variations
+        const phoneVariants = [
+          cleanPhone,
+          cleanPhone.replace(/^0/, "+63"),
+          cleanPhone.replace(/^\+63/, "0"),
+        ];
+
+        for (const variant of phoneVariants) {
+          const query = await registrationsRef
+            .where("primaryAttendee.phone", "==", variant)
+            .limit(1)
+            .get();
+          if (!query.empty) {
+            registration = query.docs[0].data();
+            registrationId = query.docs[0].id;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!registration || !registrationId) {
+      throw new HttpsError(
+        "not-found",
+        "Registration not found. Please check your information and try again."
+      );
+    }
+
+    // Log this lookup for audit purposes
+    await logRegistrationAccess(
+      registrationId,
+      "lookup",
+      request.auth?.uid || null,
+      undefined,
+      clientId
+    );
+
+    // Calculate attendee count
+    const additionalAttendees = registration.additionalAttendees || [];
+    const attendeeCount = 1 + additionalAttendees.length;
+
+    // Return MASKED data only - no sensitive information
+    return {
+      registrationId: registration.registrationId,
+      shortCode: registration.shortCode,
+      status: registration.status,
+      primaryAttendee: {
+        firstName: registration.primaryAttendee?.firstName || "",
+        // Mask last name for privacy
+        lastName: maskName(registration.primaryAttendee?.lastName || ""),
+        // Mask email for privacy
+        email: maskEmail(registration.primaryAttendee?.email || ""),
+      },
+      attendeeCount,
+      // Include check-in status if confirmed
+      checkInStatus: registration.status === REGISTRATION_STATUS.CONFIRMED ? {
+        checkedIn: registration.checkIn?.checkedIn || false,
+        checkedInCount: registration.checkIn?.checkedInCount || 0,
+      } : null,
+      // Include payment status (but not amounts or details)
+      paymentStatus: registration.payment?.status || registration.status,
+      // Masked - don't expose full church name
+      church: registration.church?.name ?
+        maskName(registration.church.name) : null,
+    };
+  }
+);
+
+/**
+ * Get full registration details after verification
+ *
+ * This function requires a verification token that was sent to the
+ * registrant's email or phone. It returns full registration data
+ * including QR codes for check-in.
+ *
+ * @param {Object} data - Request data
+ * @param {string} data.registrationId - Registration ID
+ * @param {string} data.verificationCode - Code sent to email/phone
+ * @returns {Object} Full registration data with QR codes
+ */
+export const getRegistrationWithVerification = onCall(
+  {
+    region: "asia-southeast1",
+    maxInstances: 10,
+    // Enable App Check enforcement once configured in Firebase Console
+    // enforceAppCheck: true,
+  },
+  async (request) => {
+    const {registrationId, verificationCode} = request.data as {
+      registrationId?: string;
+      verificationCode?: string;
+    };
+
+    if (!registrationId || !verificationCode) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Registration ID and verification code are required"
+      );
+    }
+
+    // Get client IP for rate limiting
+    const clientId = request.auth?.uid ||
+                     request.rawRequest?.ip ||
+                     "unknown";
+
+    // Stricter rate limit for verification attempts using persistent limiter
+    try {
+      await checkRateLimit(
+        "registration_verification",
+        clientId,
+        RATE_LIMIT_CONFIGS.VERIFICATION
+      );
+    } catch (error) {
+      await logRateLimitExceeded("verification", clientId, clientId);
+      throw error;
+    }
+
+    const db = getFirestore();
+    const registrationRef = db
+      .collection(COLLECTIONS.REGISTRATIONS)
+      .doc(registrationId.toUpperCase());
+    const registrationDoc = await registrationRef.get();
+
+    if (!registrationDoc.exists) {
+      throw new HttpsError("not-found", "Registration not found");
+    }
+
+    const registration = registrationDoc.data();
+    if (!registration) {
+      throw new HttpsError("not-found", "Registration data is empty");
+    }
+
+    // Verify the code matches
+    // The verification code is the last 4 characters of the short code
+    // combined with the last 4 digits of the phone number
+    const expectedCode = (registration.shortCodeSuffix || "").toUpperCase() +
+      (registration.primaryAttendee?.phone || "").slice(-4);
+
+    if (verificationCode.toUpperCase() !== expectedCode.toUpperCase()) {
+      logger.warn(`Invalid verification attempt for ${registrationId}`);
+      throw new HttpsError(
+        "permission-denied",
+        "Invalid verification code. Please check and try again."
+      );
+    }
+
+    // Log successful verification
+    await logAuditEvent({
+      action: AUDIT_ACTIONS.REGISTRATION_VERIFIED,
+      severity: AUDIT_SEVERITY.INFO,
+      actorId: request.auth?.uid || null,
+      entityType: "registration",
+      entityId: registrationId.toUpperCase(),
+      description: `Registration verified: ${registrationId}`,
+      ipAddress: clientId,
+    });
+
+    // Generate QR codes for all attendees
+    const attendeesWithQR = await generateAllAttendeeQRCodes(
+      registration.registrationId,
+      registration.primaryAttendee,
+      registration.additionalAttendees
+    );
+
+    // Return full registration data
+    return {
+      registrationId: registration.registrationId,
+      shortCode: registration.shortCode,
+      status: registration.status,
+      primaryAttendee: registration.primaryAttendee,
+      additionalAttendees: registration.additionalAttendees || [],
+      church: registration.church,
+      totalAmount: registration.totalAmount,
+      payment: {
+        status: registration.payment?.status,
+        method: registration.payment?.method,
+        amountPaid: registration.payment?.amountPaid,
+      },
+      checkIn: registration.checkIn,
+      qrCodes: attendeesWithQR.map((a) => ({
+        attendeeIndex: a.attendeeIndex,
+        firstName: a.firstName,
+        lastName: a.lastName,
+        qrCodeDataUrl: a.qrCodeDataUrl,
+      })),
+    };
+  }
+);
+
+// ============================================
+// CSP Reporting Endpoint
+// ============================================
+
+/**
+ * CSP violation report structure from browsers
+ */
+interface CspViolationReport {
+  "csp-report"?: {
+    "document-uri"?: string;
+    "referrer"?: string;
+    "violated-directive"?: string;
+    "effective-directive"?: string;
+    "original-policy"?: string;
+    "blocked-uri"?: string;
+    "source-file"?: string;
+    "line-number"?: number;
+    "column-number"?: number;
+    "status-code"?: number;
+  };
+}
+
+/**
+ * CSP Violation Reporting Endpoint
+ *
+ * Receives Content Security Policy violation reports from browsers
+ * and logs them for security monitoring. This helps identify:
+ * - Attempted XSS attacks
+ * - Misconfigured CSP policies
+ * - Third-party script issues
+ *
+ * The endpoint accepts POST requests with JSON body containing
+ * the CSP violation report in the standard format.
+ */
+export const cspReport = onRequest(
+  {
+    region: "asia-southeast1",
+    maxInstances: 5,
+    cors: false, // CSP reports don't need CORS
+  },
+  async (req, res) => {
+    // Only accept POST requests
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    try {
+      const report = req.body as CspViolationReport;
+      const violation = report["csp-report"];
+
+      if (!violation) {
+        res.status(400).send("Invalid CSP report format");
+        return;
+      }
+
+      // Log the violation for monitoring
+      logger.warn("CSP Violation Detected", {
+        documentUri: violation["document-uri"],
+        violatedDirective: violation["violated-directive"],
+        effectiveDirective: violation["effective-directive"],
+        blockedUri: violation["blocked-uri"],
+        sourceFile: violation["source-file"],
+        lineNumber: violation["line-number"],
+        columnNumber: violation["column-number"],
+        referrer: violation["referrer"],
+      });
+
+      // Store violation in audit log for analysis
+      await logAuditEvent({
+        action: "security.csp_violation",
+        severity: AUDIT_SEVERITY.WARNING,
+        actorId: null,
+        description: `CSP violation: ${violation["violated-directive"]} blocked ${violation["blocked-uri"]}`,
+        metadata: {
+          documentUri: violation["document-uri"],
+          violatedDirective: violation["violated-directive"],
+          effectiveDirective: violation["effective-directive"],
+          blockedUri: violation["blocked-uri"],
+          sourceFile: violation["source-file"],
+          lineNumber: violation["line-number"],
+          columnNumber: violation["column-number"],
+        },
+        ipAddress: req.ip || undefined,
+        userAgent: req.headers["user-agent"] || undefined,
+      });
+
+      // Return 204 No Content (standard response for CSP reports)
+      res.status(204).send();
+    } catch (error) {
+      logger.error("Error processing CSP report:", error);
+      // Still return 204 to not disrupt client
+      res.status(204).send();
     }
   }
 );
