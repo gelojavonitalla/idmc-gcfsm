@@ -88,14 +88,21 @@ jobs:
   deploy_indexes:
     if: ${{ inputs.deploy_indexes }}
     runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Display Target Environment
+        run: |
+          echo "🎯 Target Environment: ${{ github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOPMENT' }}"
+          echo "📁 Branch: ${{ github.ref_name }}"
+          echo "🗄️ Project: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}"
+
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_IDMC_GCFSM_DEV }}
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
       - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
@@ -103,18 +110,28 @@ jobs:
       - name: Deploy Firestore Indexes
         run: |
           chmod +x ./scripts/deploy-firestore-indexes.sh
-          ./scripts/deploy-firestore-indexes.sh idmc-gcfsm-dev idmc-2026
+          ./scripts/deploy-firestore-indexes.sh ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }} idmc-2026
 
       - name: Index Deployment Complete
         run: |
-          echo "✅ Firestore indexes deployed successfully!"
+          echo "✅ Firestore indexes deployed successfully to ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}!"
 
   seed_data:
     if: ${{ inputs.seed_speakers || inputs.seed_sessions || inputs.seed_schedule || inputs.seed_faq || inputs.seed_settings || inputs.seed_about || inputs.seed_downloads || inputs.seed_legal || inputs.seed_registrations || inputs.seed_venue || inputs.seed_bank_accounts || inputs.seed_invoice_requests || inputs.seed_bank_transactions || inputs.seed_all }}
     runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Display Target Environment
+        run: |
+          echo "🎯 Target Environment: ${{ github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOPMENT' }}"
+          echo "📁 Branch: ${{ github.ref_name }}"
+          echo "🗄️ Project: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}"
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "⚠️  WARNING: You are seeding PRODUCTION data!"
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -128,7 +145,7 @@ jobs:
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_IDMC_GCFSM_DEV }}
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
       - name: Seed Speakers Data
         if: ${{ inputs.seed_speakers || inputs.seed_all }}
@@ -141,7 +158,7 @@ jobs:
             node scripts/seed-speakers.js
           fi
         env:
-          GCLOUD_PROJECT: idmc-gcfsm-dev
+          GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
       - name: Seed Sessions Data
         if: ${{ inputs.seed_sessions || inputs.seed_all }}
@@ -154,7 +171,7 @@ jobs:
             node scripts/seed-sessions.js
           fi
         env:
-          GCLOUD_PROJECT: idmc-gcfsm-dev
+          GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
       - name: Seed Schedule Data
         if: ${{ inputs.seed_schedule || inputs.seed_all }}
@@ -167,7 +184,7 @@ jobs:
             node scripts/seed-schedule.js
           fi
         env:
-          GCLOUD_PROJECT: idmc-gcfsm-dev
+          GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
       - name: Seed FAQ Data
         if: ${{ inputs.seed_faq || inputs.seed_all }}
@@ -180,7 +197,7 @@ jobs:
             node scripts/seed-faq.js
           fi
         env:
-          GCLOUD_PROJECT: idmc-gcfsm-dev
+          GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
       - name: Seed Settings Data
         if: ${{ inputs.seed_settings || inputs.seed_all }}
@@ -193,7 +210,7 @@ jobs:
             node scripts/seed-settings.js
           fi
         env:
-          GCLOUD_PROJECT: idmc-gcfsm-dev
+          GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
       - name: Seed About Pages
         if: ${{ inputs.seed_about || inputs.seed_all }}
@@ -206,7 +223,7 @@ jobs:
             node scripts/seed-about.js
           fi
         env:
-          GCLOUD_PROJECT: idmc-gcfsm-dev
+          GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
       - name: Seed Downloads Data
         if: ${{ inputs.seed_downloads || inputs.seed_all }}
@@ -219,7 +236,7 @@ jobs:
             node scripts/seed-downloads.js
           fi
         env:
-          GCLOUD_PROJECT: idmc-gcfsm-dev
+          GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
       - name: Seed Legal Content
         if: ${{ inputs.seed_legal || inputs.seed_all }}
@@ -232,7 +249,7 @@ jobs:
             node scripts/seed-legal.js
           fi
         env:
-          GCLOUD_PROJECT: idmc-gcfsm-dev
+          GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
       - name: Seed Mock Registrations
         if: ${{ inputs.seed_registrations }}
@@ -245,7 +262,7 @@ jobs:
             node scripts/seed-registrations.js
           fi
         env:
-          GCLOUD_PROJECT: idmc-gcfsm-dev
+          GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
       - name: Seed Venue Data
         if: ${{ inputs.seed_venue || inputs.seed_all }}
@@ -258,7 +275,7 @@ jobs:
             node scripts/seed-venue.js
           fi
         env:
-          GCLOUD_PROJECT: idmc-gcfsm-dev
+          GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
       - name: Seed Bank Accounts Data
         if: ${{ inputs.seed_bank_accounts || inputs.seed_all }}
@@ -271,7 +288,7 @@ jobs:
             node scripts/seed-bank-accounts.js
           fi
         env:
-          GCLOUD_PROJECT: idmc-gcfsm-dev
+          GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
       - name: Seed Invoice Requests (Testing)
         if: ${{ inputs.seed_invoice_requests }}
@@ -284,7 +301,7 @@ jobs:
             node scripts/seed-invoice-requests.js
           fi
         env:
-          GCLOUD_PROJECT: idmc-gcfsm-dev
+          GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
       - name: Seed Bank Transactions (Testing)
         if: ${{ inputs.seed_bank_transactions }}
@@ -297,10 +314,12 @@ jobs:
             node scripts/seed-bank-transactions.js
           fi
         env:
-          GCLOUD_PROJECT: idmc-gcfsm-dev
+          GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
       - name: Seed Complete
         run: |
           echo "✅ Firestore seeding complete!"
+          echo "🎯 Environment: ${{ github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOPMENT' }}"
+          echo "🗄️ Project: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}"
           echo "Seeded: speakers=${{ inputs.seed_speakers || inputs.seed_all }}, sessions=${{ inputs.seed_sessions || inputs.seed_all }}, schedule=${{ inputs.seed_schedule || inputs.seed_all }}, faq=${{ inputs.seed_faq || inputs.seed_all }}, settings=${{ inputs.seed_settings || inputs.seed_all }}, about=${{ inputs.seed_about || inputs.seed_all }}, downloads=${{ inputs.seed_downloads || inputs.seed_all }}, legal=${{ inputs.seed_legal || inputs.seed_all }}, registrations=${{ inputs.seed_registrations }}, venue=${{ inputs.seed_venue || inputs.seed_all }}, bank_accounts=${{ inputs.seed_bank_accounts || inputs.seed_all }}, invoice_requests=${{ inputs.seed_invoice_requests }}, bank_transactions=${{ inputs.seed_bank_transactions }}"
           echo "Cleared existing: ${{ inputs.clear_existing }}"
