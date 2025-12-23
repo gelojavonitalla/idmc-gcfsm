@@ -60,7 +60,14 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
-      # Create or update SendGrid API key in Secret Manager
+      # Update SendGrid API key in Secret Manager
+      # NOTE: The secret must be pre-created in GCP Console with proper IAM bindings.
+      # The Firebase service account typically doesn't have secretmanager.secrets.create permission.
+      # To set up:
+      #   1. Create secret in GCP Console: gcloud secrets create SENDGRID_API_KEY --project=PROJECT_ID
+      #   2. Grant access: gcloud secrets add-iam-policy-binding SENDGRID_API_KEY \
+      #        --member="serviceAccount:PROJECT_ID@appspot.gserviceaccount.com" \
+      #        --role="roles/secretmanager.secretAccessor" --project=PROJECT_ID
       - name: Configure SendGrid secret
         run: |
           PROJECT_ID="${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}"
@@ -70,19 +77,22 @@ jobs:
           if gcloud secrets describe $SECRET_NAME --project=$PROJECT_ID > /dev/null 2>&1; then
             # Secret exists, add new version
             echo -n "${{ secrets.SENDGRID_API_KEY }}" | gcloud secrets versions add $SECRET_NAME --data-file=- --project=$PROJECT_ID
+            echo "✅ SendGrid secret updated successfully"
           else
-            # Secret doesn't exist, create it
-            echo -n "${{ secrets.SENDGRID_API_KEY }}" | gcloud secrets create $SECRET_NAME --data-file=- --project=$PROJECT_ID
+            # Secret doesn't exist - provide instructions instead of failing
+            echo "⚠️ WARNING: Secret $SECRET_NAME does not exist in project $PROJECT_ID"
+            echo ""
+            echo "To create the secret, run these commands with appropriate permissions:"
+            echo "  gcloud secrets create $SECRET_NAME --project=$PROJECT_ID --data-file=-"
+            echo ""
+            echo "Then grant Cloud Functions access:"
+            echo "  gcloud secrets add-iam-policy-binding $SECRET_NAME \\"
+            echo "    --member=\"serviceAccount:${PROJECT_ID}@appspot.gserviceaccount.com\" \\"
+            echo "    --role=\"roles/secretmanager.secretAccessor\" \\"
+            echo "    --project=$PROJECT_ID"
+            echo ""
+            echo "Continuing deployment without secret update..."
           fi
-
-          # Get the Cloud Functions service account email
-          SA_EMAIL="${PROJECT_ID}@appspot.gserviceaccount.com"
-
-          # Grant access to the secret (idempotent operation)
-          gcloud secrets add-iam-policy-binding $SECRET_NAME \
-            --member="serviceAccount:${SA_EMAIL}" \
-            --role="roles/secretmanager.secretAccessor" \
-            --project=$PROJECT_ID --quiet || true
 
       # Deploy Cloud Functions
       - name: Deploy Cloud Functions
