@@ -240,8 +240,6 @@ interface SmsSettings {
   enabled: boolean;
   gatewayDomain: string;
   gatewayEmail: string;
-  /** Sender ID displayed to SMS recipients (e.g., "GCFSM"). Must be registered with SMS provider. */
-  senderId: string;
 }
 
 /**
@@ -251,7 +249,6 @@ const DEFAULT_SMS_SETTINGS: SmsSettings = {
   enabled: false,
   gatewayDomain: "1.onewaysms.asia",
   gatewayEmail: "",
-  senderId: "",
 };
 
 /**
@@ -277,7 +274,6 @@ async function getSmsSettings(): Promise<SmsSettings> {
             DEFAULT_SMS_SETTINGS.gatewayDomain,
           gatewayEmail: data.sms.gatewayEmail ||
             DEFAULT_SMS_SETTINGS.gatewayEmail,
-          senderId: data.sms.senderId || DEFAULT_SMS_SETTINGS.senderId,
         };
       }
     }
