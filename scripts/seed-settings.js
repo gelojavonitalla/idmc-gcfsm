@@ -104,6 +104,7 @@ const SETTINGS_DATA = {
     enabled: false, // USE_ONEWAYSMS - Set to true to enable SMS notifications
     gatewayDomain: '1.onewaysms.asia', // ONEWAYSMS_GATEWAY_DOMAIN
     gatewayEmail: '', // ONEWAYSMS_GATEWAY_EMAIL - Optional: direct gateway email (leave empty to use phone@domain format)
+    senderId: '', // SENDER_ID - The name displayed to SMS recipients (e.g., "GCFSM"). Must be registered with OneWaySMS.
   },
 };
 

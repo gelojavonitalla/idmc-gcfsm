@@ -63,6 +63,7 @@ const DEFAULT_SETTINGS = {
     enabled: false,
     gatewayDomain: '1.onewaysms.asia',
     gatewayEmail: '',
+    senderId: '',
   },
 };
 
@@ -105,6 +106,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
       enabled: settings?.sms?.enabled ?? DEFAULT_SETTINGS.sms.enabled,
       gatewayDomain: settings?.sms?.gatewayDomain || DEFAULT_SETTINGS.sms.gatewayDomain,
       gatewayEmail: settings?.sms?.gatewayEmail || DEFAULT_SETTINGS.sms.gatewayEmail,
+      senderId: settings?.sms?.senderId || DEFAULT_SETTINGS.sms.senderId,
     },
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -151,6 +153,7 @@ function SettingsForm({ settings, onSave, isLoading }) {
           enabled: settings.sms?.enabled ?? DEFAULT_SETTINGS.sms.enabled,
           gatewayDomain: settings.sms?.gatewayDomain || DEFAULT_SETTINGS.sms.gatewayDomain,
           gatewayEmail: settings.sms?.gatewayEmail || DEFAULT_SETTINGS.sms.gatewayEmail,
+          senderId: settings.sms?.senderId || DEFAULT_SETTINGS.sms.senderId,
         },
       });
     }
@@ -867,6 +870,26 @@ function SettingsForm({ settings, onSave, isLoading }) {
                 Direct gateway email if required by your SMS provider
               </p>
             </div>
+            <div className={styles.field}>
+              <label htmlFor="sms.senderId" className={styles.label}>
+                Sender ID
+              </label>
+              <input
+                type="text"
+                id="sms.senderId"
+                name="sms.senderId"
+                value={formData.sms.senderId}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="e.g., GCFSM"
+                maxLength={11}
+                disabled={!formData.sms.enabled}
+              />
+              <p className={styles.fieldHint}>
+                The name recipients see as the SMS sender (max 11 characters). Must be registered
+                with your SMS provider (OneWaySMS). Registration takes 2-3 days.
+              </p>
+            </div>
           </div>
         </section>
       )}
@@ -935,6 +958,7 @@ SettingsForm.propTypes = {
       enabled: PropTypes.bool,
       gatewayDomain: PropTypes.string,
       gatewayEmail: PropTypes.string,
+      senderId: PropTypes.string,
     }),
   }),
   onSave: PropTypes.func.isRequired,
