@@ -105,6 +105,144 @@ const SETTINGS_DATA = {
     gatewayDomain: '1.onewaysms.asia', // ONEWAYSMS_GATEWAY_DOMAIN
     gatewayEmail: '', // ONEWAYSMS_GATEWAY_EMAIL - Optional: direct gateway email (leave empty to use phone@domain format)
   },
+  // Feedback Form Configuration
+  feedback: {
+    enabled: false,
+    closingDate: null,
+    formTitle: 'Event Feedback',
+    formSubtitle: 'We value your feedback. Please share your experience with us.',
+    fields: [
+      {
+        id: 'isAnonymous',
+        type: 'checkbox',
+        label: 'Submit anonymously',
+        required: false,
+        order: 1,
+      },
+      {
+        id: 'submitterName',
+        type: 'text',
+        label: 'Name',
+        placeholder: 'Enter your name',
+        required: false,
+        order: 2,
+        conditionalOn: { field: 'isAnonymous', value: false },
+      },
+      {
+        id: 'age',
+        type: 'text',
+        label: 'Age',
+        placeholder: 'Optional',
+        required: false,
+        order: 3,
+      },
+      {
+        id: 'growthGroup',
+        type: 'text',
+        label: 'Growth Group',
+        placeholder: 'Optional',
+        required: false,
+        order: 4,
+      },
+      {
+        id: 'spiritualImpact',
+        type: 'checkboxGroup',
+        label: 'Please assess the spiritual impact of CROSSROAD to you. Check the appropriate boxes.',
+        required: false,
+        order: 5,
+        options: [
+          { id: 'receivedJesus', label: 'I received Jesus as my personal Lord and Savior' },
+          { id: 'commitmentToGrow', label: 'I made a commitment to grow in my spiritual habits' },
+          { id: 'commitmentToRelationship', label: 'I made a commitment to work on my relationship/s' },
+          { id: 'commitmentToGroup', label: 'I made a commitment to join/lead a Growth/Mentoring Group' },
+          { id: 'commitmentToMinistry', label: 'I made a commitment to serve in a ministry' },
+          { id: 'seekCounselling', label: 'I want to seek counselling' },
+        ],
+      },
+      {
+        id: 'counsellingName',
+        type: 'text',
+        label: 'Counselling Contact - Name',
+        placeholder: 'Enter your name',
+        required: true,
+        order: 6,
+        conditionalOn: { field: 'spiritualImpact.seekCounselling', value: true },
+      },
+      {
+        id: 'counsellingPhone',
+        type: 'text',
+        label: 'Counselling Contact - Phone',
+        placeholder: 'Enter your phone number',
+        required: true,
+        order: 7,
+        conditionalOn: { field: 'spiritualImpact.seekCounselling', value: true },
+      },
+      {
+        id: 'howBlessed',
+        type: 'textarea',
+        label: 'Please share specifically how you were blessed:',
+        placeholder: '',
+        required: false,
+        order: 8,
+      },
+      {
+        id: 'godDidInMe',
+        type: 'textarea',
+        label: 'One thing that God did to me in me this Crossroads Weekend is:',
+        placeholder: '',
+        required: false,
+        order: 9,
+      },
+      {
+        id: 'smartGoal',
+        type: 'textarea',
+        label: 'One smart goal that I have committed to fulfil is:',
+        placeholder: '',
+        required: false,
+        order: 10,
+      },
+      {
+        id: 'programme',
+        type: 'textarea',
+        label: 'Programme:',
+        placeholder: '',
+        required: false,
+        order: 11,
+      },
+      {
+        id: 'couldDoWithout',
+        type: 'textarea',
+        label: 'Could do without:',
+        placeholder: '',
+        required: false,
+        order: 12,
+      },
+      {
+        id: 'couldDoMoreOf',
+        type: 'textarea',
+        label: 'Could do more of:',
+        placeholder: '',
+        required: false,
+        order: 13,
+      },
+      {
+        id: 'bestDoneWas',
+        type: 'textarea',
+        label: 'Best done was:',
+        placeholder: '',
+        required: false,
+        order: 14,
+      },
+      {
+        id: 'otherComments',
+        type: 'textarea',
+        label: 'Other comments:',
+        placeholder: '',
+        required: false,
+        order: 15,
+      },
+    ],
+  },
 };
 
 /**
@@ -192,6 +330,10 @@ async function seedSettings(db) {
   console.log(`    Enabled: ${SETTINGS_DATA.sms.enabled}`);
   console.log(`    Gateway Domain: ${SETTINGS_DATA.sms.gatewayDomain}`);
   console.log(`    Gateway Email: ${SETTINGS_DATA.sms.gatewayEmail || '(not set - using phone@domain format)'}`);
+  console.log('\n  - Feedback Form Configuration:');
+  console.log(`    Enabled: ${SETTINGS_DATA.feedback.enabled}`);
+  console.log(`    Form Title: ${SETTINGS_DATA.feedback.formTitle}`);
+  console.log(`    Form Fields: ${SETTINGS_DATA.feedback.fields.length} field(s)`);
 }
 
 /**

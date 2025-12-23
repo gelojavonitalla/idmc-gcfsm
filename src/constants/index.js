@@ -53,6 +53,7 @@ export const ADMIN_ROUTES = {
   FOOD_MENU: '/admin/food-menu',
   WHAT_TO_BRING: '/admin/what-to-bring',
   CHURCHES_BREAKDOWN: '/admin/churches',
+  FEEDBACK: '/admin/feedback',
 };
 
 /**
@@ -188,6 +189,7 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Downloads', path: ADMIN_ROUTES.DOWNLOADS, icon: 'download', requiresPermission: 'manageContent' },
       { label: 'About', path: ADMIN_ROUTES.ABOUT_CONTENT, icon: 'church', requiresPermission: 'manageContent' },
       { label: 'Legal', path: ADMIN_ROUTES.LEGAL, icon: 'document', requiresPermission: 'manageContent' },
+      { label: 'Feedback', path: ADMIN_ROUTES.FEEDBACK, icon: 'feedback', requiresPermission: 'manageContent' },
     ],
   },
   {
