@@ -29,11 +29,6 @@ module.exports = {
     "quotes": ["error", "double"],
     "import/no-unresolved": 0,
     "indent": ["error", 2],
-    "max-len": ["error", {
-      "code": 80,
-      "ignoreTemplateLiterals": true,
-      "ignoreStrings": true,
-      "ignoreUrls": true,
-    }],
+    "max-len": "off",
   },
 };
