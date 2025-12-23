@@ -105,6 +105,19 @@
   margin-top: 1.25rem;
 }
 
+.contactLink {
+  display: inline-block;
+  margin-top: 1.25rem;
+  color: var(--color-gray-400);
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: color 0.2s ease;
+}
+
+.contactLink:hover {
+  color: var(--color-primary-light);
+}
+
 .socialLink {
   display: flex;
   align-items: center;
