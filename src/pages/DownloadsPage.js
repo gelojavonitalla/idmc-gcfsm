@@ -13,7 +13,7 @@ import {
   ROUTES,
   DOWNLOAD_STATUS,
 } from '../constants';
-import { getPublishedDownloads } from '../services/downloads';
+import { getPublishedDownloads, trackDownload } from '../services/downloads';
 import styles from './DownloadsPage.module.css';
 
 /**
@@ -55,12 +55,14 @@ function DownloadsPage() {
 
   /**
    * Handles download button click
-   * Opens the download URL in a new tab for the file
+   * Opens the download URL in a new tab and tracks the download
    *
    * @param {Object} download - The download item object
    */
   function handleDownload(download) {
     if (download.downloadUrl) {
+      // Track the download (fire and forget - don't block the download)
+      trackDownload(download.id);
       window.open(download.downloadUrl, '_blank', 'noopener,noreferrer');
     }
   }

@@ -66,6 +66,9 @@ export {
   getRecentRegistrations,
   getRegistrationChartData,
   getActivePricingTier,
+  getChurchStats,
+  getFoodStats,
+  getDownloadStats,
 } from './analytics';
 
 export {

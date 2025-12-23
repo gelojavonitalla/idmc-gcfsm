@@ -51,6 +51,7 @@ export const ADMIN_ROUTES = {
   FINANCE_DASHBOARD: '/admin/finance-dashboard',
   FOOD_MENU: '/admin/food-menu',
   WHAT_TO_BRING: '/admin/what-to-bring',
+  CHURCHES_BREAKDOWN: '/admin/churches',
 };
 
 /**

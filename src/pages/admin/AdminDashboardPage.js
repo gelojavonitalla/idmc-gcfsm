@@ -12,12 +12,18 @@ import {
   RegistrationChart,
   RecentRegistrations,
   QuickActions,
+  TopChurchesCard,
+  DownloadStatsCard,
+  FoodStatsCard,
 } from '../../components/admin';
 import { useAdminAuth } from '../../context';
 import {
   getDashboardStats,
   getRecentRegistrations,
   getRegistrationChartData,
+  getChurchStats,
+  getFoodStats,
+  getDownloadStats,
 } from '../../services';
 import { CONFERENCE } from '../../constants';
 import styles from './AdminDashboardPage.module.css';
@@ -32,6 +38,9 @@ function AdminDashboardPage() {
   const [stats, setStats] = useState(null);
   const [registrations, setRegistrations] = useState([]);
   const [chartData, setChartData] = useState([]);
+  const [churchStats, setChurchStats] = useState(null);
+  const [foodStats, setFoodStats] = useState(null);
+  const [downloadStats, setDownloadStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -43,15 +52,21 @@ function AdminDashboardPage() {
     setError(null);
 
     try {
-      const [statsData, recentData, chart] = await Promise.all([
+      const [statsData, recentData, chart, churches, food, downloads] = await Promise.all([
         getDashboardStats(),
         getRecentRegistrations(10),
         getRegistrationChartData(30),
+        getChurchStats(5),
+        getFoodStats(),
+        getDownloadStats(),
       ]);
 
       setStats(statsData);
       setRegistrations(recentData);
       setChartData(chart);
+      setChurchStats(churches);
+      setFoodStats(food);
+      setDownloadStats(downloads);
     } catch (fetchError) {
       console.error('Failed to fetch dashboard data:', fetchError);
       setError('Failed to load dashboard data. Please try again.');
@@ -151,6 +166,29 @@ function AdminDashboardPage() {
         <div className={styles.rightColumn}>
           <QuickActions />
         </div>
+      </div>
+
+      {/* Additional Stats Grid */}
+      <div className={styles.additionalStatsGrid}>
+        <TopChurchesCard
+          churches={churchStats?.churches || []}
+          totalChurches={churchStats?.totalChurches || 0}
+          totalDelegates={churchStats?.totalDelegates || 0}
+          isLoading={isLoading}
+        />
+        <FoodStatsCard
+          distribution={foodStats?.distribution || []}
+          totalWithChoice={foodStats?.totalWithChoice || 0}
+          totalWithoutChoice={foodStats?.totalWithoutChoice || 0}
+          totalAttendees={foodStats?.totalAttendees || 0}
+          isLoading={isLoading}
+        />
+        <DownloadStatsCard
+          items={downloadStats?.items || []}
+          totalDownloads={downloadStats?.totalDownloads || 0}
+          totalFiles={downloadStats?.totalFiles || 0}
+          isLoading={isLoading}
+        />
       </div>
 
       {/* Recent Registrations - Full Width */}

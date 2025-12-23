@@ -106,6 +106,14 @@
   gap: var(--spacing-6);
 }
 
+/* Additional Stats Grid */
+.additionalStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-6);
+  margin-top: var(--spacing-6);
+}
+
 /* Full Width Section */
 .fullWidthSection {
   margin-top: var(--spacing-6);
@@ -119,6 +127,10 @@
 
   .rightColumn {
     order: -1;
+  }
+
+  .additionalStatsGrid {
+    grid-template-columns: 1fr;
   }
 }
 
