@@ -214,14 +214,6 @@ function FeedbackSettingsManager({ isLoading: parentLoading }) {
 
   return (
     <div className={styles.container}>
-      {/* Header */}
-      <div className={styles.header}>
-        <h3 className={styles.title}>Feedback Form Settings</h3>
-        <p className={styles.description}>
-          Configure the feedback form and manage form fields.
-        </p>
-      </div>
-
       {/* Error Banner */}
       {error && (
         <div className={styles.errorBanner} role="alert">
