@@ -54,6 +54,7 @@ export const ADMIN_ROUTES = {
   WHAT_TO_BRING: '/admin/what-to-bring',
   CHURCHES_BREAKDOWN: '/admin/churches',
   FEEDBACK: '/admin/feedback',
+  FEEDBACK_RESPONSES: '/admin/feedback-responses',
 };
 
 /**
@@ -201,6 +202,7 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Check-In', path: ADMIN_ROUTES.CHECKIN, icon: 'checkin', requiresPermission: 'manageCheckIn' },
       { label: 'Check-In Monitor', path: ADMIN_ROUTES.CHECKIN_MONITOR, icon: 'monitor', requiresPermission: 'manageCheckIn' },
       { label: 'Inquiries', path: ADMIN_ROUTES.INQUIRIES, icon: 'mail', requiresPermission: 'manageInquiries' },
+      { label: 'Feedback Responses', path: ADMIN_ROUTES.FEEDBACK_RESPONSES, icon: 'feedback', requiresPermission: 'manageInquiries' },
     ],
   },
   {
