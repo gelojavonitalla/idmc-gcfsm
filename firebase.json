@@ -59,7 +59,7 @@
           },
           {
             "key": "Content-Security-Policy-Report-Only",
-            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://www.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com https://*.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net wss://*.firebaseio.com; frame-src 'self' https://www.google.com https://recaptcha.google.com; report-uri https://asia-southeast1-idmc-gcfsm-dev.cloudfunctions.net/cspReport"
+            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://www.gstatic.com https://apis.google.com https://www.google.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com https://*.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net wss://*.firebaseio.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' https://www.google.com https://recaptcha.google.com; worker-src 'self' blob:; report-uri https://asia-southeast1-idmc-gcfsm-dev.cloudfunctions.net/cspReport"
           }
         ]
       },
