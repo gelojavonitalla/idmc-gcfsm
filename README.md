@@ -372,10 +372,12 @@ gcloud iam service-accounts create github-action \
 
 #### 2. Grant Required IAM Roles
 
+**For Development Environment:**
+
 ```bash
 SA_EMAIL="github-action@${PROJECT_ID}.iam.gserviceaccount.com"
 
-# Grant all required roles
+# Grant all required roles for development
 ROLES=(
   "roles/apikeys.viewer"
   "roles/artifactregistry.reader"
@@ -387,6 +389,47 @@ ROLES=(
   "roles/datastore.user"
   "roles/eventarc.eventReceiver"
   "roles/eventarc.serviceAgent"
+  "roles/firebaseauth.admin"
+  "roles/firebaseextensions.serviceAgent"
+  "roles/firebaseextensions.admin"
+  "roles/firebaseextensions.viewer"
+  "roles/firebasehosting.admin"
+  "roles/iam.serviceAccountTokenCreator"
+  "roles/iam.serviceAccountUser"
+  "roles/runtimeconfig.admin"
+  "roles/run.invoker"
+  "roles/run.viewer"
+  "roles/secretmanager.admin"
+  "roles/secretmanager.secretVersionManager"
+  "roles/serviceusage.serviceUsageConsumer"
+  "roles/serviceusage.serviceUsageViewer"
+  "roles/storage.admin"
+)
+
+for ROLE in "${ROLES[@]}"; do
+  gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$SA_EMAIL" \
+    --role="$ROLE"
+done
+```
+
+**For Production Environment:**
+
+```bash
+SA_EMAIL="github-action@${PROJECT_ID}.iam.gserviceaccount.com"
+
+# Grant all required roles for production
+ROLES=(
+  "roles/artifactregistry.reader"
+  "roles/cloudbuild.builds.editor"
+  "roles/cloudfunctions.admin"
+  "roles/cloudfunctions.developer"
+  "roles/cloudscheduler.admin"
+  "roles/datastore.indexAdmin"
+  "roles/datastore.user"
+  "roles/eventarc.eventReceiver"
+  "roles/eventarc.serviceAgent"
+  "roles/firebase.admin"
   "roles/firebaseauth.admin"
   "roles/firebaseextensions.admin"
   "roles/firebaseextensions.viewer"
@@ -429,30 +472,34 @@ gcloud iam service-accounts keys create github-action-key.json \
 
 #### IAM Roles Reference
 
-| Role | Purpose |
-|------|---------|
-| API Keys Viewer | Read API keys for the project |
-| Artifact Registry Reader | Read container images for Cloud Functions |
-| Cloud Build Editor | Create and manage Cloud Build jobs |
-| Cloud Datastore Index Admin | Manage Firestore indexes |
-| Cloud Datastore User | Read/write Firestore data |
-| Cloud Functions Admin | Full Cloud Functions management |
-| Cloud Functions Developer | Deploy Cloud Functions |
-| Cloud Run Invoker | Invoke Cloud Run services |
-| Cloud Run Viewer | View Cloud Run resources |
-| Cloud RuntimeConfig Admin | Manage runtime configuration |
-| Cloud Scheduler Admin | Manage scheduled jobs |
-| Eventarc Event Receiver | Receive Eventarc events |
-| Eventarc Service Agent | Eventarc service operations |
-| Firebase Authentication Admin | Manage Firebase Auth |
-| Firebase Extensions Admin/Viewer | Manage Firebase Extensions |
-| Firebase Hosting Admin | Deploy to Firebase Hosting |
-| Secret Manager Admin | Create and manage secrets |
-| Secret Manager Secret Version Manager | Add versions to existing secrets |
-| Service Account Token Creator | Create OAuth tokens |
-| Service Account User | Act as service accounts |
-| Service Usage Consumer/Viewer | Consume and view GCP services |
-| Storage Admin | Full Cloud Storage access |
+| Role | Purpose | Environment |
+|------|---------|-------------|
+| API Keys Viewer | Read API keys for the project | Dev only |
+| Artifact Registry Reader | Read container images for Cloud Functions | Both |
+| Cloud Build Editor | Create and manage Cloud Build jobs | Both |
+| Cloud Datastore Index Admin | Manage Firestore indexes | Both |
+| Cloud Datastore User | Read/write Firestore data | Both |
+| Cloud Functions Admin | Full Cloud Functions management | Both |
+| Cloud Functions Developer | Deploy Cloud Functions | Both |
+| Cloud Run Invoker | Invoke Cloud Run services | Both |
+| Cloud Run Viewer | View Cloud Run resources | Both |
+| Cloud RuntimeConfig Admin | Manage runtime configuration | Both |
+| Cloud Scheduler Admin | Manage scheduled jobs | Both |
+| Eventarc Event Receiver | Receive Eventarc events | Both |
+| Eventarc Service Agent | Eventarc service operations | Both |
+| Firebase Admin | Full Firebase project access | Prod only |
+| Firebase Authentication Admin | Manage Firebase Auth | Both |
+| Firebase Extensions API Service Agent | Extensions service operations | Dev only |
+| Firebase Extensions Admin | Manage Firebase Extensions | Both |
+| Firebase Extensions Viewer | View Firebase Extensions | Both |
+| Firebase Hosting Admin | Deploy to Firebase Hosting | Both |
+| Secret Manager Admin | Create and manage secrets | Both |
+| Secret Manager Secret Version Manager | Add versions to existing secrets | Both |
+| Service Account Token Creator | Create OAuth tokens | Both |
+| Service Account User | Act as service accounts | Both |
+| Service Usage Consumer | Consume GCP services | Both |
+| Service Usage Viewer | View GCP services | Both |
+| Storage Admin | Full Cloud Storage access | Both |
 
 ### Manual Deployment
 
