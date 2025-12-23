@@ -178,6 +178,16 @@
   color: var(--color-info-700, #1d4ed8);
 }
 
+.statusWaitlisted {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.statusOffered {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
 /* Registration Header */
 .regHeader {
   display: flex;

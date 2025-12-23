@@ -544,8 +544,17 @@ export async function getRegistrationsStatusCounts() {
     const totalSnapshot = await getCountFromServer(registrationsRef);
     const total = totalSnapshot.data().count;
 
-    // Get counts by status in parallel
-    const statusValues = ['confirmed', 'pending_verification', 'pending_payment', 'cancelled', 'refunded'];
+    // Get counts by status in parallel (including waitlist statuses)
+    const statusValues = [
+      'confirmed',
+      'pending_verification',
+      'pending_payment',
+      'cancelled',
+      'refunded',
+      'waitlisted',
+      'waitlist_offered',
+      'waitlist_expired',
+    ];
     const countPromises = statusValues.map(async (status) => {
       const statusQuery = query(registrationsRef, where('status', '==', status));
       const snapshot = await getCountFromServer(statusQuery);
@@ -562,6 +571,9 @@ export async function getRegistrationsStatusCounts() {
       pendingPayment: 0,
       cancelled: 0,
       refunded: 0,
+      waitlisted: 0,
+      waitlistOffered: 0,
+      waitlistExpired: 0,
     };
 
     statusCounts.forEach(({ status, count }) => {
@@ -581,6 +593,15 @@ export async function getRegistrationsStatusCounts() {
         case 'refunded':
           result.refunded = count;
           break;
+        case 'waitlisted':
+          result.waitlisted = count;
+          break;
+        case 'waitlist_offered':
+          result.waitlistOffered = count;
+          break;
+        case 'waitlist_expired':
+          result.waitlistExpired = count;
+          break;
         default:
           break;
       }
@@ -596,6 +617,9 @@ export async function getRegistrationsStatusCounts() {
       pendingPayment: 0,
       cancelled: 0,
       refunded: 0,
+      waitlisted: 0,
+      waitlistOffered: 0,
+      waitlistExpired: 0,
     };
   }
 }

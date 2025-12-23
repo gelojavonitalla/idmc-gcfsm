@@ -41,6 +41,10 @@ const DEFAULT_SETTINGS = {
   endTime: '17:30',
   timezone: 'Asia/Manila',
   conferenceCapacity: null, // null = unlimited, number = max attendees for the main worship hall
+  waitlist: {
+    enabled: false,          // Whether waitlisting is allowed when conference is full
+    capacity: null,          // null = unlimited waitlist, number = max waitlist slots
+  },
   venue: {
     name: 'GCF South Metro',
     address: 'Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines',

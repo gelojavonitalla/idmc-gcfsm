@@ -19,9 +19,11 @@ import {
 } from '../utils';
 import {
   createRegistration,
+  createWaitlistRegistration,
   uploadPaymentProof,
   getRegistrationByEmail,
   getActiveBankAccounts,
+  checkRegistrationAvailability,
   REGISTRATION_ERROR_CODES,
 } from '../services';
 import { getConferenceStats } from '../services/stats';
@@ -182,6 +184,11 @@ function RegisterPage() {
   const [currentAttendeeCount, setCurrentAttendeeCount] = useState(0);
   const [loadingCapacity, setLoadingCapacity] = useState(false);
 
+  // Waitlist state
+  const [isWaitlistMode, setIsWaitlistMode] = useState(false);
+  const [waitlistPosition, setWaitlistPosition] = useState(null);
+  const [registrationAvailability, setRegistrationAvailability] = useState(null);
+
   // What to Bring items state
   const [whatToBringItems, setWhatToBringItems] = useState([]);
 
@@ -293,8 +300,8 @@ function RegisterPage() {
   }, []);
 
   /**
-   * Fetches conference capacity from settings and stats
-   * Conference capacity limit is in settings, current count is in stats collection
+   * Fetches conference capacity from settings and stats.
+   * Also checks waitlist availability when conference is full.
    */
   useEffect(() => {
     const fetchCapacityData = async () => {
@@ -306,16 +313,32 @@ function RegisterPage() {
         // Current count comes from stats collection
         const stats = await getConferenceStats();
         setCurrentAttendeeCount(stats?.registeredAttendeeCount ?? 0);
+
+        // Check registration availability (includes waitlist check)
+        const availability = await checkRegistrationAvailability(settings, 1);
+        setRegistrationAvailability(availability);
+
+        // If this will be a waitlist registration, set the mode
+        if (availability.isWaitlist) {
+          setIsWaitlistMode(true);
+          setWaitlistPosition(availability.waitlistPosition);
+        } else {
+          setIsWaitlistMode(false);
+          setWaitlistPosition(null);
+        }
       } catch (error) {
         console.error('Failed to fetch capacity stats:', error);
         setCurrentAttendeeCount(0);
+        setRegistrationAvailability(null);
       } finally {
         setLoadingCapacity(false);
       }
     };
 
-    fetchCapacityData();
-  }, [settings?.conferenceCapacity]);
+    if (settings) {
+      fetchCapacityData();
+    }
+  }, [settings]);
 
   /**
    * Sets default pricing tier category when pricing tiers load.
@@ -689,13 +712,19 @@ function RegisterPage() {
 
   /**
    * Checks if payment is required based on total amount
-   * Payment is NOT required if total amount is 0 (all attendees are volunteers/speakers)
+   * Payment is NOT required if:
+   * - Total amount is 0 (all attendees are volunteers/speakers)
+   * - Registration is in waitlist mode (payment is collected later when slot opens)
    *
    * @returns {boolean} True if payment is required
    */
   const isPaymentRequired = useCallback(() => {
+    // Waitlist registrations don't require payment upfront
+    if (isWaitlistMode) {
+      return false;
+    }
     return calculateTotalPrice() > 0;
-  }, [calculateTotalPrice]);
+  }, [calculateTotalPrice, isWaitlistMode]);
 
   /**
    * Gets total attendee count (primary + additional)
@@ -991,6 +1020,7 @@ function RegisterPage() {
 
   /**
    * Handles form submission - saves to Firestore with payment proof upload
+   * For waitlist registrations, no payment is required upfront
    */
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true);
@@ -1010,7 +1040,54 @@ function RegisterPage() {
         return;
       }
 
-      // Upload payment proof first
+      // For waitlist registrations, skip payment upload
+      if (isWaitlistMode) {
+        // Prepare waitlist registration data (no payment info)
+        const waitlistData = {
+          registrationId: newRegId,
+          shortCode: newShortCode,
+          primaryAttendee: {
+            lastName: formData.primaryAttendee.lastName,
+            firstName: formData.primaryAttendee.firstName,
+            middleName: formData.primaryAttendee.middleName || '',
+            cellphone: formData.primaryAttendee.cellphone,
+            email: formData.primaryAttendee.email,
+            ministryRole: formData.primaryAttendee.ministryRole,
+            category: formData.primaryAttendee.category,
+            workshopSelection: formData.primaryAttendee.workshopSelection || '',
+            foodChoice: formData.primaryAttendee.foodChoice || '',
+          },
+          additionalAttendees: (formData.additionalAttendees || []).map((attendee) => ({
+            lastName: attendee.lastName,
+            firstName: attendee.firstName,
+            middleName: attendee.middleName || '',
+            cellphone: attendee.cellphone,
+            email: attendee.email || '',
+            ministryRole: attendee.ministryRole,
+            category: attendee.category,
+            foodChoice: attendee.foodChoice || '',
+          })),
+          church: {
+            name: formData.churchName,
+            city: formData.churchCity,
+            province: formData.churchProvince,
+          },
+          totalAmount: calculateTotalPrice(),
+          pricingTier: currentTier?.id || 'standard',
+        };
+
+        // Save waitlist registration to Firestore
+        await createWaitlistRegistration(waitlistData);
+
+        // Update state on success
+        setRegistrationId(newRegId);
+        setShortCode(newShortCode);
+        setIsSubmitted(true);
+        window.scrollTo(0, 0);
+        return;
+      }
+
+      // Regular registration flow with payment
       let paymentProofUrl = null;
       if (formData.paymentFile) {
         paymentProofUrl = await uploadPaymentProof(
@@ -1098,7 +1175,7 @@ function RegisterPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [formData, currentTier, calculateTotalPrice, ocrModifiedFields, ocrParsedFields, ocrResult]);
+  }, [formData, currentTier, calculateTotalPrice, ocrModifiedFields, ocrParsedFields, ocrResult, isWaitlistMode]);
 
   // Loading state - wait for Firebase settings
   if (!settings) {
@@ -1137,8 +1214,9 @@ function RegisterPage() {
     );
   }
 
-  // Conference at full capacity state
-  if (isConferenceFull() && !loadingCapacity) {
+  // Conference at full capacity state - only show if registration is completely closed
+  // (no waitlist available or waitlist is also full)
+  if (isConferenceFull() && !loadingCapacity && registrationAvailability && !registrationAvailability.canRegister) {
     return (
       <div className={styles.page}>
         <section className={styles.heroSection}>
@@ -1149,11 +1227,10 @@ function RegisterPage() {
           <div className={styles.container}>
             <div className={styles.closedMessage}>
               <p>
-                We have reached our maximum capacity for {settings.title}. Thank you for your
-                interest!
+                {registrationAvailability.message || `We have reached our maximum capacity for ${settings.title}. Thank you for your interest!`}
               </p>
               <p>
-                If you have any questions or would like to be added to a waitlist, please contact us at{' '}
+                If you have any questions, please contact us at{' '}
                 <a href={`mailto:${settings.contact?.email}`}>{settings.contact?.email}</a>
               </p>
             </div>
@@ -1168,6 +1245,129 @@ function RegisterPage() {
     const totalAmount = calculateTotalPrice();
     const totalAttendees = getTotalAttendeeCount();
     const primary = formData.primaryAttendee;
+
+    // Show waitlist-specific confirmation
+    if (isWaitlistMode) {
+      return (
+        <div className={styles.page}>
+          <section className={styles.heroSection}>
+            <div className={styles.checkIcon} style={{ backgroundColor: '#a855f7' }}>⏳</div>
+            <h1 className={styles.heroTitle}>Added to Waitlist!</h1>
+            <p className={styles.heroSubtitle}>
+              Position: <strong>#{waitlistPosition || 'Pending'}</strong>
+            </p>
+          </section>
+          <section className={styles.contentSection}>
+            <div className={styles.container}>
+              <div className={styles.confirmationCard}>
+                <div className={styles.confirmationDetails}>
+                  <div className={styles.waitlistNotice} style={{
+                    backgroundColor: '#f3e8ff',
+                    border: '1px solid #a855f7',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    marginBottom: '1.5rem',
+                  }}>
+                    <h3 style={{ color: '#7c3aed', marginBottom: '0.5rem' }}>You&apos;re on the Waitlist</h3>
+                    <p style={{ marginBottom: '0.5rem' }}>
+                      The conference is currently at full capacity. You have been added to our waitlist.
+                    </p>
+                    <p style={{ marginBottom: '0.5rem' }}>
+                      <strong>What happens next:</strong>
+                    </p>
+                    <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                      <li>If a slot becomes available, we will email you immediately</li>
+                      <li>You will have a limited time to complete payment</li>
+                      <li>No payment is required at this time</li>
+                    </ul>
+                    <p>
+                      Check your registration status anytime using your code: <strong>{shortCode}</strong>
+                    </p>
+                  </div>
+
+                  <div className={styles.regIdBox}>
+                    <div className={styles.regIdLabel}>Your Waitlist ID</div>
+                    <div className={styles.regIdValue}>{registrationId}</div>
+                    <div className={styles.shortCodeHint}>
+                      Quick code: <strong>{shortCode}</strong>
+                    </div>
+                  </div>
+
+                  <div className={styles.churchSummary}>
+                    <h3>Church Information</h3>
+                    <p><strong>{formData.churchName}</strong></p>
+                    <p>{formData.churchCity}, {formData.churchProvince}</p>
+                  </div>
+
+                  <h3>Primary Contact</h3>
+                  <div className={styles.attendeeSummary}>
+                    <div className={styles.attendeeNumber}>
+                      <span className={styles.primaryBadge}>Primary</span>
+                    </div>
+                    <div className={styles.attendeeDetails}>
+                      <p className={styles.attendeeName}>
+                        {primary.lastName}, {primary.firstName} {primary.middleName}
+                      </p>
+                      <p>{primary.email} | {primary.cellphone}</p>
+                      <p>{primary.ministryRole} | {getCategoryName(primary.category)}</p>
+                    </div>
+                  </div>
+
+                  {formData.additionalAttendees?.length > 0 && (
+                    <>
+                      <h3>Additional Attendees ({formData.additionalAttendees?.length || 0})</h3>
+                      {(formData.additionalAttendees || []).map((attendee, index) => (
+                        <div key={attendee.id} className={styles.attendeeSummary}>
+                          <div className={styles.attendeeNumber}>#{index + 2}</div>
+                          <div className={styles.attendeeDetails}>
+                            <p className={styles.attendeeName}>
+                              {attendee.lastName}, {attendee.firstName} {attendee.middleName}
+                            </p>
+                            <p>
+                              {attendee.email || '(No email)'} | {attendee.cellphone}
+                            </p>
+                            <p>{attendee.ministryRole} | {getCategoryName(attendee.category)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  <div className={styles.totalSection}>
+                    <div className={styles.totalRow}>
+                      <span>Total Attendees:</span>
+                      <span><strong>{totalAttendees}</strong></span>
+                    </div>
+                    <div className={styles.totalRow}>
+                      <span>Amount Due (if slot available):</span>
+                      <span className={styles.totalAmount}>{formatPrice(totalAmount)}</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.nextSteps}>
+                    <h3>Important Information</h3>
+                    <ul>
+                      <li>
+                        Save your waitlist code: <strong>{shortCode}</strong>
+                      </li>
+                      <li>
+                        A confirmation email has been sent to <strong>{primary.email}</strong>
+                      </li>
+                      <li>
+                        <Link to={ROUTES.REGISTRATION_STATUS}>Check your waitlist status here</Link>
+                      </li>
+                      <li>
+                        You can cancel your waitlist registration at any time from the status page
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    }
 
     return (
       <div className={styles.page}>
@@ -1330,10 +1530,44 @@ function RegisterPage() {
             </div>
           )}
 
+          {/* Waitlist Mode Notice */}
+          {isWaitlistMode && (
+            <div className={styles.waitlistBanner} style={{
+              backgroundColor: '#f3e8ff',
+              border: '2px solid #a855f7',
+              borderRadius: '8px',
+              padding: '1rem 1.5rem',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '1rem',
+            }}>
+              <span style={{ fontSize: '1.5rem' }}>⏳</span>
+              <div>
+                <h3 style={{ color: '#7c3aed', margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>
+                  Joining the Waitlist
+                </h3>
+                <p style={{ margin: 0, color: '#6b7280', fontSize: '0.95rem' }}>
+                  The conference is currently full. You will be added to position <strong>#{waitlistPosition || 'N/A'}</strong> on the waitlist.
+                  If a slot becomes available, we will email you with payment instructions.
+                  <strong> No payment is required now.</strong>
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Progress Steps */}
           <div className={styles.progressBar}>
           {Object.entries(REGISTRATION_STEP_LABELS).map(([step, label]) => {
             const stepNum = parseInt(step, 10);
+            // For waitlist mode, skip showing payment step (step 3)
+            if (isWaitlistMode && stepNum === REGISTRATION_STEPS.PAYMENT_UPLOAD) {
+              return null;
+            }
+            // Adjust step numbers for waitlist mode display
+            const displayNum = isWaitlistMode && stepNum > REGISTRATION_STEPS.PAYMENT_UPLOAD
+              ? stepNum - 1
+              : stepNum;
             return (
               <div
                 key={step}
@@ -1341,7 +1575,7 @@ function RegisterPage() {
                   stepNum === currentStep ? styles.progressStepActive : ''
                 } ${stepNum < currentStep ? styles.progressStepCompleted : ''}`}
               >
-                <div className={styles.progressStepNumber}>{stepNum}</div>
+                <div className={styles.progressStepNumber}>{displayNum}</div>
                 <span className={styles.progressStepLabel}>{label}</span>
               </div>
             );

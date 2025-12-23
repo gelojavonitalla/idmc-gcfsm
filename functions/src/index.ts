@@ -299,6 +299,9 @@ const REGISTRATION_STATUS = {
   PENDING_VERIFICATION: "pending_verification",
   CONFIRMED: "confirmed",
   CANCELLED: "cancelled",
+  WAITLISTED: "waitlisted",
+  WAITLIST_OFFERED: "waitlist_offered",
+  WAITLIST_EXPIRED: "waitlist_expired",
 };
 
 /**
@@ -2175,6 +2178,280 @@ export const onPaymentConfirmed = onDocumentUpdated(
 );
 
 /**
+ * Firestore trigger that sends waitlist offer email when status changes to WAITLIST_OFFERED.
+ * This email notifies the user that a slot is available and provides payment instructions.
+ */
+export const onWaitlistOfferSent = onDocumentUpdated(
+  {
+    document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
+    database: DATABASE_ID,
+    secrets: [sendgridApiKey],
+  },
+  async (event) => {
+    const registrationId = event.params.registrationId;
+    const log = cfLogger.createContext("onWaitlistOfferSent", registrationId);
+
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+
+    if (!before || !after) {
+      log.warn("No before/after data in event");
+      return;
+    }
+
+    // Check if status changed to WAITLIST_OFFERED
+    if (before.status === REGISTRATION_STATUS.WAITLIST_OFFERED ||
+        after.status !== REGISTRATION_STATUS.WAITLIST_OFFERED) {
+      // Not a status change to waitlist_offered, skip silently
+      return;
+    }
+
+    log.start({
+      registrationId,
+      shortCode: after.shortCode,
+      previousStatus: before.status,
+      newStatus: after.status,
+      paymentDeadline: after.waitlistOfferExpiresAt,
+    });
+
+    const primaryEmail = after.primaryAttendee?.email;
+    const updateData: Record<string, unknown> = {};
+
+    // Get conference settings for email
+    const db = getFirestore(DATABASE_ID);
+    let settings = {
+      title: "IDMC 2026",
+      startDate: "2026-03-28",
+      venue: {
+        name: "GCF South Metro",
+        address: "Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines",
+      },
+      contact: {
+        email: "idmc@gcfsm.org",
+      },
+    };
+
+    try {
+      const settingsDoc = await db.collection(COLLECTIONS.CONFERENCES).doc("conference-settings").get();
+      const data = settingsDoc.data();
+      if (data) {
+        settings = {
+          title: data.title || settings.title,
+          startDate: data.startDate || settings.startDate,
+          venue: {
+            name: data.venue?.name || settings.venue.name,
+            address: data.venue?.address || settings.venue.address,
+          },
+          contact: {
+            email: data.contact?.email || settings.contact.email,
+          },
+        };
+      }
+    } catch (error) {
+      log.warn("Could not fetch settings, using defaults", {error});
+    }
+
+    // Send waitlist offer email
+    if (isSendGridEnabled() && primaryEmail) {
+      try {
+        const appUrl = process.env.APP_URL || "https://idmc-gcfsm.web.app";
+        const statusPageUrl = `${appUrl}/registration-status?id=${after.registrationId}`;
+
+        // Calculate hours until deadline
+        const deadline = new Date(after.waitlistOfferExpiresAt);
+        const now = new Date();
+        const hoursUntilDeadline = Math.max(0, Math.round((deadline.getTime() - now.getTime()) / (1000 * 60 * 60)));
+
+        const sgMail = require("@sendgrid/mail");
+        sgMail.setApiKey(sendgridApiKey.value());
+
+        const emailContent = {
+          to: primaryEmail,
+          from: {
+            email: process.env.SENDER_EMAIL || "noreply@gcfsm.org",
+            name: process.env.SENDER_NAME || "IDMC Conference",
+          },
+          subject: `A Slot is Available! Complete Your ${settings.title} Registration`,
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; padding: 30px; text-align: center; border-radius: 12px 12px 0 0; }
+                .content { background: #fff; padding: 30px; border: 1px solid #e5e7eb; }
+                .deadline-box { background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0; }
+                .cta-button { display: inline-block; background: #3b82f6; color: white !important; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+                .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1 style="margin: 0;">A Slot is Available!</h1>
+                  <p style="margin: 10px 0 0;">Your waitlist registration can now be confirmed</p>
+                </div>
+                <div class="content">
+                  <p>Great news, ${after.primaryAttendee?.firstName || "there"}!</p>
+                  <p>A slot has become available for <strong>${settings.title}</strong>. You can now complete your registration by submitting your payment.</p>
+
+                  <div class="deadline-box">
+                    <p style="margin: 0; font-weight: bold; color: #92400e;">Payment Deadline: ${hoursUntilDeadline} hours</p>
+                    <p style="margin: 5px 0 0; color: #92400e;">
+                      If payment is not received by <strong>${deadline.toLocaleString("en-PH", {dateStyle: "full", timeStyle: "short"})}</strong>,
+                      your slot will be offered to the next person on the waitlist.
+                    </p>
+                  </div>
+
+                  <p><strong>Registration Details:</strong></p>
+                  <ul>
+                    <li>Registration ID: ${after.registrationId}</li>
+                    <li>Quick Code: ${after.shortCode}</li>
+                    <li>Amount Due: ₱${(after.totalAmount || 0).toLocaleString()}</li>
+                  </ul>
+
+                  <center>
+                    <a href="${statusPageUrl}" class="cta-button">Complete Payment Now</a>
+                  </center>
+
+                  <p>Click the button above to go to your registration status page where you can upload your payment proof.</p>
+
+                  <p style="margin-top: 30px;">See you at the conference!</p>
+                  <p>The ${settings.title} Team</p>
+                </div>
+                <div class="footer">
+                  <p>${settings.venue.name}<br>${settings.venue.address}</p>
+                  <p>Questions? Contact us at ${settings.contact.email}</p>
+                </div>
+              </div>
+            </body>
+            </html>
+          `,
+        };
+
+        await sgMail.send(emailContent);
+        updateData.waitlistOfferEmailSent = true;
+        updateData.waitlistOfferEmailSentAt = FieldValue.serverTimestamp();
+        log.info("Waitlist offer email sent", {email: primaryEmail, hoursUntilDeadline});
+      } catch (error) {
+        log.error("Error sending waitlist offer email", error);
+      }
+    }
+
+    // Update document with notification status
+    if (Object.keys(updateData).length > 0) {
+      await event.data?.after?.ref.update(updateData);
+    }
+
+    log.end(true, {waitlistOfferEmailSent: updateData.waitlistOfferEmailSent || false});
+  }
+);
+
+/**
+ * Firestore trigger that auto-promotes the next waitlisted person when a confirmed registration is cancelled.
+ * This ensures the waitlist queue moves forward automatically.
+ */
+export const onRegistrationCancelled = onDocumentUpdated(
+  {
+    document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
+    database: DATABASE_ID,
+    secrets: [sendgridApiKey],
+  },
+  async (event) => {
+    const registrationId = event.params.registrationId;
+    const log = cfLogger.createContext("onRegistrationCancelled", registrationId);
+
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+
+    if (!before || !after) {
+      log.warn("No before/after data in event");
+      return;
+    }
+
+    // Only process when a CONFIRMED registration is cancelled
+    if (before.status !== REGISTRATION_STATUS.CONFIRMED ||
+        after.status !== REGISTRATION_STATUS.CANCELLED) {
+      return;
+    }
+
+    log.start({
+      registrationId,
+      previousStatus: before.status,
+      newStatus: after.status,
+    });
+
+    const db = getFirestore(DATABASE_ID);
+
+    try {
+      // Check if waitlist is enabled
+      const settingsDoc = await db.collection(COLLECTIONS.CONFERENCES).doc("conference-settings").get();
+      const settings = settingsDoc.data();
+
+      if (!settings?.waitlist?.enabled) {
+        log.info("Waitlist is not enabled, skipping auto-promotion");
+        log.end(true, {promoted: false, reason: "waitlist_disabled"});
+        return;
+      }
+
+      // Find the next waitlisted registration (FIFO order)
+      const waitlistQuery = await db.collection(COLLECTIONS.REGISTRATIONS)
+        .where("status", "==", REGISTRATION_STATUS.WAITLISTED)
+        .orderBy("waitlistedAt", "asc")
+        .limit(1)
+        .get();
+
+      if (waitlistQuery.empty) {
+        log.info("No waitlisted registrations to promote");
+        log.end(true, {promoted: false, reason: "no_waitlist"});
+        return;
+      }
+
+      const nextWaitlisted = waitlistQuery.docs[0];
+      const nextWaitlistedId = nextWaitlisted.id;
+
+      // Calculate payment deadline
+      const conferenceStartDate = settings.startDate || new Date().toISOString();
+      const conferenceDate = new Date(conferenceStartDate);
+      const now = new Date();
+      const hoursUntilConference = (conferenceDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      let deadlineHours = 48;
+      if (hoursUntilConference <= 12) deadlineHours = 6;
+      else if (hoursUntilConference <= 24) deadlineHours = 12;
+      else if (hoursUntilConference <= 48) deadlineHours = 24;
+
+      const paymentDeadline = new Date(now.getTime() + deadlineHours * 60 * 60 * 1000);
+      // Ensure deadline doesn't exceed conference start
+      const finalDeadline = paymentDeadline < conferenceDate ? paymentDeadline : conferenceDate;
+
+      // Update the waitlisted registration to WAITLIST_OFFERED
+      await nextWaitlisted.ref.update({
+        status: REGISTRATION_STATUS.WAITLIST_OFFERED,
+        "payment.status": REGISTRATION_STATUS.WAITLIST_OFFERED,
+        paymentDeadline: finalDeadline.toISOString(),
+        waitlistOfferSentAt: FieldValue.serverTimestamp(),
+        waitlistOfferExpiresAt: finalDeadline.toISOString(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      log.info("Auto-promoted next waitlisted registration", {
+        promotedRegistrationId: nextWaitlistedId,
+        deadlineHours,
+        paymentDeadline: finalDeadline.toISOString(),
+      });
+
+      log.end(true, {promoted: true, promotedRegistrationId: nextWaitlistedId});
+    } catch (error) {
+      log.error("Error auto-promoting waitlisted registration", error);
+      log.end(false, {error: String(error)});
+    }
+  }
+);
+
+/**
  * Scheduled function that runs daily to cancel expired registrations
  * Runs every day at 1:00 AM Asia/Manila time
  */
@@ -2239,6 +2516,120 @@ export const cancelExpiredRegistrations = onSchedule(
       log.end(true, {cancelledCount: cancelCount});
     } catch (error) {
       log.error("Error cancelling expired registrations", error);
+      log.end(false, {error: (error as Error).message});
+      throw error;
+    }
+  }
+);
+
+/**
+ * Scheduled function that expires waitlist offers that have passed their deadline
+ * and promotes the next person in the waitlist.
+ * Runs every hour to ensure timely expiration.
+ */
+export const expireWaitlistOffers = onSchedule(
+  {
+    schedule: "0 * * * *", // Every hour
+    timeZone: "Asia/Manila",
+    region: "asia-southeast1",
+  },
+  async () => {
+    const log = cfLogger.createContext("expireWaitlistOffers");
+    log.start({schedule: "0 * * * *", timezone: "Asia/Manila"});
+
+    const db = getFirestore(DATABASE_ID);
+    const now = new Date();
+
+    try {
+      // Query for waitlist_offered registrations with expired deadlines
+      const expiredQuery = await db.collection(COLLECTIONS.REGISTRATIONS)
+        .where("status", "==", REGISTRATION_STATUS.WAITLIST_OFFERED)
+        .where("waitlistOfferExpiresAt", "<", now.toISOString())
+        .get();
+
+      if (expiredQuery.empty) {
+        log.info("No expired waitlist offers found");
+        log.end(true, {expiredCount: 0, promotedCount: 0});
+        return;
+      }
+
+      log.info("Found expired waitlist offers to process", {count: expiredQuery.size});
+
+      let expiredCount = 0;
+      let promotedCount = 0;
+      const expiredIds: string[] = [];
+
+      // Get conference settings for deadline calculation
+      const settingsDoc = await db.collection(COLLECTIONS.CONFERENCES).doc("conference-settings").get();
+      const settings = settingsDoc.data();
+
+      // Process each expired offer
+      for (const expiredDoc of expiredQuery.docs) {
+        const expiredId = expiredDoc.id;
+
+        // Mark as expired
+        await expiredDoc.ref.update({
+          status: REGISTRATION_STATUS.WAITLIST_EXPIRED,
+          "payment.status": REGISTRATION_STATUS.WAITLIST_EXPIRED,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        expiredCount++;
+        expiredIds.push(expiredId);
+        log.info("Marked waitlist offer as expired", {registrationId: expiredId});
+
+        // Auto-promote next waitlisted person if waitlist is enabled
+        if (settings?.waitlist?.enabled) {
+          const waitlistQuery = await db.collection(COLLECTIONS.REGISTRATIONS)
+            .where("status", "==", REGISTRATION_STATUS.WAITLISTED)
+            .orderBy("waitlistedAt", "asc")
+            .limit(1)
+            .get();
+
+          if (!waitlistQuery.empty) {
+            const nextWaitlisted = waitlistQuery.docs[0];
+            const nextWaitlistedId = nextWaitlisted.id;
+
+            // Calculate payment deadline
+            const conferenceStartDate = settings.startDate || new Date().toISOString();
+            const conferenceDate = new Date(conferenceStartDate);
+            const hoursUntilConference = (conferenceDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+            let deadlineHours = 48;
+            if (hoursUntilConference <= 12) deadlineHours = 6;
+            else if (hoursUntilConference <= 24) deadlineHours = 12;
+            else if (hoursUntilConference <= 48) deadlineHours = 24;
+
+            const paymentDeadline = new Date(now.getTime() + deadlineHours * 60 * 60 * 1000);
+            const finalDeadline = paymentDeadline < conferenceDate ? paymentDeadline : conferenceDate;
+
+            // Update to WAITLIST_OFFERED
+            await nextWaitlisted.ref.update({
+              status: REGISTRATION_STATUS.WAITLIST_OFFERED,
+              "payment.status": REGISTRATION_STATUS.WAITLIST_OFFERED,
+              paymentDeadline: finalDeadline.toISOString(),
+              waitlistOfferSentAt: FieldValue.serverTimestamp(),
+              waitlistOfferExpiresAt: finalDeadline.toISOString(),
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+
+            promotedCount++;
+            log.info("Auto-promoted next waitlisted registration", {
+              expiredRegistrationId: expiredId,
+              promotedRegistrationId: nextWaitlistedId,
+            });
+          }
+        }
+      }
+
+      log.info("Successfully processed expired waitlist offers", {
+        expiredCount,
+        promotedCount,
+        expiredIds,
+      });
+      log.end(true, {expiredCount, promotedCount});
+    } catch (error) {
+      log.error("Error processing expired waitlist offers", error);
       log.end(false, {error: (error as Error).message});
       throw error;
     }
