@@ -206,6 +206,12 @@ function NavIcon({ name }) {
         <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
       </svg>
     ),
+    checklist: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        <path d="M9 14l2 2 4-4" />
+      </svg>
+    ),
   };
 
   return <span className={styles.navIcon}>{icons[name] || icons.dashboard}</span>;

@@ -27,6 +27,7 @@ import {
 import { getConferenceStats } from '../services/stats';
 import { getPublishedWorkshops } from '../services/workshops';
 import { getFoodMenuSettings, getAllFoodMenuItems } from '../services/foodMenu';
+import { getPublishedWhatToBringItems } from '../services/whatToBring';
 import { FOOD_MENU_STATUS } from '../constants';
 import { processReceipt } from '../tesseract';
 import WorkshopSelector from '../components/workshops/WorkshopSelector';
@@ -181,6 +182,9 @@ function RegisterPage() {
   const [currentAttendeeCount, setCurrentAttendeeCount] = useState(0);
   const [loadingCapacity, setLoadingCapacity] = useState(false);
 
+  // What to Bring items state
+  const [whatToBringItems, setWhatToBringItems] = useState([]);
+
   // OCR-related state
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState(null);
@@ -270,6 +274,22 @@ function RegisterPage() {
     };
 
     fetchFoodMenu();
+  }, []);
+
+  /**
+   * Fetches published "What to Bring" items on component mount
+   */
+  useEffect(() => {
+    const fetchWhatToBringItems = async () => {
+      try {
+        const items = await getPublishedWhatToBringItems();
+        setWhatToBringItems(items);
+      } catch (error) {
+        console.error('Failed to fetch what to bring items:', error);
+      }
+    };
+
+    fetchWhatToBringItems();
   }, []);
 
   /**
@@ -1255,6 +1275,17 @@ function RegisterPage() {
                 <p><strong>Venue:</strong> {settings.venue?.name}</p>
                 <p><strong>Address:</strong> {settings.venue?.address}</p>
               </div>
+
+              {whatToBringItems.length > 0 && (
+                <div className={styles.whatToBringSection}>
+                  <h2>What to Bring on Event Day</h2>
+                  <ul className={styles.whatToBringList}>
+                    {whatToBringItems.map((item) => (
+                      <li key={item.id}>{item.text}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </section>
