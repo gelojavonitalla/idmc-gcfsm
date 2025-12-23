@@ -169,3 +169,185 @@ export function getActivePricingTier() {
     return tier.isActive && now >= startDate && now <= endDate;
   }) || null;
 }
+
+/**
+ * Fetches church statistics aggregated from registrations
+ * Returns churches sorted by delegate count (descending)
+ *
+ * @param {number} [limitCount] - Optional limit for number of churches to return
+ * @returns {Promise<Object>} Church stats object with churches array and total count
+ */
+export async function getChurchStats(limitCount = null) {
+  try {
+    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+    const snapshot = await getDocs(registrationsRef);
+
+    const churchMap = new Map();
+
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      // Only count confirmed or pending verification registrations
+      if (
+        data.status !== REGISTRATION_STATUS.CONFIRMED &&
+        data.status !== REGISTRATION_STATUS.PENDING_VERIFICATION
+      ) {
+        return;
+      }
+
+      const churchName = data.churchName || 'Unknown Church';
+      const churchCity = data.churchCity || '';
+      const churchKey = `${churchName}|${churchCity}`;
+
+      if (!churchMap.has(churchKey)) {
+        churchMap.set(churchKey, {
+          name: churchName,
+          city: churchCity,
+          delegateCount: 0,
+          registrationCount: 0,
+        });
+      }
+
+      const church = churchMap.get(churchKey);
+      // Count primary attendee + additional attendees
+      const additionalCount = data.additionalAttendees?.length || 0;
+      church.delegateCount += 1 + additionalCount;
+      church.registrationCount += 1;
+    });
+
+    // Convert to array and sort by delegate count
+    const churches = Array.from(churchMap.values())
+      .sort((a, b) => b.delegateCount - a.delegateCount);
+
+    const totalChurches = churches.length;
+    const limitedChurches = limitCount ? churches.slice(0, limitCount) : churches;
+
+    return {
+      churches: limitedChurches,
+      totalChurches,
+      totalDelegates: churches.reduce((sum, c) => sum + c.delegateCount, 0),
+    };
+  } catch (error) {
+    console.error('Failed to fetch church stats:', error);
+    return {
+      churches: [],
+      totalChurches: 0,
+      totalDelegates: 0,
+    };
+  }
+}
+
+/**
+ * Fetches food choice statistics aggregated from registrations
+ *
+ * @returns {Promise<Object>} Food stats object with distribution array
+ */
+export async function getFoodStats() {
+  try {
+    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+    const snapshot = await getDocs(registrationsRef);
+
+    const foodMap = new Map();
+    let totalWithChoice = 0;
+    let totalWithoutChoice = 0;
+
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      // Only count confirmed or pending verification registrations
+      if (
+        data.status !== REGISTRATION_STATUS.CONFIRMED &&
+        data.status !== REGISTRATION_STATUS.PENDING_VERIFICATION
+      ) {
+        return;
+      }
+
+      // Count primary attendee food choice
+      const primaryFood = data.foodChoice;
+      if (primaryFood) {
+        foodMap.set(primaryFood, (foodMap.get(primaryFood) || 0) + 1);
+        totalWithChoice++;
+      } else {
+        totalWithoutChoice++;
+      }
+
+      // Count additional attendees food choices
+      if (data.additionalAttendees?.length > 0) {
+        data.additionalAttendees.forEach((attendee) => {
+          const attendeeFood = attendee.foodChoice;
+          if (attendeeFood) {
+            foodMap.set(attendeeFood, (foodMap.get(attendeeFood) || 0) + 1);
+            totalWithChoice++;
+          } else {
+            totalWithoutChoice++;
+          }
+        });
+      }
+    });
+
+    // Fetch food menu items to get names
+    const foodMenuRef = collection(db, COLLECTIONS.FOOD_MENU);
+    const foodMenuSnapshot = await getDocs(foodMenuRef);
+    const foodMenuItems = new Map();
+    foodMenuSnapshot.docs.forEach((menuDoc) => {
+      foodMenuItems.set(menuDoc.id, menuDoc.data().name || menuDoc.id);
+    });
+
+    // Convert to array with names
+    const distribution = Array.from(foodMap.entries())
+      .map(([id, count]) => ({
+        id,
+        name: foodMenuItems.get(id) || id,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    return {
+      distribution,
+      totalWithChoice,
+      totalWithoutChoice,
+      totalAttendees: totalWithChoice + totalWithoutChoice,
+    };
+  } catch (error) {
+    console.error('Failed to fetch food stats:', error);
+    return {
+      distribution: [],
+      totalWithChoice: 0,
+      totalWithoutChoice: 0,
+      totalAttendees: 0,
+    };
+  }
+}
+
+/**
+ * Fetches download statistics
+ *
+ * @returns {Promise<Object>} Download stats object with items and totals
+ */
+export async function getDownloadStats() {
+  try {
+    const downloadsRef = collection(db, COLLECTIONS.DOWNLOADS);
+    const downloadsQuery = query(downloadsRef, orderBy('order', 'asc'));
+    const snapshot = await getDocs(downloadsQuery);
+
+    const items = snapshot.docs.map((downloadDoc) => ({
+      id: downloadDoc.id,
+      title: downloadDoc.data().title || downloadDoc.id,
+      downloadCount: downloadDoc.data().downloadCount || 0,
+      status: downloadDoc.data().status,
+    }));
+
+    const totalDownloads = items.reduce((sum, item) => sum + item.downloadCount, 0);
+
+    return {
+      items,
+      totalDownloads,
+      totalFiles: items.length,
+    };
+  } catch (error) {
+    console.error('Failed to fetch download stats:', error);
+    return {
+      items: [],
+      totalDownloads: 0,
+      totalFiles: 0,
+    };
+  }
+}

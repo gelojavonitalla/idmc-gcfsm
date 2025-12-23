@@ -40,3 +40,6 @@ export { default as FoodMenuManager } from './FoodMenuManager';
 export { default as WhatToBringTable } from './WhatToBringTable';
 export { default as WhatToBringItemFormModal } from './WhatToBringItemFormModal';
 export { default as WhatToBringManager } from './WhatToBringManager';
+export { default as TopChurchesCard } from './TopChurchesCard';
+export { default as DownloadStatsCard } from './DownloadStatsCard';
+export { default as FoodStatsCard } from './FoodStatsCard';

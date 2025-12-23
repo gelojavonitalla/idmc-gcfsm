@@ -16,6 +16,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  increment,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { COLLECTIONS, DOWNLOAD_STATUS, DOWNLOAD_CATEGORIES } from '../constants';
@@ -186,4 +187,23 @@ export function formatFileSize(bytes) {
   const size = parseFloat((bytes / Math.pow(k, i)).toFixed(1));
 
   return `${size} ${units[i]}`;
+}
+
+/**
+ * Tracks a download event by incrementing the download count
+ *
+ * @param {string} downloadId - Download ID
+ * @returns {Promise<void>}
+ */
+export async function trackDownload(downloadId) {
+  try {
+    const downloadRef = doc(db, COLLECTIONS.DOWNLOADS, downloadId);
+    await updateDoc(downloadRef, {
+      downloadCount: increment(1),
+      lastDownloadedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    // Log but don't throw - tracking failures shouldn't break the download
+    console.error('Failed to track download:', error);
+  }
 }
