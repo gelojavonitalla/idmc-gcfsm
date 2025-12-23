@@ -45,11 +45,20 @@
   --color-text: var(--color-gray-900);
   --color-text-secondary: var(--color-gray-600);
   --color-text-muted: var(--color-gray-400);
+  --color-text-on-primary: var(--color-white);
 
   /* Background Colors */
   --color-background: var(--color-white);
   --color-background-secondary: var(--color-gray-50);
   --color-background-tertiary: var(--color-gray-100);
+
+  /* Surface Colors (for cards, modals, etc.) */
+  --color-surface: var(--color-white);
+  --color-border: var(--color-gray-200);
+
+  /* Extended Text Colors */
+  --color-text-primary: var(--color-gray-900);
+  --color-text-tertiary: var(--color-gray-500);
 
   /* Typography */
   --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',

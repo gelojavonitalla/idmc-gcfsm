@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IDMC 2026 Website - Content Request</title>
+  <style>
+    :root {
+      --primary: #1e40af;
+      --secondary: #3b82f6;
+      --accent: #f59e0b;
+      --success: #22c55e;
+      --warning: #f97316;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      padding: 40px 20px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      border-radius: 16px;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+
+    .greeting {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      border-left: 4px solid var(--accent);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .greeting h2 {
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .section {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .section h2 {
+      color: var(--primary);
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .anchor-link-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      opacity: 0.4;
+      flex-shrink: 0;
+    }
+
+    .section:hover .anchor-link-btn {
+      opacity: 1;
+    }
+
+    .anchor-link-btn:hover {
+      background: #f1f5f9;
+      border-color: var(--border);
+    }
+
+    .anchor-link-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--text-muted);
+      transition: stroke 0.2s ease;
+    }
+
+    .anchor-link-btn:hover svg {
+      stroke: var(--primary);
+    }
+
+    .anchor-link-btn.copied {
+      background: #dcfce7;
+      border-color: var(--success);
+      opacity: 1;
+    }
+
+    .anchor-link-btn.copied svg {
+      stroke: var(--success);
+    }
+
+    .section h2 .badge {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .badge-required {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .badge-review {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .subsection {
+      margin-top: 20px;
+      padding: 16px;
+      background: var(--bg);
+      border-radius: 8px;
+    }
+
+    .subsection h3 {
+      color: var(--secondary);
+      margin-bottom: 12px;
+      font-size: 1rem;
+    }
+
+    ul {
+      margin-left: 20px;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    .highlight {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+    }
+
+    .specs {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+    }
+
+    .specs h4 {
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .specs code {
+      background: #e0f2fe;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    .dns-value-cell {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .dns-value {
+      font-family: monospace;
+      font-size: 0.875rem;
+      word-break: break-all;
+      flex: 1;
+      background: #f1f5f9;
+      padding: 8px 12px;
+      border-radius: 6px;
+    }
+
+    .copy-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .copy-btn:hover {
+      background: #f1f5f9;
+      border-color: var(--primary);
+    }
+
+    .copy-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--text-muted);
+      transition: stroke 0.2s ease;
+    }
+
+    .copy-btn:hover svg {
+      stroke: var(--primary);
+    }
+
+    .copy-btn.copied {
+      background: #dcfce7;
+      border-color: var(--success);
+    }
+
+    .copy-btn.copied svg {
+      stroke: var(--success);
+    }
+
+    .sendgrid-table td {
+      vertical-align: middle;
+    }
+
+    .type-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      background: #e0f2fe;
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 4px;
+      letter-spacing: 0.02em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--bg);
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      text-transform: uppercase;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .status-placeholder {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .status-review {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .status-ok {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    .current-data {
+      background: #f1f5f9;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 8px 0;
+      font-family: monospace;
+      font-size: 0.875rem;
+      word-break: break-all;
+    }
+
+    .note {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      font-style: italic;
+    }
+
+    .preview-link {
+      display: inline-block;
+      margin-top: 8px;
+      color: var(--secondary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .preview-link:hover {
+      text-decoration: underline;
+    }
+
+    .admin-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      padding: 8px 14px;
+      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.875rem;
+      border-radius: 6px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .admin-link:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+      text-decoration: none;
+    }
+
+    .admin-link::before {
+      content: "⚙️";
+    }
+
+    .admin-links-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 1.5rem;
+      }
+
+      .section {
+        padding: 16px;
+      }
+
+      table {
+        font-size: 0.875rem;
+      }
+
+      th, td {
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>IDMC 2026 Website</h1>
+      <p>Content Request for the Team</p>
+      <p style="margin-top: 12px;">
+        <a href="https://idmc-gcfsm-dev.web.app/" target="_blank" style="color: white; text-decoration: underline;">Preview the website &rarr;</a>
+      </p>
+      <p style="margin-top: 12px; font-size: 0.75rem; opacity: 0.8;">
+        Version 1.3 | Last Modified: December 18, 2025 at 7:50 PM
+      </p>
+    </header>
+
+    <!-- Greeting Section -->
+    <div class="greeting">
+      <h2>Greetings in Christ!</h2>
+      <p>
+        I'm <strong>Gelo</strong>, and I am developing the website for <strong>IDMC 2026</strong>.
+        The website is progressing well, but I need your help to finalize some content and assets.
+      </p>
+      <p style="margin-top: 12px;">
+        Below is my <strong>"wish list"</strong> of items needed. I've organized them by category and included
+        specifications where applicable. Some items need to be provided fresh, while others just need your review and approval.
+      </p>
+      <p style="margin-top: 12px;">
+        Thank you for your support! God bless.
+      </p>
+    </div>
+
+    <!-- Section 1: Hero Media -->
+    <div class="section" id="hero-media">
+      <h2>
+        <div class="section-header">
+          <span>1. Hero Section Media</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'hero-media')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+        <span class="badge badge-required">Required</span>
+      </h2>
+      <p>The hero section is the first thing visitors see on the homepage. We want to make it impactful with a background video.</p>
+
+      <div class="subsection">
+        <h3>Background Video</h3>
+        <p>A short promotional or highlight video that will play automatically (muted) in the background of the hero section.</p>
+        <div class="specs">
+          <h4>Video Specifications:</h4>
+          <ul>
+            <li><strong>Format:</strong> <code>MP4 (H.264 codec)</code> - best browser compatibility</li>
+            <li><strong>Resolution:</strong> <code>1920x1080</code> (Full HD) maximum</li>
+            <li><strong>Aspect Ratio:</strong> <code>16:9</code></li>
+            <li><strong>Duration:</strong> <code>15-30 seconds</code> (will loop continuously)</li>
+            <li><strong>File Size:</strong> Keep under <code>10-15 MB</code> for fast loading</li>
+            <li><strong>Content:</strong> Event highlights, worship moments, past conference clips, or promo video</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <h3>Poster Image (Fallback)</h3>
+        <p>A static image shown while the video loads, or on mobile devices to save bandwidth.</p>
+        <div class="specs">
+          <h4>Image Specifications:</h4>
+          <ul>
+            <li><strong>Format:</strong> <code>JPG</code> or <code>WebP</code></li>
+            <li><strong>Resolution:</strong> <code>1920x1080</code> (Full HD)</li>
+            <li><strong>Aspect Ratio:</strong> <code>16:9</code></li>
+            <li><strong>File Size:</strong> Under <code>500 KB</code> (optimized for web)</li>
+            <li><strong>Content:</strong> Should match/complement the video - could be a frame from the video or event photo</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>Current Implementation:</strong> The hero section currently uses a gradient background as a placeholder.
+        Once the video/image is provided, it will replace the gradient.
+      </div>
+
+      <div class="admin-links-container">
+        <a href="/admin/settings" target="_blank" class="admin-link">Edit Hero Media</a>
+      </div>
+    </div>
+
+    <!-- Section 2: Speakers -->
+    <div class="section" id="speakers">
+      <h2>
+        <div class="section-header">
+          <span>2. Speakers Information</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'speakers')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+        <span class="badge badge-required">Required</span>
+      </h2>
+      <p>
+        The current speakers on the website are <strong>placeholder data</strong>.
+        Please provide the confirmed list of speakers with their details.
+      </p>
+
+      <div class="subsection">
+        <h3>Sample Speaker Data (For Reference Only):</h3>
+        <p class="note" style="margin-bottom: 12px;">* The data below is just a sample to show the structure. Please provide the actual speaker information.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Session</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Rev. Dr. Lito Villoria</td>
+              <td>Senior Pastor, GCF South Metro</td>
+              <td>Plenary Sessions</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Teacher Karen Monroy</td>
+              <td>NextGen Ministry Director</td>
+              <td>Workshop: Next Generation</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Teacher Carol Felipe</td>
+              <td>School Discipleship Ministry Director</td>
+              <td>Workshop: Women</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Elder Capt. Gilbert Bayang</td>
+              <td>Airline Captain & Elder</td>
+              <td>Workshop: Men</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Capt. Jun & Marivic Parcon</td>
+              <td>Seasoned Citizens Ministry Leaders</td>
+              <td>Workshop: Senior Citizens</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="subsection">
+        <h3>Speaker Photos</h3>
+        <div class="specs">
+          <h4>Photo Specifications:</h4>
+          <ul>
+            <li><strong>Format:</strong> <code>JPG</code> or <code>PNG</code></li>
+            <li><strong>Resolution:</strong> <code>400x400</code> pixels minimum (square)</li>
+            <li><strong>Aspect Ratio:</strong> <code>1:1</code> (square crop)</li>
+            <li><strong>File Size:</strong> Under <code>200 KB</code> each</li>
+            <li><strong>Style:</strong> Professional headshot, good lighting, neutral background preferred</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <h3>Information Needed Per Speaker:</h3>
+        <ul>
+          <li>Full name (with title/honorifics)</li>
+          <li>Position/Title</li>
+          <li>Organization/Church</li>
+          <li>Short bio (2-4 sentences)</li>
+          <li>Session they will be speaking at</li>
+          <li>Photo (see specs above)</li>
+        </ul>
+      </div>
+
+      <div class="admin-links-container">
+        <a href="/speakers" target="_blank" class="preview-link" style="margin: 0;">Preview Speakers page &rarr;</a>
+        <a href="/admin/speakers" target="_blank" class="admin-link">Edit Speakers</a>
+      </div>
+    </div>
+
+    <!-- Section 3: Workshops -->
+    <div class="section" id="workshops">
+      <h2>
+        <div class="section-header">
+          <span>3. Workshops & Schedule</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'workshops')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+        <span class="badge badge-required">Required</span>
+      </h2>
+      <p>
+        The current workshops and schedule on the website are <strong>placeholder/sample data</strong>.
+        Please provide the confirmed workshop details and full conference schedule.
+      </p>
+
+      <div class="subsection">
+        <h3>Sample Workshop Data (For Reference Only):</h3>
+        <p class="note" style="margin-bottom: 12px;">* The data below is just a sample to show the structure. Please provide the actual workshop information.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Workshop</th>
+              <th>Speaker</th>
+              <th>Venue</th>
+              <th>Capacity</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Next Generation</td>
+              <td>Teacher Karen Monroy</td>
+              <td>Worship Hall</td>
+              <td>100</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Women</td>
+              <td>Teacher Carol Felipe</td>
+              <td>2nd Floor Lobby</td>
+              <td>80</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Men</td>
+              <td>Elder Capt. Gilbert Bayang</td>
+              <td>CDC</td>
+              <td>60</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Senior Citizens</td>
+              <td>Capt. Jun & Marivic Parcon</td>
+              <td>Youth Center</td>
+              <td>50</td>
+              <td><span class="status status-placeholder">Sample</span></td>
+            </tr>
+            <tr>
+              <td>Couples</td>
+              <td>Deacon Edwin & Ea Sindayen</td>
+              <td>?</td>
+              <td>?</td>
+              <td><span class="status status-review">Needs Venue</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="subsection">
+        <h3>Information Needed:</h3>
+        <ul>
+          <li>Final list of workshops for IDMC 2026</li>
+          <li>Workshop titles and descriptions</li>
+          <li>Assigned speakers for each workshop</li>
+          <li>Room assignments and actual room capacities</li>
+          <li>Workshop schedule/time slots</li>
+          <li>Full conference schedule (registration, plenary sessions, breaks, etc.)</li>
+        </ul>
+      </div>
+
+      <div class="admin-links-container">
+        <a href="/schedule" target="_blank" class="preview-link" style="margin: 0;">Preview Schedule page &rarr;</a>
+        <a href="/admin/schedule" target="_blank" class="admin-link">Edit Schedule</a>
+      </div>
+    </div>
+
+    <!-- Section 4: Conference Booklet -->
+    <div class="section" id="booklet">
+      <h2>
+        <div class="section-header">
+          <span>4. Conference Booklet (Digital Copy)</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'booklet')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+        <span class="badge badge-required">Required</span>
+      </h2>
+      <p>
+        A digital copy of the conference booklet for the Downloads section.
+        This is useful for attendees who prefer to use a tablet when taking notes - they can use Adobe Acrobat Reader
+        to annotate and take notes directly on the digital copy.
+      </p>
+
+      <div class="specs">
+        <h4>File Specifications:</h4>
+        <ul>
+          <li><strong>Format:</strong> <code>PDF</code></li>
+          <li><strong>Recommended Size:</strong> Under <code>10 MB</code> for easy download</li>
+          <li><strong>Features:</strong> Should be selectable text (not scanned images) for better accessibility</li>
+        </ul>
+      </div>
+
+      <div class="highlight">
+        <strong>Tip:</strong> Attendees can open the PDF in Adobe Acrobat Reader on their tablet, highlight text,
+        add notes, and save their annotated copy - making it a paperless option for taking session notes.
+      </div>
+
+      <div class="admin-links-container">
+        <a href="/downloads" target="_blank" class="preview-link" style="margin: 0;">Preview Downloads page &rarr;</a>
+        <a href="/admin/downloads" target="_blank" class="admin-link">Edit Downloads</a>
+      </div>
+    </div>
+
+    <!-- Section 5: Contact Details -->
+    <div class="section" id="contact">
+      <h2>
+        <div class="section-header">
+          <span>5. Contact Information</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'contact')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+        <span class="badge badge-review">Needs Review</span>
+      </h2>
+      <p>Please verify these contact details are correct and up-to-date:</p>
+
+      <div class="subsection">
+        <h3>Current Contact Details:</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Current Value</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Email</td>
+              <td class="current-data">email@gcfsouthmetro.org</td>
+              <td><span class="status status-review">Please verify</span></td>
+            </tr>
+            <tr>
+              <td>Phone</td>
+              <td class="current-data">(02) 8478 1271 / (02) 8478 1273</td>
+              <td><span class="status status-review">Please verify</span></td>
+            </tr>
+            <tr>
+              <td>Mobile / Viber</td>
+              <td class="current-data">0917 650 0011</td>
+              <td><span class="status status-review">Please verify</span></td>
+            </tr>
+            <tr>
+              <td>Website</td>
+              <td class="current-data">https://gcfsouthmetro.org</td>
+              <td><span class="status status-review">Please verify</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="subsection">
+        <h3>Venue Address:</h3>
+        <div class="current-data">
+          GCF South Metro<br>
+          Daang Hari Road, Versailles, Almanza Dos,<br>
+          Las Piñas City 1750 Philippines
+        </div>
+        <p class="note" style="margin-top: 8px;">Please confirm if this address is complete and correct.</p>
+      </div>
+
+      <div class="subsection">
+        <h3>Social Media Links:</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Platform</th>
+              <th>Current URL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Facebook</td>
+              <td class="current-data">https://facebook.com/gcfsouthmetro</td>
+            </tr>
+            <tr>
+              <td>Instagram</td>
+              <td class="current-data">https://instagram.com/gcfsouthmetro</td>
+            </tr>
+            <tr>
+              <td>YouTube</td>
+              <td class="current-data">https://youtube.com/channel/UCJ36YX23P_yCjMzetI1s6Ag</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="admin-links-container">
+        <a href="/contact" target="_blank" class="preview-link" style="margin: 0;">Preview Contact page &rarr;</a>
+        <a href="/admin/settings" target="_blank" class="admin-link">Edit Settings</a>
+      </div>
+    </div>
+
+    <!-- Section 6: Legal Pages -->
+    <div class="section" id="legal">
+      <h2>
+        <div class="section-header">
+          <span>6. Terms & Conditions and Privacy Policy</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'legal')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+        <span class="badge badge-review">Needs Review</span>
+      </h2>
+      <p>
+        These pages are important for legal compliance, especially since we collect personal information during registration.
+        <strong>Both pages have now been created!</strong> Please review them using the links below.
+      </p>
+
+      <div class="subsection">
+        <h3>Terms of Service</h3>
+        <p>The Terms of Service page covers:</p>
+        <ul>
+          <li>Registration eligibility and process</li>
+          <li>Payment terms (GCash and Bank Transfer, 7-day deadline)</li>
+          <li><strong>Cancellation and Refund Policy</strong> (tiered based on timing)</li>
+          <li>Conference conduct and prohibited actions</li>
+          <li>Photography/media consent at the event</li>
+          <li>Health and safety guidelines</li>
+          <li>Liability disclaimers</li>
+        </ul>
+        <div class="admin-links-container">
+          <a href="/terms" target="_blank" class="preview-link" style="margin: 0;">Preview Terms of Service &rarr;</a>
+          <a href="/admin/legal" target="_blank" class="admin-link">Edit Legal Pages</a>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <h3>Privacy Policy</h3>
+        <p>The Privacy Policy page covers:</p>
+        <ul>
+          <li>Personal data collected (registration, payment, contact info)</li>
+          <li>How the data is used</li>
+          <li>Data storage and security (Firebase)</li>
+          <li>Data retention period</li>
+          <li>Third-party sharing policies</li>
+          <li>User rights under Philippine Data Privacy Act</li>
+          <li>Contact for privacy concerns</li>
+        </ul>
+        <div class="admin-links-container">
+          <a href="/privacy" target="_blank" class="preview-link" style="margin: 0;">Preview Privacy Policy &rarr;</a>
+          <a href="/admin/legal" target="_blank" class="admin-link">Edit Legal Pages</a>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>Important - Placeholder Values:</strong> The following values in the Terms of Service are <strong>placeholders</strong> that need your review:
+        <ul style="margin-top: 8px;">
+          <li><strong>Registration fees</strong> - Currently PHP 500 (regular) / PHP 300 (student/senior)</li>
+          <li><strong>Refund policy percentages and deadlines</strong> - e.g., "Full refund if cancelled 30+ days before event"</li>
+          <li><strong>Payment deadline</strong> - Currently set to 7 days</li>
+        </ul>
+        <p style="margin-top: 8px;">Please review these values and let me know if they need to be adjusted, or feel free to adopt and customize them as needed.</p>
+      </div>
+    </div>
+
+    <!-- Section 7: FAQ -->
+    <div class="section" id="faq">
+      <h2>
+        <div class="section-header">
+          <span>7. Frequently Asked Questions</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'faq')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+        <span class="badge badge-review">Needs Review</span>
+      </h2>
+      <p>Please review the current FAQ content and let me know if any changes or additions are needed.</p>
+
+      <div class="subsection">
+        <h3>Current FAQ Categories:</h3>
+        <ul>
+          <li><strong>Registration</strong> - 3 questions</li>
+          <li><strong>Payment</strong> - 3 questions</li>
+          <li><strong>Venue</strong> - 3 questions</li>
+          <li><strong>Accommodation</strong> - 2 questions</li>
+          <li><strong>General</strong> - 4 questions</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>Please Consider:</h3>
+        <ul>
+          <li>Are the answers accurate and up-to-date?</li>
+          <li>Are there common questions we're missing?</li>
+          <li>Should we add specific questions about workshops?</li>
+          <li>Any COVID-19 or health protocols to mention?</li>
+        </ul>
+      </div>
+
+      <div class="admin-links-container">
+        <a href="/faq" target="_blank" class="preview-link" style="margin: 0;">Preview FAQ page &rarr;</a>
+        <a href="/admin/faq" target="_blank" class="admin-link">Edit FAQ</a>
+      </div>
+    </div>
+
+    <!-- Section 8: Payment Information -->
+    <div class="section" id="payment">
+      <h2>
+        <div class="section-header">
+          <span>8. Payment Information & Bank Accounts</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'payment')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+        <span class="badge badge-review">Needs Verification</span>
+      </h2>
+      <p>The website now supports multiple bank account options for online transfers. <strong>Please verify that all account details are correct:</strong></p>
+
+      <div class="subsection">
+        <h3>Bank Accounts for Online Transfer:</h3>
+        <p>The following bank accounts have been added to the registration system. Registrants will select which account to transfer to:</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Bank</th>
+              <th>Account Name</th>
+              <th>Account Number</th>
+              <th>Branch</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Security Bank</strong></td>
+              <td>GCF South Metro, Inc.</td>
+              <td class="current-data">0000-0063-65400</td>
+              <td>Alabang Acacia</td>
+              <td><span class="status status-review">Please verify</span></td>
+            </tr>
+            <tr>
+              <td><strong>China Bank</strong></td>
+              <td>GCF South Metro, Inc.</td>
+              <td class="current-data">128-195-0910</td>
+              <td>Ayala Alabang</td>
+              <td><span class="status status-review">Please verify</span></td>
+            </tr>
+            <tr>
+              <td><strong>BDO</strong></td>
+              <td>GCF South Metro, Inc.</td>
+              <td class="current-data">00650-802-2882</td>
+              <td>Madison</td>
+              <td><span class="status status-review">Please verify</span></td>
+            </tr>
+            <tr>
+              <td><strong>BPI</strong></td>
+              <td>GCF South Metro, Inc.</td>
+              <td class="current-data">1591-0091-56</td>
+              <td>Alabang Town Center</td>
+              <td><span class="status status-review">Please verify</span></td>
+            </tr>
+            <tr>
+              <td><strong>GCash</strong></td>
+              <td>GCF South Metro</td>
+              <td class="current-data">0917 650 0011</td>
+              <td>—</td>
+              <td><span class="status status-review">Please verify</span></td>
+            </tr>
+            <tr>
+              <td><strong>Maya (PayMaya)</strong></td>
+              <td>GCF South Metro</td>
+              <td class="current-data">0917 650 0011</td>
+              <td>—</td>
+              <td><span class="status status-review">Please verify</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="highlight">
+        <strong>Important:</strong> Please verify each account number is correct. These accounts will be displayed to users during registration.
+        <ul style="margin-top: 8px;">
+          <li>Are all account numbers accurate?</li>
+          <li>Are the branch names correct?</li>
+          <li>Should any accounts be removed or marked as inactive?</li>
+          <li>Are there additional accounts that should be added?</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>How Bank Account Selection Works:</h3>
+        <p>During registration, users will:</p>
+        <ul>
+          <li>See all active bank accounts with logos displayed in a visual grid</li>
+          <li>Select which bank account they will transfer to</li>
+          <li>Enter the amount paid, date, and time of transfer</li>
+          <li>Upload their payment screenshot or receipt</li>
+        </ul>
+        <p style="margin-top: 12px;"><strong>For the finance team:</strong> This makes it easier to reconcile payments by viewing registrations grouped by bank account.</p>
+      </div>
+
+      <div class="admin-links-container">
+        <a href="/admin/bank-accounts" target="_blank" class="admin-link">Manage Bank Accounts</a>
+      </div>
+
+      <div class="subsection">
+        <h3>Registration Fees:</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Current Price</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Regular</td>
+              <td class="current-data">PHP 500</td>
+              <td><span class="status status-placeholder">Placeholder</span></td>
+            </tr>
+            <tr>
+              <td>Student / Senior Citizen</td>
+              <td class="current-data">PHP 300</td>
+              <td><span class="status status-placeholder">Placeholder</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note" style="margin-top: 8px;">* These prices are placeholders. Please provide the actual registration fees.</p>
+      </div>
+
+      <div class="highlight">
+        <strong>Questions about pricing:</strong>
+        <ul style="margin-top: 8px;">
+          <li>What are the final registration fees?</li>
+          <li>Will there be early bird pricing?</li>
+          <li>Are there group discounts?</li>
+          <li>What does the fee include? (lunch, materials, etc.)</li>
+        </ul>
+      </div>
+
+      <div class="admin-links-container">
+        <a href="/admin/settings" target="_blank" class="admin-link">Edit Settings (Pricing & Payment)</a>
+      </div>
+    </div>
+
+    <!-- Section 9: Venue Page -->
+    <div class="section" id="venue">
+      <h2>
+        <div class="section-header">
+          <span>9. Venue Page</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'venue')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+        <span class="badge badge-review">Feedback Requested</span>
+      </h2>
+      <p>
+        A new <strong>Venue page</strong> has been added to provide attendees with comprehensive venue information.
+        Please review the page and let me know if it would be helpful for attendees.
+      </p>
+
+      <div class="subsection">
+        <h3>Current Venue Page Features:</h3>
+        <ul>
+          <li><strong>Location Section</strong> - Venue name, address, and embedded Google Map</li>
+          <li><strong>Interactive Floor Plan</strong> - Shows room locations with workshop assignments</li>
+          <li><strong>Transportation Guide</strong> - Directions for driving, public transport, and parking information</li>
+          <li><strong>Nearby Amenities</strong> - Lists restaurants, hotels, and shopping options in the area</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>Transportation Details Currently Shown:</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Mode</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>By Car</td>
+              <td>Via Daang Hari Road or SLEX Susana Heights Exit</td>
+            </tr>
+            <tr>
+              <td>Public Transport</td>
+              <td>Jeepney/Bus routes, landmarks mentioned</td>
+            </tr>
+            <tr>
+              <td>Parking</td>
+              <td>Versailles Town Plaza parking (~500m from venue)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="highlight">
+        <strong>Question:</strong> Would this Venue page be helpful for attendees?
+        We'd like your feedback on whether to include this page on the website.
+        <br><br>
+        If you have insights from past conferences about common venue-related questions from attendees,
+        that would help us ensure the page addresses their needs.
+      </div>
+
+      <div class="admin-links-container">
+        <a href="/venue" target="_blank" class="preview-link" style="margin: 0;">Preview Venue page &rarr;</a>
+        <a href="/admin/venue" target="_blank" class="admin-link">Edit Venue</a>
+      </div>
+    </div>
+
+    <!-- Section 10: About IDMC Page -->
+    <div class="section" id="about-idmc">
+      <h2>
+        <div class="section-header">
+          <span>10. About IDMC Page</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'about-idmc')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+        <span class="badge badge-review">Needs Review</span>
+      </h2>
+      <p>
+        The <strong>About IDMC</strong> page provides information about the conference's history, mission, and vision.
+        Please preview the page and let me know what content you'd like to add or change.
+      </p>
+
+      <div class="highlight">
+        <strong>Note:</strong> All content on the About IDMC page is currently <strong>placeholder</strong> until you provide actual information.
+        The existing content is just to give you ideas on what we can include — feel free to add, remove, or change anything.
+        You're not limited to what's already there.
+      </div>
+
+      <div class="admin-links-container">
+        <a href="/about" target="_blank" class="preview-link" style="margin: 0;">Preview About IDMC page &rarr;</a>
+        <a href="/admin/about" target="_blank" class="admin-link">Edit About Page</a>
+      </div>
+    </div>
+
+    <!-- Section 11: About GCF South Metro -->
+    <div class="section" id="about-gcfsm">
+      <h2>
+        <div class="section-header">
+          <span>11. About GCF South Metro</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'about-gcfsm')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+        <span class="badge badge-review">Needs Review</span>
+      </h2>
+      <p>
+        The About page also includes a section about <strong>GCF South Metro</strong> as the host church.
+        Please preview the page and let me know what content you'd like to add or change.
+      </p>
+
+      <div class="highlight">
+        <strong>Note:</strong> All content on the GCF South Metro section is currently <strong>placeholder</strong> until you provide actual information.
+        The existing content is just to give you ideas on what we can include — feel free to add, remove, or change anything.
+        You're not limited to what's already there.
+      </div>
+
+      <div class="admin-links-container">
+        <a href="/about" target="_blank" class="preview-link" style="margin: 0;">Preview About page &rarr;</a>
+        <a href="/admin/about" target="_blank" class="admin-link">Edit About Page</a>
+      </div>
+    </div>
+
+    <!-- Section 12: SendGrid DNS Authentication -->
+    <div class="section" id="sendgrid-dns">
+      <h2>
+        <div class="section-header">
+          <span>12. SendGrid Domain Authentication (DNS)</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'sendgrid-dns')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+        <span class="badge badge-required">Action Required</span>
+      </h2>
+      <p>
+        To enable email sending for registration confirmations and notifications, we need to authenticate the domain
+        with <strong>SendGrid</strong>. Please add all of these records to your DNS provider (Namecheap).
+      </p>
+
+      <div class="subsection">
+        <h3>DNS Records to ADD:</h3>
+        <p style="margin-bottom: 12px;">Add the following records to authenticate your domain with SendGrid:</p>
+
+        <div class="highlight" style="margin-bottom: 16px;">
+          <strong>Important for Namecheap Users:</strong>
+          <p style="margin-top: 8px;">In Namecheap, only enter the <strong>subdomain part</strong> in the Host field. Namecheap automatically appends your domain (<code>.idmc-gcfsm.org</code>).</p>
+          <p style="margin-top: 8px; margin-bottom: 12px;"><strong>Enter these exact values in Namecheap:</strong></p>
+          <table style="font-size: 0.9rem;">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Host (enter this)</th>
+                <th>Value (enter this)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>CNAME</td>
+                <td><code>em8789</code></td>
+                <td><code>u56746353.wl104.sendgrid.net</code></td>
+              </tr>
+              <tr>
+                <td>CNAME</td>
+                <td><code>s1._domainkey</code></td>
+                <td><code>s1.domainkey.u56746353.wl104.sendgrid.net</code></td>
+              </tr>
+              <tr>
+                <td>CNAME</td>
+                <td><code>s2._domainkey</code></td>
+                <td><code>s2.domainkey.u56746353.wl104.sendgrid.net</code></td>
+              </tr>
+              <tr>
+                <td>TXT</td>
+                <td><code>_dmarc</code></td>
+                <td><code>v=DMARC1; p=none;</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <table class="sendgrid-table">
+          <thead>
+            <tr>
+              <th style="width: 80px;">Type</th>
+              <th>Host</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="type-badge">CNAME</span></td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">em8789.idmc-gcfsm.org</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 'em8789.idmc-gcfsm.org')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">u56746353.wl104.sendgrid.net</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 'u56746353.wl104.sendgrid.net')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="type-badge">CNAME</span></td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">s1._domainkey.idmc-gcfsm.org</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 's1._domainkey.idmc-gcfsm.org')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">s1.domainkey.u56746353.wl104.sendgrid.net</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 's1.domainkey.u56746353.wl104.sendgrid.net')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="type-badge">CNAME</span></td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">s2._domainkey.idmc-gcfsm.org</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 's2._domainkey.idmc-gcfsm.org')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">s2.domainkey.u56746353.wl104.sendgrid.net</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 's2.domainkey.u56746353.wl104.sendgrid.net')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="type-badge">TXT</span></td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">_dmarc.idmc-gcfsm.org</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, '_dmarc.idmc-gcfsm.org')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+              <td>
+                <div class="dns-value-cell">
+                  <span class="dns-value">v=DMARC1; p=none;</span>
+                  <button class="copy-btn" onclick="copyToClipboard(this, 'v=DMARC1; p=none;')" title="Copy to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="highlight">
+        <strong>Why is this needed?</strong>
+        <ul style="margin-top: 8px;">
+          <li>These records authenticate your domain with SendGrid for email sending</li>
+          <li><strong>CNAME records</strong> enable DKIM signing to verify email authenticity</li>
+          <li><strong>DMARC record</strong> helps prevent email spoofing and improves deliverability</li>
+          <li>Without these records, emails may go to spam or be rejected by recipients</li>
+        </ul>
+      </div>
+
+      <div class="specs">
+        <h4>Important Notes:</h4>
+        <ul>
+          <li>DNS propagation may take up to <strong>48 hours</strong></li>
+          <li>After adding the records, verification will be done in the SendGrid dashboard</li>
+          <li>Click the copy button next to each value to easily copy it to your clipboard</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Summary Checklist -->
+    <div class="section" id="summary" style="border: 2px solid var(--primary);">
+      <h2>
+        <div class="section-header">
+          <span>Summary Checklist</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'summary')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+      </h2>
+      <p>Quick reference of all items needed:</p>
+
+      <div class="subsection">
+        <h3>Assets to Provide:</h3>
+        <ul>
+          <li>&#9744; Hero background video (MP4, 1920x1080, 15-30 sec, under 15MB)</li>
+          <li>&#9744; Hero poster image (JPG/WebP, 1920x1080, under 500KB)</li>
+          <li>&#9744; Speaker photos - 5 photos (400x400 square, under 200KB each)</li>
+          <li>&#9744; Conference booklet PDF (under 10MB)</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>Information to Confirm:</h3>
+        <ul>
+          <li>&#9744; Speaker list and bios - are these final?</li>
+          <li>&#9744; Workshop titles, speakers, and room assignments</li>
+          <li>&#9744; Workshop room capacities</li>
+          <li>&#9744; Couples workshop - venue and capacity (speakers: Deacon Edwin & Ea Sindayen)</li>
+          <li>&#9744; Registration fees (currently placeholder: PHP 500 / PHP 300)</li>
+          <li>&#9744; Early bird pricing or group discounts?</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>Content to Review:</h3>
+        <ul>
+          <li>&#9744; Contact information (email, phone, address)</li>
+          <li>&#9744; <strong>Bank accounts verification</strong> - verify all 6 accounts (Security Bank, China Bank, BDO, BPI, GCash, Maya)</li>
+          <li>&#9744; Bank account numbers are accurate</li>
+          <li>&#9744; Branch names are correct</li>
+          <li>&#9744; Registration fees</li>
+          <li>&#9744; FAQ answers</li>
+          <li>&#9744; Terms of Service (<a href="/terms" target="_blank">preview</a>) - especially refund policy values</li>
+          <li>&#9744; Privacy Policy (<a href="/privacy" target="_blank">preview</a>)</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>Feedback Requested:</h3>
+        <ul>
+          <li>&#9744; Venue page (<a href="/venue" target="_blank">preview</a>) - should we include this page?</li>
+          <li>&#9744; Any insights from past conferences about attendee venue questions?</li>
+          <li>&#9744; About IDMC (<a href="/about" target="_blank">preview</a>) - provide content you'd like to include</li>
+          <li>&#9744; About GCF South Metro (<a href="/about" target="_blank">preview</a>) - provide content you'd like to include</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>Action Required (DNS - SendGrid Email Authentication):</h3>
+        <ul>
+          <li>&#9744; Add CNAME: <code>em8789.idmc-gcfsm.org</code> → <code>u56746353.wl104.sendgrid.net</code></li>
+          <li>&#9744; Add CNAME: <code>s1._domainkey.idmc-gcfsm.org</code> → <code>s1.domainkey.u56746353.wl104.sendgrid.net</code></li>
+          <li>&#9744; Add CNAME: <code>s2._domainkey.idmc-gcfsm.org</code> → <code>s2.domainkey.u56746353.wl104.sendgrid.net</code></li>
+          <li>&#9744; Add TXT: <code>_dmarc.idmc-gcfsm.org</code> → <code>v=DMARC1; p=none;</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <footer>
+      <p>IDMC 2026 Website Content Request</p>
+      <p>Prepared by Gelo</p>
+    </footer>
+  </div>
+
+  <script>
+    /**
+     * Copies anchor link to clipboard and shows visual feedback
+     * @param {HTMLElement} button - The anchor link button element
+     * @param {string} anchorId - The anchor ID to copy
+     */
+    function copyAnchorLink(button, anchorId) {
+      var url = window.location.origin + window.location.pathname + '#' + anchorId;
+      navigator.clipboard.writeText(url).then(function() {
+        // Add copied class for visual feedback
+        button.classList.add('copied');
+
+        // Change icon to checkmark
+        button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+        // Reset after 2 seconds
+        setTimeout(function() {
+          button.classList.remove('copied');
+          button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>';
+        }, 2000);
+      }).catch(function(err) {
+        console.error('Failed to copy: ', err);
+      });
+    }
+
+    /**
+     * Copies text to clipboard and shows visual feedback
+     * @param {HTMLElement} button - The copy button element
+     * @param {string} text - The text to copy
+     */
+    function copyToClipboard(button, text) {
+      navigator.clipboard.writeText(text).then(function() {
+        // Add copied class for visual feedback
+        button.classList.add('copied');
+
+        // Change icon to checkmark
+        button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+        // Reset after 2 seconds
+        setTimeout(function() {
+          button.classList.remove('copied');
+          button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+        }, 2000);
+      }).catch(function(err) {
+        console.error('Failed to copy: ', err);
+      });
+    }
+  </script>
+</body>
+</html>

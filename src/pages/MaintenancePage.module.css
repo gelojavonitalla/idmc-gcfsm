@@ -1,0 +1,353 @@
+/**
+ * MaintenancePage Component Styles
+ */
+
+.page {
+  min-height: 100vh;
+  background-color: var(--color-background);
+}
+
+/* Header Section */
+.headerSection {
+  background: linear-gradient(135deg, var(--color-primary) 0%, #059940 100%);
+  padding: calc(var(--header-height, 80px) + var(--spacing-8)) 0 var(--spacing-8);
+  color: white;
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+}
+
+.title {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  margin: 0 0 var(--spacing-1) 0;
+}
+
+.subtitle {
+  font-size: var(--font-size-lg);
+  opacity: 0.9;
+  margin: 0;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.userEmail {
+  font-size: var(--font-size-sm);
+  opacity: 0.9;
+}
+
+.userRole {
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-1) var(--spacing-2);
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-sm);
+}
+
+.signOutButton {
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-primary);
+  background: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.signOutButton:hover {
+  background: var(--color-background);
+}
+
+/* Content Section */
+.contentSection {
+  padding: var(--spacing-8) 0;
+}
+
+/* Error Banner */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-3) var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  color: var(--color-error);
+}
+
+.dismissButton {
+  background: none;
+  border: none;
+  font-size: var(--font-size-xl);
+  color: var(--color-error);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+/* Tabs Header */
+.tabsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+  flex-wrap: wrap;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: var(--spacing-2);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--spacing-2);
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+/* Add Button */
+.addButton {
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: white;
+  background-color: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.addButton:hover {
+  background-color: var(--color-primary-dark, #059940);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.tab:hover {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+.tabActive {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.tabActive:hover {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.tabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--spacing-2);
+  font-size: var(--font-size-sm);
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+}
+
+.tabActive .tabCount {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Tab Content */
+.tabContent {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+/* Table Container */
+.tableContainer {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.table th,
+.table td {
+  padding: var(--spacing-3) var(--spacing-4);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table th {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background-color: var(--color-background);
+  white-space: nowrap;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(6, 184, 75, 0.05);
+}
+
+.nameCell {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  max-width: 200px;
+}
+
+.questionCell {
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.emptyRow {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: var(--spacing-8) !important;
+}
+
+/* Status Badge */
+.statusBadge {
+  display: inline-block;
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+}
+
+.statusPublished {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
+}
+
+.statusDraft {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+/* Action Buttons */
+.actionsCell {
+  white-space: nowrap;
+}
+
+.actionButton {
+  padding: var(--spacing-1) var(--spacing-2);
+  margin-right: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--color-primary);
+  background: rgba(6, 184, 75, 0.1);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.actionButton:hover:not(:disabled) {
+  background: rgba(6, 184, 75, 0.2);
+}
+
+.actionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.editButton {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.editButton:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.deleteButton {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Loading State */
+.loadingState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-16);
+  color: var(--color-text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .headerContent {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .userInfo {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .title {
+    font-size: var(--font-size-2xl);
+  }
+
+  .tabs {
+    flex-direction: column;
+    gap: var(--spacing-1);
+  }
+
+  .tab {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .table {
+    font-size: var(--font-size-xs);
+  }
+
+  .table th,
+  .table td {
+    padding: var(--spacing-2);
+  }
+
+  .nameCell,
+  .questionCell {
+    max-width: 150px;
+  }
+}

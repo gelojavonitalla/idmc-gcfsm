@@ -1,0 +1,404 @@
+/**
+ * VenuePage Component Styles
+ * Styles for the public venue page
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Hero Section */
+.heroSection {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: white;
+  text-align: center;
+  padding: calc(var(--header-height) + var(--spacing-16)) var(--spacing-4) var(--spacing-16);
+}
+
+.heroTitle {
+  font-size: var(--font-size-5xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--spacing-4);
+  color: white;
+}
+
+.heroSubtitle {
+  font-size: var(--font-size-xl);
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* Map Section */
+.mapSection {
+  padding: var(--spacing-12) var(--spacing-4);
+  background: var(--color-background);
+}
+
+.mapContent {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: var(--spacing-8);
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: center;
+}
+
+.mapInfo {
+  padding: var(--spacing-4);
+}
+
+.mapTitle {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  margin: 0 0 var(--spacing-4);
+}
+
+.mapAddress {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0 0 var(--spacing-6);
+}
+
+.mapLink {
+  display: inline-block;
+  padding: var(--spacing-3) var(--spacing-6);
+  background: var(--color-primary);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.mapLink:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-2px);
+}
+
+.mapLink:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.mapEmbed {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.mapIframe {
+  width: 100%;
+  height: 400px;
+  border: 0;
+}
+
+/* Floor Plan Section */
+.floorPlanSection {
+  padding: var(--spacing-16) var(--spacing-4);
+  background: var(--color-background-secondary);
+}
+
+/* Section Title */
+.sectionTitle {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  margin: 0 0 var(--spacing-8);
+  text-align: center;
+}
+
+/* Transportation Section */
+.transportSection {
+  padding: var(--spacing-16) var(--spacing-4);
+  background: var(--color-background-secondary);
+}
+
+.transportGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-6);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.transportCard {
+  background: white;
+  padding: var(--spacing-6);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.transportIcon {
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-4);
+}
+
+.transportTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-4);
+}
+
+.transportList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.transportList li {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  padding: var(--spacing-2) 0;
+  padding-left: var(--spacing-5);
+  position: relative;
+}
+
+.transportList li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--color-primary);
+  font-weight: bold;
+}
+
+/* Amenities Section */
+.amenitiesSection {
+  padding: var(--spacing-16) var(--spacing-4);
+  background: var(--color-background);
+}
+
+.amenitiesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-6);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.amenityCard {
+  padding: var(--spacing-6);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.amenityTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-3);
+}
+
+.amenityText {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* CTA Section */
+.ctaSection {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  padding: var(--spacing-16) var(--spacing-4);
+  text-align: center;
+}
+
+.ctaTitle {
+  font-size: var(--font-size-2xl);
+  color: white;
+  margin: 0 0 var(--spacing-3);
+}
+
+.ctaText {
+  font-size: var(--font-size-lg);
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 var(--spacing-6);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ctaButtons {
+  display: flex;
+  gap: var(--spacing-4);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.ctaButtonPrimary {
+  display: inline-block;
+  padding: var(--spacing-4) var(--spacing-8);
+  background: white;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.ctaButtonPrimary:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+}
+
+.ctaButtonPrimary:focus {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.ctaButtonSecondary {
+  display: inline-block;
+  padding: var(--spacing-4) var(--spacing-8);
+  background: transparent;
+  color: white;
+  text-decoration: none;
+  border: 2px solid white;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.ctaButtonSecondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.ctaButtonSecondary:focus {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+/* Responsive - Tablet */
+@media (max-width: 1024px) {
+  .transportGrid,
+  .amenitiesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .heroSection {
+    padding: calc(var(--header-height) + var(--spacing-12)) var(--spacing-4) var(--spacing-12);
+  }
+
+  .heroTitle {
+    font-size: var(--font-size-3xl);
+  }
+
+  .heroSubtitle {
+    font-size: var(--font-size-lg);
+  }
+
+  .mapSection {
+    padding: var(--spacing-8) var(--spacing-4);
+  }
+
+  .mapContent {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .mapTitle {
+    font-size: var(--font-size-2xl);
+  }
+
+  .mapIframe {
+    height: 300px;
+  }
+
+  .transportSection,
+  .amenitiesSection,
+  .floorPlanSection {
+    padding: var(--spacing-12) var(--spacing-4);
+  }
+
+  .transportGrid,
+  .amenitiesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionTitle {
+    font-size: var(--font-size-xl);
+  }
+
+  .ctaSection {
+    padding: var(--spacing-12) var(--spacing-4);
+  }
+
+  .ctaTitle {
+    font-size: var(--font-size-xl);
+  }
+
+  .ctaText {
+    font-size: var(--font-size-base);
+  }
+
+  .ctaButtonPrimary,
+  .ctaButtonSecondary {
+    padding: var(--spacing-3) var(--spacing-6);
+    font-size: var(--font-size-base);
+  }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 480px) {
+  .heroSection {
+    padding: calc(var(--header-height) + var(--spacing-8)) var(--spacing-4) var(--spacing-8);
+  }
+
+  .heroTitle {
+    font-size: var(--font-size-2xl);
+  }
+
+  .heroSubtitle {
+    font-size: var(--font-size-base);
+  }
+
+  .mapSection {
+    padding: var(--spacing-6) var(--spacing-4);
+  }
+
+  .mapTitle {
+    font-size: var(--font-size-xl);
+  }
+
+  .mapAddress {
+    font-size: var(--font-size-base);
+  }
+
+  .mapIframe {
+    height: 250px;
+  }
+
+  .transportSection,
+  .amenitiesSection,
+  .floorPlanSection {
+    padding: var(--spacing-8) var(--spacing-4);
+  }
+
+  .transportCard,
+  .amenityCard {
+    padding: var(--spacing-4);
+  }
+
+  .ctaSection {
+    padding: var(--spacing-8) var(--spacing-4);
+  }
+
+  .ctaButtons {
+    flex-direction: column;
+    align-items: center;
+  }
+}

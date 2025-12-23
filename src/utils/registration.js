@@ -8,6 +8,8 @@ import {
   PRICING_TIERS,
   CONFERENCE,
   REGISTRATION_CATEGORIES,
+  SAFE_SHORT_CODE_CHARS,
+  SHORT_CODE_LENGTH,
 } from '../constants';
 
 /**
@@ -41,37 +43,79 @@ export function getCurrentPricingTier() {
 
 /**
  * Calculates the registration price based on category and pricing tier.
+ * Handles both legacy tier format (earlyBirdPrice, memberPrice, regularPrice)
+ * and database tier format (regularPrice, studentPrice).
  *
- * @param {string} category - The registration category (regular, student_senior)
+ * @param {string} category - The registration category (early_bird, member, regular)
  * @param {Object} tier - The pricing tier object (optional, defaults to current tier)
  * @returns {number} The calculated price
  */
 export function calculatePrice(category, tier = null) {
   const pricingTier = tier || getCurrentPricingTier();
 
+  // Handle case where tier is null/undefined
+  if (!pricingTier) {
+    return 0;
+  }
+
   switch (category) {
-    case REGISTRATION_CATEGORIES.STUDENT_SENIOR:
-      return pricingTier.studentPrice;
+    case REGISTRATION_CATEGORIES.EARLY_BIRD:
+      // Database tiers may not have earlyBirdPrice, fall back to regularPrice
+      return pricingTier.earlyBirdPrice ?? pricingTier.regularPrice ?? 0;
+    case REGISTRATION_CATEGORIES.MEMBER:
+      // Database tiers may not have memberPrice, fall back to regularPrice
+      return pricingTier.memberPrice ?? pricingTier.regularPrice ?? 0;
     case REGISTRATION_CATEGORIES.REGULAR:
     default:
-      return pricingTier.regularPrice;
+      return pricingTier.regularPrice ?? 0;
   }
 }
 
 /**
- * Generates a unique registration ID in the format REG-YYYY-XXXXXXXX.
- * Uses full timestamp base36 encoding combined with random characters
- * to minimize collision risk.
+ * Generates a unique 6-character short code using safe characters.
+ * Safe characters exclude confusing ones like 0/O, 1/l/I, 5/S, 2/Z, 8/B.
+ * 6 characters with 25 safe chars = ~244 million unique combinations.
  *
- * @returns {string} The generated registration ID
+ * @returns {string} 6-character short code (e.g., "A7K3MN")
+ */
+export function generateShortCode() {
+  let code = '';
+  for (let i = 0; i < SHORT_CODE_LENGTH; i += 1) {
+    const randomIndex = Math.floor(Math.random() * SAFE_SHORT_CODE_CHARS.length);
+    code += SAFE_SHORT_CODE_CHARS[randomIndex];
+  }
+  return code;
+}
+
+/**
+ * Generates a unique registration ID in the format REG-YYYY-XXXXXX.
+ * Uses 6-character short code with safe characters for easy typing and lookup.
+ * The short code avoids confusing characters like 0/O, 1/l/I, 5/S, 2/Z, 8/B.
+ *
+ * @returns {Object} Object containing registrationId and shortCode
  */
 export function generateRegistrationId() {
   const year = CONFERENCE.YEAR;
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
-  const sequence = `${timestamp}${randomPart}`.slice(-8);
+  const shortCode = generateShortCode();
 
-  return `REG-${year}-${sequence}`;
+  return {
+    registrationId: `REG-${year}-${shortCode}`,
+    shortCode,
+  };
+}
+
+/**
+ * Extracts the short code from a registration ID.
+ *
+ * @param {string} registrationId - Full registration ID (e.g., "REG-2026-A7K3MN")
+ * @returns {string} The 6-character short code
+ */
+export function extractShortCode(registrationId) {
+  if (!registrationId) {
+    return '';
+  }
+  const parts = registrationId.split('-');
+  return parts.length >= 3 ? parts[2] : '';
 }
 
 /**
@@ -109,6 +153,9 @@ export function getDaysUntilConference() {
  * @returns {string} Formatted price string
  */
 export function formatPrice(amount, currency = 'PHP') {
+  if (amount === undefined || amount === null) {
+    return `${currency} 0`;
+  }
   return `${currency} ${amount.toLocaleString()}`;
 }
 
@@ -166,10 +213,76 @@ export function formatDate(date) {
 
 /**
  * Checks if a category requires proof/verification.
+ * Currently no categories require proof.
  *
  * @param {string} category - The registration category
  * @returns {boolean} True if proof is required
  */
 export function requiresProof(category) {
-  return category === REGISTRATION_CATEGORIES.STUDENT_SENIOR;
+  // None of the current categories (early_bird, member, regular) require proof
+  return false;
+}
+
+/**
+ * Masks an email address for privacy on public pages.
+ * Shows first 2 characters of local part, masks the rest, preserves domain.
+ *
+ * @param {string} email - The email address to mask
+ * @returns {string} Masked email (e.g., "ju***@icloud.com")
+ */
+export function maskEmail(email) {
+  if (!email || typeof email !== 'string') {
+    return '';
+  }
+
+  const [localPart, domain] = email.split('@');
+  if (!localPart || !domain) {
+    return '***@***';
+  }
+
+  const visibleChars = Math.min(2, localPart.length);
+  const maskedLocal = localPart.slice(0, visibleChars) + '***';
+
+  return `${maskedLocal}@${domain}`;
+}
+
+/**
+ * Masks a name for privacy on public pages.
+ * Shows first character followed by asterisks.
+ *
+ * @param {string} name - The name to mask
+ * @returns {string} Masked name (e.g., "J***")
+ */
+export function maskName(name) {
+  if (!name || typeof name !== 'string') {
+    return '';
+  }
+
+  const trimmedName = name.trim();
+  if (trimmedName.length === 0) {
+    return '';
+  }
+
+  return trimmedName.charAt(0) + '***';
+}
+
+/**
+ * Masks a phone number for privacy on public pages.
+ * Shows only the last 4 digits.
+ *
+ * @param {string} phone - The phone number to mask
+ * @returns {string} Masked phone (e.g., "***-***-4567")
+ */
+export function maskPhone(phone) {
+  if (!phone || typeof phone !== 'string') {
+    return '';
+  }
+
+  const digitsOnly = phone.replace(/\D/g, '');
+  if (digitsOnly.length < 4) {
+    return '***-***-****';
+  }
+
+  const lastFour = digitsOnly.slice(-4);
+  return `***-***-${lastFour}`;
 }

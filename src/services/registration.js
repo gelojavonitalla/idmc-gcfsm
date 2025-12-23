@@ -1,0 +1,848 @@
+/**
+ * Registration Service
+ * Handles registration operations including creating, retrieving, and updating registrations.
+ *
+ * @module services/registration
+ */
+
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  query,
+  where,
+  limit,
+  serverTimestamp,
+  runTransaction,
+} from 'firebase/firestore';
+import {
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+} from 'firebase/storage';
+import { db, storage } from '../lib/firebase';
+import {
+  COLLECTIONS,
+  STORAGE_PATHS,
+  REGISTRATION_STATUS,
+  PAYMENT_INFO,
+  SHORT_CODE_LENGTH,
+  SHORT_CODE_SUFFIX_LENGTH,
+} from '../constants';
+import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from './activityLog';
+
+/**
+ * Error codes for registration operations
+ */
+export const REGISTRATION_ERROR_CODES = {
+  DUPLICATE_EMAIL: 'DUPLICATE_EMAIL',
+  REGISTRATION_NOT_FOUND: 'REGISTRATION_NOT_FOUND',
+  REGISTRATION_CLOSED: 'REGISTRATION_CLOSED',
+  INVALID_DATA: 'INVALID_DATA',
+  UPLOAD_FAILED: 'UPLOAD_FAILED',
+};
+
+/**
+ * Generates a unique filename with timestamp for storage
+ *
+ * @param {string} originalName - Original file name
+ * @returns {string} Unique filename with timestamp
+ */
+function generateUniqueFilename(originalName) {
+  const timestamp = Date.now();
+  const extension = originalName.split('.').pop();
+  const baseName = originalName.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9]/g, '-');
+  return `${baseName}-${timestamp}.${extension}`;
+}
+
+/**
+ * Checks if an email is already registered for the current conference
+ *
+ * @param {string} email - Email address to check
+ * @returns {Promise<Object|null>} Existing registration or null
+ */
+export async function getRegistrationByEmail(email) {
+  if (!email) {
+    return null;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+  const emailQuery = query(
+    registrationsRef,
+    where('primaryAttendee.email', '==', normalizedEmail)
+  );
+
+  const snapshot = await getDocs(emailQuery);
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const docData = snapshot.docs[0];
+  return {
+    id: docData.id,
+    ...docData.data(),
+  };
+}
+
+/**
+ * Gets a registration by its registration ID (e.g., REG-2026-A7K3)
+ *
+ * @param {string} registrationId - Full registration ID
+ * @returns {Promise<Object|null>} Registration data or null
+ */
+export async function getRegistrationById(registrationId) {
+  if (!registrationId) {
+    return null;
+  }
+
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+  const snapshot = await getDoc(docRef);
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  return {
+    id: snapshot.id,
+    ...snapshot.data(),
+  };
+}
+
+/**
+ * Gets a registration by its full short code
+ *
+ * @param {string} shortCode - 6-character short code
+ * @returns {Promise<Object|null>} Registration data or null
+ */
+export async function getRegistrationByShortCode(shortCode) {
+  if (!shortCode) {
+    return null;
+  }
+
+  const normalizedCode = shortCode.trim().toUpperCase();
+  const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+  const codeQuery = query(
+    registrationsRef,
+    where('shortCode', '==', normalizedCode)
+  );
+
+  const snapshot = await getDocs(codeQuery);
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const docData = snapshot.docs[0];
+  return {
+    id: docData.id,
+    ...docData.data(),
+  };
+}
+
+/**
+ * Gets a registration by its short code suffix (last 4 characters).
+ * Allows quick lookup using just the last 4 digits shown on tickets.
+ *
+ * @param {string} suffix - 4-character short code suffix
+ * @returns {Promise<Object|null>} Registration data or null
+ */
+export async function getRegistrationByShortCodeSuffix(suffix) {
+  if (!suffix) {
+    return null;
+  }
+
+  const normalizedSuffix = suffix.trim().toUpperCase();
+  const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+  const suffixQuery = query(
+    registrationsRef,
+    where('shortCodeSuffix', '==', normalizedSuffix)
+  );
+
+  const snapshot = await getDocs(suffixQuery);
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const docData = snapshot.docs[0];
+  return {
+    id: docData.id,
+    ...docData.data(),
+  };
+}
+
+/**
+ * Normalizes a Philippine phone number to possible storage formats.
+ * Returns an array of formats to search: local (09XX) and international (+639XX).
+ *
+ * @param {string} phone - Phone number to normalize
+ * @returns {string[]} Array of possible phone formats to search
+ */
+function getPhoneSearchVariants(phone) {
+  const cleanPhone = phone.replace(/[\s-]/g, '');
+  const variants = new Set();
+
+  // Add the cleaned input as-is
+  variants.add(cleanPhone);
+
+  // Convert to local format (09XXXXXXXXX)
+  if (cleanPhone.startsWith('+63')) {
+    variants.add('0' + cleanPhone.slice(3));
+  } else if (cleanPhone.startsWith('63')) {
+    variants.add('0' + cleanPhone.slice(2));
+  }
+
+  // Convert to international format (+639XXXXXXXXX)
+  if (cleanPhone.startsWith('0')) {
+    variants.add('+63' + cleanPhone.slice(1));
+  } else if (cleanPhone.startsWith('9') && cleanPhone.length === 10) {
+    variants.add('+63' + cleanPhone);
+    variants.add('0' + cleanPhone);
+  }
+
+  return Array.from(variants);
+}
+
+/**
+ * Gets a registration by phone number.
+ * Searches multiple phone format variants to handle different storage formats.
+ *
+ * @param {string} phone - Phone number to search
+ * @returns {Promise<Object|null>} Registration data or null
+ */
+export async function getRegistrationByPhone(phone) {
+  if (!phone) {
+    return null;
+  }
+
+  const phoneVariants = getPhoneSearchVariants(phone);
+  const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+
+  // Try each phone variant
+  for (const variant of phoneVariants) {
+    const phoneQuery = query(
+      registrationsRef,
+      where('primaryAttendee.cellphone', '==', variant)
+    );
+
+    const snapshot = await getDocs(phoneQuery);
+
+    if (!snapshot.empty) {
+      const docData = snapshot.docs[0];
+      return {
+        id: docData.id,
+        ...docData.data(),
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Uploads a payment proof file to Firebase Storage
+ *
+ * @param {File} file - File to upload
+ * @param {string} registrationId - Registration ID for organizing the file
+ * @param {Function} onProgress - Progress callback (0-100)
+ * @returns {Promise<string>} Download URL of uploaded file
+ */
+export async function uploadPaymentProof(file, registrationId, onProgress) {
+  if (!file) {
+    throw new Error('No file provided');
+  }
+
+  if (!registrationId) {
+    throw new Error('Registration ID is required for file upload');
+  }
+
+  const filename = generateUniqueFilename(file.name);
+  const storagePath = `${STORAGE_PATHS.PAYMENT_PROOFS}/${registrationId}/${filename}`;
+  const storageRef = ref(storage, storagePath);
+
+  return new Promise((resolve, reject) => {
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = Math.round(
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+        );
+        if (onProgress) {
+          onProgress(progress);
+        }
+      },
+      (error) => {
+        console.error('Upload error:', error);
+        reject(new Error('Failed to upload payment proof. Please try again.'));
+      },
+      async () => {
+        try {
+          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadUrl);
+        } catch (error) {
+          reject(new Error('Failed to get download URL. Please try again.'));
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Creates a new registration
+ *
+ * @param {Object} registrationData - Registration data
+ * @param {string} registrationData.registrationId - Unique registration ID
+ * @param {string} registrationData.shortCode - 6-character short code
+ * @param {Object} registrationData.primaryAttendee - Primary attendee information
+ * @param {Array} registrationData.additionalAttendees - Additional attendees
+ * @param {Object} registrationData.church - Church information
+ * @param {Object} registrationData.payment - Payment information
+ * @param {Object} registrationData.invoice - Invoice request data (optional)
+ * @param {number} registrationData.totalAmount - Total amount to pay
+ * @param {string} registrationData.pricingTier - Pricing tier ID
+ * @returns {Promise<Object>} Created registration data
+ */
+export async function createRegistration(registrationData) {
+  const {
+    registrationId,
+    shortCode,
+    primaryAttendee,
+    additionalAttendees,
+    church,
+    payment,
+    invoice,
+    totalAmount,
+    pricingTier,
+  } = registrationData;
+
+  if (!registrationId || !shortCode || !primaryAttendee) {
+    throw new Error(REGISTRATION_ERROR_CODES.INVALID_DATA);
+  }
+
+  // Check for duplicate email
+  const existing = await getRegistrationByEmail(primaryAttendee.email);
+  if (existing) {
+    const error = new Error('Email already registered');
+    error.code = REGISTRATION_ERROR_CODES.DUPLICATE_EMAIL;
+    error.existingRegistrationId = existing.registrationId;
+    throw error;
+  }
+
+  // Calculate payment deadline (7 days from now)
+  const paymentDeadline = new Date();
+  paymentDeadline.setDate(paymentDeadline.getDate() + PAYMENT_INFO.PAYMENT_DEADLINE_DAYS);
+
+  // Normalize email
+  const normalizedPrimaryAttendee = {
+    ...primaryAttendee,
+    email: primaryAttendee.email.trim().toLowerCase(),
+    cellphone: primaryAttendee.cellphone.replace(/[\s-]/g, ''),
+  };
+
+  // Normalize additional attendees
+  const normalizedAdditionalAttendees = (additionalAttendees || []).map((attendee) => ({
+    ...attendee,
+    email: attendee.email ? attendee.email.trim().toLowerCase() : '',
+    cellphone: attendee.cellphone.replace(/[\s-]/g, ''),
+  }));
+
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  // Extract last 4 characters for quick lookup
+  const shortCodeSuffix = shortCode.slice(-SHORT_CODE_SUFFIX_LENGTH);
+
+  // Determine initial status based on whether payment proof was uploaded
+  // If totalAmount is 0 (volunteers/speakers), set to PENDING_VERIFICATION for admin approval
+  // If payment proof is provided, set to PENDING_VERIFICATION
+  // Otherwise, set to PENDING_PAYMENT (for manual/admin registrations)
+  const hasPaymentProof = payment && payment.proofUrl;
+  const isFreeRegistration = totalAmount === 0;
+  const initialStatus = isFreeRegistration || hasPaymentProof
+    ? REGISTRATION_STATUS.PENDING_VERIFICATION
+    : REGISTRATION_STATUS.PENDING_PAYMENT;
+
+  const registrationDoc = {
+    registrationId,
+    shortCode,
+    shortCodeSuffix,
+    primaryAttendee: normalizedPrimaryAttendee,
+    additionalAttendees: normalizedAdditionalAttendees,
+    church,
+    payment: {
+      ...payment,
+      status: initialStatus,
+    },
+    invoice: invoice || null,
+    totalAmount,
+    pricingTier,
+    status: initialStatus,
+    paymentDeadline: paymentDeadline.toISOString(),
+    // Communication tracking
+    confirmationEmailSent: false,
+    reminderEmailSent: false,
+    ticketEmailSent: false,
+    // Check-in status
+    checkedIn: false,
+    checkedInAt: null,
+    checkedInBy: null,
+    // QR code (generated after payment confirmation)
+    qrCodeData: null,
+    // Timestamps
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  await setDoc(docRef, registrationDoc);
+
+  // Increment workshop counts for all selected workshops
+  const allWorkshopSelections = [
+    ...(normalizedPrimaryAttendee.workshopSelections || []),
+    ...(normalizedAdditionalAttendees || []).flatMap((attendee) => attendee.workshopSelections || []),
+  ];
+
+  // Increment each workshop's registered count
+  for (const selection of allWorkshopSelections) {
+    if (selection.sessionId) {
+      try {
+        await incrementWorkshopCount(selection.sessionId);
+      } catch (error) {
+        console.error(`Failed to increment workshop count for ${selection.sessionId}:`, error);
+      }
+    }
+  }
+
+  return {
+    id: registrationId,
+    ...registrationDoc,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Updates the payment proof for a registration
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {string} paymentProofUrl - URL of the uploaded payment proof
+ * @returns {Promise<void>}
+ */
+export async function updatePaymentProof(registrationId, paymentProofUrl) {
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  await updateDoc(docRef, {
+    'payment.proofUrl': paymentProofUrl,
+    'payment.uploadedAt': serverTimestamp(),
+    status: REGISTRATION_STATUS.PENDING_VERIFICATION,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Generates per-attendee QR code data for a registration
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {number} totalAttendees - Total number of attendees
+ * @returns {Array<Object>} Array of QR code data objects
+ */
+function generateAttendeeQRCodes(registrationId, totalAttendees) {
+  const qrCodes = [];
+  for (let i = 0; i < totalAttendees; i++) {
+    qrCodes.push({
+      attendeeIndex: i,
+      qrData: `${registrationId}-${i}`,
+    });
+  }
+  return qrCodes;
+}
+
+/**
+ * Verifies payment and updates registration with payment tracking
+ * Handles both full and partial payments
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {Object} verificationDetails - Payment verification details
+ * @param {number} verificationDetails.amountPaid - Amount received from user
+ * @param {string} verificationDetails.method - Payment method used
+ * @param {string} verificationDetails.referenceNumber - Payment reference number
+ * @param {string} verificationDetails.verifiedBy - Admin who verified
+ * @param {string} verificationDetails.notes - Additional notes
+ * @param {string} verificationDetails.rejectionReason - Reason if payment rejected (optional)
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
+ * @returns {Promise<void>}
+ */
+export async function verifyPayment(registrationId, verificationDetails, adminId = null, adminEmail = null) {
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  // Get current registration to check total amount and count attendees
+  const registration = await getRegistrationById(registrationId);
+  const totalAmount = registration?.totalAmount || 0;
+  const amountPaid = verificationDetails.amountPaid || 0;
+  const balance = totalAmount - amountPaid;
+
+  // Determine if payment is fully paid
+  const isFullyPaid = balance <= 0;
+
+  let updateData = {
+    'payment.amountPaid': amountPaid,
+    'payment.balance': Math.max(0, balance),
+    'payment.method': verificationDetails.method,
+    'payment.referenceNumber': verificationDetails.referenceNumber,
+    'payment.verifiedBy': verificationDetails.verifiedBy,
+    'payment.verifiedAt': serverTimestamp(),
+    'payment.notes': verificationDetails.notes || null,
+    updatedAt: serverTimestamp(),
+  };
+
+  if (isFullyPaid) {
+    // Full payment confirmed or free registration (volunteers/speakers)
+    const isFreeRegistration = totalAmount === 0;
+    const totalAttendees = 1 + (registration?.additionalAttendees?.length || 0);
+
+    updateData = {
+      ...updateData,
+      status: REGISTRATION_STATUS.CONFIRMED,
+      'payment.status': REGISTRATION_STATUS.CONFIRMED,
+    };
+
+    // Only generate QR codes for paid registrations (not for volunteers/speakers)
+    if (!isFreeRegistration) {
+      const qrCodeData = registrationId;
+      const attendeeQRCodes = generateAttendeeQRCodes(registrationId, totalAttendees);
+      updateData.qrCodeData = qrCodeData;
+      updateData.attendeeQRCodes = attendeeQRCodes;
+    }
+  } else {
+    // Partial payment or rejected - set back to PENDING_PAYMENT
+    updateData = {
+      ...updateData,
+      status: REGISTRATION_STATUS.PENDING_PAYMENT,
+      'payment.status': REGISTRATION_STATUS.PENDING_PAYMENT,
+      'payment.rejectionReason': verificationDetails.rejectionReason || `Partial payment received. Balance: ₱${balance.toFixed(2)}`,
+      'payment.rejectedAt': serverTimestamp(),
+      'payment.rejectedBy': verificationDetails.verifiedBy,
+    };
+  }
+
+  await updateDoc(docRef, updateData);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: isFullyPaid ? ACTIVITY_TYPES.APPROVE : ACTIVITY_TYPES.REJECT,
+      entityType: ENTITY_TYPES.REGISTRATION,
+      entityId: registrationId,
+      description: isFullyPaid
+        ? `Confirmed full payment (₱${amountPaid}) for registration: ${registration?.primaryAttendee?.firstName || ''} ${registration?.primaryAttendee?.lastName || registrationId}`
+        : `Partial payment verified (₱${amountPaid} of ₱${totalAmount}) for registration: ${registration?.primaryAttendee?.firstName || ''} ${registration?.primaryAttendee?.lastName || registrationId}`,
+      adminId,
+      adminEmail,
+    });
+  }
+}
+
+/**
+ * Confirms payment for a registration (admin action)
+ * Legacy function - consider using verifyPayment instead for better tracking
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {Object} paymentDetails - Payment verification details
+ * @param {string} paymentDetails.method - Payment method used
+ * @param {string} paymentDetails.referenceNumber - Payment reference number
+ * @param {string} paymentDetails.verifiedBy - Admin who verified
+ * @param {string} paymentDetails.notes - Additional notes
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
+ * @returns {Promise<void>}
+ */
+export async function confirmPayment(registrationId, paymentDetails, adminId = null, adminEmail = null) {
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  // Get current registration to count attendees
+  const registration = await getRegistrationById(registrationId);
+  const totalAttendees = 1 + (registration?.additionalAttendees?.length || 0);
+  const isFreeRegistration = (registration?.totalAmount || 0) === 0;
+
+  const updateData = {
+    status: REGISTRATION_STATUS.CONFIRMED,
+    'payment.status': REGISTRATION_STATUS.CONFIRMED,
+    'payment.method': paymentDetails.method,
+    'payment.referenceNumber': paymentDetails.referenceNumber,
+    'payment.verifiedBy': paymentDetails.verifiedBy,
+    'payment.verifiedAt': serverTimestamp(),
+    'payment.notes': paymentDetails.notes || null,
+    'payment.amountPaid': registration?.totalAmount || 0,
+    'payment.balance': 0,
+    updatedAt: serverTimestamp(),
+  };
+
+  // Only generate QR codes for paid registrations (not for volunteers/speakers)
+  if (!isFreeRegistration) {
+    const qrCodeData = registrationId;
+    const attendeeQRCodes = generateAttendeeQRCodes(registrationId, totalAttendees);
+    updateData.qrCodeData = qrCodeData;
+    updateData.attendeeQRCodes = attendeeQRCodes;
+  }
+
+  await updateDoc(docRef, updateData);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.APPROVE,
+      entityType: ENTITY_TYPES.REGISTRATION,
+      entityId: registrationId,
+      description: `Confirmed payment for registration: ${registration?.primaryAttendee?.firstName || ''} ${registration?.primaryAttendee?.lastName || registrationId}`,
+      adminId,
+      adminEmail,
+    });
+  }
+}
+
+/**
+ * Cancels a registration
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {string} reason - Cancellation reason
+ * @param {string} cancelledBy - Admin who cancelled (or 'system' for auto-cancel)
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
+ * @returns {Promise<void>}
+ */
+export async function cancelRegistration(registrationId, reason, cancelledBy, adminId = null, adminEmail = null) {
+  const registration = await getRegistrationById(registrationId);
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  await updateDoc(docRef, {
+    status: REGISTRATION_STATUS.CANCELLED,
+    'payment.status': REGISTRATION_STATUS.CANCELLED,
+    cancellation: {
+      reason,
+      cancelledBy,
+      cancelledAt: serverTimestamp(),
+    },
+    updatedAt: serverTimestamp(),
+  });
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.REJECT,
+      entityType: ENTITY_TYPES.REGISTRATION,
+      entityId: registrationId,
+      description: `Cancelled registration: ${registration?.primaryAttendee?.firstName || ''} ${registration?.primaryAttendee?.lastName || registrationId}`,
+      adminId,
+      adminEmail,
+    });
+  }
+}
+
+/**
+ * Marks a registration email as sent
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {string} emailType - Type of email ('confirmation', 'reminder', 'ticket')
+ * @returns {Promise<void>}
+ */
+export async function markEmailSent(registrationId, emailType) {
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+  const fieldMap = {
+    confirmation: 'confirmationEmailSent',
+    reminder: 'reminderEmailSent',
+    ticket: 'ticketEmailSent',
+  };
+
+  const field = fieldMap[emailType];
+  if (!field) {
+    throw new Error('Invalid email type');
+  }
+
+  await updateDoc(docRef, {
+    [field]: true,
+    [`${field}At`]: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Looks up a registration by various identifiers.
+ * Supports: registration ID, 6-char short code, 4-char suffix, email, or phone.
+ * Includes fallback search for partial short code matches.
+ *
+ * @param {string} identifier - Registration ID, short code (4 or 6 chars), email, or phone
+ * @returns {Promise<Object|null>} Registration data or null
+ */
+export async function lookupRegistration(identifier) {
+  if (!identifier) {
+    return null;
+  }
+
+  const trimmed = identifier.trim();
+  const upperTrimmed = trimmed.toUpperCase();
+
+  // Try registration ID format (REG-YYYY-XXXXXX)
+  if (upperTrimmed.startsWith('REG-')) {
+    const result = await getRegistrationById(upperTrimmed);
+    if (result) {
+      return result;
+    }
+  }
+
+  // Check if input looks like a short code (alphanumeric, 4-6 chars)
+  const isAlphanumeric = /^[A-Za-z0-9]+$/.test(trimmed);
+
+  // Try 6-character full short code
+  if (trimmed.length === SHORT_CODE_LENGTH && isAlphanumeric) {
+    const result = await getRegistrationByShortCode(trimmed);
+    if (result) {
+      return result;
+    }
+  }
+
+  // Try 4-character short code suffix (last 4 digits)
+  if (trimmed.length === SHORT_CODE_SUFFIX_LENGTH && isAlphanumeric) {
+    const result = await getRegistrationByShortCodeSuffix(trimmed);
+    if (result) {
+      return result;
+    }
+  }
+
+  // Try email
+  if (trimmed.includes('@')) {
+    const result = await getRegistrationByEmail(trimmed);
+    if (result) {
+      return result;
+    }
+  }
+
+  // Try phone number
+  const cleanPhone = trimmed.replace(/[\s-]/g, '');
+  if (/^(\+63|0)?9\d{9}$/.test(cleanPhone)) {
+    const result = await getRegistrationByPhone(cleanPhone);
+    if (result) {
+      return result;
+    }
+  }
+
+  // Fallback: For alphanumeric codes (4-6 chars), search by partial match on shortCode
+  // This handles cases where shortCodeSuffix field might not exist on older registrations
+  if (isAlphanumeric && trimmed.length >= SHORT_CODE_SUFFIX_LENGTH && trimmed.length <= SHORT_CODE_LENGTH) {
+    const result = await findRegistrationByPartialShortCode(upperTrimmed);
+    if (result) {
+      return result;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Fallback search for registrations by partial short code match.
+ * Searches through registrations to find ones where the shortCode ends with or equals the search term.
+ * Used when direct field queries don't find a match.
+ *
+ * @param {string} searchTerm - Uppercase alphanumeric search term (4-6 chars)
+ * @returns {Promise<Object|null>} Registration data or null
+ */
+async function findRegistrationByPartialShortCode(searchTerm) {
+  const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+
+  // Fetch a limited set of registrations to search through
+  // Use status filter to prioritize confirmed registrations
+  const registrationQuery = query(
+    registrationsRef,
+    where('status', 'in', [
+      REGISTRATION_STATUS.CONFIRMED,
+      REGISTRATION_STATUS.PENDING_PAYMENT,
+      REGISTRATION_STATUS.PENDING_VERIFICATION,
+    ]),
+    limit(500)
+  );
+
+  const snapshot = await getDocs(registrationQuery);
+
+  // Client-side search for partial short code match
+  for (const docSnap of snapshot.docs) {
+    const data = docSnap.data();
+    const shortCode = (data.shortCode || '').toUpperCase();
+
+    // Check if shortCode ends with the search term (for 4-char suffix)
+    // or equals the search term (for 6-char full code)
+    if (shortCode.endsWith(searchTerm) || shortCode === searchTerm) {
+      return {
+        id: docSnap.id,
+        ...data,
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Gets the total number of confirmed attendees for the conference.
+ * Counts both primary attendees and additional attendees from confirmed registrations.
+ * This is used to check against conference capacity limits.
+ *
+ * @returns {Promise<number>} Total number of confirmed attendees
+ */
+export async function getTotalConfirmedAttendeeCount() {
+  try {
+    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+    const confirmedQuery = query(
+      registrationsRef,
+      where('status', 'in', [
+        REGISTRATION_STATUS.CONFIRMED,
+        REGISTRATION_STATUS.PENDING_VERIFICATION,
+      ])
+    );
+
+    const snapshot = await getDocs(confirmedQuery);
+
+    let totalAttendees = 0;
+    snapshot.docs.forEach((docSnap) => {
+      const data = docSnap.data();
+      // Count primary attendee
+      totalAttendees += 1;
+      // Count additional attendees
+      totalAttendees += (data.additionalAttendees?.length || 0);
+    });
+
+    return totalAttendees;
+  } catch (error) {
+    console.error('Failed to get total attendee count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Increments workshop registered count atomically
+ *
+ * @param {string} workshopId - Workshop session ID
+ * @returns {Promise<void>}
+ */
+export async function incrementWorkshopCount(workshopId) {
+  if (!workshopId) {
+    return;
+  }
+
+  const workshopRef = doc(db, COLLECTIONS.SESSIONS, workshopId);
+
+  await runTransaction(db, async (transaction) => {
+    const workshopDoc = await transaction.get(workshopRef);
+    if (workshopDoc.exists()) {
+      const currentCount = workshopDoc.data().registeredCount || 0;
+      transaction.update(workshopRef, {
+        registeredCount: currentCount + 1,
+        updatedAt: serverTimestamp(),
+      });
+    }
+  });
+}

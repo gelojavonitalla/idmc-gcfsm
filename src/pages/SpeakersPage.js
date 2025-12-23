@@ -1,9 +1,8 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { SpeakerCard, SpeakerDetailModal } from '../components/speakers';
+import { getPublishedSpeakers } from '../services/speakers';
 import {
   SPEAKERS,
-  SPEAKER_STATUS,
   SESSION_TYPES,
   CONFERENCE,
   ROUTES,
@@ -13,23 +12,36 @@ import styles from './SpeakersPage.module.css';
 /**
  * SpeakersPage Component
  * Public-facing page that displays all published conference speakers.
- * Shows speakers in a responsive grid layout with filtering by session type.
- * Clicking a speaker card opens a modal with detailed information.
+ * Shows speakers in a detailed layout with full information visible.
+ * Fetches speaker data from Firestore with fallback to mock data.
  *
  * @returns {JSX.Element} The speakers page component
  */
 function SpeakersPage() {
-  const [selectedSpeaker, setSelectedSpeaker] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [speakers, setSpeakers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   /**
-   * Filters and sorts speakers for display
-   * Only shows published speakers, sorted by order field
+   * Fetches published speakers from Firestore on component mount
    */
-  const publishedSpeakers = useMemo(() => {
-    return SPEAKERS.filter(
-      (speaker) => speaker.status === SPEAKER_STATUS.PUBLISHED
-    ).sort((a, b) => a.order - b.order);
+  useEffect(() => {
+    async function fetchSpeakers() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const fetchedSpeakers = await getPublishedSpeakers();
+        setSpeakers(fetchedSpeakers);
+      } catch (fetchError) {
+        console.error('Failed to fetch speakers from database:', fetchError);
+        // Silently fallback to static data - no need to show error to users
+        setSpeakers(SPEAKERS);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchSpeakers();
   }, []);
 
   /**
@@ -40,11 +52,11 @@ function SpeakersPage() {
    */
   const getSpeakersBySessionType = useCallback(
     (sessionType) => {
-      return publishedSpeakers.filter(
+      return speakers.filter(
         (speaker) => speaker.sessionType === sessionType
       );
     },
-    [publishedSpeakers]
+    [speakers]
   );
 
   const plenarySpeakers = useMemo(
@@ -58,22 +70,58 @@ function SpeakersPage() {
   );
 
   /**
-   * Opens the speaker detail modal
+   * Generates initials from a speaker's name for the placeholder avatar
    *
-   * @param {Object} speaker - Speaker data to display
+   * @param {string} name - Full name of the speaker
+   * @returns {string} First letter of the first name, or '?' if name is empty/undefined
    */
-  const handleSpeakerClick = useCallback((speaker) => {
-    setSelectedSpeaker(speaker);
-    setIsModalOpen(true);
-  }, []);
+  const getInitials = (name) => {
+    if (!name || name.length === 0) {
+      return '?';
+    }
+    return name.charAt(0).toUpperCase();
+  };
 
   /**
-   * Closes the speaker detail modal
+   * Renders a speaker detail card with full information
+   *
+   * @param {Object} speaker - Speaker data object
+   * @param {boolean} showSession - Whether to show session title
+   * @returns {JSX.Element} Speaker detail card
    */
-  const handleCloseModal = useCallback(() => {
-    setIsModalOpen(false);
-    setSelectedSpeaker(null);
-  }, []);
+  const renderSpeakerCard = (speaker, showSession = false) => (
+    <article key={speaker.id} className={styles.speakerCard}>
+      <div className={styles.speakerHeader}>
+        <div className={styles.imageContainer}>
+          {speaker.photoUrl ? (
+            <img
+              src={speaker.photoUrl}
+              alt={speaker.name}
+              className={styles.image}
+              loading="lazy"
+            />
+          ) : (
+            <div className={styles.placeholder}>
+              <span>{getInitials(speaker.name)}</span>
+            </div>
+          )}
+        </div>
+        <div className={styles.speakerInfo}>
+          <h3 className={styles.speakerName}>{speaker.name}</h3>
+          <p className={styles.speakerTitle}>{speaker.title}</p>
+          <p className={styles.speakerOrg}>{speaker.organization}</p>
+          {showSession && speaker.sessionTitle && (
+            <p className={styles.speakerSession}>{speaker.sessionTitle}</p>
+          )}
+        </div>
+      </div>
+      {speaker.bio && (
+        <div className={styles.speakerBio}>
+          <p>{speaker.bio}</p>
+        </div>
+      )}
+    </article>
+  );
 
   return (
     <div className={styles.page}>
@@ -90,51 +138,60 @@ function SpeakersPage() {
       {/* Main Content */}
       <section className={styles.contentSection}>
         <div className="container">
-          {/* Plenary Speakers */}
-          {plenarySpeakers.length > 0 && (
-            <div className={styles.speakerCategory}>
-              <h2 className={styles.categoryTitle}>Plenary Session</h2>
-              <p className={styles.categoryDescription}>
-                Main conference sessions for all attendees
-              </p>
-              <div className={styles.speakersGrid}>
-                {plenarySpeakers.map((speaker) => (
-                  <SpeakerCard
-                    key={speaker.id}
-                    speaker={speaker}
-                    onClick={handleSpeakerClick}
-                    showSession={false}
-                  />
-                ))}
-              </div>
+          {/* Loading State */}
+          {isLoading && (
+            <div className={styles.loadingState}>
+              <p>Loading speakers...</p>
             </div>
           )}
 
-          {/* Workshop Speakers */}
-          {workshopSpeakers.length > 0 && (
-            <div className={styles.speakerCategory}>
-              <h2 className={styles.categoryTitle}>Workshop Sessions</h2>
-              <p className={styles.categoryDescription}>
-                Focused breakout sessions by demographic groups
-              </p>
-              <div className={styles.speakersGrid}>
-                {workshopSpeakers.map((speaker) => (
-                  <SpeakerCard
-                    key={speaker.id}
-                    speaker={speaker}
-                    onClick={handleSpeakerClick}
-                    showSession={true}
-                  />
-                ))}
-              </div>
+          {/* Error State */}
+          {error && !isLoading && (
+            <div className={styles.errorState}>
+              <p>{error}</p>
             </div>
           )}
 
-          {/* Empty State */}
-          {publishedSpeakers.length === 0 && (
-            <div className={styles.emptyState}>
-              <p>Speaker information coming soon!</p>
-            </div>
+          {/* Content - Only show when not loading */}
+          {!isLoading && (
+            <>
+              {/* Plenary Speakers */}
+              {plenarySpeakers.length > 0 && (
+                <div className={styles.speakerCategory}>
+                  <h2 className={styles.categoryTitle}>Plenary Session</h2>
+                  <p className={styles.categoryDescription}>
+                    Main conference sessions for all attendees
+                  </p>
+                  <div className={styles.speakersList}>
+                    {plenarySpeakers.map((speaker) =>
+                      renderSpeakerCard(speaker, false)
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Workshop Speakers */}
+              {workshopSpeakers.length > 0 && (
+                <div className={styles.speakerCategory}>
+                  <h2 className={styles.categoryTitle}>Workshop Sessions</h2>
+                  <p className={styles.categoryDescription}>
+                    Focused breakout sessions by demographic groups
+                  </p>
+                  <div className={styles.speakersList}>
+                    {workshopSpeakers.map((speaker) =>
+                      renderSpeakerCard(speaker, true)
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {speakers.length === 0 && (
+                <div className={styles.emptyState}>
+                  <p>Speaker information coming soon!</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
@@ -147,18 +204,16 @@ function SpeakersPage() {
             Join us at IDMC {CONFERENCE.YEAR} and be equipped for intentional
             disciple-making.
           </p>
-          <Link to={ROUTES.REGISTER} className={styles.ctaButton}>
-            Register Now
-          </Link>
+          <div className={styles.ctaButtons}>
+            <Link to={ROUTES.REGISTER} className={styles.ctaButtonPrimary}>
+              Register Now
+            </Link>
+            <Link to={ROUTES.FAQ} className={styles.ctaButtonSecondary}>
+              View FAQ
+            </Link>
+          </div>
         </div>
       </section>
-
-      {/* Speaker Detail Modal */}
-      <SpeakerDetailModal
-        speaker={selectedSpeaker}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      />
     </div>
   );
 }

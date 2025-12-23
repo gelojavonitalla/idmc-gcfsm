@@ -38,6 +38,10 @@
   transition: color 0.3s ease;
 }
 
+.logo:hover {
+  text-decoration: none;
+}
+
 .header:not(.scrolled) .logo {
   color: white;
 }
@@ -51,6 +55,12 @@
   font-size: 0.875rem;
   font-weight: 500;
   opacity: 0.8;
+}
+
+/* Hide header on homepage when hero is visible to avoid duplicate title */
+.headerHidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Hamburger Menu Button */
@@ -127,6 +137,10 @@
   color: white;
 }
 
+.navLink:hover {
+  text-decoration: none;
+}
+
 .navLink::after {
   content: '';
   position: absolute;
@@ -135,7 +149,11 @@
   width: 0;
   height: 2px;
   background-color: var(--color-primary);
-  transition: width 0.2s ease;
+  transition: width 0.2s ease, background-color 0.2s ease;
+}
+
+.header:not(.scrolled) .navLink::after {
+  background-color: white;
 }
 
 .navLink:hover::after,
@@ -148,7 +166,8 @@
   color: white !important;
   padding: 0.625rem 1.25rem;
   border-radius: 0.375rem;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  font-weight: var(--font-weight-semibold);
+  transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
 }
 
 .navLinkPrimary::after {
@@ -158,6 +177,15 @@
 .navLinkPrimary:hover {
   background-color: var(--color-primary-dark);
   transform: translateY(-1px);
+}
+
+.header:not(.scrolled) .navLinkPrimary {
+  background-color: white;
+  color: var(--color-primary) !important;
+}
+
+.header:not(.scrolled) .navLinkPrimary:hover {
+  background-color: rgba(255, 255, 255, 0.9);
 }
 
 /* Mobile Styles */
@@ -193,6 +221,11 @@
 
   .navLink {
     font-size: 1.25rem;
+  }
+
+  /* Override white text color when mobile menu is open (fixes visibility on white background) */
+  /* Needs .nav.navOpen for specificity 0-3-0 to override .header:not(.scrolled) .navLink */
+  .nav.navOpen .navLink {
     color: var(--color-text);
   }
 

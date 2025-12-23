@@ -1,0 +1,79 @@
+/**
+ * FAQCategoryTabs Component Styles
+ * Styles for the FAQ category tab navigation
+ */
+
+.tabsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-6);
+  justify-content: center;
+}
+
+.tab {
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-background);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.tab:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.tab:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.tabSelected {
+  color: white;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.tabSelected:hover {
+  color: white;
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
+.count {
+  font-size: var(--font-size-xs);
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tabSelected .count {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tabsContainer {
+    gap: var(--spacing-2);
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    padding-bottom: var(--spacing-2);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab {
+    flex-shrink: 0;
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-xs);
+  }
+}

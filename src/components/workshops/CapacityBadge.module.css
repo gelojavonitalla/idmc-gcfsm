@@ -1,0 +1,43 @@
+/**
+ * CapacityBadge Component Styles
+ * Visual indicators for workshop capacity status
+ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+/* Open/Unlimited capacity */
+.open {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+/* Available capacity */
+.available {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+/* Limited capacity (10 or fewer spots) */
+.limited {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+/* Full capacity */
+.full {
+  background-color: #fee2e2;
+  color: #991b1b;
+}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { NAV_ITEMS, CONFERENCE } from '../../constants';
+import { useSettings, DEFAULT_SETTINGS } from '../../context';
+import { NAV_ITEMS } from '../../constants';
 import styles from './Header.module.css';
 
 /**
@@ -11,10 +12,15 @@ import styles from './Header.module.css';
  * @returns {JSX.Element} The header navigation component
  */
 function Header() {
+  const { settings: dbSettings, isLoading } = useSettings();
+  // Use DEFAULT_SETTINGS as fallback only after Firebase has loaded
+  const settings = isLoading ? null : (dbSettings || DEFAULT_SETTINGS);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const isHomePage = location.pathname === '/';
 
   useEffect(() => {
     /**
@@ -82,11 +88,13 @@ function Header() {
   };
 
   return (
-    <header className={`${styles.header} ${isScrolled ? styles.scrolled : ''}`}>
+    <header
+      className={`${styles.header} ${isScrolled ? styles.scrolled : ''} ${isHomePage && !isScrolled ? styles.headerHidden : ''}`}
+    >
       <div className={styles.container}>
         <Link to="/" className={styles.logo} onClick={closeMenu}>
           <span className={styles.logoText}>IDMC</span>
-          <span className={styles.logoYear}>{CONFERENCE.YEAR}</span>
+          <span className={styles.logoYear}>{settings?.year || ''}</span>
         </Link>
 
         <button

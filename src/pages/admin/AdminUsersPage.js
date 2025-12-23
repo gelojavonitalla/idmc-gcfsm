@@ -1,0 +1,290 @@
+/**
+ * AdminUsersPage Component
+ * User management page for super admins.
+ *
+ * @module pages/admin/AdminUsersPage
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import {
+  AdminLayout,
+  UserTable,
+  InviteUserModal,
+} from '../../components/admin';
+import { useAdminAuth } from '../../context';
+import {
+  getAllAdmins,
+  createAdmin,
+  updateAdminRole,
+  activateAdmin,
+  deactivateAdmin,
+  resendInvitation,
+  revokeInvitation,
+  ADMIN_ERROR_CODES,
+} from '../../services';
+import styles from './AdminUsersPage.module.css';
+
+/**
+ * AdminUsersPage Component
+ *
+ * @returns {JSX.Element} The admin users page
+ */
+function AdminUsersPage() {
+  const { user, admin } = useAdminAuth();
+  const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+
+  /**
+   * Fetches all admin users
+   */
+  const fetchUsers = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const admins = await getAllAdmins();
+      setUsers(admins);
+    } catch (fetchError) {
+      console.error('Failed to fetch users:', fetchError);
+      setError('Failed to load users. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
+   * Fetch users on mount
+   */
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  /**
+   * Handles inviting a new user
+   *
+   * @param {Object} userData - User data from invite form
+   * @returns {Promise<{success: boolean, error?: string}>} Result of the invitation
+   */
+  const handleInviteUser = async (userData) => {
+    try {
+      // Generate a temporary ID (will be replaced by Firebase Auth UID in Cloud Function)
+      const tempId = `pending_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      await createAdmin(tempId, userData, user?.uid, user?.email);
+
+      // Refresh the user list
+      await fetchUsers();
+
+      return { success: true };
+    } catch (err) {
+      console.error('Failed to invite user:', err);
+
+      if (err.code === ADMIN_ERROR_CODES.DUPLICATE_EMAIL) {
+        return { success: false, error: 'An admin with this email already exists.' };
+      }
+
+      return { success: false, error: err.message || 'Failed to send invitation. Please try again.' };
+    }
+  };
+
+  /**
+   * Handles resending invitation to a pending user
+   *
+   * @param {string} userId - User ID to resend invitation to
+   */
+  const handleResendInvitation = async (userId) => {
+    try {
+      await resendInvitation(userId, user?.uid);
+
+      // Wait for Cloud Function to process the new document and migrate it
+      // This prevents race condition where fetchUsers returns stale temp ID
+      const CLOUD_FUNCTION_DELAY_MS = 3000;
+      await new Promise((resolve) => setTimeout(resolve, CLOUD_FUNCTION_DELAY_MS));
+
+      // Refresh the user list
+      await fetchUsers();
+
+      // Show success message (could be improved with a toast notification)
+      setError(null);
+    } catch (err) {
+      console.error('Failed to resend invitation:', err);
+      setError(err.message || 'Failed to resend invitation. Please try again.');
+    }
+  };
+
+  /**
+   * Handles revoking a pending invitation
+   *
+   * @param {string} userId - User ID to revoke invitation for
+   * @param {string} userEmail - User email for confirmation message
+   * @param {string} displayName - User display name for confirmation message
+   */
+  const handleRevokeInvitation = async (userId, userEmail, displayName) => {
+    const confirmMessage = `Are you sure you want to revoke the invitation for ${displayName || userEmail}? This action cannot be undone.`;
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      await revokeInvitation(userId, user?.uid, user?.email);
+
+      // Refresh the user list
+      await fetchUsers();
+
+      setError(null);
+    } catch (err) {
+      console.error('Failed to revoke invitation:', err);
+      setError(err.message || 'Failed to revoke invitation. Please try again.');
+    }
+  };
+
+  /**
+   * Handles updating a user's role
+   *
+   * @param {string} userId - User ID
+   * @param {string} newRole - New role
+   */
+  const handleUpdateRole = async (userId, newRole) => {
+    try {
+      await updateAdminRole(userId, newRole, user?.uid, user?.email);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+      );
+    } catch (err) {
+      console.error('Failed to update role:', err);
+      setError('Failed to update user role. Please try again.');
+    }
+  };
+
+  /**
+   * Handles toggling a user's status
+   *
+   * @param {string} userId - User ID
+   * @param {string} action - 'activate' or 'deactivate'
+   */
+  const handleToggleStatus = async (userId, action) => {
+    try {
+      if (action === 'activate') {
+        await activateAdmin(userId, user?.uid, user?.email);
+        setUsers((prev) =>
+          prev.map((u) => (u.id === userId ? { ...u, status: 'active' } : u))
+        );
+      } else {
+        await deactivateAdmin(userId, user?.uid, user?.email);
+        setUsers((prev) =>
+          prev.map((u) => (u.id === userId ? { ...u, status: 'inactive' } : u))
+        );
+      }
+    } catch (err) {
+      console.error(`Failed to ${action} user:`, err);
+      setError(`Failed to ${action} user. Please try again.`);
+    }
+  };
+
+  /**
+   * Gets user statistics
+   */
+  const getStats = () => {
+    const total = users.length;
+    const active = users.filter((u) => u.status === 'active').length;
+    const pending = users.filter((u) => u.status === 'pending').length;
+    const inactive = users.filter((u) => u.status === 'inactive').length;
+
+    return { total, active, pending, inactive };
+  };
+
+  const stats = getStats();
+
+  return (
+    <AdminLayout>
+      {/* Page Header */}
+      <div className={styles.header}>
+        <div>
+          <h2 className={styles.title}>User Management</h2>
+          <p className={styles.subtitle}>
+            Manage admin users and their permissions.
+          </p>
+        </div>
+        <div className={styles.headerActions}>
+          <button
+            className={styles.refreshButton}
+            onClick={fetchUsers}
+            disabled={isLoading}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="23 4 23 10 17 10" />
+              <polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            {isLoading ? 'Loading...' : 'Refresh'}
+          </button>
+          <button
+            className={styles.inviteButton}
+            onClick={() => setIsInviteModalOpen(true)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="8.5" cy="7" r="4" />
+              <line x1="20" y1="8" x2="20" y2="14" />
+              <line x1="23" y1="11" x2="17" y2="11" />
+            </svg>
+            Invite User
+          </button>
+        </div>
+      </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className={styles.errorBanner} role="alert">
+          {error}
+          <button onClick={() => setError(null)} aria-label="Dismiss error">
+            &times;
+          </button>
+        </div>
+      )}
+
+      {/* Stats Cards */}
+      <div className={styles.statsGrid}>
+        <div className={styles.statCard}>
+          <div className={styles.statValue}>{stats.total}</div>
+          <div className={styles.statLabel}>Total Users</div>
+        </div>
+        <div className={`${styles.statCard} ${styles.statActive}`}>
+          <div className={styles.statValue}>{stats.active}</div>
+          <div className={styles.statLabel}>Active</div>
+        </div>
+        <div className={`${styles.statCard} ${styles.statPending}`}>
+          <div className={styles.statValue}>{stats.pending}</div>
+          <div className={styles.statLabel}>Pending</div>
+        </div>
+        <div className={`${styles.statCard} ${styles.statInactive}`}>
+          <div className={styles.statValue}>{stats.inactive}</div>
+          <div className={styles.statLabel}>Inactive</div>
+        </div>
+      </div>
+
+      {/* User Table */}
+      <UserTable
+        users={users}
+        onUpdateRole={handleUpdateRole}
+        onToggleStatus={handleToggleStatus}
+        onResendInvitation={handleResendInvitation}
+        onRevokeInvitation={handleRevokeInvitation}
+        currentUserId={admin?.id}
+        isLoading={isLoading}
+      />
+
+      {/* Invite Modal */}
+      <InviteUserModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+        onInvite={handleInviteUser}
+      />
+    </AdminLayout>
+  );
+}
+
+export default AdminUsersPage;
