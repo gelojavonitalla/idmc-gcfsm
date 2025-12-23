@@ -192,6 +192,8 @@ The following APIs must be enabled in your GCP project:
 | **Cloud Scheduler API** | Scheduled task execution | Yes |
 | **Cloud Build API** | Cloud Functions deployment | Yes |
 | **Artifact Registry API** | Cloud Functions deployment | Yes |
+| **Cloud Run API** | Cloud Functions (Gen 2) runtime | Yes |
+| **Eventarc API** | Event-driven triggers for Cloud Functions | Yes |
 
 ### Enable APIs via CLI
 
@@ -207,7 +209,9 @@ gcloud services enable \
   secretmanager.googleapis.com \
   cloudscheduler.googleapis.com \
   cloudbuild.googleapis.com \
-  artifactregistry.googleapis.com
+  artifactregistry.googleapis.com \
+  run.googleapis.com \
+  eventarc.googleapis.com
 ```
 
 ### Secret Manager Setup
