@@ -48,17 +48,17 @@ jobs:
           channelId: live
           projectId: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
+      # Authenticate with GCP using service account (must come before setup-gcloud)
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
       # Set up Google Cloud SDK for secret management
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
-
-      # Authenticate with GCP using service account
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
       # Update SendGrid API key in Secret Manager
       # NOTE: The secret must be pre-created in GCP Console with proper IAM bindings.
