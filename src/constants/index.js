@@ -182,8 +182,6 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Speakers', path: ADMIN_ROUTES.SPEAKERS, icon: 'mic', requiresPermission: 'manageSpeakers' },
       { label: 'Schedule', path: ADMIN_ROUTES.SCHEDULE, icon: 'calendar', requiresPermission: 'manageSchedule' },
       { label: 'Venue', path: ADMIN_ROUTES.VENUE, icon: 'location', requiresPermission: 'manageContent' },
-      { label: 'Food Menu', path: ADMIN_ROUTES.FOOD_MENU, icon: 'utensils', requiresPermission: 'manageContent' },
-      { label: 'What to Bring', path: ADMIN_ROUTES.WHAT_TO_BRING, icon: 'checklist', requiresPermission: 'manageContent' },
       { label: 'FAQ', path: ADMIN_ROUTES.FAQ, icon: 'question', requiresPermission: 'manageContent' },
       { label: 'Downloads', path: ADMIN_ROUTES.DOWNLOADS, icon: 'download', requiresPermission: 'manageContent' },
       { label: 'About', path: ADMIN_ROUTES.ABOUT_CONTENT, icon: 'church', requiresPermission: 'manageContent' },
