@@ -69,6 +69,21 @@ function generateId(str) {
 }
 
 /**
+ * Formats time from 24-hour format to 12-hour format
+ *
+ * @param {string} time - Time in HH:MM format
+ * @returns {string} Formatted time (e.g., "1:15 PM")
+ */
+function formatTime(time) {
+  if (!time) return '';
+  const [hours, minutes] = time.split(':');
+  const hour = parseInt(hours, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minutes} ${ampm}`;
+}
+
+/**
  * MaintenancePage Component
  *
  * @returns {JSX.Element} The maintenance page component
@@ -713,7 +728,7 @@ function MaintenancePage() {
                 <td>{session.order}</td>
                 <td className={styles.nameCell}>{session.title}</td>
                 <td>
-                  {session.time} - {session.endTime}
+                  {formatTime(session.startTime)} - {formatTime(session.endTime)}
                 </td>
                 <td>{SESSION_TYPE_LABELS[session.sessionType] || session.sessionType}</td>
                 <td>{session.venue}</td>

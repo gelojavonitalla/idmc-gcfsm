@@ -343,6 +343,7 @@ export const NAV_ITEMS = [
   { label: 'Home', path: ROUTES.HOME, isAnchor: false },
   { label: 'Speakers', path: ROUTES.SPEAKERS, isAnchor: false },
   { label: 'Schedule', path: ROUTES.SCHEDULE, isAnchor: false },
+  { label: 'Downloads', path: ROUTES.DOWNLOADS, isAnchor: false },
   { label: 'IDMC 2025', path: ROUTES.IDMC_2025, isAnchor: false },
   { label: 'Check Status', path: ROUTES.REGISTRATION_STATUS, isAnchor: false },
   { label: 'Register', path: ROUTES.REGISTER, isAnchor: false, isPrimary: true },

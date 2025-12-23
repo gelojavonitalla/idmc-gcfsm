@@ -20,8 +20,8 @@ import styles from './WorkshopDetailModal.module.css';
  * @param {string} props.workshop.id - Unique workshop identifier
  * @param {string} props.workshop.title - Workshop title
  * @param {string} [props.workshop.description] - Workshop description
- * @param {string} props.workshop.time - Workshop start time
- * @param {string} [props.workshop.endTime] - Workshop end time
+ * @param {string} props.workshop.startTime - Workshop start time in HH:MM format
+ * @param {string} [props.workshop.endTime] - Workshop end time in HH:MM format
  * @param {string} [props.workshop.venue] - Venue/room name
  * @param {string} [props.workshop.category] - Workshop category
  * @param {number|null} [props.workshop.capacity] - Maximum capacity
@@ -89,16 +89,33 @@ function WorkshopDetailModal({ workshop, speakers = [], isOpen, onClose }) {
   };
 
   /**
+   * Formats time from 24-hour format to 12-hour format
+   *
+   * @param {string} time - Time in HH:MM format
+   * @returns {string} Formatted time (e.g., "1:15 PM")
+   */
+  const formatTime = (time) => {
+    if (!time) return '';
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  /**
    * Formats the time range for display
    *
    * @returns {string} Formatted time range
    */
   const getTimeDisplay = () => {
     if (!workshop) return '';
-    if (workshop.endTime) {
-      return `${workshop.time} - ${workshop.endTime}`;
+    const startTimeFormatted = formatTime(workshop.startTime);
+    const endTimeFormatted = formatTime(workshop.endTime);
+    if (startTimeFormatted && endTimeFormatted) {
+      return `${startTimeFormatted} - ${endTimeFormatted}`;
     }
-    return workshop.time;
+    return startTimeFormatted || '';
   };
 
   /**
@@ -308,7 +325,7 @@ WorkshopDetailModal.propTypes = {
     id: PropTypes.string.isRequired,
     title: PropTypes.string.isRequired,
     description: PropTypes.string,
-    time: PropTypes.string.isRequired,
+    startTime: PropTypes.string.isRequired,
     endTime: PropTypes.string,
     venue: PropTypes.string,
     category: PropTypes.string,
