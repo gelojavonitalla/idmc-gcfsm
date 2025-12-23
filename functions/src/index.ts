@@ -4071,6 +4071,8 @@ function getCheckedInAttendeeCount(
  * Recounts all confirmed attendees and updates:
  * - Stats document with registration, check-in, and workshop counts
  * - Workshop registeredCount for each session
+ * - Church stats (top churches by delegate count and registration count)
+ * - Food preference stats (distribution of food choices)
  * Runs every day at 2:00 AM Asia/Manila time
  */
 export const syncConferenceStats = onSchedule(
@@ -4115,6 +4117,19 @@ export const syncConferenceStats = onSchedule(
         pending: number;
         count: number;
       }> = {};
+
+      // Church stats
+      const churchStats: Record<string, {
+        name: string;
+        city: string;
+        delegateCount: number;
+        registrationCount: number;
+      }> = {};
+
+      // Food stats
+      const foodStats: Record<string, number> = {};
+      let totalWithFoodChoice = 0;
+      let totalWithoutFoodChoice = 0;
 
       confirmedQuery.forEach((docSnapshot) => {
         const data = docSnapshot.data();
@@ -4202,6 +4217,50 @@ export const syncConferenceStats = onSchedule(
             }
           );
         }
+
+        // Aggregate church stats
+        const churchName = data.church?.name || "Unknown Church";
+        const churchCity = data.church?.city || "";
+        // Use sanitized key (replace dots and slashes which are
+        // invalid in Firestore paths)
+        const churchKey = `${churchName}|${churchCity}`
+          .replace(/\./g, "_")
+          .replace(/\//g, "_");
+
+        if (!churchStats[churchKey]) {
+          churchStats[churchKey] = {
+            name: churchName,
+            city: churchCity,
+            delegateCount: 0,
+            registrationCount: 0,
+          };
+        }
+        churchStats[churchKey].delegateCount += attendeeCount;
+        churchStats[churchKey].registrationCount += 1;
+
+        // Aggregate food stats for primary attendee
+        const primaryFood = data.primaryAttendee?.foodChoice;
+        if (primaryFood) {
+          foodStats[primaryFood] = (foodStats[primaryFood] || 0) + 1;
+          totalWithFoodChoice += 1;
+        } else {
+          totalWithoutFoodChoice += 1;
+        }
+
+        // Aggregate food stats for additional attendees
+        if (data.additionalAttendees) {
+          data.additionalAttendees.forEach(
+            (attendee: {foodChoice?: string}) => {
+              if (attendee.foodChoice) {
+                foodStats[attendee.foodChoice] =
+                  (foodStats[attendee.foodChoice] || 0) + 1;
+                totalWithFoodChoice += 1;
+              } else {
+                totalWithoutFoodChoice += 1;
+              }
+            }
+          );
+        }
       });
 
       log.info("Calculated registration stats", {
@@ -4212,6 +4271,9 @@ export const syncConferenceStats = onSchedule(
         checkedInAttendeeCount,
         totalConfirmedPayments,
         bankAccountCount: Object.keys(bankAccountStats).length,
+        totalChurches: Object.keys(churchStats).length,
+        totalWithFoodChoice,
+        totalWithoutFoodChoice,
       });
 
       // Update stats document with all counts
@@ -4233,6 +4295,13 @@ export const syncConferenceStats = onSchedule(
         totalConfirmedPayments,
         totalPendingPayments,
         bankAccountStats,
+        // Church stats
+        churchStats,
+        totalChurches: Object.keys(churchStats).length,
+        // Food stats
+        foodStats,
+        totalWithFoodChoice,
+        totalWithoutFoodChoice,
         // Timestamps
         lastSyncedAt: FieldValue.serverTimestamp(),
         lastUpdatedAt: FieldValue.serverTimestamp(),
@@ -4282,6 +4351,9 @@ export const syncConferenceStats = onSchedule(
         totalAttendees,
         checkedInAttendeeCount,
         workshopUpdates: updateCount,
+        totalChurches: Object.keys(churchStats).length,
+        totalWithFoodChoice,
+        totalWithoutFoodChoice,
       });
     } catch (error) {
       log.error("Error syncing conference stats", error);
