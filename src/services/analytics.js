@@ -8,12 +8,14 @@
 import {
   collection,
   getDocs,
+  getDoc,
+  doc,
   query,
   orderBy,
   limit,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { COLLECTIONS, REGISTRATION_STATUS, PRICING_TIERS } from '../constants';
+import { COLLECTIONS, REGISTRATION_STATUS, PRICING_TIERS, STATS_DOC_ID } from '../constants';
 
 /**
  * Fetches dashboard statistics
@@ -171,7 +173,7 @@ export function getActivePricingTier() {
 }
 
 /**
- * Fetches church statistics aggregated from registrations
+ * Fetches church statistics from pre-aggregated stats document
  * Returns churches sorted by delegate count (descending)
  *
  * @param {number} [limitCount] - Optional limit for number of churches to return
@@ -179,52 +181,38 @@ export function getActivePricingTier() {
  */
 export async function getChurchStats(limitCount = null) {
   try {
-    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
-    const snapshot = await getDocs(registrationsRef);
+    const statsRef = doc(db, COLLECTIONS.STATS, STATS_DOC_ID);
+    const statsDoc = await getDoc(statsRef);
 
-    const churchMap = new Map();
+    if (!statsDoc.exists()) {
+      return {
+        churches: [],
+        totalChurches: 0,
+        totalDelegates: 0,
+      };
+    }
 
-    snapshot.docs.forEach((doc) => {
-      const data = doc.data();
-      // Only count confirmed or pending verification registrations
-      if (
-        data.status !== REGISTRATION_STATUS.CONFIRMED &&
-        data.status !== REGISTRATION_STATUS.PENDING_VERIFICATION
-      ) {
-        return;
-      }
+    const data = statsDoc.data();
+    const churchStats = data.churchStats || {};
 
-      const churchName = data.churchName || 'Unknown Church';
-      const churchCity = data.churchCity || '';
-      const churchKey = `${churchName}|${churchCity}`;
-
-      if (!churchMap.has(churchKey)) {
-        churchMap.set(churchKey, {
-          name: churchName,
-          city: churchCity,
-          delegateCount: 0,
-          registrationCount: 0,
-        });
-      }
-
-      const church = churchMap.get(churchKey);
-      // Count primary attendee + additional attendees
-      const additionalCount = data.additionalAttendees?.length || 0;
-      church.delegateCount += 1 + additionalCount;
-      church.registrationCount += 1;
-    });
-
-    // Convert to array and sort by delegate count
-    const churches = Array.from(churchMap.values())
+    // Convert object to array and sort by delegate count
+    const churches = Object.values(churchStats)
+      .map((church) => ({
+        name: church.name || 'Unknown Church',
+        city: church.city || '',
+        delegateCount: church.delegateCount || 0,
+        registrationCount: church.registrationCount || 0,
+      }))
       .sort((a, b) => b.delegateCount - a.delegateCount);
 
     const totalChurches = churches.length;
+    const totalDelegates = churches.reduce((sum, c) => sum + c.delegateCount, 0);
     const limitedChurches = limitCount ? churches.slice(0, limitCount) : churches;
 
     return {
       churches: limitedChurches,
       totalChurches,
-      totalDelegates: churches.reduce((sum, c) => sum + c.delegateCount, 0),
+      totalDelegates,
     };
   } catch (error) {
     console.error('Failed to fetch church stats:', error);
@@ -237,66 +225,44 @@ export async function getChurchStats(limitCount = null) {
 }
 
 /**
- * Fetches food choice statistics aggregated from registrations
+ * Fetches food choice statistics from pre-aggregated stats document
  *
  * @returns {Promise<Object>} Food stats object with distribution array
  */
 export async function getFoodStats() {
   try {
-    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
-    const snapshot = await getDocs(registrationsRef);
+    // Fetch pre-aggregated stats and food menu items in parallel
+    const [statsDoc, foodMenuSnapshot] = await Promise.all([
+      getDoc(doc(db, COLLECTIONS.STATS, STATS_DOC_ID)),
+      getDocs(collection(db, COLLECTIONS.FOOD_MENU)),
+    ]);
 
-    const foodMap = new Map();
-    let totalWithChoice = 0;
-    let totalWithoutChoice = 0;
+    if (!statsDoc.exists()) {
+      return {
+        distribution: [],
+        totalWithChoice: 0,
+        totalWithoutChoice: 0,
+        totalAttendees: 0,
+      };
+    }
 
-    snapshot.docs.forEach((doc) => {
-      const data = doc.data();
-      // Only count confirmed or pending verification registrations
-      if (
-        data.status !== REGISTRATION_STATUS.CONFIRMED &&
-        data.status !== REGISTRATION_STATUS.PENDING_VERIFICATION
-      ) {
-        return;
-      }
+    const data = statsDoc.data();
+    const foodStats = data.foodStats || {};
+    const totalWithChoice = data.totalWithFoodChoice || 0;
+    const totalWithoutChoice = data.totalWithoutFoodChoice || 0;
 
-      // Count primary attendee food choice
-      const primaryFood = data.foodChoice;
-      if (primaryFood) {
-        foodMap.set(primaryFood, (foodMap.get(primaryFood) || 0) + 1);
-        totalWithChoice++;
-      } else {
-        totalWithoutChoice++;
-      }
-
-      // Count additional attendees food choices
-      if (data.additionalAttendees?.length > 0) {
-        data.additionalAttendees.forEach((attendee) => {
-          const attendeeFood = attendee.foodChoice;
-          if (attendeeFood) {
-            foodMap.set(attendeeFood, (foodMap.get(attendeeFood) || 0) + 1);
-            totalWithChoice++;
-          } else {
-            totalWithoutChoice++;
-          }
-        });
-      }
-    });
-
-    // Fetch food menu items to get names
-    const foodMenuRef = collection(db, COLLECTIONS.FOOD_MENU);
-    const foodMenuSnapshot = await getDocs(foodMenuRef);
+    // Build food menu name lookup
     const foodMenuItems = new Map();
     foodMenuSnapshot.docs.forEach((menuDoc) => {
       foodMenuItems.set(menuDoc.id, menuDoc.data().name || menuDoc.id);
     });
 
     // Convert to array with names
-    const distribution = Array.from(foodMap.entries())
+    const distribution = Object.entries(foodStats)
       .map(([id, count]) => ({
         id,
         name: foodMenuItems.get(id) || id,
-        count,
+        count: count || 0,
       }))
       .sort((a, b) => b.count - a.count);
 

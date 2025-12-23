@@ -30,6 +30,19 @@ const DEFAULT_STATS = {
   totalPendingPayments: 0,
   bankAccountStats: {}, // { [bankAccountId]: { confirmed: number, pending: number, count: number } }
 
+  // Church stats - { [churchKey]: { name, city, delegateCount, registrationCount } }
+  churchStats: {},
+  totalChurches: 0,
+
+  // Food stats - { [foodChoiceId]: count }
+  foodStats: {},
+  totalWithFoodChoice: 0,
+  totalWithoutFoodChoice: 0,
+
+  // Download stats - { [downloadId]: count }
+  downloadStats: {},
+  totalDownloads: 0,
+
   // Timestamps
   lastSyncedAt: null,
   lastUpdatedAt: null,

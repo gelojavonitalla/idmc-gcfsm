@@ -1869,6 +1869,44 @@ export const onRegistrationCreated = onDocumentCreated(
           }
         }
 
+        // Track church stats
+        const churchName = registrationData.church?.name || "Unknown Church";
+        const churchCity = registrationData.church?.city || "";
+        // Use a sanitized key (replace dots and slashes which are invalid in Firestore paths)
+        const churchKey = `${churchName}|${churchCity}`
+          .replace(/\./g, "_")
+          .replace(/\//g, "_");
+        statsUpdate[`churchStats.${churchKey}.name`] = churchName;
+        statsUpdate[`churchStats.${churchKey}.city`] = churchCity;
+        statsUpdate[`churchStats.${churchKey}.delegateCount`] =
+          FieldValue.increment(attendeeCount);
+        statsUpdate[`churchStats.${churchKey}.registrationCount`] =
+          FieldValue.increment(1);
+
+        // Track food stats for primary attendee
+        const primaryFood = registrationData.primaryAttendee?.foodChoice;
+        if (primaryFood) {
+          statsUpdate[`foodStats.${primaryFood}`] = FieldValue.increment(1);
+          statsUpdate.totalWithFoodChoice = FieldValue.increment(1);
+        } else {
+          statsUpdate.totalWithoutFoodChoice = FieldValue.increment(1);
+        }
+
+        // Track food stats for additional attendees
+        if (registrationData.additionalAttendees) {
+          registrationData.additionalAttendees.forEach(
+            (attendee: {foodChoice?: string}) => {
+              if (attendee.foodChoice) {
+                statsUpdate[`foodStats.${attendee.foodChoice}`] =
+                  FieldValue.increment(1);
+                statsUpdate.totalWithFoodChoice = FieldValue.increment(1);
+              } else {
+                statsUpdate.totalWithoutFoodChoice = FieldValue.increment(1);
+              }
+            }
+          );
+        }
+
         // Update stats document
         const statsRef = db.collection(COLLECTIONS.STATS).doc(STATS_DOC_ID);
         await statsRef.set(statsUpdate, {merge: true});
