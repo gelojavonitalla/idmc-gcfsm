@@ -2179,8 +2179,9 @@ export const onPaymentConfirmed = onDocumentUpdated(
 );
 
 /**
- * Firestore trigger that sends waitlist offer email when status changes to WAITLIST_OFFERED.
- * This email notifies the user that a slot is available and provides payment instructions.
+ * Firestore trigger that sends waitlist offer email when status
+ * changes to WAITLIST_OFFERED. This email notifies the user that
+ * a slot is available and provides payment instructions.
  */
 export const onWaitlistOfferSent = onDocumentUpdated(
   {
@@ -2261,8 +2262,12 @@ export const onWaitlistOfferSent = onDocumentUpdated(
         // Calculate hours until deadline
         const deadline = new Date(after.waitlistOfferExpiresAt);
         const now = new Date();
-        const hoursUntilDeadline = Math.max(0, Math.round((deadline.getTime() - now.getTime()) / (1000 * 60 * 60)));
+        const msPerHour = 1000 * 60 * 60;
+        const timeDiff = deadline.getTime() - now.getTime();
+        const hoursUntilDeadline = Math.max(
+          0, Math.round(timeDiff / msPerHour));
 
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const sgMail = require("@sendgrid/mail");
         sgMail.setApiKey(sendgridApiKey.value());
 
@@ -2346,13 +2351,16 @@ export const onWaitlistOfferSent = onDocumentUpdated(
       await event.data?.after?.ref.update(updateData);
     }
 
-    log.end(true, {waitlistOfferEmailSent: updateData.waitlistOfferEmailSent || false});
+    log.end(true, {
+      waitlistOfferEmailSent: updateData.waitlistOfferEmailSent || false,
+    });
   }
 );
 
 /**
- * Firestore trigger that auto-promotes the next waitlisted person when a confirmed registration is cancelled.
- * This ensures the waitlist queue moves forward automatically.
+ * Firestore trigger that auto-promotes the next waitlisted person when a
+ * confirmed registration is cancelled. This ensures the waitlist queue
+ * moves forward automatically.
  */
 export const onRegistrationCancelled = onDocumentUpdated(
   {
@@ -2414,28 +2422,32 @@ export const onRegistrationCancelled = onDocumentUpdated(
       const nextWaitlistedId = nextWaitlisted.id;
 
       // Calculate payment deadline
-      const conferenceStartDate = settings.startDate || new Date().toISOString();
-      const conferenceDate = new Date(conferenceStartDate);
+      const confStartDate = settings.startDate || new Date().toISOString();
+      const conferenceDate = new Date(confStartDate);
       const now = new Date();
-      const hoursUntilConference = (conferenceDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+      const msPerHour = 1000 * 60 * 60;
+      const hoursUntilConference =
+        (conferenceDate.getTime() - now.getTime()) / msPerHour;
 
       let deadlineHours = 48;
       if (hoursUntilConference <= 12) deadlineHours = 6;
       else if (hoursUntilConference <= 24) deadlineHours = 12;
       else if (hoursUntilConference <= 48) deadlineHours = 24;
 
-      const paymentDeadline = new Date(now.getTime() + deadlineHours * 60 * 60 * 1000);
+      const deadlineMs = now.getTime() + deadlineHours * 60 * 60 * 1000;
+      const paymentDeadline = new Date(deadlineMs);
       // Ensure deadline doesn't exceed conference start
-      const finalDeadline = paymentDeadline < conferenceDate ? paymentDeadline : conferenceDate;
+      const finalDeadline =
+        paymentDeadline < conferenceDate ? paymentDeadline : conferenceDate;
 
       // Update the waitlisted registration to WAITLIST_OFFERED
       await nextWaitlisted.ref.update({
-        status: REGISTRATION_STATUS.WAITLIST_OFFERED,
+        "status": REGISTRATION_STATUS.WAITLIST_OFFERED,
         "payment.status": REGISTRATION_STATUS.WAITLIST_OFFERED,
-        paymentDeadline: finalDeadline.toISOString(),
-        waitlistOfferSentAt: FieldValue.serverTimestamp(),
-        waitlistOfferExpiresAt: finalDeadline.toISOString(),
-        updatedAt: FieldValue.serverTimestamp(),
+        "paymentDeadline": finalDeadline.toISOString(),
+        "waitlistOfferSentAt": FieldValue.serverTimestamp(),
+        "waitlistOfferExpiresAt": finalDeadline.toISOString(),
+        "updatedAt": FieldValue.serverTimestamp(),
       });
 
       log.info("Auto-promoted next waitlisted registration", {
@@ -2524,8 +2536,8 @@ export const cancelExpiredRegistrations = onSchedule(
 );
 
 /**
- * Scheduled function that expires waitlist offers that have passed their deadline
- * and promotes the next person in the waitlist.
+ * Scheduled function that expires waitlist offers that have passed
+ * their deadline and promotes the next person in the waitlist.
  * Runs every hour to ensure timely expiration.
  */
 export const expireWaitlistOffers = onSchedule(
@@ -2570,9 +2582,9 @@ export const expireWaitlistOffers = onSchedule(
 
         // Mark as expired
         await expiredDoc.ref.update({
-          status: REGISTRATION_STATUS.WAITLIST_EXPIRED,
+          "status": REGISTRATION_STATUS.WAITLIST_EXPIRED,
           "payment.status": REGISTRATION_STATUS.WAITLIST_EXPIRED,
-          updatedAt: FieldValue.serverTimestamp(),
+          "updatedAt": FieldValue.serverTimestamp(),
         });
 
         expiredCount++;
@@ -2592,26 +2604,31 @@ export const expireWaitlistOffers = onSchedule(
             const nextWaitlistedId = nextWaitlisted.id;
 
             // Calculate payment deadline
-            const conferenceStartDate = settings.startDate || new Date().toISOString();
-            const conferenceDate = new Date(conferenceStartDate);
-            const hoursUntilConference = (conferenceDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+            const confStartDate =
+              settings.startDate || new Date().toISOString();
+            const conferenceDate = new Date(confStartDate);
+            const msPerHour = 1000 * 60 * 60;
+            const hoursUntilConference =
+              (conferenceDate.getTime() - now.getTime()) / msPerHour;
 
             let deadlineHours = 48;
             if (hoursUntilConference <= 12) deadlineHours = 6;
             else if (hoursUntilConference <= 24) deadlineHours = 12;
             else if (hoursUntilConference <= 48) deadlineHours = 24;
 
-            const paymentDeadline = new Date(now.getTime() + deadlineHours * 60 * 60 * 1000);
-            const finalDeadline = paymentDeadline < conferenceDate ? paymentDeadline : conferenceDate;
+            const deadlineMs = now.getTime() + deadlineHours * 60 * 60 * 1000;
+            const paymentDeadline = new Date(deadlineMs);
+            const finalDeadline = paymentDeadline < conferenceDate ?
+              paymentDeadline : conferenceDate;
 
             // Update to WAITLIST_OFFERED
             await nextWaitlisted.ref.update({
-              status: REGISTRATION_STATUS.WAITLIST_OFFERED,
+              "status": REGISTRATION_STATUS.WAITLIST_OFFERED,
               "payment.status": REGISTRATION_STATUS.WAITLIST_OFFERED,
-              paymentDeadline: finalDeadline.toISOString(),
-              waitlistOfferSentAt: FieldValue.serverTimestamp(),
-              waitlistOfferExpiresAt: finalDeadline.toISOString(),
-              updatedAt: FieldValue.serverTimestamp(),
+              "paymentDeadline": finalDeadline.toISOString(),
+              "waitlistOfferSentAt": FieldValue.serverTimestamp(),
+              "waitlistOfferExpiresAt": finalDeadline.toISOString(),
+              "updatedAt": FieldValue.serverTimestamp(),
             });
 
             promotedCount++;
