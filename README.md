@@ -195,6 +195,16 @@ The following APIs must be enabled in your GCP project:
 | **Cloud Run API** | Cloud Functions (Gen 2) runtime | Yes |
 | **Eventarc API** | Event-driven triggers for Cloud Functions | Yes |
 | **Firebase Extensions API** | Firebase Extensions management | Yes |
+| **Cloud Logging API** | Application and infrastructure logging | Yes |
+| **Cloud Pub/Sub API** | Asynchronous messaging between services | Yes |
+| **Identity and Access Management (IAM) API** | Access control and permissions | Yes |
+| **Service Usage API** | Enable and manage GCP services | Yes |
+| **Cloud Resource Manager API** | Project and resource management | Yes |
+| **Firebase Management API** | Firebase project management | Yes |
+| **Firebase Hosting API** | Static web hosting | Yes |
+| **Token Service API** | OAuth token management | Yes |
+| **Cloud Billing API** | Billing and cost management | Yes |
+| **Cloud Runtime Configuration API** | Runtime configuration variables | Yes |
 
 ### Enable APIs via CLI
 
@@ -213,7 +223,17 @@ gcloud services enable \
   artifactregistry.googleapis.com \
   run.googleapis.com \
   eventarc.googleapis.com \
-  firebaseextensions.googleapis.com
+  firebaseextensions.googleapis.com \
+  logging.googleapis.com \
+  pubsub.googleapis.com \
+  iam.googleapis.com \
+  serviceusage.googleapis.com \
+  cloudresourcemanager.googleapis.com \
+  firebase.googleapis.com \
+  firebasehosting.googleapis.com \
+  securetoken.googleapis.com \
+  cloudbilling.googleapis.com \
+  runtimeconfig.googleapis.com
 ```
 
 ### Secret Manager Setup
