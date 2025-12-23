@@ -58,6 +58,7 @@ const createEmptyAdditionalAttendee = () => {
     email: '', // Optional for additional attendees
     ministryRole: '',
     category: 'regular', // Default category key - will be validated against database categories
+    isStudent: false, // Whether attendee qualifies for student/senior citizen pricing
     workshopSelections: [], // Array of { sessionId, sessionTitle, timeSlot }
     foodChoice: '', // Selected food menu item ID
   };
@@ -84,6 +85,7 @@ const INITIAL_FORM_DATA = {
     emailConfirm: '',
     ministryRole: '',
     category: 'regular', // Default category key - will be validated against database categories
+    isStudent: false, // Whether attendee qualifies for student/senior citizen pricing
     workshopSelections: [], // Array of { sessionId, sessionTitle, timeSlot }
     foodChoice: '', // Selected food menu item ID
   },
@@ -672,14 +674,16 @@ function RegisterPage() {
 
   /**
    * Gets the price for a pricing tier by ID
-   * Uses regularPrice by default (studentPrice can be used based on attendee type)
+   * Returns studentPrice if isStudent is true, otherwise regularPrice
    *
    * @param {string} tierId - The pricing tier ID
+   * @param {boolean} isStudent - Whether to use student pricing
    * @returns {number} Tier price or 0 if not found
    */
-  const getCategoryPrice = useCallback((tierId) => {
+  const getCategoryPrice = useCallback((tierId, isStudent = false) => {
     const tier = availablePricingTiers.find(t => t.id === tierId);
-    return tier?.regularPrice || 0;
+    if (!tier) return 0;
+    return isStudent ? (tier.studentPrice ?? tier.regularPrice) : tier.regularPrice;
   }, [availablePricingTiers]);
 
   /**
@@ -694,21 +698,37 @@ function RegisterPage() {
   }, [availablePricingTiers]);
 
   /**
+   * Checks if a tier has different student pricing from regular pricing
+   *
+   * @param {string} tierId - The pricing tier ID
+   * @returns {boolean} True if student price differs from regular price
+   */
+  const hasStudentPricing = useCallback((tierId) => {
+    const tier = availablePricingTiers.find(t => t.id === tierId);
+    if (!tier) return false;
+    return tier.studentPrice !== undefined && tier.studentPrice !== tier.regularPrice;
+  }, [availablePricingTiers]);
+
+  /**
    * Calculates total price for all attendees (primary + additional)
+   * Takes into account student pricing when applicable
    *
    * @returns {number} Total price
    */
   const calculateTotalPrice = useCallback(() => {
-    // Primary attendee price
-    const primaryPrice = getCategoryPrice(formData.primaryAttendee.category);
+    // Primary attendee price (with student pricing if applicable)
+    const primaryPrice = getCategoryPrice(
+      formData.primaryAttendee.category,
+      formData.primaryAttendee.isStudent
+    );
 
-    // Additional attendees price
+    // Additional attendees price (with student pricing if applicable)
     const additionalPrice = (formData.additionalAttendees || []).reduce((total, attendee) => {
-      return total + getCategoryPrice(attendee.category);
+      return total + getCategoryPrice(attendee.category, attendee.isStudent);
     }, 0);
 
     return primaryPrice + additionalPrice;
-  }, [formData.primaryAttendee.category, formData.additionalAttendees, getCategoryPrice]);
+  }, [formData.primaryAttendee.category, formData.primaryAttendee.isStudent, formData.additionalAttendees, getCategoryPrice]);
 
   /**
    * Checks if payment is required based on total amount
@@ -1408,9 +1428,9 @@ function RegisterPage() {
                       {primary.lastName}, {primary.firstName} {primary.middleName}
                     </p>
                     <p>{primary.email} | {primary.cellphone}</p>
-                    <p>{primary.ministryRole} | {getCategoryName(primary.category)}</p>
+                    <p>{primary.ministryRole} | {getCategoryName(primary.category)}{primary.isStudent && ' (Student)'}</p>
                     <p className={styles.attendeePrice}>
-                      {formatPrice(getCategoryPrice(primary.category))}
+                      {formatPrice(getCategoryPrice(primary.category, primary.isStudent))}
                     </p>
                   </div>
                 </div>
@@ -1428,9 +1448,9 @@ function RegisterPage() {
                           <p>
                             {attendee.email || '(No email)'} | {attendee.cellphone}
                           </p>
-                          <p>{attendee.ministryRole} | {getCategoryName(attendee.category)}</p>
+                          <p>{attendee.ministryRole} | {getCategoryName(attendee.category)}{attendee.isStudent && ' (Student)'}</p>
                           <p className={styles.attendeePrice}>
-                            {formatPrice(getCategoryPrice(attendee.category))}
+                            {formatPrice(getCategoryPrice(attendee.category, attendee.isStudent))}
                           </p>
                         </div>
                       </div>
@@ -1808,14 +1828,35 @@ function RegisterPage() {
                     <select
                       className={styles.select}
                       value={formData.primaryAttendee.category}
-                      onChange={(e) => updatePrimaryAttendee('category', e.target.value)}
+                      onChange={(e) => {
+                        updatePrimaryAttendee('category', e.target.value);
+                        // Reset isStudent when changing category if new category doesn't have student pricing
+                        if (!hasStudentPricing(e.target.value)) {
+                          updatePrimaryAttendee('isStudent', false);
+                        }
+                      }}
                     >
                       {availablePricingTiers.map((tier) => (
                         <option key={tier.id} value={tier.id}>
-                          {tier.name} - {formatPrice(tier.regularPrice)}
+                          {tier.name} - {formatPrice(
+                            formData.primaryAttendee.category === tier.id && formData.primaryAttendee.isStudent
+                              ? tier.studentPrice
+                              : tier.regularPrice
+                          )}
                         </option>
                       ))}
                     </select>
+                    {hasStudentPricing(formData.primaryAttendee.category) && (
+                      <label className={styles.checkboxLabel}>
+                        <input
+                          type="checkbox"
+                          checked={formData.primaryAttendee.isStudent}
+                          onChange={(e) => updatePrimaryAttendee('isStudent', e.target.checked)}
+                          className={styles.checkbox}
+                        />
+                        <span>Student / Senior Citizen ({formatPrice(getCategoryPrice(formData.primaryAttendee.category, true))})</span>
+                      </label>
+                    )}
                   </div>
                 </div>
 
@@ -1987,14 +2028,35 @@ function RegisterPage() {
                       <select
                         className={styles.select}
                         value={attendee.category}
-                        onChange={(e) => updateAdditionalAttendee(index, 'category', e.target.value)}
+                        onChange={(e) => {
+                          updateAdditionalAttendee(index, 'category', e.target.value);
+                          // Reset isStudent when changing category if new category doesn't have student pricing
+                          if (!hasStudentPricing(e.target.value)) {
+                            updateAdditionalAttendee(index, 'isStudent', false);
+                          }
+                        }}
                       >
                         {availablePricingTiers.map((tier) => (
                           <option key={tier.id} value={tier.id}>
-                            {tier.name} - {formatPrice(tier.regularPrice)}
+                            {tier.name} - {formatPrice(
+                              attendee.category === tier.id && attendee.isStudent
+                                ? tier.studentPrice
+                                : tier.regularPrice
+                            )}
                           </option>
                         ))}
                       </select>
+                      {hasStudentPricing(attendee.category) && (
+                        <label className={styles.checkboxLabel}>
+                          <input
+                            type="checkbox"
+                            checked={attendee.isStudent}
+                            onChange={(e) => updateAdditionalAttendee(index, 'isStudent', e.target.checked)}
+                            className={styles.checkbox}
+                          />
+                          <span>Student / Senior Citizen ({formatPrice(getCategoryPrice(attendee.category, true))})</span>
+                        </label>
+                      )}
                     </div>
                   </div>
 
@@ -2092,9 +2154,10 @@ function RegisterPage() {
                     </span>
                     <span className={styles.attendeeListCategory}>
                       {getCategoryName(formData.primaryAttendee.category)}
+                      {formData.primaryAttendee.isStudent && ' (Student)'}
                     </span>
                     <span className={styles.attendeeListPrice}>
-                      {formatPrice(getCategoryPrice(formData.primaryAttendee.category))}
+                      {formatPrice(getCategoryPrice(formData.primaryAttendee.category, formData.primaryAttendee.isStudent))}
                     </span>
                   </div>
                 </div>
@@ -2111,9 +2174,10 @@ function RegisterPage() {
                         </span>
                         <span className={styles.attendeeListCategory}>
                           {getCategoryName(attendee.category)}
+                          {attendee.isStudent && ' (Student)'}
                         </span>
                         <span className={styles.attendeeListPrice}>
-                          {formatPrice(getCategoryPrice(attendee.category))}
+                          {formatPrice(getCategoryPrice(attendee.category, attendee.isStudent))}
                         </span>
                       </div>
                     ))}
@@ -2754,10 +2818,10 @@ function RegisterPage() {
                       {formData.primaryAttendee.lastName}, {formData.primaryAttendee.firstName} {formData.primaryAttendee.middleName}
                     </p>
                     <p>{formData.primaryAttendee.email} | {formData.primaryAttendee.cellphone}</p>
-                    <p>{formData.primaryAttendee.ministryRole} | {getCategoryName(formData.primaryAttendee.category)}</p>
+                    <p>{formData.primaryAttendee.ministryRole} | {getCategoryName(formData.primaryAttendee.category)}{formData.primaryAttendee.isStudent && ' (Student)'}</p>
                   </div>
                   <div className={styles.attendeePrice}>
-                    {formatPrice(getCategoryPrice(formData.primaryAttendee.category))}
+                    {formatPrice(getCategoryPrice(formData.primaryAttendee.category, formData.primaryAttendee.isStudent))}
                   </div>
                 </div>
               </div>
@@ -2773,10 +2837,10 @@ function RegisterPage() {
                           {attendee.lastName}, {attendee.firstName} {attendee.middleName}
                         </p>
                         <p>{attendee.email || '(No email)'} | {attendee.cellphone}</p>
-                        <p>{attendee.ministryRole} | {getCategoryName(attendee.category)}</p>
+                        <p>{attendee.ministryRole} | {getCategoryName(attendee.category)}{attendee.isStudent && ' (Student)'}</p>
                       </div>
                       <div className={styles.attendeePrice}>
-                        {formatPrice(getCategoryPrice(attendee.category))}
+                        {formatPrice(getCategoryPrice(attendee.category, attendee.isStudent))}
                       </div>
                     </div>
                   ))}
