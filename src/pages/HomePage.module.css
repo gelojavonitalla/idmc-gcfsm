@@ -429,6 +429,80 @@
   border: 0;
 }
 
+/* CTA Section */
+.ctaSection {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  padding: var(--spacing-16) var(--spacing-4);
+  text-align: center;
+}
+
+.ctaTitle {
+  font-size: var(--font-size-2xl);
+  color: white;
+  margin: 0 0 var(--spacing-3);
+}
+
+.ctaText {
+  font-size: var(--font-size-lg);
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 var(--spacing-6);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ctaButtons {
+  display: flex;
+  gap: var(--spacing-4);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.ctaButtonPrimary {
+  display: inline-block;
+  padding: var(--spacing-4) var(--spacing-8);
+  background: white;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.ctaButtonPrimary:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+}
+
+.ctaButtonPrimary:focus {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.ctaButtonSecondary {
+  display: inline-block;
+  padding: var(--spacing-4) var(--spacing-8);
+  background: transparent;
+  color: white;
+  text-decoration: none;
+  border: 2px solid white;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.ctaButtonSecondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.ctaButtonSecondary:focus {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .heroSection {
@@ -486,6 +560,24 @@
 
   .mapIframe {
     height: 250px;
+  }
+
+  .ctaSection {
+    padding: var(--spacing-12) var(--spacing-4);
+  }
+
+  .ctaTitle {
+    font-size: var(--font-size-xl);
+  }
+
+  .ctaText {
+    font-size: var(--font-size-base);
+  }
+
+  .ctaButtonPrimary,
+  .ctaButtonSecondary {
+    padding: var(--spacing-3) var(--spacing-6);
+    font-size: var(--font-size-base);
   }
 }
 
@@ -547,5 +639,14 @@
   .pricingSection,
   .speakersSection {
     padding: var(--spacing-12) 0;
+  }
+
+  .ctaSection {
+    padding: var(--spacing-8) var(--spacing-4);
+  }
+
+  .ctaButtons {
+    flex-direction: column;
+    align-items: center;
   }
 }

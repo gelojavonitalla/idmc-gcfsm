@@ -7,6 +7,7 @@ import {
   SPEAKERS,
   SESSION_TYPES,
   ROUTES,
+  CONFERENCE,
 } from '../constants';
 import { formatPrice } from '../utils';
 import styles from './HomePage.module.css';
@@ -325,6 +326,25 @@ function HomePage() {
                 referrerPolicy="no-referrer-when-downgrade"
               />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className={styles.ctaSection}>
+        <div className="container">
+          <h2 className={styles.ctaTitle}>Ready to Learn and Grow?</h2>
+          <p className={styles.ctaText}>
+            Join us at IDMC {CONFERENCE.YEAR} and be equipped for intentional
+            disciple-making.
+          </p>
+          <div className={styles.ctaButtons}>
+            <Link to={ROUTES.REGISTER} className={styles.ctaButtonPrimary}>
+              Register Now
+            </Link>
+            <Link to={ROUTES.FAQ} className={styles.ctaButtonSecondary}>
+              View FAQ
+            </Link>
           </div>
         </div>
       </section>
