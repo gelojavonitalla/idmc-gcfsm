@@ -1984,37 +1984,42 @@ function RegisterPage() {
                       <path d="M18 10h.01" />
                     </svg>
                   </div>
-                  <h3 className={styles.paymentMethodTitle}>Online Bank Transfer</h3>
+                  <h3 className={styles.paymentMethodTitle}>Bank Transfer/Deposit</h3>
                   <p className={styles.paymentMethodDescription}>
-                    Transfer to our bank account and upload your proof of payment
+                    Transfer or deposit to our bank account and upload your proof of payment
                   </p>
                   {formData.paymentMethod === PAYMENT_METHODS.BANK_TRANSFER && (
                     <div className={styles.selectedIndicator}>✓</div>
                   )}
                 </div>
 
-                <div
-                  className={`${styles.paymentMethodCard} ${
-                    (formData.paymentMethod === PAYMENT_METHODS.GCASH || formData.paymentMethod === PAYMENT_METHODS.PAYMAYA) ? styles.selectedPaymentMethod : ''
-                  }`}
-                  onClick={() => updateField('paymentMethod', PAYMENT_METHODS.GCASH)}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className={styles.paymentMethodIcon}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="5" width="20" height="14" rx="2" />
-                      <path d="M2 10h20" />
-                    </svg>
+                {bankAccounts.some((account) =>
+                  account.accountType === BANK_ACCOUNT_TYPES.EWALLET &&
+                  (account.bankName === BANK_NAMES.GCASH || account.bankName === BANK_NAMES.MAYA)
+                ) && (
+                  <div
+                    className={`${styles.paymentMethodCard} ${
+                      (formData.paymentMethod === PAYMENT_METHODS.GCASH || formData.paymentMethod === PAYMENT_METHODS.PAYMAYA) ? styles.selectedPaymentMethod : ''
+                    }`}
+                    onClick={() => updateField('paymentMethod', PAYMENT_METHODS.GCASH)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className={styles.paymentMethodIcon}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="5" width="20" height="14" rx="2" />
+                        <path d="M2 10h20" />
+                      </svg>
+                    </div>
+                    <h3 className={styles.paymentMethodTitle}>E-Wallet (GCash/Maya)</h3>
+                    <p className={styles.paymentMethodDescription}>
+                      Send payment via GCash or Maya and upload your proof of payment
+                    </p>
+                    {(formData.paymentMethod === PAYMENT_METHODS.GCASH || formData.paymentMethod === PAYMENT_METHODS.PAYMAYA) && (
+                      <div className={styles.selectedIndicator}>✓</div>
+                    )}
                   </div>
-                  <h3 className={styles.paymentMethodTitle}>E-Wallet (GCash/Maya)</h3>
-                  <p className={styles.paymentMethodDescription}>
-                    Send payment via GCash or Maya and upload your proof of payment
-                  </p>
-                  {(formData.paymentMethod === PAYMENT_METHODS.GCASH || formData.paymentMethod === PAYMENT_METHODS.PAYMAYA) && (
-                    <div className={styles.selectedIndicator}>✓</div>
-                  )}
-                </div>
+                )}
               </div>
 
               {/* Bank Account Selection - Only for Bank Transfer */}
