@@ -66,6 +66,9 @@ function AdminRegistrationsPage() {
     pendingPayment: 0,
     cancelled: 0,
     refunded: 0,
+    waitlisted: 0,
+    waitlistOffered: 0,
+    waitlistExpired: 0,
   });
 
   /**
@@ -408,6 +411,9 @@ function AdminRegistrationsPage() {
       pendingVerification: statusCounts.pendingVerification,
       pendingPayment: statusCounts.pendingPayment,
       cancelled: statusCounts.cancelled,
+      waitlisted: statusCounts.waitlisted,
+      waitlistOffered: statusCounts.waitlistOffered,
+      waitlistExpired: statusCounts.waitlistExpired,
       totalRevenue,
     };
   };
@@ -602,6 +608,13 @@ function AdminRegistrationsPage() {
             </option>
             <option value={REGISTRATION_STATUS.PENDING_PAYMENT}>
               Pending Payment
+            </option>
+            <option value={REGISTRATION_STATUS.WAITLISTED}>Waitlisted</option>
+            <option value={REGISTRATION_STATUS.WAITLIST_OFFERED}>
+              Waitlist - Slot Offered
+            </option>
+            <option value={REGISTRATION_STATUS.WAITLIST_EXPIRED}>
+              Waitlist - Expired
             </option>
             <option value={REGISTRATION_STATUS.CANCELLED}>Cancelled</option>
             <option value={REGISTRATION_STATUS.REFUNDED}>Refunded</option>

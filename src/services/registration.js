@@ -31,6 +31,7 @@ import {
   PAYMENT_INFO,
   SHORT_CODE_LENGTH,
   SHORT_CODE_SUFFIX_LENGTH,
+  WAITLIST_DEADLINE_HOURS,
 } from '../constants';
 import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from './activityLog';
 
@@ -43,6 +44,9 @@ export const REGISTRATION_ERROR_CODES = {
   REGISTRATION_CLOSED: 'REGISTRATION_CLOSED',
   INVALID_DATA: 'INVALID_DATA',
   UPLOAD_FAILED: 'UPLOAD_FAILED',
+  CONFERENCE_FULL: 'CONFERENCE_FULL',
+  WAITLIST_FULL: 'WAITLIST_FULL',
+  WAITLIST_DISABLED: 'WAITLIST_DISABLED',
 };
 
 /**
@@ -845,4 +849,431 @@ export async function incrementWorkshopCount(workshopId) {
       });
     }
   });
+}
+
+/**
+ * Gets the total number of waitlisted registrations.
+ * Counts registrations with status WAITLISTED or WAITLIST_OFFERED.
+ *
+ * @returns {Promise<number>} Total number of waitlisted registrations
+ */
+export async function getWaitlistCount() {
+  try {
+    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+    const waitlistQuery = query(
+      registrationsRef,
+      where('status', 'in', [
+        REGISTRATION_STATUS.WAITLISTED,
+        REGISTRATION_STATUS.WAITLIST_OFFERED,
+      ])
+    );
+
+    const snapshot = await getDocs(waitlistQuery);
+    return snapshot.size;
+  } catch (error) {
+    console.error('Failed to get waitlist count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Gets all waitlisted registrations ordered by waitlist position (FIFO).
+ *
+ * @returns {Promise<Array>} Array of waitlisted registrations sorted by waitlistedAt
+ */
+export async function getWaitlistedRegistrations() {
+  try {
+    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+    const waitlistQuery = query(
+      registrationsRef,
+      where('status', '==', REGISTRATION_STATUS.WAITLISTED)
+    );
+
+    const snapshot = await getDocs(waitlistQuery);
+    const registrations = snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data(),
+    }));
+
+    // Sort by waitlistedAt (FIFO order)
+    registrations.sort((a, b) => {
+      const dateA = a.waitlistedAt?.toDate?.() || new Date(a.waitlistedAt) || new Date(0);
+      const dateB = b.waitlistedAt?.toDate?.() || new Date(b.waitlistedAt) || new Date(0);
+      return dateA - dateB;
+    });
+
+    return registrations;
+  } catch (error) {
+    console.error('Failed to get waitlisted registrations:', error);
+    return [];
+  }
+}
+
+/**
+ * Gets the waitlist position for a specific registration.
+ *
+ * @param {string} registrationId - Registration ID to check
+ * @returns {Promise<number|null>} Position in waitlist (1-based) or null if not on waitlist
+ */
+export async function getWaitlistPosition(registrationId) {
+  try {
+    const registration = await getRegistrationById(registrationId);
+    if (!registration ||
+        (registration.status !== REGISTRATION_STATUS.WAITLISTED &&
+         registration.status !== REGISTRATION_STATUS.WAITLIST_OFFERED)) {
+      return null;
+    }
+
+    const waitlistedRegistrations = await getWaitlistedRegistrations();
+    const position = waitlistedRegistrations.findIndex((r) => r.id === registrationId);
+
+    // For WAITLIST_OFFERED status, they're essentially at position 0 (being processed)
+    if (registration.status === REGISTRATION_STATUS.WAITLIST_OFFERED) {
+      return 0;
+    }
+
+    return position >= 0 ? position + 1 : null;
+  } catch (error) {
+    console.error('Failed to get waitlist position:', error);
+    return null;
+  }
+}
+
+/**
+ * Creates a waitlisted registration (no payment required).
+ *
+ * @param {Object} registrationData - Registration data
+ * @returns {Promise<Object>} Created waitlisted registration data
+ */
+export async function createWaitlistRegistration(registrationData) {
+  const {
+    registrationId,
+    shortCode,
+    primaryAttendee,
+    additionalAttendees,
+    church,
+    totalAmount,
+    pricingTier,
+  } = registrationData;
+
+  if (!registrationId || !shortCode || !primaryAttendee) {
+    throw new Error(REGISTRATION_ERROR_CODES.INVALID_DATA);
+  }
+
+  // Check for duplicate email
+  const existing = await getRegistrationByEmail(primaryAttendee.email);
+  if (existing) {
+    const error = new Error('Email already registered');
+    error.code = REGISTRATION_ERROR_CODES.DUPLICATE_EMAIL;
+    error.existingRegistrationId = existing.registrationId;
+    throw error;
+  }
+
+  // Normalize email
+  const normalizedPrimaryAttendee = {
+    ...primaryAttendee,
+    email: primaryAttendee.email.trim().toLowerCase(),
+    cellphone: primaryAttendee.cellphone.replace(/[\s-]/g, ''),
+  };
+
+  // Normalize additional attendees
+  const normalizedAdditionalAttendees = (additionalAttendees || []).map((attendee) => ({
+    ...attendee,
+    email: attendee.email ? attendee.email.trim().toLowerCase() : '',
+    cellphone: attendee.cellphone.replace(/[\s-]/g, ''),
+  }));
+
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+  const shortCodeSuffix = shortCode.slice(-SHORT_CODE_SUFFIX_LENGTH);
+
+  const registrationDoc = {
+    registrationId,
+    shortCode,
+    shortCodeSuffix,
+    primaryAttendee: normalizedPrimaryAttendee,
+    additionalAttendees: normalizedAdditionalAttendees,
+    church,
+    payment: {
+      method: null,
+      proofUrl: null,
+      status: REGISTRATION_STATUS.WAITLISTED,
+    },
+    invoice: null,
+    totalAmount,
+    pricingTier,
+    status: REGISTRATION_STATUS.WAITLISTED,
+    // Waitlist-specific fields
+    waitlistedAt: serverTimestamp(),
+    waitlistOfferSentAt: null,
+    waitlistOfferExpiresAt: null,
+    promotedFromWaitlistAt: null,
+    // No payment deadline for waitlisted registrations
+    paymentDeadline: null,
+    // Communication tracking
+    confirmationEmailSent: false,
+    waitlistEmailSent: false,
+    waitlistOfferEmailSent: false,
+    reminderEmailSent: false,
+    ticketEmailSent: false,
+    // Check-in status
+    checkedIn: false,
+    checkedInAt: null,
+    checkedInBy: null,
+    // QR code (generated after payment confirmation)
+    qrCodeData: null,
+    // Timestamps
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  await setDoc(docRef, registrationDoc);
+
+  return {
+    id: registrationId,
+    ...registrationDoc,
+    waitlistedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Calculates the payment deadline based on time until conference.
+ *
+ * @param {string} conferenceStartDate - Conference start date ISO string
+ * @returns {Date} Payment deadline date
+ */
+export function calculateWaitlistPaymentDeadline(conferenceStartDate) {
+  const now = new Date();
+  const conferenceDate = new Date(conferenceStartDate);
+  const hoursUntilConference = (conferenceDate - now) / (1000 * 60 * 60);
+
+  let deadlineHours;
+  if (hoursUntilConference <= 12) {
+    deadlineHours = WAITLIST_DEADLINE_HOURS.LESS_THAN_12H;
+  } else if (hoursUntilConference <= 24) {
+    deadlineHours = WAITLIST_DEADLINE_HOURS.LESS_THAN_24H;
+  } else if (hoursUntilConference <= 48) {
+    deadlineHours = WAITLIST_DEADLINE_HOURS.LESS_THAN_48H;
+  } else {
+    deadlineHours = WAITLIST_DEADLINE_HOURS.DEFAULT;
+  }
+
+  // Ensure deadline doesn't exceed conference start time
+  const deadline = new Date(now.getTime() + deadlineHours * 60 * 60 * 1000);
+  return deadline < conferenceDate ? deadline : conferenceDate;
+}
+
+/**
+ * Offers a slot to a waitlisted registration.
+ * Updates status to WAITLIST_OFFERED and sets payment deadline.
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {string} conferenceStartDate - Conference start date ISO string
+ * @param {string} adminId - Admin user ID (null for system-triggered)
+ * @param {string} adminEmail - Admin email (null for system-triggered)
+ * @returns {Promise<Object>} Updated registration
+ */
+export async function offerSlotToWaitlistedRegistration(
+  registrationId,
+  conferenceStartDate,
+  adminId = null,
+  adminEmail = null
+) {
+  const registration = await getRegistrationById(registrationId);
+  if (!registration) {
+    throw new Error(REGISTRATION_ERROR_CODES.REGISTRATION_NOT_FOUND);
+  }
+
+  if (registration.status !== REGISTRATION_STATUS.WAITLISTED) {
+    throw new Error('Registration is not in waitlisted status');
+  }
+
+  const paymentDeadline = calculateWaitlistPaymentDeadline(conferenceStartDate);
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  await updateDoc(docRef, {
+    status: REGISTRATION_STATUS.WAITLIST_OFFERED,
+    'payment.status': REGISTRATION_STATUS.WAITLIST_OFFERED,
+    paymentDeadline: paymentDeadline.toISOString(),
+    waitlistOfferSentAt: serverTimestamp(),
+    waitlistOfferExpiresAt: paymentDeadline.toISOString(),
+    updatedAt: serverTimestamp(),
+  });
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.REGISTRATION,
+      entityId: registrationId,
+      description: `Offered waitlist slot to: ${registration.primaryAttendee?.firstName || ''} ${registration.primaryAttendee?.lastName || registrationId}`,
+      adminId,
+      adminEmail,
+    });
+  }
+
+  return {
+    ...registration,
+    status: REGISTRATION_STATUS.WAITLIST_OFFERED,
+    paymentDeadline: paymentDeadline.toISOString(),
+    waitlistOfferExpiresAt: paymentDeadline.toISOString(),
+  };
+}
+
+/**
+ * Gets the next registration in waitlist (FIFO order).
+ *
+ * @returns {Promise<Object|null>} Next waitlisted registration or null
+ */
+export async function getNextWaitlistedRegistration() {
+  const waitlistedRegistrations = await getWaitlistedRegistrations();
+  return waitlistedRegistrations.length > 0 ? waitlistedRegistrations[0] : null;
+}
+
+/**
+ * Marks a waitlist offer as expired and optionally promotes the next person.
+ *
+ * @param {string} registrationId - Registration ID with expired offer
+ * @returns {Promise<void>}
+ */
+export async function expireWaitlistOffer(registrationId) {
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  await updateDoc(docRef, {
+    status: REGISTRATION_STATUS.WAITLIST_EXPIRED,
+    'payment.status': REGISTRATION_STATUS.WAITLIST_EXPIRED,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Cancels a waitlisted registration (user-initiated).
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {string} reason - Cancellation reason
+ * @returns {Promise<void>}
+ */
+export async function cancelWaitlistRegistration(registrationId, reason = 'User cancelled') {
+  const registration = await getRegistrationById(registrationId);
+  if (!registration) {
+    throw new Error(REGISTRATION_ERROR_CODES.REGISTRATION_NOT_FOUND);
+  }
+
+  const validStatuses = [
+    REGISTRATION_STATUS.WAITLISTED,
+    REGISTRATION_STATUS.WAITLIST_OFFERED,
+  ];
+
+  if (!validStatuses.includes(registration.status)) {
+    throw new Error('Only waitlisted registrations can be cancelled this way');
+  }
+
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  await updateDoc(docRef, {
+    status: REGISTRATION_STATUS.CANCELLED,
+    'payment.status': REGISTRATION_STATUS.CANCELLED,
+    cancellation: {
+      reason,
+      cancelledBy: 'user',
+      cancelledAt: serverTimestamp(),
+    },
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Updates payment proof for a waitlist-offered registration.
+ * Changes status to pending_verification.
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {string} paymentProofUrl - URL of the uploaded payment proof
+ * @param {string} paymentMethod - Payment method used
+ * @returns {Promise<void>}
+ */
+export async function uploadWaitlistPayment(registrationId, paymentProofUrl, paymentMethod) {
+  const registration = await getRegistrationById(registrationId);
+  if (!registration) {
+    throw new Error(REGISTRATION_ERROR_CODES.REGISTRATION_NOT_FOUND);
+  }
+
+  if (registration.status !== REGISTRATION_STATUS.WAITLIST_OFFERED) {
+    throw new Error('Registration must have an active slot offer to upload payment');
+  }
+
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  await updateDoc(docRef, {
+    status: REGISTRATION_STATUS.PENDING_VERIFICATION,
+    'payment.proofUrl': paymentProofUrl,
+    'payment.method': paymentMethod,
+    'payment.status': REGISTRATION_STATUS.PENDING_VERIFICATION,
+    'payment.uploadedAt': serverTimestamp(),
+    promotedFromWaitlistAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Checks conference and waitlist availability.
+ *
+ * @param {Object} settings - Conference settings
+ * @param {number} attendeeCount - Number of attendees being registered
+ * @returns {Promise<Object>} Availability status
+ */
+export async function checkRegistrationAvailability(settings, attendeeCount = 1) {
+  const conferenceCapacity = settings?.conferenceCapacity;
+  const waitlistEnabled = settings?.waitlist?.enabled || false;
+  const waitlistCapacity = settings?.waitlist?.capacity;
+
+  // If no capacity limit, registration is always open
+  if (!conferenceCapacity) {
+    return {
+      canRegister: true,
+      isWaitlist: false,
+      message: null,
+    };
+  }
+
+  const confirmedCount = await getTotalConfirmedAttendeeCount();
+  const remainingSlots = conferenceCapacity - confirmedCount;
+
+  // If there are enough slots, allow regular registration
+  if (remainingSlots >= attendeeCount) {
+    return {
+      canRegister: true,
+      isWaitlist: false,
+      remainingSlots,
+      message: null,
+    };
+  }
+
+  // Conference is full, check waitlist
+  if (!waitlistEnabled) {
+    return {
+      canRegister: false,
+      isWaitlist: false,
+      message: 'Registration is closed. The conference has reached maximum capacity.',
+    };
+  }
+
+  // Check waitlist capacity
+  const waitlistCount = await getWaitlistCount();
+
+  if (waitlistCapacity && waitlistCount >= waitlistCapacity) {
+    return {
+      canRegister: false,
+      isWaitlist: false,
+      message: 'Registration is closed. Both the conference and waitlist are full.',
+    };
+  }
+
+  // Waitlist is available
+  return {
+    canRegister: true,
+    isWaitlist: true,
+    waitlistPosition: waitlistCount + 1,
+    message: 'The conference is full, but you can join the waitlist.',
+  };
 }

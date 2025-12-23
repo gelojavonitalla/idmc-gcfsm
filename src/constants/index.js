@@ -541,6 +541,88 @@ export const REGISTRATION_STATUS = {
   CONFIRMED: 'confirmed',
   CANCELLED: 'cancelled',
   REFUNDED: 'refunded',
+  WAITLISTED: 'waitlisted',
+  WAITLIST_OFFERED: 'waitlist_offered',
+  WAITLIST_EXPIRED: 'waitlist_expired',
+};
+
+/**
+ * Registration status labels for display
+ */
+export const REGISTRATION_STATUS_LABELS = {
+  [REGISTRATION_STATUS.PENDING_PAYMENT]: 'Pending Payment',
+  [REGISTRATION_STATUS.PENDING_VERIFICATION]: 'Pending Verification',
+  [REGISTRATION_STATUS.CONFIRMED]: 'Confirmed',
+  [REGISTRATION_STATUS.CANCELLED]: 'Cancelled',
+  [REGISTRATION_STATUS.REFUNDED]: 'Refunded',
+  [REGISTRATION_STATUS.WAITLISTED]: 'Waitlisted',
+  [REGISTRATION_STATUS.WAITLIST_OFFERED]: 'Slot Available',
+  [REGISTRATION_STATUS.WAITLIST_EXPIRED]: 'Offer Expired',
+};
+
+/**
+ * Registration status colors for styling
+ */
+export const REGISTRATION_STATUS_COLORS = {
+  [REGISTRATION_STATUS.PENDING_PAYMENT]: {
+    background: '#fef3c7',
+    border: '#f59e0b',
+    text: '#92400e',
+    badge: 'bg-yellow-100 text-yellow-800',
+  },
+  [REGISTRATION_STATUS.PENDING_VERIFICATION]: {
+    background: '#e0f2fe',
+    border: '#0ea5e9',
+    text: '#0369a1',
+    badge: 'bg-blue-100 text-blue-800',
+  },
+  [REGISTRATION_STATUS.CONFIRMED]: {
+    background: '#dcfce7',
+    border: '#22c55e',
+    text: '#166534',
+    badge: 'bg-green-100 text-green-800',
+  },
+  [REGISTRATION_STATUS.CANCELLED]: {
+    background: '#fee2e2',
+    border: '#ef4444',
+    text: '#991b1b',
+    badge: 'bg-red-100 text-red-800',
+  },
+  [REGISTRATION_STATUS.REFUNDED]: {
+    background: '#f3f4f6',
+    border: '#6b7280',
+    text: '#374151',
+    badge: 'bg-gray-100 text-gray-800',
+  },
+  [REGISTRATION_STATUS.WAITLISTED]: {
+    background: '#f3e8ff',
+    border: '#a855f7',
+    text: '#7c3aed',
+    badge: 'bg-purple-100 text-purple-800',
+  },
+  [REGISTRATION_STATUS.WAITLIST_OFFERED]: {
+    background: '#dbeafe',
+    border: '#3b82f6',
+    text: '#1e40af',
+    badge: 'bg-blue-100 text-blue-800',
+  },
+  [REGISTRATION_STATUS.WAITLIST_EXPIRED]: {
+    background: '#f3f4f6',
+    border: '#9ca3af',
+    text: '#4b5563',
+    badge: 'bg-gray-100 text-gray-600',
+  },
+};
+
+/**
+ * Waitlist payment deadline hours based on time until conference
+ * Used to calculate dynamic payment deadlines for waitlist offers
+ */
+export const WAITLIST_DEADLINE_HOURS = {
+  DEFAULT: 48,           // > 48 hours until conference
+  LESS_THAN_48H: 24,     // 24-48 hours until conference
+  LESS_THAN_24H: 12,     // 12-24 hours until conference
+  LESS_THAN_12H: 6,      // < 12 hours until conference
 };
 
 /**

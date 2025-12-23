@@ -105,6 +105,18 @@ export {
   lookupRegistration,
   incrementWorkshopCount,
   getTotalConfirmedAttendeeCount,
+  // Waitlist functions
+  getWaitlistCount,
+  getWaitlistedRegistrations,
+  getWaitlistPosition,
+  createWaitlistRegistration,
+  calculateWaitlistPaymentDeadline,
+  offerSlotToWaitlistedRegistration,
+  getNextWaitlistedRegistration,
+  expireWaitlistOffer,
+  cancelWaitlistRegistration,
+  uploadWaitlistPayment,
+  checkRegistrationAvailability,
 } from './registration';
 
 export {
