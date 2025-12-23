@@ -35,7 +35,7 @@ function ToastContainer() {
               {toast.type === 'success' && '✓'}
               {toast.type === 'error' && '✕'}
               {toast.type === 'warning' && '⚠'}
-              {toast.type === 'info' && 'ℹ'}
+              {toast.type === 'info' && 'ⓘ'}
             </span>
             <span className={styles.toastMessage}>{toast.message}</span>
           </div>

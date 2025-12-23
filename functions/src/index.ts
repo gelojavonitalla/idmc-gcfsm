@@ -17,7 +17,7 @@ import {getAuth} from "firebase-admin/auth";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import sgMail from "@sendgrid/mail";
 import * as QRCode from "qrcode";
-import {verifyFinanceAdmin, verifyAdminRole} from "./auth";
+import {verifyFinanceAdmin} from "./auth";
 import {
   checkRateLimit,
   cleanupExpiredRateLimits,
@@ -2236,8 +2236,15 @@ export const ocrReceipt = onCall(
   async (request) => {
     const log = cfLogger.createContext("ocrReceipt");
 
-    // Verify user is an active admin (any role can use OCR for verification)
-    await verifyAdminRole(request.auth?.uid);
+    // Only require authentication - any logged-in user can use OCR
+    // This is needed for regular users during registration to scan receipts
+    if (!request.auth?.uid) {
+      log.warn("Unauthenticated request to ocrReceipt");
+      throw new HttpsError(
+        "unauthenticated",
+        "You must be logged in to use OCR"
+      );
+    }
 
     const {image} = request.data as {image?: string};
 
