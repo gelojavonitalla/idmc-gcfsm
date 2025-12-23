@@ -1,6 +1,7 @@
 /**
  * Firebase Client Configuration
- * Initializes Firebase app, Firestore, and Authentication for the IDMC Conference frontend.
+ * Initializes Firebase app, Firestore, Authentication, and App Check
+ * for the IDMC Conference frontend.
  *
  * @module lib/firebase
  */
@@ -10,6 +11,10 @@ import { getFirestore } from 'firebase/firestore';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+import {
+  initializeAppCheck,
+  ReCaptchaV3Provider,
+} from 'firebase/app-check';
 
 /**
  * Firebase database and storage configuration
@@ -37,6 +42,58 @@ const firebaseConfig = {
  * Creates a singleton Firebase app instance
  */
 const app = initializeApp(firebaseConfig);
+
+/**
+ * Initialize Firebase App Check
+ *
+ * App Check helps protect your backend resources from abuse by attesting
+ * that incoming traffic is coming from your app running on a valid device.
+ *
+ * In production, it uses reCAPTCHA v3 for web attestation.
+ * In development, it uses debug tokens for testing.
+ *
+ * @see https://firebase.google.com/docs/app-check
+ */
+let appCheck = null;
+
+if (typeof window !== 'undefined') {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const recaptchaSiteKey = process.env.REACT_APP_RECAPTCHA_SITE_KEY;
+
+  if (isProduction && recaptchaSiteKey) {
+    // Production: Use reCAPTCHA v3 provider
+    appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(recaptchaSiteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+  } else if (!isProduction) {
+    // Development: Enable debug mode for App Check
+    // This allows testing without reCAPTCHA in development
+    // Debug tokens are automatically generated and logged to console
+    // Add these tokens to Firebase Console > App Check > Apps > Manage debug tokens
+    if (process.env.REACT_APP_APPCHECK_DEBUG_TOKEN) {
+      // Use specific debug token if provided
+      window.FIREBASE_APPCHECK_DEBUG_TOKEN =
+        process.env.REACT_APP_APPCHECK_DEBUG_TOKEN;
+    } else {
+      // Auto-generate debug token (will be logged to console)
+      window.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    }
+
+    try {
+      appCheck = initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(
+          recaptchaSiteKey || 'placeholder-key-for-dev'
+        ),
+        isTokenAutoRefreshEnabled: true,
+      });
+    } catch (error) {
+      // App Check initialization may fail in development without valid key
+      // This is expected and doesn't affect functionality
+      console.info('App Check not initialized in development mode');
+    }
+  }
+}
 
 /**
  * Firestore database instance
@@ -70,4 +127,4 @@ if (process.env.REACT_APP_USE_EMULATORS === 'true') {
   connectFunctionsEmulator(functions, 'localhost', 5001);
 }
 
-export { app, db, auth, storage, functions, FIREBASE_CONFIG };
+export { app, appCheck, db, auth, storage, functions, FIREBASE_CONFIG };

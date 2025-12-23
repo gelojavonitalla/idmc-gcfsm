@@ -59,12 +59,7 @@ export async function processReceipt(file, options = {}) {
     };
   }
 
-  // Fallback to Cloud Vision
-  console.log(
-    `Tesseract confidence (${tesseractResult.confidence}) below threshold (${confidenceThreshold}), ` +
-    'falling back to Cloud Vision...'
-  );
-
+  // Fallback to Cloud Vision when confidence is below threshold
   try {
     return await processWithCloudVision(file);
   } catch (error) {
