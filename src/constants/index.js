@@ -21,6 +21,7 @@ export const ROUTES = {
   TERMS: '/terms',
   IDMC_2025: '/idmc-2025',
   MAINTENANCE: '/maintenance',
+  FEEDBACK: '/feedback',
 };
 
 /**
@@ -246,6 +247,7 @@ export const COLLECTIONS = {
   FOOD_MENU: 'foodMenu',
   WHAT_TO_BRING: 'whatToBring',
   STATS: 'stats',
+  FEEDBACK: 'feedback',
 };
 
 /**

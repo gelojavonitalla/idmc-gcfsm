@@ -57,6 +57,13 @@ export const DEFAULT_SETTINGS = {
     subtitle: 'Watch the highlights from our previous conference',
     youtubeVideoId: 'emGTZDXOaZY',
   },
+  feedback: {
+    enabled: false,
+    closingDate: null,
+    formTitle: 'Event Feedback',
+    formSubtitle: 'We value your feedback. Please share your experience with us.',
+    fields: [],
+  },
 };
 
 /**
