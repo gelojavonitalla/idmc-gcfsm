@@ -47,9 +47,21 @@ const WHAT_TO_BRING_DATA = [
     status: WHAT_TO_BRING_STATUS.PUBLISHED,
   },
   {
-    itemId: 'wtb-valid-id',
-    text: 'Valid ID for verification',
+    itemId: 'wtb-bible',
+    text: 'Bible',
     order: 2,
+    status: WHAT_TO_BRING_STATUS.PUBLISHED,
+  },
+  {
+    itemId: 'wtb-pen',
+    text: 'Pen for note-taking',
+    order: 3,
+    status: WHAT_TO_BRING_STATUS.PUBLISHED,
+  },
+  {
+    itemId: 'wtb-tumbler',
+    text: 'Tumbler (to stay hydrated)',
+    order: 4,
     status: WHAT_TO_BRING_STATUS.PUBLISHED,
   },
 ];

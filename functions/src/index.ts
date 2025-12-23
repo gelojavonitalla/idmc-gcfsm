@@ -334,7 +334,9 @@ interface WhatToBringItem {
  */
 const DEFAULT_WHAT_TO_BRING_ITEMS: WhatToBringItem[] = [
   {id: "default-1", text: "Your personal QR code (screenshot or printed)", order: 1, status: "published"},
-  {id: "default-2", text: "Valid ID for verification", order: 2, status: "published"},
+  {id: "default-2", text: "Bible", order: 2, status: "published"},
+  {id: "default-3", text: "Pen for note-taking", order: 3, status: "published"},
+  {id: "default-4", text: "Tumbler (to stay hydrated)", order: 4, status: "published"},
 ];
 
 /**
