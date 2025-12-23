@@ -242,6 +242,19 @@
   outline-offset: 2px;
 }
 
+/* Empty State */
+.emptyState {
+  padding: var(--spacing-8);
+  text-align: center;
+  color: var(--color-text-secondary);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+}
+
+.emptyState p {
+  margin: 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .fieldRow {

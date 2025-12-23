@@ -1,11 +1,11 @@
 /**
  * FeedbackForm Component
- * Form for submitting event feedback with spiritual impact assessment and open-ended responses.
+ * Dynamic form that renders fields based on configuration from admin settings.
  *
  * @module components/feedback/FeedbackForm
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { submitFeedback } from '../../services/feedback';
 import styles from './FeedbackForm.module.css';
@@ -17,46 +17,90 @@ import styles from './FeedbackForm.module.css';
 const SPAM_LOG_INTERVAL_MS = 60000;
 
 /**
- * Initial form state
+ * Gets a nested value from an object using dot notation path.
+ *
+ * @param {Object} obj - The object to get value from
+ * @param {string} path - Dot notation path (e.g., 'field.subfield')
+ * @returns {*} The value at the path or undefined
  */
-const INITIAL_FORM_STATE = {
-  isAnonymous: true,
-  submitterName: '',
-  age: '',
-  growthGroup: '',
-  receivedJesus: false,
-  commitmentToGrow: false,
-  commitmentToRelationship: false,
-  commitmentToGroup: false,
-  commitmentToMinistry: false,
-  seekCounselling: false,
-  counsellingName: '',
-  counsellingPhone: '',
-  howBlessed: '',
-  godDidInMe: '',
-  smartGoal: '',
-  programme: '',
-  couldDoWithout: '',
-  couldDoMoreOf: '',
-  bestDoneWas: '',
-  otherComments: '',
-  honeypot: '',
-};
+function getNestedValue(obj, path) {
+  return path.split('.').reduce((current, key) => current?.[key], obj);
+}
+
+/**
+ * Checks if a field should be visible based on conditional logic.
+ *
+ * @param {Object} field - The field definition
+ * @param {Object} formData - Current form data
+ * @returns {boolean} True if field should be visible
+ */
+function isFieldVisible(field, formData) {
+  if (!field.conditionalOn) {
+    return true;
+  }
+
+  const { field: conditionField, value: conditionValue } = field.conditionalOn;
+  const currentValue = getNestedValue(formData, conditionField);
+
+  return currentValue === conditionValue;
+}
+
+/**
+ * Initializes form data based on field definitions.
+ *
+ * @param {Array} fields - Field definitions
+ * @returns {Object} Initial form data
+ */
+function initializeFormData(fields) {
+  const data = { honeypot: '' };
+
+  fields.forEach((field) => {
+    switch (field.type) {
+      case 'checkbox':
+        data[field.id] = false;
+        break;
+      case 'checkboxGroup':
+        data[field.id] = {};
+        field.options?.forEach((opt) => {
+          data[field.id][opt.id] = false;
+        });
+        break;
+      case 'radio':
+        data[field.id] = '';
+        break;
+      case 'text':
+      case 'textarea':
+      default:
+        data[field.id] = '';
+        break;
+    }
+  });
+
+  return data;
+}
 
 /**
  * FeedbackForm Component
- * Renders a feedback form with spiritual impact checkboxes and open-ended responses.
+ * Renders a dynamic feedback form based on field configuration.
  *
  * @param {Object} props - Component props
+ * @param {Array} props.fields - Array of field definitions
  * @param {Function} [props.onSuccess] - Callback when form is successfully submitted
  * @returns {JSX.Element} The feedback form component
  */
-function FeedbackForm({ onSuccess }) {
-  const [formData, setFormData] = useState(INITIAL_FORM_STATE);
+function FeedbackForm({ fields, onSuccess }) {
+  const initialData = useMemo(() => initializeFormData(fields), [fields]);
+  const [formData, setFormData] = useState(initialData);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const lastSpamLogTimeRef = useRef(0);
+
+  // Sort fields by order
+  const sortedFields = useMemo(
+    () => [...fields].sort((a, b) => (a.order || 0) - (b.order || 0)),
+    [fields]
+  );
 
   /**
    * Handles text input changes
@@ -72,20 +116,30 @@ function FeedbackForm({ onSuccess }) {
    */
   const handleCheckboxChange = useCallback((event) => {
     const { name, checked } = event.target;
-    setFormData((prev) => {
-      const newState = { ...prev, [name]: checked };
-      // Clear counselling fields when unchecking seekCounselling
-      if (name === 'seekCounselling' && !checked) {
-        newState.counsellingName = '';
-        newState.counsellingPhone = '';
-      }
-      // Clear submitterName when checking anonymous
-      if (name === 'isAnonymous' && checked) {
-        newState.submitterName = '';
-      }
-      return newState;
-    });
+    setFormData((prev) => ({ ...prev, [name]: checked }));
     setErrors((prev) => ({ ...prev, [name]: '' }));
+  }, []);
+
+  /**
+   * Handles checkbox group changes
+   */
+  const handleCheckboxGroupChange = useCallback((fieldId, optionId, checked) => {
+    setFormData((prev) => ({
+      ...prev,
+      [fieldId]: {
+        ...prev[fieldId],
+        [optionId]: checked,
+      },
+    }));
+    setErrors((prev) => ({ ...prev, [fieldId]: '' }));
+  }, []);
+
+  /**
+   * Handles radio button changes
+   */
+  const handleRadioChange = useCallback((fieldId, value) => {
+    setFormData((prev) => ({ ...prev, [fieldId]: value }));
+    setErrors((prev) => ({ ...prev, [fieldId]: '' }));
   }, []);
 
   /**
@@ -96,19 +150,46 @@ function FeedbackForm({ onSuccess }) {
   const validateForm = useCallback(() => {
     const newErrors = {};
 
-    // Validate counselling contact info if seeking counselling
-    if (formData.seekCounselling) {
-      if (!formData.counsellingName.trim()) {
-        newErrors.counsellingName = 'Name is required when seeking counselling';
+    sortedFields.forEach((field) => {
+      // Skip validation for hidden fields
+      if (!isFieldVisible(field, formData)) {
+        return;
       }
-      if (!formData.counsellingPhone.trim()) {
-        newErrors.counsellingPhone = 'Phone number is required when seeking counselling';
+
+      if (field.required) {
+        switch (field.type) {
+          case 'text':
+          case 'textarea':
+            if (!formData[field.id]?.trim()) {
+              newErrors[field.id] = `${field.label} is required`;
+            }
+            break;
+          case 'checkbox':
+            if (!formData[field.id]) {
+              newErrors[field.id] = `${field.label} is required`;
+            }
+            break;
+          case 'checkboxGroup': {
+            const hasChecked = Object.values(formData[field.id] || {}).some(Boolean);
+            if (!hasChecked) {
+              newErrors[field.id] = `Please select at least one option for ${field.label}`;
+            }
+            break;
+          }
+          case 'radio':
+            if (!formData[field.id]) {
+              newErrors[field.id] = `Please select an option for ${field.label}`;
+            }
+            break;
+          default:
+            break;
+        }
       }
-    }
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData]);
+  }, [sortedFields, formData]);
 
   /**
    * Handles form submission
@@ -135,31 +216,20 @@ function FeedbackForm({ onSuccess }) {
       setSubmitStatus(null);
 
       try {
-        await submitFeedback({
-          isAnonymous: formData.isAnonymous,
-          submitterName: formData.isAnonymous ? null : formData.submitterName,
-          age: formData.age,
-          growthGroup: formData.growthGroup,
-          receivedJesus: formData.receivedJesus,
-          commitmentToGrow: formData.commitmentToGrow,
-          commitmentToRelationship: formData.commitmentToRelationship,
-          commitmentToGroup: formData.commitmentToGroup,
-          commitmentToMinistry: formData.commitmentToMinistry,
-          seekCounselling: formData.seekCounselling,
-          counsellingName: formData.seekCounselling ? formData.counsellingName : null,
-          counsellingPhone: formData.seekCounselling ? formData.counsellingPhone : null,
-          howBlessed: formData.howBlessed,
-          godDidInMe: formData.godDidInMe,
-          smartGoal: formData.smartGoal,
-          programme: formData.programme,
-          couldDoWithout: formData.couldDoWithout,
-          couldDoMoreOf: formData.couldDoMoreOf,
-          bestDoneWas: formData.bestDoneWas,
-          otherComments: formData.otherComments,
+        // Build submission data - only include visible fields
+        const submissionData = {};
+
+        sortedFields.forEach((field) => {
+          if (!isFieldVisible(field, formData)) {
+            return;
+          }
+          submissionData[field.id] = formData[field.id];
         });
 
+        await submitFeedback(submissionData);
+
         setSubmitStatus('success');
-        setFormData(INITIAL_FORM_STATE);
+        setFormData(initialData);
 
         if (onSuccess) {
           onSuccess();
@@ -171,9 +241,174 @@ function FeedbackForm({ onSuccess }) {
         setIsSubmitting(false);
       }
     },
-    [formData, validateForm, onSuccess]
+    [formData, sortedFields, validateForm, onSuccess, initialData]
   );
 
+  /**
+   * Renders a single field based on its type
+   */
+  const renderField = useCallback(
+    (field) => {
+      // Check conditional visibility
+      if (!isFieldVisible(field, formData)) {
+        return null;
+      }
+
+      const fieldId = `feedback-${field.id}`;
+      const hasError = Boolean(errors[field.id]);
+
+      switch (field.type) {
+        case 'text':
+          return (
+            <div key={field.id} className={styles.fieldGroup}>
+              <label htmlFor={fieldId} className={styles.label}>
+                {field.label}
+                {field.required && <span className={styles.required}> *</span>}
+              </label>
+              <input
+                type="text"
+                id={fieldId}
+                name={field.id}
+                value={formData[field.id] || ''}
+                onChange={handleChange}
+                className={`${styles.input} ${hasError ? styles.inputError : ''}`}
+                placeholder={field.placeholder || ''}
+                disabled={isSubmitting}
+                aria-invalid={hasError}
+                aria-describedby={hasError ? `${fieldId}-error` : undefined}
+              />
+              {hasError && (
+                <span id={`${fieldId}-error`} className={styles.fieldError}>
+                  {errors[field.id]}
+                </span>
+              )}
+            </div>
+          );
+
+        case 'textarea':
+          return (
+            <div key={field.id} className={styles.fieldGroup}>
+              <label htmlFor={fieldId} className={styles.label}>
+                {field.label}
+                {field.required && <span className={styles.required}> *</span>}
+              </label>
+              <textarea
+                id={fieldId}
+                name={field.id}
+                value={formData[field.id] || ''}
+                onChange={handleChange}
+                className={`${styles.textarea} ${hasError ? styles.inputError : ''}`}
+                placeholder={field.placeholder || ''}
+                rows={3}
+                disabled={isSubmitting}
+                aria-invalid={hasError}
+                aria-describedby={hasError ? `${fieldId}-error` : undefined}
+              />
+              {hasError && (
+                <span id={`${fieldId}-error`} className={styles.fieldError}>
+                  {errors[field.id]}
+                </span>
+              )}
+            </div>
+          );
+
+        case 'checkbox':
+          return (
+            <div key={field.id} className={styles.fieldGroup}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  name={field.id}
+                  checked={formData[field.id] || false}
+                  onChange={handleCheckboxChange}
+                  className={styles.checkbox}
+                  disabled={isSubmitting}
+                />
+                <span className={styles.checkboxText}>
+                  {field.label}
+                  {field.required && <span className={styles.required}> *</span>}
+                </span>
+              </label>
+              {hasError && (
+                <span className={styles.fieldError}>{errors[field.id]}</span>
+              )}
+            </div>
+          );
+
+        case 'checkboxGroup':
+          return (
+            <div key={field.id} className={styles.section}>
+              <p className={styles.sectionLabel}>
+                {field.label}
+                {field.required && <span className={styles.required}> *</span>}
+              </p>
+              <div className={styles.checkboxGroup}>
+                {field.options?.map((option) => (
+                  <label key={option.id} className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={formData[field.id]?.[option.id] || false}
+                      onChange={(e) =>
+                        handleCheckboxGroupChange(field.id, option.id, e.target.checked)
+                      }
+                      className={styles.checkbox}
+                      disabled={isSubmitting}
+                    />
+                    <span className={styles.checkboxText}>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+              {hasError && (
+                <span className={styles.fieldError}>{errors[field.id]}</span>
+              )}
+            </div>
+          );
+
+        case 'radio':
+          return (
+            <div key={field.id} className={styles.section}>
+              <p className={styles.sectionLabel}>
+                {field.label}
+                {field.required && <span className={styles.required}> *</span>}
+              </p>
+              <div className={styles.checkboxGroup}>
+                {field.options?.map((option) => (
+                  <label key={option.id} className={styles.checkboxLabel}>
+                    <input
+                      type="radio"
+                      name={field.id}
+                      value={option.id}
+                      checked={formData[field.id] === option.id}
+                      onChange={() => handleRadioChange(field.id, option.id)}
+                      className={styles.checkbox}
+                      disabled={isSubmitting}
+                    />
+                    <span className={styles.checkboxText}>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+              {hasError && (
+                <span className={styles.fieldError}>{errors[field.id]}</span>
+              )}
+            </div>
+          );
+
+        default:
+          return null;
+      }
+    },
+    [
+      formData,
+      errors,
+      isSubmitting,
+      handleChange,
+      handleCheckboxChange,
+      handleCheckboxGroupChange,
+      handleRadioChange,
+    ]
+  );
+
+  // Success state
   if (submitStatus === 'success') {
     return (
       <div className={styles.successMessage}>
@@ -195,7 +430,8 @@ function FeedbackForm({ onSuccess }) {
         </div>
         <h3 className={styles.successTitle}>Thank You!</h3>
         <p className={styles.successText}>
-          Your feedback has been submitted successfully. We appreciate you taking the time to share your experience.
+          Your feedback has been submitted successfully. We appreciate you taking the time to share
+          your experience.
         </p>
         <button
           type="button"
@@ -208,12 +444,19 @@ function FeedbackForm({ onSuccess }) {
     );
   }
 
+  // Empty fields state
+  if (!fields || fields.length === 0) {
+    return (
+      <div className={styles.emptyState}>
+        <p>No form fields have been configured.</p>
+      </div>
+    );
+  }
+
   return (
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
       {submitStatus === 'error' && (
-        <div className={styles.errorBanner}>
-          Something went wrong. Please try again later.
-        </div>
+        <div className={styles.errorBanner}>Something went wrong. Please try again later.</div>
       )}
 
       {/* Honeypot field for spam protection */}
@@ -228,338 +471,10 @@ function FeedbackForm({ onSuccess }) {
         aria-hidden="true"
       />
 
-      {/* Anonymous Toggle */}
-      <div className={styles.fieldGroup}>
-        <label className={styles.checkboxLabel}>
-          <input
-            type="checkbox"
-            name="isAnonymous"
-            checked={formData.isAnonymous}
-            onChange={handleCheckboxChange}
-            className={styles.checkbox}
-            disabled={isSubmitting}
-          />
-          <span className={styles.checkboxText}>Submit anonymously</span>
-        </label>
-      </div>
+      {/* Dynamic Fields */}
+      {sortedFields.map(renderField)}
 
-      {/* Name Field (shows when not anonymous) */}
-      {!formData.isAnonymous && (
-        <div className={styles.fieldGroup}>
-          <label htmlFor="feedback-name" className={styles.label}>
-            Name
-          </label>
-          <input
-            type="text"
-            id="feedback-name"
-            name="submitterName"
-            value={formData.submitterName}
-            onChange={handleChange}
-            className={styles.input}
-            placeholder="Enter your name"
-            disabled={isSubmitting}
-          />
-        </div>
-      )}
-
-      {/* Age and Growth Group */}
-      <div className={styles.fieldRow}>
-        <div className={styles.fieldGroup}>
-          <label htmlFor="feedback-age" className={styles.label}>
-            Age
-          </label>
-          <input
-            type="text"
-            id="feedback-age"
-            name="age"
-            value={formData.age}
-            onChange={handleChange}
-            className={styles.input}
-            placeholder="Optional"
-            disabled={isSubmitting}
-          />
-        </div>
-        <div className={styles.fieldGroup}>
-          <label htmlFor="feedback-growth-group" className={styles.label}>
-            Growth Group
-          </label>
-          <input
-            type="text"
-            id="feedback-growth-group"
-            name="growthGroup"
-            value={formData.growthGroup}
-            onChange={handleChange}
-            className={styles.input}
-            placeholder="Optional"
-            disabled={isSubmitting}
-          />
-        </div>
-      </div>
-
-      {/* Spiritual Impact Section */}
-      <div className={styles.section}>
-        <p className={styles.sectionLabel}>
-          Please assess the spiritual impact of CROSSROAD to you. Check the appropriate boxes.
-        </p>
-        <div className={styles.checkboxGroup}>
-          <label className={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              name="receivedJesus"
-              checked={formData.receivedJesus}
-              onChange={handleCheckboxChange}
-              className={styles.checkbox}
-              disabled={isSubmitting}
-            />
-            <span className={styles.checkboxText}>
-              I received Jesus as my personal Lord and Savior
-            </span>
-          </label>
-          <label className={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              name="commitmentToGrow"
-              checked={formData.commitmentToGrow}
-              onChange={handleCheckboxChange}
-              className={styles.checkbox}
-              disabled={isSubmitting}
-            />
-            <span className={styles.checkboxText}>
-              I made a commitment to grow in my spiritual habits
-            </span>
-          </label>
-          <label className={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              name="commitmentToRelationship"
-              checked={formData.commitmentToRelationship}
-              onChange={handleCheckboxChange}
-              className={styles.checkbox}
-              disabled={isSubmitting}
-            />
-            <span className={styles.checkboxText}>
-              I made a commitment to work on my relationship/s
-            </span>
-          </label>
-          <label className={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              name="commitmentToGroup"
-              checked={formData.commitmentToGroup}
-              onChange={handleCheckboxChange}
-              className={styles.checkbox}
-              disabled={isSubmitting}
-            />
-            <span className={styles.checkboxText}>
-              I made a commitment to join/lead a Growth/Mentoring Group
-            </span>
-          </label>
-          <label className={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              name="commitmentToMinistry"
-              checked={formData.commitmentToMinistry}
-              onChange={handleCheckboxChange}
-              className={styles.checkbox}
-              disabled={isSubmitting}
-            />
-            <span className={styles.checkboxText}>
-              I made a commitment to serve in a ministry
-            </span>
-          </label>
-          <label className={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              name="seekCounselling"
-              checked={formData.seekCounselling}
-              onChange={handleCheckboxChange}
-              className={styles.checkbox}
-              disabled={isSubmitting}
-            />
-            <span className={styles.checkboxText}>I want to seek counselling</span>
-          </label>
-        </div>
-      </div>
-
-      {/* Counselling Contact Fields */}
-      {formData.seekCounselling && (
-        <div className={styles.counsellingSection}>
-          <p className={styles.counsellingLabel}>
-            Please provide your contact information so we can reach out to you:
-          </p>
-          <div className={styles.fieldGroup}>
-            <label htmlFor="feedback-counselling-name" className={styles.label}>
-              Name <span className={styles.required}>*</span>
-            </label>
-            <input
-              type="text"
-              id="feedback-counselling-name"
-              name="counsellingName"
-              value={formData.counsellingName}
-              onChange={handleChange}
-              className={`${styles.input} ${errors.counsellingName ? styles.inputError : ''}`}
-              placeholder="Enter your name"
-              disabled={isSubmitting}
-              aria-invalid={!!errors.counsellingName}
-              aria-describedby={errors.counsellingName ? 'counselling-name-error' : undefined}
-            />
-            {errors.counsellingName && (
-              <span id="counselling-name-error" className={styles.fieldError}>
-                {errors.counsellingName}
-              </span>
-            )}
-          </div>
-          <div className={styles.fieldGroup}>
-            <label htmlFor="feedback-counselling-phone" className={styles.label}>
-              Phone Number <span className={styles.required}>*</span>
-            </label>
-            <input
-              type="tel"
-              id="feedback-counselling-phone"
-              name="counsellingPhone"
-              value={formData.counsellingPhone}
-              onChange={handleChange}
-              className={`${styles.input} ${errors.counsellingPhone ? styles.inputError : ''}`}
-              placeholder="Enter your phone number"
-              disabled={isSubmitting}
-              aria-invalid={!!errors.counsellingPhone}
-              aria-describedby={errors.counsellingPhone ? 'counselling-phone-error' : undefined}
-            />
-            {errors.counsellingPhone && (
-              <span id="counselling-phone-error" className={styles.fieldError}>
-                {errors.counsellingPhone}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Open-ended questions */}
-      <div className={styles.fieldGroup}>
-        <label htmlFor="feedback-how-blessed" className={styles.label}>
-          Please share specifically how you were blessed:
-        </label>
-        <textarea
-          id="feedback-how-blessed"
-          name="howBlessed"
-          value={formData.howBlessed}
-          onChange={handleChange}
-          className={styles.textarea}
-          rows={3}
-          disabled={isSubmitting}
-        />
-      </div>
-
-      <div className={styles.fieldGroup}>
-        <label htmlFor="feedback-god-did" className={styles.label}>
-          One thing that God did to me in me this Crossroads Weekend is:
-        </label>
-        <textarea
-          id="feedback-god-did"
-          name="godDidInMe"
-          value={formData.godDidInMe}
-          onChange={handleChange}
-          className={styles.textarea}
-          rows={3}
-          disabled={isSubmitting}
-        />
-      </div>
-
-      <div className={styles.fieldGroup}>
-        <label htmlFor="feedback-smart-goal" className={styles.label}>
-          One smart goal that I have committed to fulfil is:
-        </label>
-        <textarea
-          id="feedback-smart-goal"
-          name="smartGoal"
-          value={formData.smartGoal}
-          onChange={handleChange}
-          className={styles.textarea}
-          rows={3}
-          disabled={isSubmitting}
-        />
-      </div>
-
-      <div className={styles.fieldGroup}>
-        <label htmlFor="feedback-programme" className={styles.label}>
-          Programme:
-        </label>
-        <textarea
-          id="feedback-programme"
-          name="programme"
-          value={formData.programme}
-          onChange={handleChange}
-          className={styles.textarea}
-          rows={2}
-          disabled={isSubmitting}
-        />
-      </div>
-
-      <div className={styles.fieldGroup}>
-        <label htmlFor="feedback-could-do-without" className={styles.label}>
-          Could do without:
-        </label>
-        <textarea
-          id="feedback-could-do-without"
-          name="couldDoWithout"
-          value={formData.couldDoWithout}
-          onChange={handleChange}
-          className={styles.textarea}
-          rows={2}
-          disabled={isSubmitting}
-        />
-      </div>
-
-      <div className={styles.fieldGroup}>
-        <label htmlFor="feedback-could-do-more" className={styles.label}>
-          Could do more of:
-        </label>
-        <textarea
-          id="feedback-could-do-more"
-          name="couldDoMoreOf"
-          value={formData.couldDoMoreOf}
-          onChange={handleChange}
-          className={styles.textarea}
-          rows={2}
-          disabled={isSubmitting}
-        />
-      </div>
-
-      <div className={styles.fieldGroup}>
-        <label htmlFor="feedback-best-done" className={styles.label}>
-          Best done was:
-        </label>
-        <textarea
-          id="feedback-best-done"
-          name="bestDoneWas"
-          value={formData.bestDoneWas}
-          onChange={handleChange}
-          className={styles.textarea}
-          rows={2}
-          disabled={isSubmitting}
-        />
-      </div>
-
-      <div className={styles.fieldGroup}>
-        <label htmlFor="feedback-other-comments" className={styles.label}>
-          Other comments:
-        </label>
-        <textarea
-          id="feedback-other-comments"
-          name="otherComments"
-          value={formData.otherComments}
-          onChange={handleChange}
-          className={styles.textarea}
-          rows={3}
-          disabled={isSubmitting}
-        />
-      </div>
-
-      <button
-        type="submit"
-        className={styles.submitButton}
-        disabled={isSubmitting}
-      >
+      <button type="submit" className={styles.submitButton} disabled={isSubmitting}>
         {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
       </button>
     </form>
@@ -567,10 +482,31 @@ function FeedbackForm({ onSuccess }) {
 }
 
 FeedbackForm.propTypes = {
+  fields: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      type: PropTypes.oneOf(['text', 'textarea', 'checkbox', 'checkboxGroup', 'radio']).isRequired,
+      label: PropTypes.string.isRequired,
+      placeholder: PropTypes.string,
+      required: PropTypes.bool,
+      order: PropTypes.number,
+      options: PropTypes.arrayOf(
+        PropTypes.shape({
+          id: PropTypes.string.isRequired,
+          label: PropTypes.string.isRequired,
+        })
+      ),
+      conditionalOn: PropTypes.shape({
+        field: PropTypes.string.isRequired,
+        value: PropTypes.bool.isRequired,
+      }),
+    })
+  ),
   onSuccess: PropTypes.func,
 };
 
 FeedbackForm.defaultProps = {
+  fields: [],
   onSuccess: undefined,
 };
 

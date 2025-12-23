@@ -44,3 +44,4 @@ export { default as TopChurchesCard } from './TopChurchesCard';
 export { default as DownloadStatsCard } from './DownloadStatsCard';
 export { default as FoodStatsCard } from './FoodStatsCard';
 export { default as FeedbackSettingsManager } from './FeedbackSettingsManager';
+export { default as FormFieldEditor } from './FormFieldEditor';

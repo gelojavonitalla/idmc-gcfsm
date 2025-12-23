@@ -90,6 +90,57 @@
   color: var(--color-text-secondary);
 }
 
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: var(--spacing-1);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--spacing-4);
+}
+
+.tabButton {
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: -1px;
+}
+
+.tabButton:hover {
+  color: var(--color-text);
+}
+
+.tabActive {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Input */
+.input {
+  padding: var(--spacing-3);
+  font-size: var(--font-size-base);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-text);
+  font-family: inherit;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.input:disabled {
+  background: var(--color-background-secondary);
+  cursor: not-allowed;
+}
+
 /* Toggle Row */
 .toggleRow {
   display: flex;
@@ -292,6 +343,184 @@
 .saveButton:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+/* Fields Section */
+.fieldsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+}
+
+.fieldsDescription {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.addFieldButton {
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  background: white;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.addFieldButton:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: white;
+}
+
+.addFieldButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.emptyFields {
+  padding: var(--spacing-8);
+  text-align: center;
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+}
+
+.emptyFields p {
+  margin: 0;
+}
+
+.emptyFields p:first-child {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-2);
+}
+
+.fieldsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.fieldItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.fieldOrder {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.orderButton {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.orderButton:hover:not(:disabled) {
+  color: var(--color-primary);
+}
+
+.orderButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.fieldInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.fieldLabel {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fieldMeta {
+  display: flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.fieldType {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  background: white;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.fieldRequired {
+  font-size: var(--font-size-xs);
+  color: var(--color-error, #dc3545);
+  background: rgba(220, 53, 69, 0.1);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.fieldConditional {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  background: rgba(59, 130, 246, 0.1);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.fieldActions {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.editButton {
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  background: white;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.editButton:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: white;
+}
+
+.deleteButton {
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-error, #dc3545);
+  background: white;
+  border: 1px solid var(--color-error, #dc3545);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: var(--color-error, #dc3545);
+  color: white;
 }
 
 /* Responsive */

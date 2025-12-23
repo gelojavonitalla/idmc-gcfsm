@@ -51,13 +51,20 @@ function FeedbackPage() {
     [feedbackSettings]
   );
 
+  // Get form title and subtitle from settings
+  const formTitle = feedbackSettings?.formTitle || 'Event Feedback';
+  const formSubtitle =
+    feedbackSettings?.formSubtitle ||
+    'We value your feedback. Please share your experience with us.';
+  const fields = feedbackSettings?.fields || [];
+
   // Show loading state
   if (isLoading) {
     return (
       <div className={styles.page}>
         <section className={styles.heroSection}>
           <div className="container">
-            <h1 className={styles.heroTitle}>Event Feedback</h1>
+            <h1 className={styles.heroTitle}>{formTitle}</h1>
             <p className={styles.heroSubtitle}>Loading...</p>
           </div>
         </section>
@@ -71,7 +78,7 @@ function FeedbackPage() {
       <div className={styles.page}>
         <section className={styles.heroSection}>
           <div className="container">
-            <h1 className={styles.heroTitle}>Event Feedback</h1>
+            <h1 className={styles.heroTitle}>{formTitle}</h1>
             <p className={styles.heroSubtitle}>
               {feedbackStatus.reason === 'expired'
                 ? 'The feedback period has ended.'
@@ -123,10 +130,8 @@ function FeedbackPage() {
       {/* Hero Section */}
       <section className={styles.heroSection}>
         <div className="container">
-          <h1 className={styles.heroTitle}>Event Feedback</h1>
-          <p className={styles.heroSubtitle}>
-            We value your feedback. Please share your experience with us.
-          </p>
+          <h1 className={styles.heroTitle}>{formTitle}</h1>
+          <p className={styles.heroSubtitle}>{formSubtitle}</p>
         </div>
       </section>
 
@@ -139,7 +144,7 @@ function FeedbackPage() {
               <p className={styles.sectionSubtitle}>
                 Your feedback helps us improve future events and better serve our community.
               </p>
-              <FeedbackForm />
+              <FeedbackForm fields={fields} />
             </div>
           </div>
         </div>
