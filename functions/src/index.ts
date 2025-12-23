@@ -162,6 +162,9 @@ const useSendGrid = defineString("USE_SENDGRID", {default: "false"});
 // Reply-to email for contact inquiry responses (info@ address for replies)
 const replyToEmail = defineString("REPLY_TO_EMAIL", {default: ""});
 
+// Storage bucket name (defaults to database ID for backwards compatibility)
+const storageBucketName = defineString("STORAGE_BUCKET", {default: "idmc-2026"});
+
 // SendGrid API key (stored in Secret Manager, accessed via defineSecret)
 const sendgridApiKey = defineSecret("SENDGRID_API_KEY");
 
@@ -2536,9 +2539,9 @@ export const sendInvoiceEmail = onCall(
       }
 
       // Download invoice file from Storage
-      // Use the idmc-2026 bucket, not the default project bucket
+      // Use the configured storage bucket, not the default project bucket
       const {getStorage} = await import("firebase-admin/storage");
-      const bucket = getStorage().bucket(DATABASE_ID);
+      const bucket = getStorage().bucket(storageBucketName.value());
 
       // Extract file path from URL
       const invoiceUrl = registration.invoice.invoiceUrl;
