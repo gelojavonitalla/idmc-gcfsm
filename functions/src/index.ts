@@ -1646,7 +1646,12 @@ async function sendTicketEmail(
       name: senderName.value() || "IDMC Registration",
     },
     subject: `Your IDMC 2026 Ticket${attendeesWithQR.length > 1 ? "s" : ""} - ${registration.registrationId}`,
-    html: generateTicketEmailHtml(registration, settings, attendeesWithQR, whatToBringItems),
+    html: generateTicketEmailHtml(
+      registration,
+      settings,
+      attendeesWithQR,
+      whatToBringItems
+    ),
     attachments,
   };
 
@@ -1706,7 +1711,12 @@ async function sendIndividualTicketEmail(
       name: senderName.value() || "IDMC Registration",
     },
     subject: `Your IDMC 2026 Ticket - ${registration.registrationId}`,
-    html: generateIndividualTicketEmailHtml(registration, settings, attendee, whatToBringItems),
+    html: generateIndividualTicketEmailHtml(
+      registration,
+      settings,
+      attendee,
+      whatToBringItems
+    ),
     attachments,
   };
 
