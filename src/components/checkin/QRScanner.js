@@ -111,6 +111,11 @@ function QRScanner({ onScan, onError, isActive = true }) {
   /**
    * Requests camera permission and gets available cameras.
    * This is separated from scanner creation to avoid DOM timing issues.
+   *
+   * Note: We don't rely solely on the Permissions API for the 'denied' state
+   * because it can be unreliable (cached/stale) after the user resets or
+   * re-grants permission through browser settings. Instead, we always attempt
+   * to access the camera and let the actual camera access determine the result.
    */
   const requestCameraPermission = useCallback(async () => {
     if (!isActive || !userInitiated) {
@@ -118,22 +123,22 @@ function QRScanner({ onScan, onError, isActive = true }) {
     }
 
     try {
-      // Check if permission is already granted to avoid showing "requesting" UI
+      // Check if permission is already granted to skip "requesting" UI
+      // Note: We only use this as a hint for 'granted' state, not for 'denied'
+      // because the Permissions API can report stale 'denied' state even after
+      // the user has reset/re-granted permission through browser settings
       const existingPermission = await checkExistingPermission();
-
-      if (existingPermission === 'denied') {
-        // Permission was explicitly denied - show error immediately
-        setHasPermission(false);
-        setError('Camera access denied. Please allow camera access in your browser settings.');
-        return;
-      }
 
       if (existingPermission === 'granted') {
         // Permission already granted - set hasPermission immediately to skip "requesting" UI
         setHasPermission(true);
       }
+      // For 'denied' or 'prompt' states, we still try to access the camera
+      // because the user may have reset the permission since the last check
 
-      // Get available cameras (this triggers permission prompt only if not already granted)
+      // Get available cameras (this triggers permission prompt if needed)
+      // This is the authoritative check - it will fail with NotAllowedError
+      // if permission is actually denied
       const devices = await Html5Qrcode.getCameras();
 
       if (devices && devices.length > 0) {
