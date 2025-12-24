@@ -337,7 +337,7 @@ jobs:
             node scripts/seed-what-to-bring.js
           fi
         env:
-          GCLOUD_PROJECT: idmc-gcfsm-dev
+          GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
 
       - name: Seed Feedback Form
         if: ${{ inputs.seed_feedback || inputs.seed_all }}
