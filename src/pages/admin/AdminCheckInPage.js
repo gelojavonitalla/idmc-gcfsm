@@ -49,6 +49,17 @@ function AdminCheckInPage() {
   const [checkInSuccess, setCheckInSuccess] = useState(null);
 
   /**
+   * Handles QR scanner errors
+   */
+  const handleScannerError = useCallback((err) => {
+    console.error('Scanner error:', err);
+    setCheckInError({
+      code: 'SCANNER_ERROR',
+      message: err.message || 'Scanner error. Please try again.',
+    });
+  }, []);
+
+  /**
    * Handles QR code scan
    */
   const handleQRScan = useCallback(async (qrData) => {
