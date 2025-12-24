@@ -27,7 +27,8 @@ const COLLECTIONS = {
 };
 
 // Firestore database ID (named database)
-const DATABASE_ID = 'idmc-2026';
+// Uses FIRESTORE_DATABASE_ID env var if set, otherwise defaults to 'idmc-2026'
+const DATABASE_ID = process.env.FIRESTORE_DATABASE_ID || 'idmc-2026';
 
 // What to Bring status values
 const WHAT_TO_BRING_STATUS = {
