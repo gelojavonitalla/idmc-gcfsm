@@ -334,6 +334,7 @@ function AdminWorkshopsPage() {
         isOpen={isAttendeesModalOpen}
         onClose={handleCloseAttendeesModal}
         workshop={selectedWorkshop}
+        effectiveCapacity={selectedWorkshop ? getEffectiveCapacity(selectedWorkshop) : null}
       />
     </AdminLayout>
   );

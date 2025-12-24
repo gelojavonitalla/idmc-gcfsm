@@ -41,9 +41,10 @@ function getChurchInfo(attendee) {
  * @param {boolean} props.isOpen - Whether modal is open
  * @param {Function} props.onClose - Callback to close modal
  * @param {Object} props.workshop - Workshop data
+ * @param {number|null} props.effectiveCapacity - Effective capacity (venue room or workshop capacity)
  * @returns {JSX.Element|null} The modal or null if not open
  */
-function WorkshopAttendeesModal({ isOpen, onClose, workshop }) {
+function WorkshopAttendeesModal({ isOpen, onClose, workshop, effectiveCapacity }) {
   const [attendees, setAttendees] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -169,9 +170,9 @@ function WorkshopAttendeesModal({ isOpen, onClose, workshop }) {
               <span className={styles.attendeeCount}>
                 {attendees.length} {attendees.length === 1 ? 'Attendee' : 'Attendees'}
               </span>
-              {workshop.capacity && (
+              {effectiveCapacity && (
                 <span className={styles.capacityInfo}>
-                  / {workshop.capacity} capacity
+                  / {effectiveCapacity} capacity
                 </span>
               )}
             </div>
@@ -315,10 +316,12 @@ WorkshopAttendeesModal.propTypes = {
     venue: PropTypes.string,
     registeredCount: PropTypes.number,
   }),
+  effectiveCapacity: PropTypes.number,
 };
 
 WorkshopAttendeesModal.defaultProps = {
   workshop: null,
+  effectiveCapacity: null,
 };
 
 export default WorkshopAttendeesModal;
