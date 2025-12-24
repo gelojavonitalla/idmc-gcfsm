@@ -173,7 +173,7 @@ export const ADMIN_ROLE_PERMISSIONS = {
 export const ADMIN_NAV_GROUPS = [
   {
     id: 'main',
-    label: 'Main',
+    label: 'Dashboard',
     items: [
       { label: 'Dashboard', path: ADMIN_ROUTES.DASHBOARD, icon: 'dashboard' },
     ],
