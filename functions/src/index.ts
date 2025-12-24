@@ -4538,16 +4538,29 @@ export const onRegistrationStatsUpdate = onDocumentUpdated(
 
       // Update each workshop's registered count
       let workshopsUpdated = 0;
+      const skippedSessions: string[] = [];
       if (allWorkshopSelections.length > 0) {
         const workshopDelta = isConfirmed ? 1 : -1;
         const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
 
         for (const sessionId of allWorkshopSelections) {
-          await sessionsCollection.doc(sessionId).update({
-            registeredCount: FieldValue.increment(workshopDelta),
-            updatedAt: FieldValue.serverTimestamp(),
+          const sessionDoc = await sessionsCollection.doc(sessionId).get();
+          if (sessionDoc.exists) {
+            await sessionsCollection.doc(sessionId).update({
+              registeredCount: FieldValue.increment(workshopDelta),
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+            workshopsUpdated++;
+          } else {
+            skippedSessions.push(sessionId);
+          }
+        }
+
+        if (skippedSessions.length > 0) {
+          log.warn("Skipped non-existent sessions during workshop count update", {
+            skippedSessions,
+            count: skippedSessions.length,
           });
-          workshopsUpdated++;
         }
 
         log.info("Updated workshop counts", {
@@ -4821,18 +4834,41 @@ export const triggerStatsSync = onCall(
       const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
       const batch = db.batch();
 
-      for (const [sessionId, count] of Object.entries(workshopCounts)) {
-        const sessionRef = sessionsCollection.doc(sessionId);
-        batch.update(sessionRef, {
-          registeredCount: count,
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-      }
-
+      // First fetch all existing workshop sessions to avoid updating
+      // non-existent documents
       const allWorkshops = await sessionsCollection
         .where("sessionType", "==", "workshop")
         .get();
 
+      const existingSessionIds = new Set<string>();
+      allWorkshops.forEach((workshopDoc) => {
+        existingSessionIds.add(workshopDoc.id);
+      });
+
+      // Track orphaned session IDs for logging
+      const orphanedSessionIds: string[] = [];
+
+      for (const [sessionId, count] of Object.entries(workshopCounts)) {
+        if (existingSessionIds.has(sessionId)) {
+          const sessionRef = sessionsCollection.doc(sessionId);
+          batch.update(sessionRef, {
+            registeredCount: count,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        } else {
+          orphanedSessionIds.push(sessionId);
+        }
+      }
+
+      // Log warning for orphaned session IDs
+      if (orphanedSessionIds.length > 0) {
+        log.warn("Found registrations with non-existent session IDs", {
+          orphanedSessionIds,
+          count: orphanedSessionIds.length,
+        });
+      }
+
+      // Reset count for workshops that have no registrations
       allWorkshops.forEach((workshopDoc) => {
         if (!(workshopDoc.id in workshopCounts)) {
           batch.update(workshopDoc.ref, {
