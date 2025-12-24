@@ -54,6 +54,35 @@ const WORKSHOP_CATEGORIES = {
   SENIOR_CITIZENS: 'senior_citizens',
 };
 
+// Workshop session data (matching seed-sessions.js)
+const WORKSHOP_SESSIONS = {
+  next_generation: {
+    sessionId: 'workshop-nextgen',
+    sessionTitle: 'Workshop: Next Generation',
+    timeSlot: 'day1_afternoon',
+  },
+  women: {
+    sessionId: 'workshop-women',
+    sessionTitle: 'Workshop: Women',
+    timeSlot: 'day1_afternoon',
+  },
+  men: {
+    sessionId: 'workshop-men',
+    sessionTitle: 'Workshop: Men',
+    timeSlot: 'day1_afternoon',
+  },
+  senior_citizens: {
+    sessionId: 'workshop-seniors',
+    sessionTitle: 'Workshop: Senior Citizens',
+    timeSlot: 'day1_afternoon',
+  },
+  couples: {
+    sessionId: 'workshop-couples',
+    sessionTitle: 'Workshop: Couples',
+    timeSlot: 'day1_afternoon',
+  },
+};
+
 // Payment methods
 const PAYMENT_METHODS = {
   GCASH: 'gcash',
@@ -253,6 +282,7 @@ function generateRegistration(index) {
 
   const shortCode = generateShortCode();
   const shortCodeSuffix = shortCode.slice(-SHORT_CODE_SUFFIX_LENGTH);
+  const workshopSession = WORKSHOP_SESSIONS[workshopSelection];
   const registration = {
     registrationId: `REG-2026-${shortCode}`,
     shortCode,
@@ -264,6 +294,7 @@ function generateRegistration(index) {
       email,
       phone,
       ministryRole,
+      workshopSelections: workshopSession ? [workshopSession] : [],
     },
     church: {
       name: church.name,
@@ -299,11 +330,14 @@ function generateRegistration(index) {
     for (let i = 0; i < additionalCount; i++) {
       const addFirstName = randomPick(FIRST_NAMES);
       const addLastName = randomPick(LAST_NAMES);
+      const addWorkshopCategory = randomPick(workshops);
+      const addWorkshopSession = WORKSHOP_SESSIONS[addWorkshopCategory];
       registration.additionalAttendees.push({
         firstName: addFirstName,
         lastName: addLastName,
         email: generateEmail(addFirstName, addLastName),
         category: randomPick(categories),
+        workshopSelections: addWorkshopSession ? [addWorkshopSession] : [],
       });
     }
     // Recalculate total amount for group registration
@@ -334,6 +368,7 @@ const STATIC_REGISTRATIONS = [
       email: 'juan.santos@gmail.com',
       phone: '09171234567',
       ministryRole: 'Small Group Leader',
+      workshopSelections: [WORKSHOP_SESSIONS.men],
     },
     church: {
       name: 'Jesus Is Lord Church',
@@ -366,6 +401,7 @@ const STATIC_REGISTRATIONS = [
       email: 'maria.reyes@yahoo.com',
       phone: '09189876543',
       ministryRole: 'Worship Team',
+      workshopSelections: [WORKSHOP_SESSIONS.women],
     },
     church: {
       name: 'Jesus Is Lord Church',
@@ -398,6 +434,7 @@ const STATIC_REGISTRATIONS = [
       email: 'pedro.cruz@outlook.com',
       phone: '09201112233',
       ministryRole: 'Usher',
+      workshopSelections: [WORKSHOP_SESSIONS.men],
     },
     church: {
       name: 'Jesus Is Lord Church',
@@ -430,6 +467,7 @@ const STATIC_REGISTRATIONS = [
       email: 'ana.garcia@gmail.com',
       phone: '09273334455',
       ministryRole: 'Children\'s Ministry',
+      workshopSelections: [WORKSHOP_SESSIONS.women],
     },
     church: {
       name: 'Jesus Is Lord Church',
@@ -462,6 +500,7 @@ const STATIC_REGISTRATIONS = [
       email: 'carlos.mendoza@hotmail.com',
       phone: '09285556677',
       ministryRole: 'Youth Ministry',
+      workshopSelections: [WORKSHOP_SESSIONS.next_generation],
     },
     church: {
       name: 'Jesus Is Lord Church',
@@ -494,6 +533,7 @@ const STATIC_REGISTRATIONS = [
       email: 'elena.torres@gmail.com',
       phone: '09397778899',
       ministryRole: 'Prayer Warrior',
+      workshopSelections: [WORKSHOP_SESSIONS.women],
     },
     church: {
       name: 'Jesus Is Lord Church',
@@ -526,6 +566,7 @@ const STATIC_REGISTRATIONS = [
       email: 'roberto.flores@yahoo.com',
       phone: '09498889900',
       ministryRole: 'Media Ministry',
+      workshopSelections: [WORKSHOP_SESSIONS.men],
     },
     church: {
       name: 'Jesus Is Lord Church',
@@ -558,6 +599,7 @@ const STATIC_REGISTRATIONS = [
       email: 'sofia.rivera@outlook.com',
       phone: '09170001122',
       ministryRole: 'Hospitality',
+      workshopSelections: [WORKSHOP_SESSIONS.couples],
     },
     church: {
       name: 'Jesus Is Lord Church',
@@ -582,6 +624,7 @@ const STATIC_REGISTRATIONS = [
         lastName: 'Rivera',
         email: 'miguel.rivera@outlook.com',
         category: REGISTRATION_CATEGORIES.REGULAR,
+        workshopSelections: [WORKSHOP_SESSIONS.couples],
       },
     ],
     _createdAt: new Date('2025-01-06T14:00:00'),
@@ -598,6 +641,7 @@ const STATIC_REGISTRATIONS = [
       email: 'isabella.ramos@gmail.com',
       phone: '09182223344',
       ministryRole: 'Member',
+      workshopSelections: [WORKSHOP_SESSIONS.next_generation],
     },
     church: {
       name: 'Jesus Is Lord Church',
@@ -630,6 +674,7 @@ const STATIC_REGISTRATIONS = [
       email: 'antonio.bautista@hotmail.com',
       phone: '09294445566',
       ministryRole: 'Outreach Team',
+      workshopSelections: [WORKSHOP_SESSIONS.senior_citizens],
     },
     church: {
       name: 'Jesus Is Lord Church',
@@ -654,12 +699,14 @@ const STATIC_REGISTRATIONS = [
         lastName: 'Bautista',
         email: 'carmen.bautista@hotmail.com',
         category: REGISTRATION_CATEGORIES.REGULAR,
+        workshopSelections: [WORKSHOP_SESSIONS.senior_citizens],
       },
       {
         firstName: 'Gabriel',
         lastName: 'Bautista',
         email: 'gabriel.bautista@gmail.com',
         category: REGISTRATION_CATEGORIES.STUDENT_SENIOR,
+        workshopSelections: [WORKSHOP_SESSIONS.senior_citizens],
       },
     ],
     _createdAt: new Date('2025-01-05T09:30:00'),
