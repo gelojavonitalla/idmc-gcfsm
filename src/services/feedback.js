@@ -129,7 +129,7 @@ export async function deleteFeedbackResponse(feedbackId, adminId = null, adminEm
       type: ACTIVITY_TYPES.DELETE,
       entityType: ENTITY_TYPES.FEEDBACK,
       entityId: feedbackId,
-      description: `Deleted feedback response${feedbackData?.name ? ` from: ${feedbackData.name}` : ''}`,
+      description: `Deleted feedback response: ${feedbackId}`,
       adminId,
       adminEmail,
     });
