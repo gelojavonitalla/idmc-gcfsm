@@ -85,7 +85,7 @@ export const ADMIN_ROLE_LABELS = {
 export const ADMIN_ROLE_DESCRIPTIONS = {
   [ADMIN_ROLES.SUPERADMIN]: 'Full access to all features and user management.',
   [ADMIN_ROLES.ADMIN]: 'Can manage conference content, registrations, and view analytics.',
-  [ADMIN_ROLES.FINANCE]: 'Can verify payments, send official receipts, and view registrations.',
+  [ADMIN_ROLES.FINANCE]: 'Can verify payments, send official receipts, view registrations, and perform check-in duties.',
   [ADMIN_ROLES.MEDIA]: 'Can update content, upload hero images and videos.',
   [ADMIN_ROLES.VOLUNTEER]: 'Limited access for check-in duties only.',
 };

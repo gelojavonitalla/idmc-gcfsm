@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
 import {
   AdminLayout,
   StatsCard,
@@ -25,7 +26,7 @@ import {
   getFoodStats,
   getDownloadStats,
 } from '../../services';
-import { CONFERENCE } from '../../constants';
+import { CONFERENCE, ADMIN_ROUTES, ADMIN_ROLES } from '../../constants';
 import styles from './AdminDashboardPage.module.css';
 
 /**
@@ -43,6 +44,11 @@ function AdminDashboardPage() {
   const [downloadStats, setDownloadStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Redirect volunteers directly to check-in page (they don't have dashboard access)
+  if (admin?.role === ADMIN_ROLES.VOLUNTEER) {
+    return <Navigate to={ADMIN_ROUTES.CHECKIN} replace />;
+  }
 
   /**
    * Fetches all dashboard data
