@@ -338,6 +338,7 @@ jobs:
           fi
         env:
           GCLOUD_PROJECT: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
+          FIRESTORE_DATABASE_ID: ${{ vars.REACT_APP_FIREBASE_DATABASE_ID }}
 
       - name: Seed Feedback Form
         if: ${{ inputs.seed_feedback || inputs.seed_all }}
