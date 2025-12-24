@@ -674,6 +674,161 @@ export async function cancelRegistration(registrationId, reason, cancelledBy, ad
 }
 
 /**
+ * Refunds a registration.
+ * Can only be applied to CANCELLED or CONFIRMED registrations.
+ * Tracks refund amount, reason, and processing details.
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {Object} refundDetails - Refund details
+ * @param {number} refundDetails.refundAmount - Amount refunded
+ * @param {string} refundDetails.reason - Reason for refund
+ * @param {string} refundDetails.refundMethod - How refund was processed (e.g., 'gcash', 'bank_transfer')
+ * @param {string} refundDetails.referenceNumber - Refund transaction reference
+ * @param {string} refundDetails.notes - Additional notes
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
+ * @returns {Promise<void>}
+ */
+export async function refundRegistration(registrationId, refundDetails, adminId = null, adminEmail = null) {
+  const registration = await getRegistrationById(registrationId);
+  if (!registration) {
+    throw new Error(REGISTRATION_ERROR_CODES.REGISTRATION_NOT_FOUND);
+  }
+
+  // Only allow refund from CANCELLED or CONFIRMED status
+  const refundableStatuses = [
+    REGISTRATION_STATUS.CANCELLED,
+    REGISTRATION_STATUS.CONFIRMED,
+  ];
+
+  if (!refundableStatuses.includes(registration.status)) {
+    throw new Error('Registration must be cancelled or confirmed to process a refund');
+  }
+
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  // If status was CONFIRMED, decrement workshop counts
+  if (registration.status === REGISTRATION_STATUS.CONFIRMED) {
+    const allWorkshopSelections = [
+      ...(registration.primaryAttendee?.workshopSelections || []),
+      ...(registration.additionalAttendees || []).flatMap((attendee) => attendee.workshopSelections || []),
+    ];
+
+    for (const selection of allWorkshopSelections) {
+      if (selection.sessionId) {
+        try {
+          await decrementWorkshopCount(selection.sessionId);
+        } catch (error) {
+          console.error(`Failed to decrement workshop count for ${selection.sessionId}:`, error);
+        }
+      }
+    }
+  }
+
+  await updateDoc(docRef, {
+    status: REGISTRATION_STATUS.REFUNDED,
+    'payment.status': REGISTRATION_STATUS.REFUNDED,
+    refund: {
+      amount: refundDetails.refundAmount || 0,
+      reason: refundDetails.reason,
+      method: refundDetails.refundMethod,
+      referenceNumber: refundDetails.referenceNumber || null,
+      notes: refundDetails.notes || null,
+      processedBy: adminEmail,
+      processedAt: serverTimestamp(),
+    },
+    updatedAt: serverTimestamp(),
+  });
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.REGISTRATION,
+      entityId: registrationId,
+      description: `Processed refund (₱${refundDetails.refundAmount || 0}) for registration: ${registration.primaryAttendee?.firstName || ''} ${registration.primaryAttendee?.lastName || registrationId}`,
+      adminId,
+      adminEmail,
+    });
+  }
+}
+
+/**
+ * Directly promotes a waitlisted registration to pending verification.
+ * Skips the WAITLIST_OFFERED step and allows immediate payment upload.
+ * Used when a slot becomes available and admin wants to fast-track a waitlisted registrant.
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {string} adminId - Admin user ID (null for system-triggered)
+ * @param {string} adminEmail - Admin email (null for system-triggered)
+ * @returns {Promise<Object>} Updated registration
+ */
+export async function promoteFromWaitlist(registrationId, adminId = null, adminEmail = null) {
+  const registration = await getRegistrationById(registrationId);
+  if (!registration) {
+    throw new Error(REGISTRATION_ERROR_CODES.REGISTRATION_NOT_FOUND);
+  }
+
+  // Only allow promotion from WAITLISTED or WAITLIST_EXPIRED status
+  const promotableStatuses = [
+    REGISTRATION_STATUS.WAITLISTED,
+    REGISTRATION_STATUS.WAITLIST_EXPIRED,
+  ];
+
+  if (!promotableStatuses.includes(registration.status)) {
+    throw new Error('Registration must be waitlisted or expired to promote');
+  }
+
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  // Calculate payment deadline (7 days from now)
+  const paymentDeadline = new Date();
+  paymentDeadline.setDate(paymentDeadline.getDate() + 7);
+
+  await updateDoc(docRef, {
+    status: REGISTRATION_STATUS.PENDING_PAYMENT,
+    'payment.status': REGISTRATION_STATUS.PENDING_PAYMENT,
+    paymentDeadline: paymentDeadline.toISOString(),
+    promotedFromWaitlistAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  // Increment workshop counts for all selected workshops
+  const allWorkshopSelections = [
+    ...(registration.primaryAttendee?.workshopSelections || []),
+    ...(registration.additionalAttendees || []).flatMap((attendee) => attendee.workshopSelections || []),
+  ];
+
+  for (const selection of allWorkshopSelections) {
+    if (selection.sessionId) {
+      try {
+        await incrementWorkshopCount(selection.sessionId);
+      } catch (error) {
+        console.error(`Failed to increment workshop count for ${selection.sessionId}:`, error);
+      }
+    }
+  }
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.REGISTRATION,
+      entityId: registrationId,
+      description: `Promoted from waitlist to pending payment: ${registration.primaryAttendee?.firstName || ''} ${registration.primaryAttendee?.lastName || registrationId}`,
+      adminId,
+      adminEmail,
+    });
+  }
+
+  return {
+    ...registration,
+    status: REGISTRATION_STATUS.PENDING_PAYMENT,
+    paymentDeadline: paymentDeadline.toISOString(),
+  };
+}
+
+/**
  * Marks a registration email as sent
  *
  * @param {string} registrationId - Registration ID
