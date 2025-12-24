@@ -108,15 +108,33 @@ const cfLogger = {
         error?: Error | unknown,
         data?: Record<string, unknown>
       ) => {
-        logger.error({
+        const logEntry: Record<string, unknown> = {
           ...formatMessage(message),
-          error: error instanceof Error ? {
-            name: error.name,
-            message: error.message,
-            stack: error.stack,
-          } : error,
           ...data,
-        });
+        };
+
+        // Only add error property if an error was provided
+        if (error !== undefined) {
+          if (error instanceof Error) {
+            logEntry.error = {
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            };
+          } else {
+            // For non-Error objects, safely convert to string to avoid
+            // serialization issues with circular refs or non-serializable props
+            try {
+              logEntry.error = typeof error === "object" ?
+                JSON.parse(JSON.stringify(error)) :
+                String(error);
+            } catch {
+              logEntry.error = String(error);
+            }
+          }
+        }
+
+        logger.error(logEntry);
       },
 
       /**
