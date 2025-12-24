@@ -55,14 +55,46 @@ function DownloadsPage() {
 
   /**
    * Handles download button click
-   * Opens the download URL in a new tab and tracks the download
+   * Fetches the file and triggers a direct download instead of opening in browser
    *
    * @param {Object} download - The download item object
    */
-  function handleDownload(download) {
-    if (download.downloadUrl) {
-      // Track the download (fire and forget - don't block the download)
-      trackDownload(download.id);
+  async function handleDownload(download) {
+    if (!download.downloadUrl) {
+      return;
+    }
+
+    // Track the download (fire and forget - don't block the download)
+    trackDownload(download.id);
+
+    try {
+      // Fetch the file as a blob
+      const response = await fetch(download.downloadUrl);
+      if (!response.ok) {
+        throw new Error('Failed to fetch file');
+      }
+
+      const blob = await response.blob();
+
+      // Create a blob URL and trigger download
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+
+      // Use filename from download object or derive from title
+      const filename = download.fileName || `${download.title}.pdf`;
+      link.setAttribute('download', filename);
+      link.style.display = 'none';
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up blob URL
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback to opening in new tab if fetch fails (e.g., CORS issues)
       window.open(download.downloadUrl, '_blank', 'noopener,noreferrer');
     }
   }
