@@ -1136,6 +1136,21 @@ interface AttendeeWithQR {
 }
 
 /**
+ * Formats a 24-hour time string (HH:MM) to 12-hour format with AM/PM
+ *
+ * @param {string} time24 - Time in HH:MM format (e.g., "07:00", "14:30")
+ * @return {string} Formatted time string (e.g., "7:00 AM", "2:30 PM")
+ */
+function formatEventTime(time24: string): string {
+  if (!time24) return "";
+  const [hoursStr, minutes] = time24.split(":");
+  const hours = parseInt(hoursStr, 10);
+  const period = hours >= 12 ? "PM" : "AM";
+  const hours12 = hours % 12 || 12;
+  return `${hours12}:${minutes} ${period}`;
+}
+
+/**
  * Generates the HTML email template for ticket/confirmation (primary attendee)
  * Includes all QR codes for the entire group
  *
@@ -1168,6 +1183,7 @@ function generateTicketEmailHtml(
   settings: {
     title: string;
     startDate: string;
+    startTime?: string;
     venue: {
       name: string;
       address: string;
@@ -1285,6 +1301,9 @@ function generateTicketEmailHtml(
                       <strong>Date:</strong> ${eventDate}
                     </p>
                     <p style="margin: 0 0 4px; color: #166534; font-size: 14px;">
+                      <strong>Time:</strong> ${formatEventTime(settings.startTime || "")}
+                    </p>
+                    <p style="margin: 0 0 4px; color: #166534; font-size: 14px;">
                       <strong>Venue:</strong> ${settings.venue.name}
                     </p>
                     <p style="margin: 0; color: #166534; font-size: 14px;">
@@ -1358,6 +1377,7 @@ function generateIndividualTicketEmailHtml(
   settings: {
     title: string;
     startDate: string;
+    startTime?: string;
     venue: {
       name: string;
       address: string;
@@ -1449,6 +1469,9 @@ function generateIndividualTicketEmailHtml(
                     </p>
                     <p style="margin: 0 0 4px; color: #166534; font-size: 14px;">
                       <strong>Date:</strong> ${eventDate}
+                    </p>
+                    <p style="margin: 0 0 4px; color: #166534; font-size: 14px;">
+                      <strong>Time:</strong> ${formatEventTime(settings.startTime || "")}
                     </p>
                     <p style="margin: 0 0 4px; color: #166534; font-size: 14px;">
                       <strong>Venue:</strong> ${settings.venue.name}
@@ -2023,6 +2046,7 @@ export const onPaymentConfirmed = onDocumentUpdated(
     const defaultSettings = {
       title: "IDMC 2026",
       startDate: "2026-03-28",
+      startTime: "07:00",
       venue: {
         name: "GCF South Metro",
         address: "Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines",
@@ -2047,6 +2071,7 @@ export const onPaymentConfirmed = onDocumentUpdated(
         settings = {
           title: data.title || defaultSettings.title,
           startDate: data.startDate || defaultSettings.startDate,
+          startTime: data.startTime || defaultSettings.startTime,
           venue: {
             name: data.venue?.name || defaultSettings.venue.name,
             address: data.venue?.address || defaultSettings.venue.address,
