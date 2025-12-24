@@ -2899,6 +2899,13 @@ function RegisterPage() {
             </div>
           )}
 
+          {/* Capacity Error Message */}
+          {errors.capacity && (
+            <div className={styles.capacityError}>
+              <span className={styles.errorMessage}>{errors.capacity}</span>
+            </div>
+          )}
+
           {/* Navigation Buttons */}
           <div className={styles.formNavigation}>
             {currentStep > REGISTRATION_STEPS.PERSONAL_INFO && (
