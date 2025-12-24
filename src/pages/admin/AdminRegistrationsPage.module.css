@@ -59,6 +59,42 @@
   height: 16px;
 }
 
+.syncButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-warning-light, #fef3c7);
+  border: 1px solid var(--color-warning, #f59e0b);
+  border-radius: var(--radius-md);
+  color: var(--color-warning-dark, #92400e);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.syncButton:hover:not(:disabled) {
+  background: var(--color-warning, #f59e0b);
+  color: white;
+}
+
+.syncButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.syncButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.syncButton.syncSuccess {
+  background: var(--color-success-light, #d1fae5);
+  border-color: var(--color-success, #10b981);
+  color: var(--color-success-dark, #065f46);
+}
+
 .exportButton {
   display: inline-flex;
   align-items: center;

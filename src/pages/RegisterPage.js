@@ -1074,7 +1074,7 @@ function RegisterPage() {
             email: formData.primaryAttendee.email,
             ministryRole: formData.primaryAttendee.ministryRole,
             category: formData.primaryAttendee.category,
-            workshopSelection: formData.primaryAttendee.workshopSelection || '',
+            workshopSelections: formData.primaryAttendee.workshopSelections || [],
             foodChoice: formData.primaryAttendee.foodChoice || '',
           },
           additionalAttendees: (formData.additionalAttendees || []).map((attendee) => ({
@@ -1085,6 +1085,7 @@ function RegisterPage() {
             email: attendee.email || '',
             ministryRole: attendee.ministryRole,
             category: attendee.category,
+            workshopSelections: attendee.workshopSelections || [],
             foodChoice: attendee.foodChoice || '',
           })),
           church: {
@@ -1129,7 +1130,7 @@ function RegisterPage() {
           email: formData.primaryAttendee.email,
           ministryRole: formData.primaryAttendee.ministryRole,
           category: formData.primaryAttendee.category,
-          workshopSelection: formData.primaryAttendee.workshopSelection || '',
+          workshopSelections: formData.primaryAttendee.workshopSelections || [],
           foodChoice: formData.primaryAttendee.foodChoice || '',
         },
         additionalAttendees: (formData.additionalAttendees || []).map((attendee) => ({
@@ -1140,6 +1141,7 @@ function RegisterPage() {
           email: attendee.email || '',
           ministryRole: attendee.ministryRole,
           category: attendee.category,
+          workshopSelections: attendee.workshopSelections || [],
           foodChoice: attendee.foodChoice || '',
         })),
         church: {
