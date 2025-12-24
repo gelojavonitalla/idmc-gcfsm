@@ -183,17 +183,6 @@ function AdminCheckInPage() {
     setCheckInError(null);
   }, []);
 
-  /**
-   * Handles scanner errors
-   */
-  const handleScannerError = useCallback((err) => {
-    console.error('Scanner error:', err);
-    setCheckInError({
-      code: 'SCANNER_ERROR',
-      message: err.message || 'Scanner error. Please try again.',
-    });
-  }, []);
-
   return (
     <AdminLayout>
       <div className={styles.container}>
