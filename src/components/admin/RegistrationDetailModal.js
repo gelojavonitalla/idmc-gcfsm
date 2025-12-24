@@ -25,6 +25,7 @@ import {
   promoteFromWaitlist,
 } from '../../services';
 import { useAdminAuth, useSettings } from '../../context';
+import { calculateRefundEligibility } from '../../utils/registration';
 import styles from './RegistrationDetailModal.module.css';
 
 /**
@@ -206,6 +207,11 @@ function RegistrationDetailModal({
 }) {
   const { admin } = useAdminAuth();
   const { settings } = useSettings();
+
+  // Calculate refund eligibility based on settings
+  const refundEligibility = settings?.startDate
+    ? calculateRefundEligibility(settings.refundPolicy, settings.startDate)
+    : { eligible: true, type: 'full', percent: 100, message: '', daysUntilEvent: 0 };
 
   const [selectedStatus, setSelectedStatus] = useState(
     registration?.status || REGISTRATION_STATUS.PENDING_PAYMENT
@@ -1292,6 +1298,35 @@ function RegistrationDetailModal({
                 </div>
               )}
 
+              {/* Refund Policy Info */}
+              <div style={{
+                backgroundColor: refundEligibility.eligible ? '#f0fdf4' : '#fef2f2',
+                borderRadius: '8px',
+                padding: '1rem',
+                marginBottom: '1rem',
+                border: `1px solid ${refundEligibility.eligible ? '#86efac' : '#fecaca'}`,
+              }}>
+                <p style={{
+                  margin: 0,
+                  color: refundEligibility.eligible ? '#166534' : '#991b1b',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                }}>
+                  {refundEligibility.type === 'full'
+                    ? 'Eligible for Full Refund (100%)'
+                    : refundEligibility.type === 'partial'
+                      ? `Eligible for Partial Refund (${refundEligibility.percent}%)`
+                      : 'Not Eligible for Refund'}
+                </p>
+                <p style={{
+                  margin: '0.25rem 0 0 0',
+                  color: '#6b7280',
+                  fontSize: '0.8rem',
+                }}>
+                  {refundEligibility.message}
+                </p>
+              </div>
+
               {!showRefundForm ? (
                 <button
                   onClick={() => setShowRefundForm(true)}
@@ -1495,6 +1530,30 @@ function RegistrationDetailModal({
                     <p style={{ margin: 0, color: '#92400e', fontSize: '0.875rem' }}>
                       This will cancel the registration and decrement workshop counts if applicable.
                       This action can be followed by processing a refund.
+                    </p>
+                  </div>
+
+                  {/* Refund Policy Warning */}
+                  <div style={{
+                    backgroundColor: refundEligibility.eligible ? '#dcfce7' : '#fee2e2',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    border: `1px solid ${refundEligibility.eligible ? '#22c55e' : '#ef4444'}`,
+                  }}>
+                    <p style={{
+                      margin: 0,
+                      color: refundEligibility.eligible ? '#166534' : '#991b1b',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                    }}>
+                      Refund Eligibility: {refundEligibility.type === 'full' ? 'Full Refund' : refundEligibility.type === 'partial' ? `Partial Refund (${refundEligibility.percent}%)` : 'No Refund'}
+                    </p>
+                    <p style={{
+                      margin: '0.25rem 0 0 0',
+                      color: refundEligibility.eligible ? '#166534' : '#991b1b',
+                      fontSize: '0.8rem',
+                    }}>
+                      {refundEligibility.message} ({refundEligibility.daysUntilEvent} days until event)
                     </p>
                   </div>
 

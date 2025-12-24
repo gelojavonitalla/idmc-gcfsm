@@ -286,3 +286,127 @@ export function maskPhone(phone) {
   const lastFour = digitsOnly.slice(-4);
   return `***-***-${lastFour}`;
 }
+
+/**
+ * Refund eligibility result type.
+ * @typedef {Object} RefundEligibility
+ * @property {boolean} eligible - Whether any refund is available
+ * @property {'full'|'partial'|'none'} type - Type of refund available
+ * @property {number} percent - Percentage of refund (0-100)
+ * @property {string} message - Human-readable message about refund status
+ * @property {number} daysUntilEvent - Days remaining until event
+ */
+
+/**
+ * Calculates refund eligibility based on conference date and refund policy settings.
+ * Returns detailed information about what type of refund (if any) is available.
+ *
+ * @param {Object} refundPolicy - Refund policy settings from conference settings
+ * @param {boolean} refundPolicy.enabled - Whether refunds are enabled
+ * @param {number|null} refundPolicy.fullRefundDays - Days before event for full refund
+ * @param {number|null} refundPolicy.partialRefundDays - Days before event for partial refund
+ * @param {number} refundPolicy.partialRefundPercent - Percentage for partial refund
+ * @param {string} refundPolicy.noRefundMessage - Message when no refunds available
+ * @param {string} refundPolicy.fullRefundMessage - Message for full refund period
+ * @param {string} refundPolicy.partialRefundMessage - Message for partial refund period
+ * @param {string} refundPolicy.lateRefundMessage - Message when too late for refund
+ * @param {string|Date} eventDate - Conference start date
+ * @returns {RefundEligibility} Refund eligibility details
+ */
+export function calculateRefundEligibility(refundPolicy, eventDate) {
+  const now = new Date();
+  const conferenceDate = eventDate instanceof Date ? eventDate : new Date(eventDate);
+  const diffTime = conferenceDate.getTime() - now.getTime();
+  const daysUntilEvent = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  // Default policy if not provided
+  const policy = refundPolicy || {
+    enabled: true,
+    fullRefundDays: 14,
+    partialRefundDays: 7,
+    partialRefundPercent: 50,
+    noRefundMessage: 'Refunds are not available for this event.',
+    fullRefundMessage: 'Full refund available until {days} days before the event.',
+    partialRefundMessage: 'Partial refund ({percent}%) available until {days} days before the event.',
+    lateRefundMessage: 'Cancellations within {days} days of the event are not eligible for refund.',
+  };
+
+  // If refunds are disabled entirely
+  if (!policy.enabled) {
+    return {
+      eligible: false,
+      type: 'none',
+      percent: 0,
+      message: policy.noRefundMessage || 'Refunds are not available for this event.',
+      daysUntilEvent,
+    };
+  }
+
+  // Check for full refund eligibility
+  if (policy.fullRefundDays !== null && daysUntilEvent >= policy.fullRefundDays) {
+    const message = (policy.fullRefundMessage || 'Full refund available until {days} days before the event.')
+      .replace('{days}', policy.fullRefundDays);
+    return {
+      eligible: true,
+      type: 'full',
+      percent: 100,
+      message,
+      daysUntilEvent,
+    };
+  }
+
+  // Check for partial refund eligibility
+  if (policy.partialRefundDays !== null && daysUntilEvent >= policy.partialRefundDays) {
+    const message = (policy.partialRefundMessage || 'Partial refund ({percent}%) available until {days} days before the event.')
+      .replace('{days}', policy.partialRefundDays)
+      .replace('{percent}', policy.partialRefundPercent || 50);
+    return {
+      eligible: true,
+      type: 'partial',
+      percent: policy.partialRefundPercent || 50,
+      message,
+      daysUntilEvent,
+    };
+  }
+
+  // Too late for refund
+  const lateDays = policy.partialRefundDays || policy.fullRefundDays || 0;
+  const message = (policy.lateRefundMessage || 'Cancellations within {days} days of the event are not eligible for refund.')
+    .replace('{days}', lateDays);
+  return {
+    eligible: false,
+    type: 'none',
+    percent: 0,
+    message,
+    daysUntilEvent,
+  };
+}
+
+/**
+ * Formats refund policy as a human-readable summary for display.
+ *
+ * @param {Object} refundPolicy - Refund policy settings
+ * @returns {string} Formatted policy summary
+ */
+export function formatRefundPolicySummary(refundPolicy) {
+  if (!refundPolicy || !refundPolicy.enabled) {
+    return 'No refunds available for this event.';
+  }
+
+  const parts = [];
+
+  if (refundPolicy.fullRefundDays !== null) {
+    parts.push(`Full refund: ${refundPolicy.fullRefundDays}+ days before event`);
+  }
+
+  if (refundPolicy.partialRefundDays !== null && refundPolicy.partialRefundDays !== refundPolicy.fullRefundDays) {
+    parts.push(`${refundPolicy.partialRefundPercent || 50}% refund: ${refundPolicy.partialRefundDays}-${(refundPolicy.fullRefundDays || refundPolicy.partialRefundDays) - 1} days before event`);
+  }
+
+  const cutoffDays = refundPolicy.partialRefundDays || refundPolicy.fullRefundDays || 0;
+  if (cutoffDays > 0) {
+    parts.push(`No refund: Less than ${cutoffDays} days before event`);
+  }
+
+  return parts.join(' • ') || 'No refund policy configured.';
+}
