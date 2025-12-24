@@ -1020,6 +1020,14 @@ function RegisterPage() {
     if (isValid && currentStep < REGISTRATION_STEPS.CONFIRMATION) {
       setCurrentStep((prev) => prev + 1);
       window.scrollTo(0, 0);
+    } else if (!isValid) {
+      // Scroll to first error element when validation fails
+      setTimeout(() => {
+        const firstError = document.querySelector(`.${styles.inputError}, .${styles.errorMessage}`);
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
     }
   }, [currentStep, validatePersonalInfo, validateTicketSelection, validatePaymentUpload, isPaymentRequired]);
 
