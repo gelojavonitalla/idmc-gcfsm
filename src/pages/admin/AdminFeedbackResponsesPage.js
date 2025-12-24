@@ -15,6 +15,7 @@ import {
   getFeedbackResponses,
   deleteFeedbackResponse,
 } from '../../services/feedback';
+import { useAdminAuth } from '../../context';
 import styles from './AdminFeedbackResponsesPage.module.css';
 
 /**
@@ -23,6 +24,7 @@ import styles from './AdminFeedbackResponsesPage.module.css';
  * @returns {JSX.Element} The admin feedback responses page
  */
 function AdminFeedbackResponsesPage() {
+  const { admin } = useAdminAuth();
   const [responses, setResponses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -76,13 +78,13 @@ function AdminFeedbackResponsesPage() {
     }
 
     try {
-      await deleteFeedbackResponse(responseId);
+      await deleteFeedbackResponse(responseId, admin?.id, admin?.email);
       setResponses((prev) => prev.filter((r) => r.id !== responseId));
     } catch (deleteError) {
       console.error('Failed to delete feedback response:', deleteError);
       setError('Failed to delete feedback response. Please try again.');
     }
-  }, []);
+  }, [admin]);
 
   /**
    * Handles delete from modal
@@ -91,13 +93,13 @@ function AdminFeedbackResponsesPage() {
    */
   const handleDeleteFromModal = useCallback(async (responseId) => {
     try {
-      await deleteFeedbackResponse(responseId);
+      await deleteFeedbackResponse(responseId, admin?.id, admin?.email);
       setResponses((prev) => prev.filter((r) => r.id !== responseId));
     } catch (deleteError) {
       console.error('Failed to delete feedback response:', deleteError);
       setError('Failed to delete feedback response. Please try again.');
     }
-  }, []);
+  }, [admin]);
 
   /**
    * Closes the detail modal

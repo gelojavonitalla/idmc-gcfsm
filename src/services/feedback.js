@@ -8,6 +8,7 @@
 import { collection, addDoc, serverTimestamp, getDocs, doc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { COLLECTIONS } from '../constants';
+import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from './activityLog';
 
 /**
  * Processes a value for storage, trimming strings and handling nested objects.
@@ -104,14 +105,28 @@ export async function getFeedbackResponses() {
  * Deletes a feedback response from Firestore.
  *
  * @param {string} feedbackId - The ID of the feedback to delete
+ * @param {string} adminId - Admin user ID who performed the action
+ * @param {string} adminEmail - Admin email for display
  * @returns {Promise<void>}
  * @throws {Error} If the Firestore operation fails or feedbackId is invalid
  */
-export async function deleteFeedbackResponse(feedbackId) {
+export async function deleteFeedbackResponse(feedbackId, adminId = null, adminEmail = null) {
   if (!feedbackId || typeof feedbackId !== 'string') {
     throw new Error('Invalid feedback ID');
   }
 
   const feedbackDocRef = doc(db, COLLECTIONS.FEEDBACK, feedbackId);
   await deleteDoc(feedbackDocRef);
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.DELETE,
+      entityType: ENTITY_TYPES.FEEDBACK,
+      entityId: feedbackId,
+      description: `Deleted feedback response: ${feedbackId}`,
+      adminId,
+      adminEmail,
+    });
+  }
 }
