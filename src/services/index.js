@@ -104,6 +104,8 @@ export {
   verifyPayment,
   confirmPayment,
   cancelRegistration,
+  refundRegistration,
+  promoteFromWaitlist,
   markEmailSent,
   lookupRegistration,
   incrementWorkshopCount,

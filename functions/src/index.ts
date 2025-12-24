@@ -299,6 +299,7 @@ const REGISTRATION_STATUS = {
   PENDING_VERIFICATION: "pending_verification",
   CONFIRMED: "confirmed",
   CANCELLED: "cancelled",
+  REFUNDED: "refunded",
   WAITLISTED: "waitlisted",
   WAITLIST_OFFERED: "waitlist_offered",
   WAITLIST_EXPIRED: "waitlist_expired",
