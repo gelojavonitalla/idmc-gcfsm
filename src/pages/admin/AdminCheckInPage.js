@@ -172,6 +172,17 @@ function AdminCheckInPage() {
     setCheckInError(null);
   }, []);
 
+  /**
+   * Handles scanner errors
+   */
+  const handleScannerError = useCallback((err) => {
+    console.error('Scanner error:', err);
+    setCheckInError({
+      code: 'SCANNER_ERROR',
+      message: err.message || 'Scanner error. Please try again.',
+    });
+  }, []);
+
   return (
     <AdminLayout>
       <div className={styles.container}>
@@ -273,13 +284,7 @@ function AdminCheckInPage() {
                 {mode === CHECK_IN_MODES.QR ? (
                   <QRScanner
                     onScan={handleQRScan}
-                    onError={(err) => {
-                      console.error('Scanner error:', err);
-                      setCheckInError({
-                        code: 'SCANNER_ERROR',
-                        message: err.message || 'Scanner error. Please try again.',
-                      });
-                    }}
+                    onError={handleScannerError}
                     isActive={!selectedRegistration}
                   />
                 ) : (
