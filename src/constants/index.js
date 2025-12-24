@@ -4,6 +4,11 @@
  */
 
 /**
+ * Application version
+ */
+export const APP_VERSION = '1.0.0';
+
+/**
  * Route paths for the application
  */
 export const ROUTES = {

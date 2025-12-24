@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useSettings, DEFAULT_SETTINGS } from '../../context';
-import { ROUTES, CONTACT } from '../../constants';
+import { ROUTES, CONTACT, APP_VERSION } from '../../constants';
 import styles from './Footer.module.css';
 
 /**
@@ -174,6 +174,7 @@ function Footer() {
               Terms of Service
             </Link>
           </div>
+          <span className={styles.version}>v{APP_VERSION}</span>
         </div>
       </div>
     </footer>
