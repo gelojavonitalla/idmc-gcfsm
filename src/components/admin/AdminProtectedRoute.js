@@ -19,10 +19,11 @@ import styles from './AdminProtectedRoute.module.css';
  * @param {React.ReactNode} props.children - Protected content to render
  * @param {string|Array<string>} [props.requiredRole] - Required role(s) to access
  * @param {string} [props.requiredPermission] - Required permission to access
+ * @param {string} [props.volunteerRedirect] - Path to redirect volunteers to
  * @returns {JSX.Element} Protected content, loading state, or redirect
  */
-function AdminProtectedRoute({ children, requiredRole, requiredPermission }) {
-  const { isAuthenticated, isLoading, hasRole, checkPermission } = useAdminAuth();
+function AdminProtectedRoute({ children, requiredRole, requiredPermission, volunteerRedirect }) {
+  const { isAuthenticated, isLoading, hasRole, checkPermission, isVolunteer } = useAdminAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -36,6 +37,11 @@ function AdminProtectedRoute({ children, requiredRole, requiredPermission }) {
 
   if (!isAuthenticated) {
     return <Navigate to={ADMIN_ROUTES.LOGIN} state={{ from: location }} replace />;
+  }
+
+  // Redirect volunteers to specified path if volunteerRedirect is set
+  if (volunteerRedirect && isVolunteer) {
+    return <Navigate to={volunteerRedirect} replace />;
   }
 
   if (requiredRole && !hasRole(requiredRole)) {
@@ -93,11 +99,13 @@ AdminProtectedRoute.propTypes = {
     PropTypes.arrayOf(PropTypes.string),
   ]),
   requiredPermission: PropTypes.string,
+  volunteerRedirect: PropTypes.string,
 };
 
 AdminProtectedRoute.defaultProps = {
   requiredRole: null,
   requiredPermission: null,
+  volunteerRedirect: null,
 };
 
 export default AdminProtectedRoute;

@@ -97,7 +97,7 @@ function App() {
             <Route
               path={ADMIN_ROUTES.DASHBOARD}
               element={
-                <AdminProtectedRoute>
+                <AdminProtectedRoute volunteerRedirect={ADMIN_ROUTES.CHECKIN}>
                   <Suspense fallback={<AdminLoadingFallback />}>
                     <AdminDashboardPage />
                   </Suspense>
@@ -338,7 +338,7 @@ function App() {
             <Route
               path={`${ADMIN_ROUTES.ROOT}/*`}
               element={
-                <AdminProtectedRoute>
+                <AdminProtectedRoute volunteerRedirect={ADMIN_ROUTES.CHECKIN}>
                   <Suspense fallback={<AdminLoadingFallback />}>
                     <AdminDashboardPage />
                   </Suspense>
