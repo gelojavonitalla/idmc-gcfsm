@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { getWorkshopAttendees } from '../../services/registration';
-import { REGISTRATION_CATEGORY_LABELS } from '../../constants';
+import { useSettings } from '../../context';
 import styles from './WorkshopAttendeesModal.module.css';
 
 /**
@@ -45,10 +45,23 @@ function getChurchInfo(attendee) {
  * @returns {JSX.Element|null} The modal or null if not open
  */
 function WorkshopAttendeesModal({ isOpen, onClose, workshop, effectiveCapacity }) {
+  const { pricingTiers } = useSettings();
   const [attendees, setAttendees] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  /**
+   * Gets the display name for a category/pricing tier ID
+   *
+   * @param {string} categoryId - The category/tier ID
+   * @returns {string} The display name or the ID if not found
+   */
+  const getCategoryName = (categoryId) => {
+    if (!categoryId) return '—';
+    const tier = pricingTiers?.find((t) => t.id === categoryId);
+    return tier?.name || categoryId;
+  };
 
   /**
    * Fetch attendees when modal opens
@@ -122,7 +135,7 @@ function WorkshopAttendeesModal({ isOpen, onClose, workshop, effectiveCapacity }
       attendee.cellphone,
       getChurchInfo(attendee),
       attendee.ministryRole,
-      REGISTRATION_CATEGORY_LABELS[attendee.category] || attendee.category,
+      getCategoryName(attendee.category),
       attendee.shortCode,
       attendee.checkedIn ? 'Yes' : 'No',
     ]);
@@ -278,7 +291,7 @@ function WorkshopAttendeesModal({ isOpen, onClose, workshop, effectiveCapacity }
                       <td className={styles.churchCell}>{getChurchInfo(attendee)}</td>
                       <td>
                         <span className={styles.categoryBadge}>
-                          {REGISTRATION_CATEGORY_LABELS[attendee.category] || attendee.category || '—'}
+                          {getCategoryName(attendee.category)}
                         </span>
                       </td>
                       <td className={styles.codeCell}>{attendee.shortCode}</td>
