@@ -829,40 +829,40 @@ function RegisterPage() {
     const newAdditionalErrors = {};
 
     // Validate church info
-    if (!formData.churchName.trim()) {
+    if (!(formData.churchName || '').trim()) {
       newErrors.churchName = 'Church name is required';
     }
-    if (!formData.churchCity.trim()) {
+    if (!(formData.churchCity || '').trim()) {
       newErrors.churchCity = 'City is required';
     }
-    if (!formData.churchProvince.trim()) {
+    if (!(formData.churchProvince || '').trim()) {
       newErrors.churchProvince = 'Province/Region is required';
     }
 
     // Validate primary attendee (email + phone required)
-    const primary = formData.primaryAttendee;
+    const primary = formData.primaryAttendee || {};
 
-    if (!primary.lastName.trim()) {
+    if (!(primary.lastName || '').trim()) {
       newPrimaryErrors.lastName = 'Last name is required';
     }
-    if (!primary.firstName.trim()) {
+    if (!(primary.firstName || '').trim()) {
       newPrimaryErrors.firstName = 'First name is required';
     }
-    if (!primary.cellphone.trim()) {
+    if (!(primary.cellphone || '').trim()) {
       newPrimaryErrors.cellphone = 'Cellphone number is required';
     } else if (!isValidPhoneNumber(primary.cellphone)) {
       newPrimaryErrors.cellphone = 'Please enter a valid Philippine cellphone number';
     }
-    if (!primary.email.trim()) {
+    if (!(primary.email || '').trim()) {
       newPrimaryErrors.email = 'Email is required';
     } else if (!isValidEmail(primary.email)) {
       newPrimaryErrors.email = 'Please enter a valid email address';
     } else if (duplicateRegistration) {
       newPrimaryErrors.email = 'This email is already registered';
     }
-    if (!primary.emailConfirm.trim()) {
+    if (!(primary.emailConfirm || '').trim()) {
       newPrimaryErrors.emailConfirm = 'Please confirm your email';
-    } else if (primary.email.trim().toLowerCase() !== primary.emailConfirm.trim().toLowerCase()) {
+    } else if ((primary.email || '').trim().toLowerCase() !== (primary.emailConfirm || '').trim().toLowerCase()) {
       newPrimaryErrors.emailConfirm = 'Email addresses do not match';
     }
     if (!primary.ministryRole) {
@@ -876,19 +876,19 @@ function RegisterPage() {
     (formData.additionalAttendees || []).forEach((attendee, index) => {
       const attendeeErr = {};
 
-      if (!attendee.lastName.trim()) {
+      if (!(attendee.lastName || '').trim()) {
         attendeeErr.lastName = 'Last name is required';
       }
-      if (!attendee.firstName.trim()) {
+      if (!(attendee.firstName || '').trim()) {
         attendeeErr.firstName = 'First name is required';
       }
-      if (!attendee.cellphone.trim()) {
+      if (!(attendee.cellphone || '').trim()) {
         attendeeErr.cellphone = 'Cellphone number is required';
       } else if (!isValidPhoneNumber(attendee.cellphone)) {
         attendeeErr.cellphone = 'Please enter a valid Philippine cellphone number';
       }
       // Email is optional for additional attendees, but validate if provided
-      if (attendee.email.trim() && !isValidEmail(attendee.email)) {
+      if ((attendee.email || '').trim() && !isValidEmail(attendee.email)) {
         attendeeErr.email = 'Please enter a valid email address';
       }
       if (!attendee.ministryRole) {
@@ -1020,6 +1020,14 @@ function RegisterPage() {
     if (isValid && currentStep < REGISTRATION_STEPS.CONFIRMATION) {
       setCurrentStep((prev) => prev + 1);
       window.scrollTo(0, 0);
+    } else if (!isValid) {
+      // Scroll to first error element when validation fails
+      setTimeout(() => {
+        const firstError = document.querySelector(`.${styles.inputError}, .${styles.errorMessage}`);
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
     }
   }, [currentStep, validatePersonalInfo, validateTicketSelection, validatePaymentUpload, isPaymentRequired]);
 
@@ -2896,6 +2904,19 @@ function RegisterPage() {
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
+            </div>
+          )}
+
+          {/* Validation Error Summary */}
+          {(Object.keys(errors).length > 0 || Object.keys(primaryErrors).length > 0 || Object.keys(additionalErrors).length > 0) && (
+            <div className={styles.capacityError}>
+              <span className={styles.errorMessage}>
+                Please fix the following errors: {[
+                  ...Object.values(errors),
+                  ...Object.values(primaryErrors),
+                  ...Object.values(additionalErrors).flatMap(ae => Object.values(ae))
+                ].filter(Boolean).join(', ')}
+              </span>
             </div>
           )}
 

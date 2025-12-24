@@ -594,6 +594,22 @@
   border: 1px solid var(--color-warning-200, #fde68a);
 }
 
+.capacityError {
+  text-align: center;
+  margin-bottom: var(--spacing-4);
+  background: var(--color-error-50, #fef2f2);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-error-200, #fecaca);
+}
+
+.capacityError .errorMessage {
+  color: var(--color-error, #dc2626);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  margin: 0;
+}
+
 .subtotalBox {
   display: flex;
   justify-content: space-between;
