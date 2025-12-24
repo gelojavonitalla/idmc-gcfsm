@@ -326,8 +326,8 @@
   align-items: center;
   gap: 0.375rem;
   padding: 0.375rem 0.75rem;
-  background-color: var(--color-primary-light, #eef2ff);
-  color: var(--color-primary, #4f46e5);
+  background-color: var(--color-primary, #06b84b);
+  color: white;
   border: none;
   border-radius: 0.375rem;
   font-size: 0.75rem;
@@ -343,7 +343,7 @@
 }
 
 .viewAttendeesButton:hover {
-  background-color: var(--color-primary, #4f46e5);
+  background-color: var(--color-primary-dark, #059c3f);
   color: white;
 }
 
