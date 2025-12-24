@@ -877,6 +877,28 @@ export async function getWaitlistCount() {
 }
 
 /**
+ * Gets the count of registrations with WAITLISTED status only (excluding WAITLIST_OFFERED).
+ * Used for calculating accurate waitlist position for new registrants.
+ *
+ * @returns {Promise<number>} Count of WAITLISTED registrations only
+ */
+export async function getWaitlistedOnlyCount() {
+  try {
+    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+    const waitlistQuery = query(
+      registrationsRef,
+      where('status', '==', REGISTRATION_STATUS.WAITLISTED)
+    );
+
+    const snapshot = await getDocs(waitlistQuery);
+    return snapshot.size;
+  } catch (error) {
+    console.error('Failed to get waitlisted only count:', error);
+    return 0;
+  }
+}
+
+/**
  * Gets all waitlisted registrations ordered by waitlist position (FIFO).
  *
  * @returns {Promise<Array>} Array of waitlisted registrations sorted by waitlistedAt
@@ -1258,7 +1280,7 @@ export async function checkRegistrationAvailability(settings, attendeeCount = 1)
     };
   }
 
-  // Check waitlist capacity
+  // Check waitlist capacity (includes both WAITLISTED and WAITLIST_OFFERED)
   const waitlistCount = await getWaitlistCount();
 
   if (waitlistCapacity && waitlistCount >= waitlistCapacity) {
@@ -1269,11 +1291,15 @@ export async function checkRegistrationAvailability(settings, attendeeCount = 1)
     };
   }
 
+  // Get count of only WAITLISTED registrations for accurate position calculation
+  // WAITLIST_OFFERED registrations are not counted as they are being processed
+  const waitlistedOnlyCount = await getWaitlistedOnlyCount();
+
   // Waitlist is available
   return {
     canRegister: true,
     isWaitlist: true,
-    waitlistPosition: waitlistCount + 1,
+    waitlistPosition: waitlistedOnlyCount + 1,
     message: 'The conference is full, but you can join the waitlist.',
   };
 }
