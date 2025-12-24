@@ -9,7 +9,6 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
   REGISTRATION_STATUS,
-  REGISTRATION_CATEGORY_LABELS,
   WORKSHOP_CATEGORY_LABELS,
   PAYMENT_METHODS,
 } from '../../constants';
@@ -206,7 +205,19 @@ function RegistrationDetailModal({
   isUpdating,
 }) {
   const { admin } = useAdminAuth();
-  const { settings } = useSettings();
+  const { settings, pricingTiers } = useSettings();
+
+  /**
+   * Gets the display name for a category/pricing tier ID
+   *
+   * @param {string} categoryId - The category/tier ID
+   * @returns {string} The display name or the ID if not found
+   */
+  const getCategoryName = (categoryId) => {
+    if (!categoryId) return '—';
+    const tier = pricingTiers?.find((t) => t.id === categoryId);
+    return tier?.name || categoryId;
+  };
 
   // Calculate refund eligibility based on settings
   const refundEligibility = settings?.startDate
@@ -774,9 +785,7 @@ function RegistrationDetailModal({
               <div className={styles.infoItem}>
                 <span className={styles.label}>Category</span>
                 <span className={styles.value}>
-                  {REGISTRATION_CATEGORY_LABELS[registration.primaryAttendee?.category] ||
-                    registration.primaryAttendee?.category ||
-                    '—'}
+                  {getCategoryName(registration.primaryAttendee?.category)}
                 </span>
               </div>
               <div className={styles.infoItem}>
@@ -1707,8 +1716,7 @@ function RegistrationDetailModal({
                       </span>
                       <span className={styles.attendeeEmail}>{attendee.email}</span>
                       <span className={styles.attendeeCategory}>
-                        {REGISTRATION_CATEGORY_LABELS[attendee.category] ||
-                          attendee.category}
+                        {getCategoryName(attendee.category)}
                       </span>
                     </div>
                   ))}
