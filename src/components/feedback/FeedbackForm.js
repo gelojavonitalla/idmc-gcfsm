@@ -29,6 +29,7 @@ function getNestedValue(obj, path) {
 
 /**
  * Checks if a field should be visible based on conditional logic.
+ * Supports checkbox (boolean), checkboxGroup (option ID), and radio (option ID) conditions.
  *
  * @param {Object} field - The field definition
  * @param {Object} formData - Current form data
@@ -40,9 +41,29 @@ function isFieldVisible(field, formData) {
   }
 
   const { field: conditionField, value: conditionValue } = field.conditionalOn;
-  const currentValue = getNestedValue(formData, conditionField);
 
-  return currentValue === conditionValue;
+  // Handle nested paths (e.g., "fieldId.optionId" for legacy checkboxGroup conditions)
+  if (conditionField.includes('.')) {
+    const currentValue = getNestedValue(formData, conditionField);
+    return currentValue === conditionValue;
+  }
+
+  const fieldValue = formData[conditionField];
+
+  // Determine field type from form data structure
+  if (typeof fieldValue === 'boolean') {
+    // Checkbox field - compare boolean values
+    return fieldValue === conditionValue;
+  } else if (typeof fieldValue === 'object' && fieldValue !== null) {
+    // CheckboxGroup field - conditionValue is the option ID
+    // Check if that specific option is checked
+    return fieldValue[conditionValue] === true;
+  } else if (typeof fieldValue === 'string') {
+    // Radio field - compare the selected option ID with condition value
+    return fieldValue === conditionValue;
+  }
+
+  return false;
 }
 
 /**
@@ -498,7 +519,7 @@ FeedbackForm.propTypes = {
       ),
       conditionalOn: PropTypes.shape({
         field: PropTypes.string.isRequired,
-        value: PropTypes.bool.isRequired,
+        value: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]).isRequired,
       }),
     })
   ),

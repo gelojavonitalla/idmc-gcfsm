@@ -94,20 +94,44 @@ function FormFieldEditor({ isOpen, onClose, onSave, field, existingFields }) {
           return newData;
         });
       } else {
+        // Find the selected field to determine default value
+        const selectedField = existingFields.find((f) => f.id === value);
+        let defaultValue = false;
+
+        if (selectedField) {
+          if (selectedField.type === 'checkbox') {
+            // Default to "is not checked" as it's the more common use case
+            defaultValue = false;
+          } else if ((selectedField.type === 'checkboxGroup' || selectedField.type === 'radio') && selectedField.options?.length > 0) {
+            // For fields with options, default to first option
+            defaultValue = selectedField.options[0].id;
+          }
+        }
+
         setFormData((prev) => ({
           ...prev,
           conditionalOn: {
             field: value,
-            value: prev.conditionalOn?.value ?? true,
+            value: defaultValue,
           },
         }));
       }
     } else if (name === 'conditionalValue') {
+      // Find the field to determine value type
+      const selectedFieldId = formData.conditionalOn?.field;
+      const selectedField = existingFields.find((f) => f.id === selectedFieldId);
+
+      let parsedValue = value;
+      // For checkbox fields, convert string to boolean
+      if (selectedField?.type === 'checkbox') {
+        parsedValue = value === 'true';
+      }
+
       setFormData((prev) => ({
         ...prev,
         conditionalOn: {
           ...prev.conditionalOn,
-          value: value === 'true',
+          value: parsedValue,
         },
       }));
     }
@@ -196,21 +220,55 @@ function FormFieldEditor({ isOpen, onClose, onSave, field, existingFields }) {
 
   /**
    * Gets fields available for conditional logic
+   * Returns fields with their type and options for proper value selection
    */
   const getConditionalFields = () => {
     return existingFields
       .filter((f) => f.id !== formData.id)
-      .filter((f) => f.type === 'checkbox' || f.type === 'checkboxGroup')
-      .map((f) => {
-        if (f.type === 'checkboxGroup' && f.options) {
-          return f.options.map((opt) => ({
-            id: `${f.id}.${opt.id}`,
-            label: `${f.label} - ${opt.label}`,
-          }));
-        }
-        return [{ id: f.id, label: f.label }];
-      })
-      .flat();
+      .filter((f) => f.type === 'checkbox' || f.type === 'checkboxGroup' || f.type === 'radio')
+      .map((f) => ({
+        id: f.id,
+        label: f.label,
+        type: f.type,
+        options: f.options || [],
+      }));
+  };
+
+  /**
+   * Gets the value options for the selected conditional field
+   * @returns {Array} Array of value options with id and label
+   */
+  const getConditionalValueOptions = () => {
+    const selectedFieldId = formData.conditionalOn?.field;
+    if (!selectedFieldId) {
+      return [];
+    }
+
+    // Handle nested field paths (e.g., "fieldId.optionId")
+    const baseFieldId = selectedFieldId.split('.')[0];
+    const selectedField = existingFields.find((f) => f.id === baseFieldId);
+
+    if (!selectedField) {
+      return [];
+    }
+
+    // For single checkbox, return checked/unchecked options
+    if (selectedField.type === 'checkbox') {
+      return [
+        { id: 'false', label: 'is not checked' },
+        { id: 'true', label: 'is checked' },
+      ];
+    }
+
+    // For checkboxGroup and radio, return the actual field options
+    if ((selectedField.type === 'checkboxGroup' || selectedField.type === 'radio') && selectedField.options) {
+      return selectedField.options.map((opt) => ({
+        id: opt.id,
+        label: opt.label,
+      }));
+    }
+
+    return [];
   };
 
   if (!isOpen) return null;
@@ -388,15 +446,18 @@ function FormFieldEditor({ isOpen, onClose, onSave, field, existingFields }) {
                     </option>
                   ))}
                 </select>
-                {formData.conditionalOn?.field && (
+                {formData.conditionalOn?.field && getConditionalValueOptions().length > 0 && (
                   <select
                     name="conditionalValue"
-                    value={String(formData.conditionalOn?.value ?? true)}
+                    value={String(formData.conditionalOn?.value ?? '')}
                     onChange={handleConditionalChange}
                     className={styles.select}
                   >
-                    <option value="true">is checked</option>
-                    <option value="false">is not checked</option>
+                    {getConditionalValueOptions().map((opt) => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.label}
+                      </option>
+                    ))}
                   </select>
                 )}
               </div>
