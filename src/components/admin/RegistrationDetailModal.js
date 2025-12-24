@@ -617,6 +617,14 @@ function RegistrationDetailModal({
             </h3>
             <div className={styles.infoGrid}>
               <div className={styles.infoItem}>
+                <span className={styles.label}>Category</span>
+                <span className={styles.value}>
+                  {REGISTRATION_CATEGORY_LABELS[registration.primaryAttendee?.category] ||
+                    registration.primaryAttendee?.category ||
+                    '—'}
+                </span>
+              </div>
+              <div className={styles.infoItem}>
                 <span className={styles.label}>Workshop</span>
                 <span className={styles.value}>
                   {getWorkshopDisplay(registration)}
