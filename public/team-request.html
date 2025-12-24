@@ -1302,6 +1302,84 @@
       </div>
     </div>
 
+    <!-- Section 13: Feedback Form -->
+    <div class="section" id="feedback-form">
+      <h2>
+        <div class="section-header">
+          <span>13. Attendee Feedback Form</span>
+          <button class="anchor-link-btn" onclick="copyAnchorLink(this, 'feedback-form')" title="Copy link to section">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+        </div>
+        <span class="badge badge-required">Required</span>
+      </h2>
+      <p>
+        The website includes a <strong>feedback form</strong> for attendees to share their experience after the conference.
+        Please help build the questionnaire by providing the questions you'd like to ask.
+      </p>
+
+      <div class="subsection">
+        <h3>What We Need:</h3>
+        <ul>
+          <li>List of questions to include in the feedback form</li>
+          <li>Question types (e.g., rating scale, multiple choice, open-ended text)</li>
+          <li>Which questions should be required vs optional</li>
+          <li>Any specific categories or sections (e.g., Overall Experience, Speakers, Workshops, Venue)</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>Example Questions (For Reference):</h3>
+        <p class="note" style="margin-bottom: 12px;">* These are just examples to give you ideas. Please provide the actual questions you want to use.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Question</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>How would you rate your overall experience at IDMC 2026?</td>
+              <td>Rating (1-5 stars)</td>
+            </tr>
+            <tr>
+              <td>Which workshop did you attend?</td>
+              <td>Multiple choice</td>
+            </tr>
+            <tr>
+              <td>How helpful was the workshop content?</td>
+              <td>Rating (1-5 stars)</td>
+            </tr>
+            <tr>
+              <td>What did you enjoy most about the conference?</td>
+              <td>Open-ended text</td>
+            </tr>
+            <tr>
+              <td>What could we improve for future conferences?</td>
+              <td>Open-ended text</td>
+            </tr>
+            <tr>
+              <td>Would you recommend IDMC to others?</td>
+              <td>Yes/No</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="highlight">
+        <strong>Tip:</strong> Consider what insights would be most valuable for planning future conferences.
+        Feedback on speakers, workshops, venue, logistics, and overall satisfaction can help improve future events.
+      </div>
+
+      <div class="admin-links-container">
+        <a href="/admin/feedback" target="_blank" class="admin-link">Configure Feedback Form</a>
+      </div>
+    </div>
+
     <!-- Summary Checklist -->
     <div class="section" id="summary" style="border: 2px solid var(--primary);">
       <h2>
@@ -1361,15 +1439,19 @@
           <li>&#9744; About IDMC (<a href="/about" target="_blank">preview</a>) - provide content you'd like to include</li>
           <li>&#9744; About GCF South Metro (<a href="/about" target="_blank">preview</a>) - provide content you'd like to include</li>
         </ul>
-        <div class="admin-links-container">
-          <a href="/admin/feedback" target="_blank" class="admin-link">Submit Feedback</a>
-        </div>
       </div>
 
       <div class="subsection">
         <h3>SMS Notifications Setup:</h3>
         <ul>
           <li>&#9744; <strong>Sender ID registration</strong> - provide business permit to register "GCFSM" as Sender ID</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3>Feedback Form:</h3>
+        <ul>
+          <li>&#9744; <strong>Feedback questionnaire</strong> - provide questions for the attendee feedback form (<a href="/admin/feedback" target="_blank">configure</a>)</li>
         </ul>
       </div>
 
