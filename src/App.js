@@ -67,11 +67,12 @@ function App() {
   return (
     <AuthProvider>
       <AdminAuthProvider>
-        <ToastProvider>
-          <BrowserRouter>
-            <ScrollToTop />
-            <ToastContainer />
-            <Routes>
+        <SettingsProvider>
+          <ToastProvider>
+            <BrowserRouter>
+              <ScrollToTop />
+              <ToastContainer />
+              <Routes>
             {/* Admin Routes - Lazy loaded for code splitting */}
             <Route
               path={ADMIN_ROUTES.LOGIN}
@@ -349,9 +350,8 @@ function App() {
             <Route
               path="*"
               element={
-                <SettingsProvider>
-                  <Layout>
-                    <Routes>
+                <Layout>
+                  <Routes>
                     <Route path={ROUTES.HOME} element={<HomePage />} />
                     <Route path={ROUTES.SPEAKERS} element={<SpeakersPage />} />
                     <Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
@@ -375,16 +375,16 @@ function App() {
                       }
                     />
                     <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
-                    </Routes>
-                  </Layout>
-                </SettingsProvider>
+                  </Routes>
+                </Layout>
               }
             />
             </Routes>
           </BrowserRouter>
         </ToastProvider>
-      </AdminAuthProvider>
-    </AuthProvider>
+      </SettingsProvider>
+    </AdminAuthProvider>
+  </AuthProvider>
   );
 }
 
