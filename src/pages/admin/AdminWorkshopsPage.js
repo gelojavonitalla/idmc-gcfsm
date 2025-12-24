@@ -6,9 +6,10 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { AdminLayout } from '../../components/admin';
+import { AdminLayout, WorkshopAttendeesModal } from '../../components/admin';
 import { getPublishedWorkshops } from '../../services/workshops';
 import { getVenueRooms } from '../../services/venue';
+import { getConferenceSettings } from '../../services/settings';
 import styles from './AdminWorkshopsPage.module.css';
 
 /**
@@ -20,8 +21,11 @@ import styles from './AdminWorkshopsPage.module.css';
 function AdminWorkshopsPage() {
   const [workshops, setWorkshops] = useState([]);
   const [venueRooms, setVenueRooms] = useState([]);
+  const [conferenceCapacity, setConferenceCapacity] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedWorkshop, setSelectedWorkshop] = useState(null);
+  const [isAttendeesModalOpen, setIsAttendeesModalOpen] = useState(false);
 
   /**
    * Gets capacity for a workshop from its linked venue room.
@@ -42,19 +46,21 @@ function AdminWorkshopsPage() {
   }, [venueRooms]);
 
   /**
-   * Fetches workshop and venue room data
+   * Fetches workshop, venue room, and conference settings data
    */
   const fetchWorkshops = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const [workshopData, roomsData] = await Promise.all([
+      const [workshopData, roomsData, settingsData] = await Promise.all([
         getPublishedWorkshops(),
         getVenueRooms(),
+        getConferenceSettings(),
       ]);
       setWorkshops(workshopData);
       setVenueRooms(roomsData);
+      setConferenceCapacity(settingsData?.conferenceCapacity ?? null);
     } catch (fetchError) {
       console.error('Failed to fetch workshops:', fetchError);
       setError('Failed to load workshop data. Please try again.');
@@ -118,31 +124,36 @@ function AdminWorkshopsPage() {
    * @returns {Object} Capacity statistics
    */
   const getCapacityStats = useCallback(() => {
-    const totalCapacity = workshops.reduce(
-      (sum, w) => sum + (getEffectiveCapacity(w) || 0),
-      0
-    );
     const totalRegistered = workshops.reduce(
       (sum, w) => sum + (w.registeredCount || 0),
       0
     );
-    const totalAvailable = workshops.reduce((sum, w) => {
-      const remaining = getRemainingCapacity(w);
-      return sum + (remaining === Infinity ? 0 : remaining);
-    }, 0);
-    const fullWorkshops = workshops.filter(
-      (w) => getRemainingCapacity(w) === 0
-    ).length;
 
     return {
-      totalCapacity,
+      totalCapacity: conferenceCapacity,
       totalRegistered,
-      totalAvailable,
-      fullWorkshops,
     };
-  }, [workshops, getEffectiveCapacity, getRemainingCapacity]);
+  }, [workshops, conferenceCapacity]);
 
   const stats = getCapacityStats();
+
+  /**
+   * Opens the attendees modal for a workshop
+   *
+   * @param {Object} workshop - Workshop to view attendees for
+   */
+  const handleViewAttendees = (workshop) => {
+    setSelectedWorkshop(workshop);
+    setIsAttendeesModalOpen(true);
+  };
+
+  /**
+   * Closes the attendees modal
+   */
+  const handleCloseAttendeesModal = () => {
+    setIsAttendeesModalOpen(false);
+    setSelectedWorkshop(null);
+  };
 
   return (
     <AdminLayout>
@@ -183,7 +194,7 @@ function AdminWorkshopsPage() {
         <div className={styles.statsGrid}>
           <div className={styles.statCard}>
             <div className={styles.statIcon}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ color: 'white' }}>
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -198,43 +209,17 @@ function AdminWorkshopsPage() {
 
           <div className={styles.statCard}>
             <div className={styles.statIcon}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ color: 'white' }}>
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
               </svg>
             </div>
             <div className={styles.statContent}>
-              <div className={styles.statValue}>{stats.totalCapacity}</div>
+              <div className={styles.statValue}>{stats.totalCapacity ?? '∞'}</div>
               <div className={styles.statLabel}>Total Capacity</div>
             </div>
           </div>
 
-          <div className={styles.statCard}>
-            <div className={styles.statIcon}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
-            </div>
-            <div className={styles.statContent}>
-              <div className={styles.statValue}>{stats.totalAvailable}</div>
-              <div className={styles.statLabel}>Available Spots</div>
-            </div>
-          </div>
-
-          <div className={styles.statCard}>
-            <div className={styles.statIcon}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-              </svg>
-            </div>
-            <div className={styles.statContent}>
-              <div className={styles.statValue}>{stats.fullWorkshops}</div>
-              <div className={styles.statLabel}>Full Workshops</div>
-            </div>
-          </div>
         </div>
       )}
 
@@ -258,6 +243,7 @@ function AdminWorkshopsPage() {
                 <th>Registered</th>
                 <th>Available</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -306,6 +292,21 @@ function AdminWorkshopsPage() {
                         )}
                       </div>
                     </td>
+                    <td>
+                      <button
+                        className={styles.viewAttendeesButton}
+                        onClick={() => handleViewAttendees(workshop)}
+                        title="View attendees"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                          <circle cx="9" cy="7" r="4" />
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        View Attendees
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -327,6 +328,14 @@ function AdminWorkshopsPage() {
           <p>There are no published workshops at this time.</p>
         </div>
       )}
+
+      {/* Workshop Attendees Modal */}
+      <WorkshopAttendeesModal
+        isOpen={isAttendeesModalOpen}
+        onClose={handleCloseAttendeesModal}
+        workshop={selectedWorkshop}
+        effectiveCapacity={selectedWorkshop ? getEffectiveCapacity(selectedWorkshop) : null}
+      />
     </AdminLayout>
   );
 }

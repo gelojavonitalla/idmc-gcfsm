@@ -5,7 +5,8 @@
  * @module pages/admin/AdminRegistrationsPage
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import {
   AdminLayout,
   RegistrationsTable,
@@ -70,6 +71,43 @@ function AdminRegistrationsPage() {
     waitlistOffered: 0,
     waitlistExpired: 0,
   });
+
+  // Sync Stats state
+  const [isSyncingStats, setIsSyncingStats] = useState(false);
+  const [syncSuccess, setSyncSuccess] = useState(false);
+  const [syncError, setSyncError] = useState(null);
+
+  // Refs for dropdown click-outside handling
+  const exportDropdownRef = useRef(null);
+  const workshopDropdownRef = useRef(null);
+
+  /**
+   * Handles click-outside to close dropdowns
+   */
+  useEffect(() => {
+    /**
+     * Closes dropdowns when clicking outside
+     *
+     * @param {MouseEvent} event - The mouse event
+     */
+    function handleClickOutside(event) {
+      if (
+        exportDropdownRef.current &&
+        !exportDropdownRef.current.contains(event.target)
+      ) {
+        setShowExportMenu(false);
+      }
+      if (
+        workshopDropdownRef.current &&
+        !workshopDropdownRef.current.contains(event.target)
+      ) {
+        setShowWorkshopExportMenu(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   /**
    * Fetches status counts from the database
@@ -299,6 +337,35 @@ function AdminRegistrationsPage() {
   };
 
   /**
+   * Triggers manual stats sync via Cloud Function
+   * Recalculates workshop counts and other stats from registrations
+   */
+  const handleSyncStats = async () => {
+    setIsSyncingStats(true);
+    setSyncError(null);
+    setSyncSuccess(false);
+
+    try {
+      const functions = getFunctions(undefined, 'asia-southeast1');
+      const triggerSync = httpsCallable(functions, 'triggerStatsSync');
+      await triggerSync();
+
+      // Refresh data after sync
+      await fetchStatusCounts();
+      await fetchRegistrations();
+
+      setSyncSuccess(true);
+      setTimeout(() => setSyncSuccess(false), 3000);
+    } catch (err) {
+      console.error('Failed to sync stats:', err);
+      setSyncError('Failed to sync stats. Please try again.');
+      setTimeout(() => setSyncError(null), 5000);
+    } finally {
+      setIsSyncingStats(false);
+    }
+  };
+
+  /**
    * Handles exporting all registrations from database to CSV
    * Fetches all records from the database and exports them
    */
@@ -446,7 +513,7 @@ function AdminRegistrationsPage() {
           </p>
         </div>
         <div className={styles.headerActions}>
-          <div className={styles.dropdownWrapper}>
+          <div className={styles.dropdownWrapper} ref={exportDropdownRef}>
             <button
               className={styles.exportButton}
               onClick={() => setShowExportMenu((prev) => !prev)}
@@ -481,7 +548,7 @@ function AdminRegistrationsPage() {
               </div>
             )}
           </div>
-          <div className={styles.dropdownWrapper}>
+          <div className={styles.dropdownWrapper} ref={workshopDropdownRef}>
             <button
               className={styles.workshopExportButton}
               onClick={() => setShowWorkshopExportMenu((prev) => !prev)}
@@ -529,8 +596,29 @@ function AdminRegistrationsPage() {
             </svg>
             {isLoading ? 'Loading...' : 'Refresh'}
           </button>
+          <button
+            className={`${styles.syncButton} ${syncSuccess ? styles.syncSuccess : ''}`}
+            onClick={handleSyncStats}
+            disabled={isSyncingStats || isLoading}
+            title="Recalculate workshop counts and other stats"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+            </svg>
+            {isSyncingStats ? 'Syncing...' : syncSuccess ? 'Synced!' : 'Sync Stats'}
+          </button>
         </div>
       </div>
+
+      {/* Sync Error Banner */}
+      {syncError && (
+        <div className={styles.errorBanner} role="alert">
+          {syncError}
+          <button onClick={() => setSyncError(null)} aria-label="Dismiss error">
+            &times;
+          </button>
+        </div>
+      )}
 
       {/* Error Banner */}
       {error && (

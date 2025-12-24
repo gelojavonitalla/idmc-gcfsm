@@ -45,6 +45,16 @@ const DEFAULT_SETTINGS = {
     enabled: false,          // Whether waitlisting is allowed when conference is full
     capacity: null,          // null = unlimited waitlist, number = max waitlist slots
   },
+  refundPolicy: {
+    enabled: true,           // Whether refunds are allowed at all
+    fullRefundDays: 14,      // Days before event for full refund eligibility (null = no full refund)
+    partialRefundDays: 7,    // Days before event for partial refund (null = no partial refund window)
+    partialRefundPercent: 50, // Percentage refunded during partial window
+    noRefundMessage: 'Refunds are not available for this event.',
+    fullRefundMessage: 'Full refund available until {days} days before the event.',
+    partialRefundMessage: 'Partial refund ({percent}%) available until {days} days before the event.',
+    lateRefundMessage: 'Cancellations within {days} days of the event are not eligible for refund.',
+  },
   venue: {
     name: 'GCF South Metro',
     address: 'Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines',

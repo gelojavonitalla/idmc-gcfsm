@@ -108,15 +108,33 @@ const cfLogger = {
         error?: Error | unknown,
         data?: Record<string, unknown>
       ) => {
-        logger.error({
+        const logEntry: Record<string, unknown> = {
           ...formatMessage(message),
-          error: error instanceof Error ? {
-            name: error.name,
-            message: error.message,
-            stack: error.stack,
-          } : error,
           ...data,
-        });
+        };
+
+        // Only add error property if an error was provided
+        if (error !== undefined) {
+          if (error instanceof Error) {
+            logEntry.error = {
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            };
+          } else {
+            // For non-Error objects, safely convert to string to avoid
+            // serialization issues with circular refs or non-serializable props
+            try {
+              logEntry.error = typeof error === "object" ?
+                JSON.parse(JSON.stringify(error)) :
+                String(error);
+            } catch {
+              logEntry.error = String(error);
+            }
+          }
+        }
+
+        logger.error(logEntry);
       },
 
       /**
@@ -299,6 +317,7 @@ const REGISTRATION_STATUS = {
   PENDING_VERIFICATION: "pending_verification",
   CONFIRMED: "confirmed",
   CANCELLED: "cancelled",
+  REFUNDED: "refunded",
   WAITLISTED: "waitlisted",
   WAITLIST_OFFERED: "waitlist_offered",
   WAITLIST_EXPIRED: "waitlist_expired",
@@ -1136,6 +1155,21 @@ interface AttendeeWithQR {
 }
 
 /**
+ * Formats a 24-hour time string (HH:MM) to 12-hour format with AM/PM
+ *
+ * @param {string} time24 - Time in HH:MM format (e.g., "07:00", "14:30")
+ * @return {string} Formatted time string (e.g., "7:00 AM", "2:30 PM")
+ */
+function formatEventTime(time24: string): string {
+  if (!time24) return "";
+  const [hoursStr, minutes] = time24.split(":");
+  const hours = parseInt(hoursStr, 10);
+  const period = hours >= 12 ? "PM" : "AM";
+  const hours12 = hours % 12 || 12;
+  return `${hours12}:${minutes} ${period}`;
+}
+
+/**
  * Generates the HTML email template for ticket/confirmation (primary attendee)
  * Includes all QR codes for the entire group
  *
@@ -1168,6 +1202,7 @@ function generateTicketEmailHtml(
   settings: {
     title: string;
     startDate: string;
+    startTime?: string;
     venue: {
       name: string;
       address: string;
@@ -1285,6 +1320,9 @@ function generateTicketEmailHtml(
                       <strong>Date:</strong> ${eventDate}
                     </p>
                     <p style="margin: 0 0 4px; color: #166534; font-size: 14px;">
+                      <strong>Time:</strong> ${formatEventTime(settings.startTime || "")}
+                    </p>
+                    <p style="margin: 0 0 4px; color: #166534; font-size: 14px;">
                       <strong>Venue:</strong> ${settings.venue.name}
                     </p>
                     <p style="margin: 0; color: #166534; font-size: 14px;">
@@ -1358,6 +1396,7 @@ function generateIndividualTicketEmailHtml(
   settings: {
     title: string;
     startDate: string;
+    startTime?: string;
     venue: {
       name: string;
       address: string;
@@ -1449,6 +1488,9 @@ function generateIndividualTicketEmailHtml(
                     </p>
                     <p style="margin: 0 0 4px; color: #166534; font-size: 14px;">
                       <strong>Date:</strong> ${eventDate}
+                    </p>
+                    <p style="margin: 0 0 4px; color: #166534; font-size: 14px;">
+                      <strong>Time:</strong> ${formatEventTime(settings.startTime || "")}
                     </p>
                     <p style="margin: 0 0 4px; color: #166534; font-size: 14px;">
                       <strong>Venue:</strong> ${settings.venue.name}
@@ -2023,6 +2065,7 @@ export const onPaymentConfirmed = onDocumentUpdated(
     const defaultSettings = {
       title: "IDMC 2026",
       startDate: "2026-03-28",
+      startTime: "07:00",
       venue: {
         name: "GCF South Metro",
         address: "Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines",
@@ -2047,6 +2090,7 @@ export const onPaymentConfirmed = onDocumentUpdated(
         settings = {
           title: data.title || defaultSettings.title,
           startDate: data.startDate || defaultSettings.startDate,
+          startTime: data.startTime || defaultSettings.startTime,
           venue: {
             name: data.venue?.name || defaultSettings.venue.name,
             address: data.venue?.address || defaultSettings.venue.address,
@@ -4206,12 +4250,18 @@ export const syncConferenceStats = onSchedule(
         }
 
         // Count workshop selections for primary attendee
-        if (data.primaryAttendee?.workshopSelections) {
-          data.primaryAttendee.workshopSelections.forEach(
-            (selection: {sessionId?: string}) => {
-              if (selection.sessionId) {
-                workshopCounts[selection.sessionId] =
-                  (workshopCounts[selection.sessionId] || 0) + 1;
+        // Support both old field name (workshopSelection) and new (workshopSelections)
+        const primaryWorkshops = data.primaryAttendee?.workshopSelections ||
+          (data.primaryAttendee?.workshopSelection ?
+            [data.primaryAttendee.workshopSelection] : []);
+        if (Array.isArray(primaryWorkshops)) {
+          primaryWorkshops.forEach(
+            (selection: {sessionId?: string} | string) => {
+              const sessionId = typeof selection === "string" ?
+                selection : selection?.sessionId;
+              if (sessionId) {
+                workshopCounts[sessionId] =
+                  (workshopCounts[sessionId] || 0) + 1;
               }
             }
           );
@@ -4220,13 +4270,22 @@ export const syncConferenceStats = onSchedule(
         // Count workshop selections for additional attendees
         if (data.additionalAttendees) {
           data.additionalAttendees.forEach(
-            (attendee: {workshopSelections?: Array<{sessionId?: string}>}) => {
-              if (attendee.workshopSelections) {
-                attendee.workshopSelections.forEach(
-                  (selection: {sessionId?: string}) => {
-                    if (selection.sessionId) {
-                      workshopCounts[selection.sessionId] =
-                        (workshopCounts[selection.sessionId] || 0) + 1;
+            (attendee: {
+              workshopSelections?: Array<{sessionId?: string}>;
+              workshopSelection?: string | {sessionId?: string};
+            }) => {
+              // Support both old field name and new
+              const attendeeWorkshops = attendee.workshopSelections ||
+                (attendee.workshopSelection ?
+                  [attendee.workshopSelection] : []);
+              if (Array.isArray(attendeeWorkshops)) {
+                attendeeWorkshops.forEach(
+                  (selection: {sessionId?: string} | string) => {
+                    const sessionId = typeof selection === "string" ?
+                      selection : selection?.sessionId;
+                    if (sessionId) {
+                      workshopCounts[sessionId] =
+                        (workshopCounts[sessionId] || 0) + 1;
                     }
                   }
                 );
@@ -4479,16 +4538,29 @@ export const onRegistrationStatsUpdate = onDocumentUpdated(
 
       // Update each workshop's registered count
       let workshopsUpdated = 0;
+      const skippedSessions: string[] = [];
       if (allWorkshopSelections.length > 0) {
         const workshopDelta = isConfirmed ? 1 : -1;
         const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
 
         for (const sessionId of allWorkshopSelections) {
-          await sessionsCollection.doc(sessionId).update({
-            registeredCount: FieldValue.increment(workshopDelta),
-            updatedAt: FieldValue.serverTimestamp(),
+          const sessionDoc = await sessionsCollection.doc(sessionId).get();
+          if (sessionDoc.exists) {
+            await sessionsCollection.doc(sessionId).update({
+              registeredCount: FieldValue.increment(workshopDelta),
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+            workshopsUpdated++;
+          } else {
+            skippedSessions.push(sessionId);
+          }
+        }
+
+        if (skippedSessions.length > 0) {
+          log.warn("Skipped non-existent sessions during workshop count update", {
+            skippedSessions,
+            count: skippedSessions.length,
           });
-          workshopsUpdated++;
         }
 
         log.info("Updated workshop counts", {
@@ -4642,12 +4714,18 @@ export const triggerStatsSync = onCall(
         }
 
         // Count workshop selections
-        if (data.primaryAttendee?.workshopSelections) {
-          data.primaryAttendee.workshopSelections.forEach(
-            (selection: {sessionId?: string}) => {
-              if (selection.sessionId) {
-                workshopCounts[selection.sessionId] =
-                  (workshopCounts[selection.sessionId] || 0) + 1;
+        // Support both old field name (workshopSelection) and new (workshopSelections)
+        const primaryWorkshops = data.primaryAttendee?.workshopSelections ||
+          (data.primaryAttendee?.workshopSelection ?
+            [data.primaryAttendee.workshopSelection] : []);
+        if (Array.isArray(primaryWorkshops)) {
+          primaryWorkshops.forEach(
+            (selection: {sessionId?: string} | string) => {
+              const sessionId = typeof selection === "string" ?
+                selection : selection?.sessionId;
+              if (sessionId) {
+                workshopCounts[sessionId] =
+                  (workshopCounts[sessionId] || 0) + 1;
               }
             }
           );
@@ -4655,13 +4733,22 @@ export const triggerStatsSync = onCall(
 
         if (data.additionalAttendees) {
           data.additionalAttendees.forEach(
-            (attendee: {workshopSelections?: Array<{sessionId?: string}>}) => {
-              if (attendee.workshopSelections) {
-                attendee.workshopSelections.forEach(
-                  (selection: {sessionId?: string}) => {
-                    if (selection.sessionId) {
-                      workshopCounts[selection.sessionId] =
-                        (workshopCounts[selection.sessionId] || 0) + 1;
+            (attendee: {
+              workshopSelections?: Array<{sessionId?: string}>;
+              workshopSelection?: string | {sessionId?: string};
+            }) => {
+              // Support both old field name and new
+              const attendeeWorkshops = attendee.workshopSelections ||
+                (attendee.workshopSelection ?
+                  [attendee.workshopSelection] : []);
+              if (Array.isArray(attendeeWorkshops)) {
+                attendeeWorkshops.forEach(
+                  (selection: {sessionId?: string} | string) => {
+                    const sessionId = typeof selection === "string" ?
+                      selection : selection?.sessionId;
+                    if (sessionId) {
+                      workshopCounts[sessionId] =
+                        (workshopCounts[sessionId] || 0) + 1;
                     }
                   }
                 );
@@ -4747,18 +4834,41 @@ export const triggerStatsSync = onCall(
       const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
       const batch = db.batch();
 
-      for (const [sessionId, count] of Object.entries(workshopCounts)) {
-        const sessionRef = sessionsCollection.doc(sessionId);
-        batch.update(sessionRef, {
-          registeredCount: count,
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-      }
-
+      // First fetch all existing workshop sessions to avoid updating
+      // non-existent documents
       const allWorkshops = await sessionsCollection
         .where("sessionType", "==", "workshop")
         .get();
 
+      const existingSessionIds = new Set<string>();
+      allWorkshops.forEach((workshopDoc) => {
+        existingSessionIds.add(workshopDoc.id);
+      });
+
+      // Track orphaned session IDs for logging
+      const orphanedSessionIds: string[] = [];
+
+      for (const [sessionId, count] of Object.entries(workshopCounts)) {
+        if (existingSessionIds.has(sessionId)) {
+          const sessionRef = sessionsCollection.doc(sessionId);
+          batch.update(sessionRef, {
+            registeredCount: count,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        } else {
+          orphanedSessionIds.push(sessionId);
+        }
+      }
+
+      // Log warning for orphaned session IDs
+      if (orphanedSessionIds.length > 0) {
+        log.warn("Found registrations with non-existent session IDs", {
+          orphanedSessionIds,
+          count: orphanedSessionIds.length,
+        });
+      }
+
+      // Reset count for workshops that have no registrations
       allWorkshops.forEach((workshopDoc) => {
         if (!(workshopDoc.id in workshopCounts)) {
           batch.update(workshopDoc.ref, {

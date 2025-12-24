@@ -10,6 +10,8 @@ import {
   AdminLayout,
   SettingsForm,
   PricingTierManager,
+  RefundPolicySettings,
+  CapacitySettingsForm,
   FoodMenuManager,
   WhatToBringManager,
 } from '../../components/admin';
@@ -167,6 +169,28 @@ function AdminSettingsPage() {
           Pricing Tiers
         </button>
         <button
+          className={`${styles.tab} ${activeTab === 'refundPolicy' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('refundPolicy')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+          Refund Policy
+        </button>
+        <button
+          className={`${styles.tab} ${activeTab === 'capacity' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('capacity')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          Capacity
+        </button>
+        <button
           className={`${styles.tab} ${activeTab === 'foodMenu' ? styles.tabActive : ''}`}
           onClick={() => setActiveTab('foodMenu')}
         >
@@ -206,6 +230,20 @@ function AdminSettingsPage() {
             onCreate={handleCreateTier}
             onUpdate={handleUpdateTier}
             onDelete={handleDeleteTier}
+            isLoading={isLoading}
+          />
+        )}
+        {activeTab === 'refundPolicy' && (
+          <RefundPolicySettings
+            settings={settings}
+            onSave={handleSaveSettings}
+            isLoading={isLoading}
+          />
+        )}
+        {activeTab === 'capacity' && (
+          <CapacitySettingsForm
+            settings={settings}
+            onSave={handleSaveSettings}
             isLoading={isLoading}
           />
         )}

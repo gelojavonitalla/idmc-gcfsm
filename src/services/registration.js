@@ -611,7 +611,8 @@ export async function confirmPayment(registrationId, paymentDetails, adminId = n
 }
 
 /**
- * Cancels a registration
+ * Cancels a registration.
+ * Decrements workshop counts if the registration had incremented them.
  *
  * @param {string} registrationId - Registration ID
  * @param {string} reason - Cancellation reason
@@ -624,6 +625,12 @@ export async function cancelRegistration(registrationId, reason, cancelledBy, ad
   const registration = await getRegistrationById(registrationId);
   const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
 
+  // Check if this registration had workshop counts incremented
+  // Workshop counts are incremented for: regular registrations and WAITLIST_OFFERED
+  // Workshop counts are NOT incremented for: WAITLISTED (only)
+  const hadWorkshopCountsIncremented = registration &&
+    registration.status !== REGISTRATION_STATUS.WAITLISTED;
+
   await updateDoc(docRef, {
     status: REGISTRATION_STATUS.CANCELLED,
     'payment.status': REGISTRATION_STATUS.CANCELLED,
@@ -634,6 +641,24 @@ export async function cancelRegistration(registrationId, reason, cancelledBy, ad
     },
     updatedAt: serverTimestamp(),
   });
+
+  // Decrement workshop counts if they were previously incremented
+  if (hadWorkshopCountsIncremented && registration) {
+    const allWorkshopSelections = [
+      ...(registration.primaryAttendee?.workshopSelections || []),
+      ...(registration.additionalAttendees || []).flatMap((attendee) => attendee.workshopSelections || []),
+    ];
+
+    for (const selection of allWorkshopSelections) {
+      if (selection.sessionId) {
+        try {
+          await decrementWorkshopCount(selection.sessionId);
+        } catch (error) {
+          console.error(`Failed to decrement workshop count for ${selection.sessionId}:`, error);
+        }
+      }
+    }
+  }
 
   // Log the activity
   if (adminId && adminEmail) {
@@ -646,6 +671,161 @@ export async function cancelRegistration(registrationId, reason, cancelledBy, ad
       adminEmail,
     });
   }
+}
+
+/**
+ * Refunds a registration.
+ * Can only be applied to CANCELLED or CONFIRMED registrations.
+ * Tracks refund amount, reason, and processing details.
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {Object} refundDetails - Refund details
+ * @param {number} refundDetails.refundAmount - Amount refunded
+ * @param {string} refundDetails.reason - Reason for refund
+ * @param {string} refundDetails.refundMethod - How refund was processed (e.g., 'gcash', 'bank_transfer')
+ * @param {string} refundDetails.referenceNumber - Refund transaction reference
+ * @param {string} refundDetails.notes - Additional notes
+ * @param {string} adminId - Admin user ID performing the action
+ * @param {string} adminEmail - Admin email performing the action
+ * @returns {Promise<void>}
+ */
+export async function refundRegistration(registrationId, refundDetails, adminId = null, adminEmail = null) {
+  const registration = await getRegistrationById(registrationId);
+  if (!registration) {
+    throw new Error(REGISTRATION_ERROR_CODES.REGISTRATION_NOT_FOUND);
+  }
+
+  // Only allow refund from CANCELLED or CONFIRMED status
+  const refundableStatuses = [
+    REGISTRATION_STATUS.CANCELLED,
+    REGISTRATION_STATUS.CONFIRMED,
+  ];
+
+  if (!refundableStatuses.includes(registration.status)) {
+    throw new Error('Registration must be cancelled or confirmed to process a refund');
+  }
+
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  // If status was CONFIRMED, decrement workshop counts
+  if (registration.status === REGISTRATION_STATUS.CONFIRMED) {
+    const allWorkshopSelections = [
+      ...(registration.primaryAttendee?.workshopSelections || []),
+      ...(registration.additionalAttendees || []).flatMap((attendee) => attendee.workshopSelections || []),
+    ];
+
+    for (const selection of allWorkshopSelections) {
+      if (selection.sessionId) {
+        try {
+          await decrementWorkshopCount(selection.sessionId);
+        } catch (error) {
+          console.error(`Failed to decrement workshop count for ${selection.sessionId}:`, error);
+        }
+      }
+    }
+  }
+
+  await updateDoc(docRef, {
+    status: REGISTRATION_STATUS.REFUNDED,
+    'payment.status': REGISTRATION_STATUS.REFUNDED,
+    refund: {
+      amount: refundDetails.refundAmount || 0,
+      reason: refundDetails.reason,
+      method: refundDetails.refundMethod,
+      referenceNumber: refundDetails.referenceNumber || null,
+      notes: refundDetails.notes || null,
+      processedBy: adminEmail,
+      processedAt: serverTimestamp(),
+    },
+    updatedAt: serverTimestamp(),
+  });
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.REGISTRATION,
+      entityId: registrationId,
+      description: `Processed refund (₱${refundDetails.refundAmount || 0}) for registration: ${registration.primaryAttendee?.firstName || ''} ${registration.primaryAttendee?.lastName || registrationId}`,
+      adminId,
+      adminEmail,
+    });
+  }
+}
+
+/**
+ * Directly promotes a waitlisted registration to pending verification.
+ * Skips the WAITLIST_OFFERED step and allows immediate payment upload.
+ * Used when a slot becomes available and admin wants to fast-track a waitlisted registrant.
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {string} adminId - Admin user ID (null for system-triggered)
+ * @param {string} adminEmail - Admin email (null for system-triggered)
+ * @returns {Promise<Object>} Updated registration
+ */
+export async function promoteFromWaitlist(registrationId, adminId = null, adminEmail = null) {
+  const registration = await getRegistrationById(registrationId);
+  if (!registration) {
+    throw new Error(REGISTRATION_ERROR_CODES.REGISTRATION_NOT_FOUND);
+  }
+
+  // Only allow promotion from WAITLISTED or WAITLIST_EXPIRED status
+  const promotableStatuses = [
+    REGISTRATION_STATUS.WAITLISTED,
+    REGISTRATION_STATUS.WAITLIST_EXPIRED,
+  ];
+
+  if (!promotableStatuses.includes(registration.status)) {
+    throw new Error('Registration must be waitlisted or expired to promote');
+  }
+
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  // Calculate payment deadline (7 days from now)
+  const paymentDeadline = new Date();
+  paymentDeadline.setDate(paymentDeadline.getDate() + 7);
+
+  await updateDoc(docRef, {
+    status: REGISTRATION_STATUS.PENDING_PAYMENT,
+    'payment.status': REGISTRATION_STATUS.PENDING_PAYMENT,
+    paymentDeadline: paymentDeadline.toISOString(),
+    promotedFromWaitlistAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  // Increment workshop counts for all selected workshops
+  const allWorkshopSelections = [
+    ...(registration.primaryAttendee?.workshopSelections || []),
+    ...(registration.additionalAttendees || []).flatMap((attendee) => attendee.workshopSelections || []),
+  ];
+
+  for (const selection of allWorkshopSelections) {
+    if (selection.sessionId) {
+      try {
+        await incrementWorkshopCount(selection.sessionId);
+      } catch (error) {
+        console.error(`Failed to increment workshop count for ${selection.sessionId}:`, error);
+      }
+    }
+  }
+
+  // Log the activity
+  if (adminId && adminEmail) {
+    await logActivity({
+      type: ACTIVITY_TYPES.UPDATE,
+      entityType: ENTITY_TYPES.REGISTRATION,
+      entityId: registrationId,
+      description: `Promoted from waitlist to pending payment: ${registration.primaryAttendee?.firstName || ''} ${registration.primaryAttendee?.lastName || registrationId}`,
+      adminId,
+      adminEmail,
+    });
+  }
+
+  return {
+    ...registration,
+    status: REGISTRATION_STATUS.PENDING_PAYMENT,
+    paymentDeadline: paymentDeadline.toISOString(),
+  };
 }
 
 /**
@@ -852,6 +1032,34 @@ export async function incrementWorkshopCount(workshopId) {
 }
 
 /**
+ * Decrements workshop registered count atomically.
+ * Used when a registration is cancelled or waitlist offer expires.
+ *
+ * @param {string} workshopId - Workshop session ID
+ * @returns {Promise<void>}
+ */
+export async function decrementWorkshopCount(workshopId) {
+  if (!workshopId) {
+    return;
+  }
+
+  const workshopRef = doc(db, COLLECTIONS.SESSIONS, workshopId);
+
+  await runTransaction(db, async (transaction) => {
+    const workshopDoc = await transaction.get(workshopRef);
+    if (workshopDoc.exists()) {
+      const currentCount = workshopDoc.data().registeredCount || 0;
+      // Don't go below 0
+      const newCount = Math.max(0, currentCount - 1);
+      transaction.update(workshopRef, {
+        registeredCount: newCount,
+        updatedAt: serverTimestamp(),
+      });
+    }
+  });
+}
+
+/**
  * Gets the total number of waitlisted registrations.
  * Counts registrations with status WAITLISTED or WAITLIST_OFFERED.
  *
@@ -872,6 +1080,28 @@ export async function getWaitlistCount() {
     return snapshot.size;
   } catch (error) {
     console.error('Failed to get waitlist count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Gets the count of registrations with WAITLISTED status only (excluding WAITLIST_OFFERED).
+ * Used for calculating accurate waitlist position for new registrants.
+ *
+ * @returns {Promise<number>} Count of WAITLISTED registrations only
+ */
+export async function getWaitlistedOnlyCount() {
+  try {
+    const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+    const waitlistQuery = query(
+      registrationsRef,
+      where('status', '==', REGISTRATION_STATUS.WAITLISTED)
+    );
+
+    const snapshot = await getDocs(waitlistQuery);
+    return snapshot.size;
+  } catch (error) {
+    console.error('Failed to get waitlisted only count:', error);
     return 0;
   }
 }
@@ -1101,6 +1331,22 @@ export async function offerSlotToWaitlistedRegistration(
     updatedAt: serverTimestamp(),
   });
 
+  // Increment workshop counts for all selected workshops
+  const allWorkshopSelections = [
+    ...(registration.primaryAttendee?.workshopSelections || []),
+    ...(registration.additionalAttendees || []).flatMap((attendee) => attendee.workshopSelections || []),
+  ];
+
+  for (const selection of allWorkshopSelections) {
+    if (selection.sessionId) {
+      try {
+        await incrementWorkshopCount(selection.sessionId);
+      } catch (error) {
+        console.error(`Failed to increment workshop count for ${selection.sessionId}:`, error);
+      }
+    }
+  }
+
   // Log the activity
   if (adminId && adminEmail) {
     await logActivity({
@@ -1133,11 +1379,13 @@ export async function getNextWaitlistedRegistration() {
 
 /**
  * Marks a waitlist offer as expired and optionally promotes the next person.
+ * Decrements workshop counts that were incremented when the offer was made.
  *
  * @param {string} registrationId - Registration ID with expired offer
  * @returns {Promise<void>}
  */
 export async function expireWaitlistOffer(registrationId) {
+  const registration = await getRegistrationById(registrationId);
   const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
 
   await updateDoc(docRef, {
@@ -1145,6 +1393,24 @@ export async function expireWaitlistOffer(registrationId) {
     'payment.status': REGISTRATION_STATUS.WAITLIST_EXPIRED,
     updatedAt: serverTimestamp(),
   });
+
+  // Decrement workshop counts for all selected workshops
+  if (registration) {
+    const allWorkshopSelections = [
+      ...(registration.primaryAttendee?.workshopSelections || []),
+      ...(registration.additionalAttendees || []).flatMap((attendee) => attendee.workshopSelections || []),
+    ];
+
+    for (const selection of allWorkshopSelections) {
+      if (selection.sessionId) {
+        try {
+          await decrementWorkshopCount(selection.sessionId);
+        } catch (error) {
+          console.error(`Failed to decrement workshop count for ${selection.sessionId}:`, error);
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -1258,7 +1524,7 @@ export async function checkRegistrationAvailability(settings, attendeeCount = 1)
     };
   }
 
-  // Check waitlist capacity
+  // Check waitlist capacity (includes both WAITLISTED and WAITLIST_OFFERED)
   const waitlistCount = await getWaitlistCount();
 
   if (waitlistCapacity && waitlistCount >= waitlistCapacity) {
@@ -1269,11 +1535,99 @@ export async function checkRegistrationAvailability(settings, attendeeCount = 1)
     };
   }
 
+  // Get count of only WAITLISTED registrations for accurate position calculation
+  // WAITLIST_OFFERED registrations are not counted as they are being processed
+  const waitlistedOnlyCount = await getWaitlistedOnlyCount();
+
   // Waitlist is available
   return {
     canRegister: true,
     isWaitlist: true,
-    waitlistPosition: waitlistCount + 1,
+    waitlistPosition: waitlistedOnlyCount + 1,
     message: 'The conference is full, but you can join the waitlist.',
   };
+}
+
+/**
+ * Gets all attendees registered for a specific workshop.
+ * Searches both primary attendees and additional attendees for workshop selections
+ * matching the given workshop ID.
+ *
+ * @param {string} workshopId - The workshop session ID to search for
+ * @returns {Promise<Array>} Array of attendee objects with registration info
+ */
+export async function getWorkshopAttendees(workshopId) {
+  if (!workshopId) {
+    return [];
+  }
+
+  const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+  const confirmedQuery = query(
+    registrationsRef,
+    where('status', '==', REGISTRATION_STATUS.CONFIRMED)
+  );
+
+  const snapshot = await getDocs(confirmedQuery);
+  const attendees = [];
+
+  snapshot.docs.forEach((docSnap) => {
+    const registration = docSnap.data();
+    const registrationId = docSnap.id;
+
+    // Check primary attendee's workshop selections
+    const primarySelections = registration.primaryAttendee?.workshopSelections || [];
+    const primaryHasWorkshop = primarySelections.some(
+      (selection) => selection.sessionId === workshopId
+    );
+
+    if (primaryHasWorkshop) {
+      attendees.push({
+        registrationId,
+        shortCode: registration.shortCode,
+        firstName: registration.primaryAttendee?.firstName || '',
+        lastName: registration.primaryAttendee?.lastName || '',
+        email: registration.primaryAttendee?.email || '',
+        cellphone: registration.primaryAttendee?.cellphone || '',
+        church: registration.church,
+        ministryRole: registration.primaryAttendee?.ministryRole || '',
+        category: registration.primaryAttendee?.category || '',
+        checkedIn: registration.checkedIn || false,
+        isPrimary: true,
+      });
+    }
+
+    // Check additional attendees' workshop selections
+    const additionalAttendees = registration.additionalAttendees || [];
+    additionalAttendees.forEach((attendee, index) => {
+      const attendeeSelections = attendee.workshopSelections || [];
+      const hasWorkshop = attendeeSelections.some(
+        (selection) => selection.sessionId === workshopId
+      );
+
+      if (hasWorkshop) {
+        attendees.push({
+          registrationId,
+          shortCode: registration.shortCode,
+          firstName: attendee.firstName || '',
+          lastName: attendee.lastName || '',
+          email: attendee.email || '',
+          cellphone: attendee.cellphone || '',
+          church: registration.church,
+          ministryRole: attendee.ministryRole || '',
+          category: attendee.category || '',
+          checkedIn: registration.additionalAttendeesCheckedIn?.[index] || false,
+          isPrimary: false,
+        });
+      }
+    });
+  });
+
+  // Sort by last name, then first name
+  attendees.sort((a, b) => {
+    const lastNameCompare = a.lastName.localeCompare(b.lastName);
+    if (lastNameCompare !== 0) return lastNameCompare;
+    return a.firstName.localeCompare(b.firstName);
+  });
+
+  return attendees;
 }

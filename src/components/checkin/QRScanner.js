@@ -40,7 +40,16 @@ function QRScanner({ onScan, onError, isActive = true }) {
   const [userInitiated, setUserInitiated] = useState(false);
   const scannerRef = useRef(null);
   const isScanningRef = useRef(false);
+  const permissionRequestedRef = useRef(false);
+  const onScanRef = useRef(onScan);
+  const onErrorRef = useRef(onError);
   const scannerElementId = 'qr-scanner-container';
+
+  // Keep refs updated with latest callbacks
+  useEffect(() => {
+    onScanRef.current = onScan;
+    onErrorRef.current = onError;
+  }, [onScan, onError]);
 
   /**
    * Starts the QR code scanning
@@ -55,8 +64,8 @@ function QRScanner({ onScan, onError, isActive = true }) {
         cameraId,
         SCANNER_CONFIG,
         (decodedText) => {
-          if (onScan) {
-            onScan(decodedText);
+          if (onScanRef.current) {
+            onScanRef.current(decodedText);
           }
         },
         () => {
@@ -70,7 +79,7 @@ function QRScanner({ onScan, onError, isActive = true }) {
       console.error('Failed to start scanner:', err);
       setError('Failed to start camera. Please try again.');
     }
-  }, [onScan]);
+  }, []);
 
   /**
    * Stops the QR code scanning
@@ -111,29 +120,37 @@ function QRScanner({ onScan, onError, isActive = true }) {
   /**
    * Requests camera permission and gets available cameras.
    * This is separated from scanner creation to avoid DOM timing issues.
+   *
+   * Note: We don't rely solely on the Permissions API for the 'denied' state
+   * because it can be unreliable (cached/stale) after the user resets or
+   * re-grants permission through browser settings. Instead, we always attempt
+   * to access the camera and let the actual camera access determine the result.
    */
   const requestCameraPermission = useCallback(async () => {
-    if (!isActive || !userInitiated) {
+    if (!isActive || !userInitiated || permissionRequestedRef.current) {
       return;
     }
 
-    try {
-      // Check if permission is already granted to avoid showing "requesting" UI
-      const existingPermission = await checkExistingPermission();
+    // Mark that we've started a permission request to prevent duplicate calls
+    permissionRequestedRef.current = true;
 
-      if (existingPermission === 'denied') {
-        // Permission was explicitly denied - show error immediately
-        setHasPermission(false);
-        setError('Camera access denied. Please allow camera access in your browser settings.');
-        return;
-      }
+    try {
+      // Check if permission is already granted to skip "requesting" UI
+      // Note: We only use this as a hint for 'granted' state, not for 'denied'
+      // because the Permissions API can report stale 'denied' state even after
+      // the user has reset/re-granted permission through browser settings
+      const existingPermission = await checkExistingPermission();
 
       if (existingPermission === 'granted') {
         // Permission already granted - set hasPermission immediately to skip "requesting" UI
         setHasPermission(true);
       }
+      // For 'denied' or 'prompt' states, we still try to access the camera
+      // because the user may have reset the permission since the last check
 
-      // Get available cameras (this triggers permission prompt only if not already granted)
+      // Get available cameras (this triggers permission prompt if needed)
+      // This is the authoritative check - it will fail with NotAllowedError
+      // if permission is actually denied
       const devices = await Html5Qrcode.getCameras();
 
       if (devices && devices.length > 0) {
@@ -158,11 +175,11 @@ function QRScanner({ onScan, onError, isActive = true }) {
       console.error('Camera permission error:', err);
       setHasPermission(false);
       setError(getCameraErrorMessage(err));
-      if (onError) {
-        onError(err);
+      if (onErrorRef.current) {
+        onErrorRef.current(err);
       }
     }
-  }, [isActive, userInitiated, onError, checkExistingPermission]);
+  }, [isActive, userInitiated, checkExistingPermission]);
 
   /**
    * Creates scanner instance and starts scanning.
@@ -195,11 +212,11 @@ function QRScanner({ onScan, onError, isActive = true }) {
     } catch (err) {
       console.error('Scanner initialization error:', err);
       setError(getCameraErrorMessage(err));
-      if (onError) {
-        onError(err);
+      if (onErrorRef.current) {
+        onErrorRef.current(err);
       }
     }
-  }, [isActive, hasPermission, cameras, currentCameraIndex, onError, startScanning]);
+  }, [isActive, hasPermission, cameras, currentCameraIndex, startScanning]);
 
   /**
    * Switches between available cameras
@@ -232,10 +249,11 @@ function QRScanner({ onScan, onError, isActive = true }) {
    * Handles user clicking Start Scanning button
    */
   const handleStartScanning = async () => {
-    setUserInitiated(true);
     setError(null);
     setIsReady(false);
-    await requestCameraPermission();
+    // Reset the permission requested flag for fresh start
+    permissionRequestedRef.current = false;
+    setUserInitiated(true);
   };
 
   /**
@@ -244,8 +262,10 @@ function QRScanner({ onScan, onError, isActive = true }) {
   const requestPermission = async () => {
     setError(null);
     setIsReady(false);
+    setHasPermission(null);
+    // Reset the permission requested flag to allow retry
+    permissionRequestedRef.current = false;
     setUserInitiated(true);
-    await requestCameraPermission();
   };
 
   /**

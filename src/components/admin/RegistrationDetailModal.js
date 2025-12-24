@@ -9,7 +9,6 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
   REGISTRATION_STATUS,
-  REGISTRATION_CATEGORY_LABELS,
   WORKSHOP_CATEGORY_LABELS,
   PAYMENT_METHODS,
 } from '../../constants';
@@ -20,8 +19,12 @@ import {
   ACTIVITY_TYPES,
   ACTIVITY_TYPE_LABELS,
   offerSlotToWaitlistedRegistration,
+  cancelRegistration,
+  refundRegistration,
+  promoteFromWaitlist,
 } from '../../services';
 import { useAdminAuth, useSettings } from '../../context';
+import { calculateRefundEligibility } from '../../utils/registration';
 import styles from './RegistrationDetailModal.module.css';
 
 /**
@@ -121,6 +124,36 @@ function getAttendeePhone(registration) {
 }
 
 /**
+ * Gets workshop display string from registration
+ *
+ * @param {Object} registration - Registration object
+ * @returns {string} Formatted workshop info
+ */
+function getWorkshopDisplay(registration) {
+  // Check for new format: primaryAttendee.workshopSelections (array)
+  const workshopSelections = registration.primaryAttendee?.workshopSelections;
+  if (workshopSelections && Array.isArray(workshopSelections) && workshopSelections.length > 0) {
+    // Display session titles joined by comma
+    const titles = workshopSelections
+      .map((selection) => selection.sessionTitle || selection.sessionId)
+      .filter(Boolean);
+    if (titles.length > 0) {
+      return titles.join(', ');
+    }
+  }
+
+  // Fallback to old format: workshopSelection (string category code)
+  if (registration.workshopSelection) {
+    return (
+      WORKSHOP_CATEGORY_LABELS[registration.workshopSelection] ||
+      registration.workshopSelection
+    );
+  }
+
+  return '—';
+}
+
+/**
  * Gets formatted church info from registration
  *
  * @param {Object} registration - Registration object
@@ -172,7 +205,24 @@ function RegistrationDetailModal({
   isUpdating,
 }) {
   const { admin } = useAdminAuth();
-  const { settings } = useSettings();
+  const { settings, pricingTiers } = useSettings();
+
+  /**
+   * Gets the display name for a category/pricing tier ID
+   *
+   * @param {string} categoryId - The category/tier ID
+   * @returns {string} The display name or the ID if not found
+   */
+  const getCategoryName = (categoryId) => {
+    if (!categoryId) return '—';
+    const tier = pricingTiers?.find((t) => t.id === categoryId);
+    return tier?.name || categoryId;
+  };
+
+  // Calculate refund eligibility based on settings
+  const refundEligibility = settings?.startDate
+    ? calculateRefundEligibility(settings.refundPolicy, settings.startDate)
+    : { eligible: true, type: 'full', percent: 100, message: '', daysUntilEvent: 0 };
 
   const [selectedStatus, setSelectedStatus] = useState(
     registration?.status || REGISTRATION_STATUS.PENDING_PAYMENT
@@ -198,6 +248,26 @@ function RegistrationDetailModal({
   const [notificationError, setNotificationError] = useState(null);
   const [notificationSuccess, setNotificationSuccess] = useState(false);
 
+  // Cancel registration states
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState(null);
+
+  // Refund states
+  const [showRefundForm, setShowRefundForm] = useState(false);
+  const [refundAmount, setRefundAmount] = useState(0);
+  const [refundReason, setRefundReason] = useState('');
+  const [refundMethod, setRefundMethod] = useState('');
+  const [refundReference, setRefundReference] = useState('');
+  const [isRefunding, setIsRefunding] = useState(false);
+  const [refundError, setRefundError] = useState(null);
+
+  // Promote from waitlist states
+  const [isPromoting, setIsPromoting] = useState(false);
+  const [promoteError, setPromoteError] = useState(null);
+  const [promoteSuccess, setPromoteSuccess] = useState(false);
+
   /**
    * Sync state when registration changes
    */
@@ -216,6 +286,20 @@ function RegistrationDetailModal({
       // Reset waitlist notification states
       setNotificationError(null);
       setNotificationSuccess(false);
+      // Reset cancel states
+      setShowCancelForm(false);
+      setCancelReason('');
+      setCancelError(null);
+      // Reset refund states
+      setShowRefundForm(false);
+      setRefundAmount(registration?.payment?.amountPaid || registration?.totalAmount || 0);
+      setRefundReason('');
+      setRefundMethod('');
+      setRefundReference('');
+      setRefundError(null);
+      // Reset promote states
+      setPromoteError(null);
+      setPromoteSuccess(false);
     }
   }, [registration]);
 
@@ -318,6 +402,118 @@ function RegistrationDetailModal({
       setNotificationError(error.message || 'Failed to send notification. Please try again.');
     } finally {
       setIsSendingNotification(false);
+    }
+  };
+
+  /**
+   * Handles cancelling a registration
+   */
+  const handleCancelRegistration = async () => {
+    if (!cancelReason.trim()) {
+      setCancelError('Please provide a cancellation reason');
+      return;
+    }
+
+    setIsCancelling(true);
+    setCancelError(null);
+
+    try {
+      await cancelRegistration(
+        registration.id,
+        cancelReason.trim(),
+        admin?.email || 'Admin',
+        admin?.uid,
+        admin?.email
+      );
+
+      // Refresh the registration data
+      if (onRefresh) {
+        await onRefresh();
+      }
+
+      setShowCancelForm(false);
+      setCancelReason('');
+    } catch (error) {
+      console.error('Failed to cancel registration:', error);
+      setCancelError(error.message || 'Failed to cancel registration. Please try again.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  /**
+   * Handles processing a refund
+   */
+  const handleRefund = async () => {
+    if (!refundReason.trim()) {
+      setRefundError('Please provide a refund reason');
+      return;
+    }
+    if (!refundMethod) {
+      setRefundError('Please select a refund method');
+      return;
+    }
+
+    setIsRefunding(true);
+    setRefundError(null);
+
+    try {
+      await refundRegistration(
+        registration.id,
+        {
+          refundAmount,
+          reason: refundReason.trim(),
+          refundMethod,
+          referenceNumber: refundReference.trim() || null,
+          notes: null,
+        },
+        admin?.uid,
+        admin?.email
+      );
+
+      // Refresh the registration data
+      if (onRefresh) {
+        await onRefresh();
+      }
+
+      setShowRefundForm(false);
+    } catch (error) {
+      console.error('Failed to process refund:', error);
+      setRefundError(error.message || 'Failed to process refund. Please try again.');
+    } finally {
+      setIsRefunding(false);
+    }
+  };
+
+  /**
+   * Handles promoting a waitlisted registration directly to pending payment
+   */
+  const handlePromoteFromWaitlist = async () => {
+    setIsPromoting(true);
+    setPromoteError(null);
+    setPromoteSuccess(false);
+
+    try {
+      await promoteFromWaitlist(
+        registration.id,
+        admin?.uid,
+        admin?.email
+      );
+
+      setPromoteSuccess(true);
+
+      // Refresh the registration data
+      if (onRefresh) {
+        await onRefresh();
+      }
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setPromoteSuccess(false), 5000);
+    } catch (error) {
+      console.error('Failed to promote from waitlist:', error);
+      setPromoteError(error.message || 'Failed to promote. Please try again.');
+    } finally {
+      setIsPromoting(false);
     }
   };
 
@@ -589,18 +785,13 @@ function RegistrationDetailModal({
               <div className={styles.infoItem}>
                 <span className={styles.label}>Category</span>
                 <span className={styles.value}>
-                  {REGISTRATION_CATEGORY_LABELS[registration.category] ||
-                    registration.category ||
-                    '—'}
+                  {getCategoryName(registration.primaryAttendee?.category)}
                 </span>
               </div>
               <div className={styles.infoItem}>
                 <span className={styles.label}>Workshop</span>
                 <span className={styles.value}>
-                  {registration.workshopSelection
-                    ? WORKSHOP_CATEGORY_LABELS[registration.workshopSelection] ||
-                      registration.workshopSelection
-                    : '—'}
+                  {getWorkshopDisplay(registration)}
                 </span>
               </div>
               <div className={styles.infoItem}>
@@ -1008,6 +1199,428 @@ function RegistrationDetailModal({
             </div>
           )}
 
+          {/* Waitlist Expired - Promote Action */}
+          {registration.status === REGISTRATION_STATUS.WAITLIST_EXPIRED && (
+            <div className={styles.section}>
+              <h3 className={styles.sectionTitle}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Waitlist Actions
+              </h3>
+
+              <div style={{
+                backgroundColor: '#f3f4f6',
+                borderRadius: '8px',
+                padding: '1rem',
+                marginBottom: '1rem',
+              }}>
+                <p style={{ margin: '0 0 0.5rem 0', color: '#4b5563', fontWeight: '500' }}>
+                  Offer Expired
+                </p>
+                <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem' }}>
+                  This waitlist offer has expired. You can promote this registration directly to
+                  pending payment status if a slot is available.
+                </p>
+              </div>
+
+              {promoteError && (
+                <div style={{
+                  backgroundColor: '#fee2e2',
+                  border: '1px solid #ef4444',
+                  borderRadius: '6px',
+                  padding: '0.75rem',
+                  marginBottom: '1rem',
+                  color: '#991b1b',
+                }}>
+                  {promoteError}
+                </div>
+              )}
+
+              {promoteSuccess && (
+                <div style={{
+                  backgroundColor: '#dcfce7',
+                  border: '1px solid #22c55e',
+                  borderRadius: '6px',
+                  padding: '0.75rem',
+                  marginBottom: '1rem',
+                  color: '#166534',
+                }}>
+                  Successfully promoted to pending payment!
+                </div>
+              )}
+
+              <button
+                onClick={handlePromoteFromWaitlist}
+                disabled={isPromoting || promoteSuccess}
+                style={{
+                  backgroundColor: isPromoting || promoteSuccess ? '#9ca3af' : '#059669',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: isPromoting || promoteSuccess ? 'not-allowed' : 'pointer',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '18px', height: '18px' }}>
+                  <path d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                </svg>
+                {isPromoting ? 'Promoting...' : 'Promote to Pending Payment'}
+              </button>
+            </div>
+          )}
+
+          {/* Cancelled Registration - Refund Action */}
+          {registration.status === REGISTRATION_STATUS.CANCELLED && (
+            <div className={styles.section}>
+              <h3 className={styles.sectionTitle}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                Process Refund
+              </h3>
+
+              {registration.cancellation && (
+                <div style={{
+                  backgroundColor: '#fee2e2',
+                  borderRadius: '8px',
+                  padding: '1rem',
+                  marginBottom: '1rem',
+                }}>
+                  <p style={{ margin: '0 0 0.5rem 0', color: '#991b1b', fontWeight: '500' }}>
+                    Cancelled
+                  </p>
+                  {registration.cancellation.reason && (
+                    <p style={{ margin: '0 0 0.5rem 0', color: '#6b7280', fontSize: '0.875rem' }}>
+                      <strong>Reason:</strong> {registration.cancellation.reason}
+                    </p>
+                  )}
+                  {registration.cancellation.cancelledAt && (
+                    <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem' }}>
+                      <strong>Date:</strong> {formatDate(registration.cancellation.cancelledAt)}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Refund Policy Info */}
+              <div style={{
+                backgroundColor: refundEligibility.eligible ? '#f0fdf4' : '#fef2f2',
+                borderRadius: '8px',
+                padding: '1rem',
+                marginBottom: '1rem',
+                border: `1px solid ${refundEligibility.eligible ? '#86efac' : '#fecaca'}`,
+              }}>
+                <p style={{
+                  margin: 0,
+                  color: refundEligibility.eligible ? '#166534' : '#991b1b',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                }}>
+                  {refundEligibility.type === 'full'
+                    ? 'Eligible for Full Refund (100%)'
+                    : refundEligibility.type === 'partial'
+                      ? `Eligible for Partial Refund (${refundEligibility.percent}%)`
+                      : 'Not Eligible for Refund'}
+                </p>
+                <p style={{
+                  margin: '0.25rem 0 0 0',
+                  color: '#6b7280',
+                  fontSize: '0.8rem',
+                }}>
+                  {refundEligibility.message}
+                </p>
+              </div>
+
+              {!showRefundForm ? (
+                <button
+                  onClick={() => setShowRefundForm(true)}
+                  style={{
+                    backgroundColor: '#6b7280',
+                    color: 'white',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '18px', height: '18px' }}>
+                    <path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  Process Refund
+                </button>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {refundError && (
+                    <div style={{
+                      backgroundColor: '#fee2e2',
+                      border: '1px solid #ef4444',
+                      borderRadius: '6px',
+                      padding: '0.75rem',
+                      color: '#991b1b',
+                    }}>
+                      {refundError}
+                    </div>
+                  )}
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Amount Paid</label>
+                    <input
+                      type="text"
+                      value={formatCurrency(registration.payment?.amountPaid || registration.totalAmount || 0)}
+                      disabled
+                      className={styles.input}
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Refund Amount <span className={styles.required}>*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={refundAmount}
+                      onChange={(e) => setRefundAmount(parseFloat(e.target.value) || 0)}
+                      placeholder="0.00"
+                      min="0"
+                      max={registration.payment?.amountPaid || registration.totalAmount || 0}
+                      step="0.01"
+                      className={styles.input}
+                      disabled={isRefunding}
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Refund Method <span className={styles.required}>*</span>
+                    </label>
+                    <select
+                      value={refundMethod}
+                      onChange={(e) => setRefundMethod(e.target.value)}
+                      className={styles.input}
+                      disabled={isRefunding}
+                    >
+                      <option value="">Select method</option>
+                      <option value="gcash">GCash</option>
+                      <option value="bank_transfer">Bank Transfer</option>
+                      <option value="cash">Cash</option>
+                    </select>
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Reference Number</label>
+                    <input
+                      type="text"
+                      value={refundReference}
+                      onChange={(e) => setRefundReference(e.target.value)}
+                      placeholder="Transaction reference (optional)"
+                      className={styles.input}
+                      disabled={isRefunding}
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Refund Reason <span className={styles.required}>*</span>
+                    </label>
+                    <textarea
+                      value={refundReason}
+                      onChange={(e) => setRefundReason(e.target.value)}
+                      placeholder="Enter reason for refund..."
+                      rows={3}
+                      className={styles.textarea}
+                      disabled={isRefunding}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => setShowRefundForm(false)}
+                      disabled={isRefunding}
+                      style={{
+                        backgroundColor: '#f3f4f6',
+                        color: '#374151',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '6px',
+                        border: '1px solid #d1d5db',
+                        cursor: isRefunding ? 'not-allowed' : 'pointer',
+                        fontWeight: '500',
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleRefund}
+                      disabled={isRefunding || !refundReason.trim() || !refundMethod}
+                      style={{
+                        backgroundColor: isRefunding || !refundReason.trim() || !refundMethod ? '#9ca3af' : '#059669',
+                        color: 'white',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '6px',
+                        border: 'none',
+                        cursor: isRefunding || !refundReason.trim() || !refundMethod ? 'not-allowed' : 'pointer',
+                        fontWeight: '500',
+                      }}
+                    >
+                      {isRefunding ? 'Processing...' : 'Confirm Refund'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Cancel Registration Action - For active registrations */}
+          {![
+            REGISTRATION_STATUS.CANCELLED,
+            REGISTRATION_STATUS.REFUNDED,
+            REGISTRATION_STATUS.WAITLIST_EXPIRED,
+          ].includes(registration.status) && (
+            <div className={styles.section}>
+              <h3 className={styles.sectionTitle}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="15" y1="9" x2="9" y2="15" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
+                </svg>
+                Cancel Registration
+              </h3>
+
+              {!showCancelForm ? (
+                <button
+                  onClick={() => setShowCancelForm(true)}
+                  style={{
+                    backgroundColor: '#dc2626',
+                    color: 'white',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '18px', height: '18px' }}>
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="15" y1="9" x2="9" y2="15" />
+                    <line x1="9" y1="9" x2="15" y2="15" />
+                  </svg>
+                  Cancel Registration
+                </button>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {cancelError && (
+                    <div style={{
+                      backgroundColor: '#fee2e2',
+                      border: '1px solid #ef4444',
+                      borderRadius: '6px',
+                      padding: '0.75rem',
+                      color: '#991b1b',
+                    }}>
+                      {cancelError}
+                    </div>
+                  )}
+
+                  <div style={{
+                    backgroundColor: '#fef3c7',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                  }}>
+                    <p style={{ margin: 0, color: '#92400e', fontSize: '0.875rem' }}>
+                      This will cancel the registration and decrement workshop counts if applicable.
+                      This action can be followed by processing a refund.
+                    </p>
+                  </div>
+
+                  {/* Refund Policy Warning */}
+                  <div style={{
+                    backgroundColor: refundEligibility.eligible ? '#dcfce7' : '#fee2e2',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    border: `1px solid ${refundEligibility.eligible ? '#22c55e' : '#ef4444'}`,
+                  }}>
+                    <p style={{
+                      margin: 0,
+                      color: refundEligibility.eligible ? '#166534' : '#991b1b',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                    }}>
+                      Refund Eligibility: {refundEligibility.type === 'full' ? 'Full Refund' : refundEligibility.type === 'partial' ? `Partial Refund (${refundEligibility.percent}%)` : 'No Refund'}
+                    </p>
+                    <p style={{
+                      margin: '0.25rem 0 0 0',
+                      color: refundEligibility.eligible ? '#166534' : '#991b1b',
+                      fontSize: '0.8rem',
+                    }}>
+                      {refundEligibility.message} ({refundEligibility.daysUntilEvent} days until event)
+                    </p>
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Cancellation Reason <span className={styles.required}>*</span>
+                    </label>
+                    <textarea
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      placeholder="Enter reason for cancellation..."
+                      rows={3}
+                      className={styles.textarea}
+                      disabled={isCancelling}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => {
+                        setShowCancelForm(false);
+                        setCancelReason('');
+                        setCancelError(null);
+                      }}
+                      disabled={isCancelling}
+                      style={{
+                        backgroundColor: '#f3f4f6',
+                        color: '#374151',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '6px',
+                        border: '1px solid #d1d5db',
+                        cursor: isCancelling ? 'not-allowed' : 'pointer',
+                        fontWeight: '500',
+                      }}
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={handleCancelRegistration}
+                      disabled={isCancelling || !cancelReason.trim()}
+                      style={{
+                        backgroundColor: isCancelling || !cancelReason.trim() ? '#9ca3af' : '#dc2626',
+                        color: 'white',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '6px',
+                        border: 'none',
+                        cursor: isCancelling || !cancelReason.trim() ? 'not-allowed' : 'pointer',
+                        fontWeight: '500',
+                      }}
+                    >
+                      {isCancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Activity History Section */}
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>
@@ -1103,8 +1716,7 @@ function RegistrationDetailModal({
                       </span>
                       <span className={styles.attendeeEmail}>{attendee.email}</span>
                       <span className={styles.attendeeCategory}>
-                        {REGISTRATION_CATEGORY_LABELS[attendee.category] ||
-                          attendee.category}
+                        {getCategoryName(attendee.category)}
                       </span>
                     </div>
                   ))}
@@ -1198,6 +1810,13 @@ RegistrationDetailModal.propTypes = {
       phone: PropTypes.string,
       church: PropTypes.string, // Legacy format
       ministryRole: PropTypes.string,
+      workshopSelections: PropTypes.arrayOf(
+        PropTypes.shape({
+          sessionId: PropTypes.string,
+          sessionTitle: PropTypes.string,
+          timeSlot: PropTypes.string,
+        })
+      ),
     }),
     firstName: PropTypes.string,
     lastName: PropTypes.string,
