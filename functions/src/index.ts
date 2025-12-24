@@ -4206,12 +4206,18 @@ export const syncConferenceStats = onSchedule(
         }
 
         // Count workshop selections for primary attendee
-        if (data.primaryAttendee?.workshopSelections) {
-          data.primaryAttendee.workshopSelections.forEach(
-            (selection: {sessionId?: string}) => {
-              if (selection.sessionId) {
-                workshopCounts[selection.sessionId] =
-                  (workshopCounts[selection.sessionId] || 0) + 1;
+        // Support both old field name (workshopSelection) and new (workshopSelections)
+        const primaryWorkshops = data.primaryAttendee?.workshopSelections ||
+          (data.primaryAttendee?.workshopSelection ?
+            [data.primaryAttendee.workshopSelection] : []);
+        if (Array.isArray(primaryWorkshops)) {
+          primaryWorkshops.forEach(
+            (selection: {sessionId?: string} | string) => {
+              const sessionId = typeof selection === "string" ?
+                selection : selection?.sessionId;
+              if (sessionId) {
+                workshopCounts[sessionId] =
+                  (workshopCounts[sessionId] || 0) + 1;
               }
             }
           );
@@ -4220,13 +4226,22 @@ export const syncConferenceStats = onSchedule(
         // Count workshop selections for additional attendees
         if (data.additionalAttendees) {
           data.additionalAttendees.forEach(
-            (attendee: {workshopSelections?: Array<{sessionId?: string}>}) => {
-              if (attendee.workshopSelections) {
-                attendee.workshopSelections.forEach(
-                  (selection: {sessionId?: string}) => {
-                    if (selection.sessionId) {
-                      workshopCounts[selection.sessionId] =
-                        (workshopCounts[selection.sessionId] || 0) + 1;
+            (attendee: {
+              workshopSelections?: Array<{sessionId?: string}>;
+              workshopSelection?: string | {sessionId?: string};
+            }) => {
+              // Support both old field name and new
+              const attendeeWorkshops = attendee.workshopSelections ||
+                (attendee.workshopSelection ?
+                  [attendee.workshopSelection] : []);
+              if (Array.isArray(attendeeWorkshops)) {
+                attendeeWorkshops.forEach(
+                  (selection: {sessionId?: string} | string) => {
+                    const sessionId = typeof selection === "string" ?
+                      selection : selection?.sessionId;
+                    if (sessionId) {
+                      workshopCounts[sessionId] =
+                        (workshopCounts[sessionId] || 0) + 1;
                     }
                   }
                 );
@@ -4642,12 +4657,18 @@ export const triggerStatsSync = onCall(
         }
 
         // Count workshop selections
-        if (data.primaryAttendee?.workshopSelections) {
-          data.primaryAttendee.workshopSelections.forEach(
-            (selection: {sessionId?: string}) => {
-              if (selection.sessionId) {
-                workshopCounts[selection.sessionId] =
-                  (workshopCounts[selection.sessionId] || 0) + 1;
+        // Support both old field name (workshopSelection) and new (workshopSelections)
+        const primaryWorkshops = data.primaryAttendee?.workshopSelections ||
+          (data.primaryAttendee?.workshopSelection ?
+            [data.primaryAttendee.workshopSelection] : []);
+        if (Array.isArray(primaryWorkshops)) {
+          primaryWorkshops.forEach(
+            (selection: {sessionId?: string} | string) => {
+              const sessionId = typeof selection === "string" ?
+                selection : selection?.sessionId;
+              if (sessionId) {
+                workshopCounts[sessionId] =
+                  (workshopCounts[sessionId] || 0) + 1;
               }
             }
           );
@@ -4655,13 +4676,22 @@ export const triggerStatsSync = onCall(
 
         if (data.additionalAttendees) {
           data.additionalAttendees.forEach(
-            (attendee: {workshopSelections?: Array<{sessionId?: string}>}) => {
-              if (attendee.workshopSelections) {
-                attendee.workshopSelections.forEach(
-                  (selection: {sessionId?: string}) => {
-                    if (selection.sessionId) {
-                      workshopCounts[selection.sessionId] =
-                        (workshopCounts[selection.sessionId] || 0) + 1;
+            (attendee: {
+              workshopSelections?: Array<{sessionId?: string}>;
+              workshopSelection?: string | {sessionId?: string};
+            }) => {
+              // Support both old field name and new
+              const attendeeWorkshops = attendee.workshopSelections ||
+                (attendee.workshopSelection ?
+                  [attendee.workshopSelection] : []);
+              if (Array.isArray(attendeeWorkshops)) {
+                attendeeWorkshops.forEach(
+                  (selection: {sessionId?: string} | string) => {
+                    const sessionId = typeof selection === "string" ?
+                      selection : selection?.sessionId;
+                    if (sessionId) {
+                      workshopCounts[sessionId] =
+                        (workshopCounts[sessionId] || 0) + 1;
                     }
                   }
                 );
