@@ -5,7 +5,7 @@
  * @module pages/admin/AdminRegistrationsPage
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import {
   AdminLayout,
@@ -76,6 +76,38 @@ function AdminRegistrationsPage() {
   const [isSyncingStats, setIsSyncingStats] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
   const [syncError, setSyncError] = useState(null);
+
+  // Refs for dropdown click-outside handling
+  const exportDropdownRef = useRef(null);
+  const workshopDropdownRef = useRef(null);
+
+  /**
+   * Handles click-outside to close dropdowns
+   */
+  useEffect(() => {
+    /**
+     * Closes dropdowns when clicking outside
+     *
+     * @param {MouseEvent} event - The mouse event
+     */
+    function handleClickOutside(event) {
+      if (
+        exportDropdownRef.current &&
+        !exportDropdownRef.current.contains(event.target)
+      ) {
+        setShowExportMenu(false);
+      }
+      if (
+        workshopDropdownRef.current &&
+        !workshopDropdownRef.current.contains(event.target)
+      ) {
+        setShowWorkshopExportMenu(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   /**
    * Fetches status counts from the database
@@ -481,7 +513,7 @@ function AdminRegistrationsPage() {
           </p>
         </div>
         <div className={styles.headerActions}>
-          <div className={styles.dropdownWrapper}>
+          <div className={styles.dropdownWrapper} ref={exportDropdownRef}>
             <button
               className={styles.exportButton}
               onClick={() => setShowExportMenu((prev) => !prev)}
@@ -516,7 +548,7 @@ function AdminRegistrationsPage() {
               </div>
             )}
           </div>
-          <div className={styles.dropdownWrapper}>
+          <div className={styles.dropdownWrapper} ref={workshopDropdownRef}>
             <button
               className={styles.workshopExportButton}
               onClick={() => setShowWorkshopExportMenu((prev) => !prev)}
