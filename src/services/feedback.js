@@ -5,7 +5,7 @@
  * @module services/feedback
  */
 
-import { collection, addDoc, serverTimestamp, getDocs, doc, deleteDoc, getDoc, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, doc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { COLLECTIONS } from '../constants';
 import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from './activityLog';
@@ -116,11 +116,6 @@ export async function deleteFeedbackResponse(feedbackId, adminId = null, adminEm
   }
 
   const feedbackDocRef = doc(db, COLLECTIONS.FEEDBACK, feedbackId);
-
-  // Get feedback data before deletion for logging
-  const feedbackSnap = await getDoc(feedbackDocRef);
-  const feedbackData = feedbackSnap.exists() ? feedbackSnap.data() : null;
-
   await deleteDoc(feedbackDocRef);
 
   // Log the activity
