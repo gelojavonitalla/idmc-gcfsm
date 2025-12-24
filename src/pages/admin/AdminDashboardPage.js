@@ -16,7 +16,7 @@ import {
   DownloadStatsCard,
   FoodStatsCard,
 } from '../../components/admin';
-import { useAdminAuth } from '../../context';
+import { useAdminAuth, useSettings } from '../../context';
 import {
   getDashboardStats,
   getRecentRegistrations,
@@ -25,7 +25,6 @@ import {
   getFoodStats,
   getDownloadStats,
 } from '../../services';
-import { CONFERENCE } from '../../constants';
 import styles from './AdminDashboardPage.module.css';
 
 /**
@@ -35,6 +34,7 @@ import styles from './AdminDashboardPage.module.css';
  */
 function AdminDashboardPage() {
   const { admin } = useAdminAuth();
+  const { settings } = useSettings();
   const [stats, setStats] = useState(null);
   const [registrations, setRegistrations] = useState([]);
   const [chartData, setChartData] = useState([]);
@@ -91,7 +91,7 @@ function AdminDashboardPage() {
             Welcome back, {admin?.displayName || 'Admin'}!
           </h2>
           <p className={styles.welcomeSubtitle}>
-            IDMC {CONFERENCE.YEAR} - {CONFERENCE.THEME}
+            {settings?.title || 'IDMC'} - {settings?.theme || ''}
           </p>
         </div>
         <button
