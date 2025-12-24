@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '../../components/admin';
 import { getPublishedWorkshops } from '../../services/workshops';
 import { getVenueRooms } from '../../services/venue';
+import { getConferenceSettings } from '../../services/settings';
 import styles from './AdminWorkshopsPage.module.css';
 
 /**
@@ -20,6 +21,7 @@ import styles from './AdminWorkshopsPage.module.css';
 function AdminWorkshopsPage() {
   const [workshops, setWorkshops] = useState([]);
   const [venueRooms, setVenueRooms] = useState([]);
+  const [conferenceCapacity, setConferenceCapacity] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -42,19 +44,21 @@ function AdminWorkshopsPage() {
   }, [venueRooms]);
 
   /**
-   * Fetches workshop and venue room data
+   * Fetches workshop, venue room, and conference settings data
    */
   const fetchWorkshops = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const [workshopData, roomsData] = await Promise.all([
+      const [workshopData, roomsData, settingsData] = await Promise.all([
         getPublishedWorkshops(),
         getVenueRooms(),
+        getConferenceSettings(),
       ]);
       setWorkshops(workshopData);
       setVenueRooms(roomsData);
+      setConferenceCapacity(settingsData?.conferenceCapacity ?? null);
     } catch (fetchError) {
       console.error('Failed to fetch workshops:', fetchError);
       setError('Failed to load workshop data. Please try again.');
@@ -118,10 +122,6 @@ function AdminWorkshopsPage() {
    * @returns {Object} Capacity statistics
    */
   const getCapacityStats = useCallback(() => {
-    const totalCapacity = workshops.reduce(
-      (sum, w) => sum + (getEffectiveCapacity(w) || 0),
-      0
-    );
     const totalRegistered = workshops.reduce(
       (sum, w) => sum + (w.registeredCount || 0),
       0
@@ -135,12 +135,12 @@ function AdminWorkshopsPage() {
     ).length;
 
     return {
-      totalCapacity,
+      totalCapacity: conferenceCapacity,
       totalRegistered,
       totalAvailable,
       fullWorkshops,
     };
-  }, [workshops, getEffectiveCapacity, getRemainingCapacity]);
+  }, [workshops, conferenceCapacity, getRemainingCapacity]);
 
   const stats = getCapacityStats();
 
@@ -198,13 +198,13 @@ function AdminWorkshopsPage() {
 
           <div className={styles.statCard}>
             <div className={styles.statIcon}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
               </svg>
             </div>
             <div className={styles.statContent}>
-              <div className={styles.statValue}>{stats.totalCapacity}</div>
+              <div className={styles.statValue}>{stats.totalCapacity ?? '∞'}</div>
               <div className={styles.statLabel}>Total Capacity</div>
             </div>
           </div>
