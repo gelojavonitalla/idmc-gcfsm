@@ -1392,3 +1392,87 @@ export async function checkRegistrationAvailability(settings, attendeeCount = 1)
     message: 'The conference is full, but you can join the waitlist.',
   };
 }
+
+/**
+ * Gets all attendees registered for a specific workshop.
+ * Searches both primary attendees and additional attendees for workshop selections
+ * matching the given workshop ID.
+ *
+ * @param {string} workshopId - The workshop session ID to search for
+ * @returns {Promise<Array>} Array of attendee objects with registration info
+ */
+export async function getWorkshopAttendees(workshopId) {
+  if (!workshopId) {
+    return [];
+  }
+
+  const registrationsRef = collection(db, COLLECTIONS.REGISTRATIONS);
+  const confirmedQuery = query(
+    registrationsRef,
+    where('status', '==', REGISTRATION_STATUS.CONFIRMED)
+  );
+
+  const snapshot = await getDocs(confirmedQuery);
+  const attendees = [];
+
+  snapshot.docs.forEach((docSnap) => {
+    const registration = docSnap.data();
+    const registrationId = docSnap.id;
+
+    // Check primary attendee's workshop selections
+    const primarySelections = registration.primaryAttendee?.workshopSelections || [];
+    const primaryHasWorkshop = primarySelections.some(
+      (selection) => selection.sessionId === workshopId
+    );
+
+    if (primaryHasWorkshop) {
+      attendees.push({
+        registrationId,
+        shortCode: registration.shortCode,
+        firstName: registration.primaryAttendee?.firstName || '',
+        lastName: registration.primaryAttendee?.lastName || '',
+        email: registration.primaryAttendee?.email || '',
+        cellphone: registration.primaryAttendee?.cellphone || '',
+        church: registration.church,
+        ministryRole: registration.primaryAttendee?.ministryRole || '',
+        category: registration.primaryAttendee?.category || '',
+        checkedIn: registration.checkedIn || false,
+        isPrimary: true,
+      });
+    }
+
+    // Check additional attendees' workshop selections
+    const additionalAttendees = registration.additionalAttendees || [];
+    additionalAttendees.forEach((attendee, index) => {
+      const attendeeSelections = attendee.workshopSelections || [];
+      const hasWorkshop = attendeeSelections.some(
+        (selection) => selection.sessionId === workshopId
+      );
+
+      if (hasWorkshop) {
+        attendees.push({
+          registrationId,
+          shortCode: registration.shortCode,
+          firstName: attendee.firstName || '',
+          lastName: attendee.lastName || '',
+          email: attendee.email || '',
+          cellphone: attendee.cellphone || '',
+          church: registration.church,
+          ministryRole: attendee.ministryRole || '',
+          category: attendee.category || '',
+          checkedIn: registration.additionalAttendeesCheckedIn?.[index] || false,
+          isPrimary: false,
+        });
+      }
+    });
+  });
+
+  // Sort by last name, then first name
+  attendees.sort((a, b) => {
+    const lastNameCompare = a.lastName.localeCompare(b.lastName);
+    if (lastNameCompare !== 0) return lastNameCompare;
+    return a.firstName.localeCompare(b.firstName);
+  });
+
+  return attendees;
+}
