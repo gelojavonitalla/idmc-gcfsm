@@ -2908,17 +2908,20 @@ function RegisterPage() {
           )}
 
           {/* Validation Error Summary */}
-          {(Object.keys(errors).length > 0 || Object.keys(primaryErrors).length > 0 || Object.keys(additionalErrors).length > 0) && (
-            <div className={styles.capacityError}>
-              <span className={styles.errorMessage}>
-                Please fix the following errors: {[
-                  ...Object.values(errors),
-                  ...Object.values(primaryErrors),
-                  ...Object.values(additionalErrors).flatMap(ae => Object.values(ae))
-                ].filter(Boolean).join(', ')}
-              </span>
-            </div>
-          )}
+          {(() => {
+            const allErrors = [
+              ...Object.values(errors),
+              ...Object.values(primaryErrors),
+              ...Object.values(additionalErrors).flatMap(ae => Object.values(ae))
+            ].filter(Boolean);
+            return allErrors.length > 0 ? (
+              <div className={styles.capacityError}>
+                <span className={styles.errorMessage}>
+                  Please fix the following errors: {allErrors.join(', ')}
+                </span>
+              </div>
+            ) : null;
+          })()}
 
           {/* Navigation Buttons */}
           <div className={styles.formNavigation}>
