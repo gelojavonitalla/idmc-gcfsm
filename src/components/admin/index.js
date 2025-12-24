@@ -15,6 +15,7 @@ export { default as RecentRegistrations } from './RecentRegistrations';
 export { default as QuickActions } from './QuickActions';
 export { default as SettingsForm } from './SettingsForm';
 export { default as CapacitySettingsForm } from './CapacitySettingsForm';
+export { default as RefundPolicySettings } from './RefundPolicySettings';
 export { default as PricingTierManager } from './PricingTierManager';
 export { default as UserTable } from './UserTable';
 export { default as InviteUserModal } from './InviteUserModal';
