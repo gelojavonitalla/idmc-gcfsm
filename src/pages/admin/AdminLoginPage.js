@@ -7,8 +7,8 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAdminAuth } from '../../context';
-import { ADMIN_ROUTES, CONFERENCE, BRANDING } from '../../constants';
+import { useAdminAuth, useSettings } from '../../context';
+import { ADMIN_ROUTES, BRANDING } from '../../constants';
 import styles from './AdminLoginPage.module.css';
 
 /**
@@ -18,6 +18,7 @@ import styles from './AdminLoginPage.module.css';
  */
 function AdminLoginPage() {
   const { signIn, resetPassword, isAuthenticated, isLoading, error, clearError } = useAdminAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -160,9 +161,9 @@ function AdminLoginPage() {
             />
             <h1 className={styles.brandTitle}>Admin Dashboard</h1>
             <p className={styles.brandSubtitle}>
-              {CONFERENCE.THEME}
+              {settings?.theme}
             </p>
-            <p className={styles.brandYear}>IDMC {CONFERENCE.YEAR}</p>
+            <p className={styles.brandYear}>{settings?.title}</p>
           </div>
         </div>
 
