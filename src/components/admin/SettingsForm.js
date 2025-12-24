@@ -61,16 +61,6 @@ const DEFAULT_SETTINGS = {
     gatewayDomain: '1.onewaysms.asia',
     gatewayEmail: '',
   },
-  refundPolicy: {
-    enabled: true,
-    fullRefundDays: 14,
-    partialRefundDays: 7,
-    partialRefundPercent: 50,
-    noRefundMessage: 'Refunds are not available for this event.',
-    fullRefundMessage: 'Full refund available until {days} days before the event.',
-    partialRefundMessage: 'Partial refund ({percent}%) available until {days} days before the event.',
-    lateRefundMessage: 'Cancellations within {days} days of the event are not eligible for refund.',
-  },
 };
 
 function SettingsForm({ settings, onSave, isLoading }) {
@@ -111,16 +101,6 @@ function SettingsForm({ settings, onSave, isLoading }) {
       enabled: settings?.sms?.enabled ?? DEFAULT_SETTINGS.sms.enabled,
       gatewayDomain: settings?.sms?.gatewayDomain || DEFAULT_SETTINGS.sms.gatewayDomain,
       gatewayEmail: settings?.sms?.gatewayEmail || DEFAULT_SETTINGS.sms.gatewayEmail,
-    },
-    refundPolicy: {
-      enabled: settings?.refundPolicy?.enabled ?? DEFAULT_SETTINGS.refundPolicy.enabled,
-      fullRefundDays: settings?.refundPolicy?.fullRefundDays ?? DEFAULT_SETTINGS.refundPolicy.fullRefundDays,
-      partialRefundDays: settings?.refundPolicy?.partialRefundDays ?? DEFAULT_SETTINGS.refundPolicy.partialRefundDays,
-      partialRefundPercent: settings?.refundPolicy?.partialRefundPercent ?? DEFAULT_SETTINGS.refundPolicy.partialRefundPercent,
-      noRefundMessage: settings?.refundPolicy?.noRefundMessage || DEFAULT_SETTINGS.refundPolicy.noRefundMessage,
-      fullRefundMessage: settings?.refundPolicy?.fullRefundMessage || DEFAULT_SETTINGS.refundPolicy.fullRefundMessage,
-      partialRefundMessage: settings?.refundPolicy?.partialRefundMessage || DEFAULT_SETTINGS.refundPolicy.partialRefundMessage,
-      lateRefundMessage: settings?.refundPolicy?.lateRefundMessage || DEFAULT_SETTINGS.refundPolicy.lateRefundMessage,
     },
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -166,16 +146,6 @@ function SettingsForm({ settings, onSave, isLoading }) {
           enabled: settings.sms?.enabled ?? DEFAULT_SETTINGS.sms.enabled,
           gatewayDomain: settings.sms?.gatewayDomain || DEFAULT_SETTINGS.sms.gatewayDomain,
           gatewayEmail: settings.sms?.gatewayEmail || DEFAULT_SETTINGS.sms.gatewayEmail,
-        },
-        refundPolicy: {
-          enabled: settings.refundPolicy?.enabled ?? DEFAULT_SETTINGS.refundPolicy.enabled,
-          fullRefundDays: settings.refundPolicy?.fullRefundDays ?? DEFAULT_SETTINGS.refundPolicy.fullRefundDays,
-          partialRefundDays: settings.refundPolicy?.partialRefundDays ?? DEFAULT_SETTINGS.refundPolicy.partialRefundDays,
-          partialRefundPercent: settings.refundPolicy?.partialRefundPercent ?? DEFAULT_SETTINGS.refundPolicy.partialRefundPercent,
-          noRefundMessage: settings.refundPolicy?.noRefundMessage || DEFAULT_SETTINGS.refundPolicy.noRefundMessage,
-          fullRefundMessage: settings.refundPolicy?.fullRefundMessage || DEFAULT_SETTINGS.refundPolicy.fullRefundMessage,
-          partialRefundMessage: settings.refundPolicy?.partialRefundMessage || DEFAULT_SETTINGS.refundPolicy.partialRefundMessage,
-          lateRefundMessage: settings.refundPolicy?.lateRefundMessage || DEFAULT_SETTINGS.refundPolicy.lateRefundMessage,
         },
       });
     }
@@ -780,140 +750,6 @@ function SettingsForm({ settings, onSave, isLoading }) {
         </section>
       )}
 
-      {/* Refund Policy Section */}
-      <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>Refund Policy</h3>
-        <p className={styles.sectionDescription}>
-          Configure the refund policy for registration cancellations. This determines when
-          attendees are eligible for full, partial, or no refund based on how close to the event
-          they cancel.
-        </p>
-        <div className={styles.grid}>
-          <div className={styles.fieldFull}>
-            <label className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                name="refundPolicy.enabled"
-                checked={formData.refundPolicy.enabled}
-                onChange={handleChange}
-                className={styles.checkbox}
-              />
-              <span>Enable Refunds</span>
-            </label>
-            <p className={styles.fieldHint}>
-              When disabled, no refunds will be available for any cancellation.
-            </p>
-          </div>
-
-          {formData.refundPolicy.enabled && (
-            <>
-              <div className={styles.field}>
-                <label htmlFor="refundPolicy.fullRefundDays" className={styles.label}>
-                  Full Refund Days
-                </label>
-                <input
-                  type="number"
-                  id="refundPolicy.fullRefundDays"
-                  name="refundPolicy.fullRefundDays"
-                  value={formData.refundPolicy.fullRefundDays ?? ''}
-                  onChange={(e) => {
-                    const value = e.target.value === '' ? null : parseInt(e.target.value, 10);
-                    setFormData((prev) => ({
-                      ...prev,
-                      refundPolicy: { ...prev.refundPolicy, fullRefundDays: value },
-                    }));
-                  }}
-                  className={styles.input}
-                  placeholder="14"
-                  min="0"
-                />
-                <p className={styles.fieldHint}>
-                  Days before event for 100% refund eligibility. Leave empty to disable full refunds.
-                </p>
-              </div>
-
-              <div className={styles.field}>
-                <label htmlFor="refundPolicy.partialRefundDays" className={styles.label}>
-                  Partial Refund Days
-                </label>
-                <input
-                  type="number"
-                  id="refundPolicy.partialRefundDays"
-                  name="refundPolicy.partialRefundDays"
-                  value={formData.refundPolicy.partialRefundDays ?? ''}
-                  onChange={(e) => {
-                    const value = e.target.value === '' ? null : parseInt(e.target.value, 10);
-                    setFormData((prev) => ({
-                      ...prev,
-                      refundPolicy: { ...prev.refundPolicy, partialRefundDays: value },
-                    }));
-                  }}
-                  className={styles.input}
-                  placeholder="7"
-                  min="0"
-                />
-                <p className={styles.fieldHint}>
-                  Days before event for partial refund. Leave empty to disable partial refunds.
-                </p>
-              </div>
-
-              <div className={styles.field}>
-                <label htmlFor="refundPolicy.partialRefundPercent" className={styles.label}>
-                  Partial Refund Percentage
-                </label>
-                <input
-                  type="number"
-                  id="refundPolicy.partialRefundPercent"
-                  name="refundPolicy.partialRefundPercent"
-                  value={formData.refundPolicy.partialRefundPercent}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value, 10) || 0;
-                    setFormData((prev) => ({
-                      ...prev,
-                      refundPolicy: { ...prev.refundPolicy, partialRefundPercent: value },
-                    }));
-                  }}
-                  className={styles.input}
-                  placeholder="50"
-                  min="0"
-                  max="100"
-                />
-                <p className={styles.fieldHint}>
-                  Percentage of registration fee refunded during partial refund window (0-100).
-                </p>
-              </div>
-
-              <div className={styles.fieldFull} style={{ marginTop: '1rem' }}>
-                <div style={{
-                  backgroundColor: '#f0f9ff',
-                  border: '1px solid #0ea5e9',
-                  borderRadius: '8px',
-                  padding: '1rem',
-                }}>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#0369a1', fontWeight: '500' }}>
-                    Policy Summary
-                  </p>
-                  <ul style={{ margin: '0.5rem 0 0 0', paddingLeft: '1.25rem', fontSize: '0.875rem', color: '#0c4a6e' }}>
-                    {formData.refundPolicy.fullRefundDays !== null && (
-                      <li>Full refund (100%): {formData.refundPolicy.fullRefundDays}+ days before event</li>
-                    )}
-                    {formData.refundPolicy.partialRefundDays !== null && formData.refundPolicy.partialRefundDays !== formData.refundPolicy.fullRefundDays && (
-                      <li>
-                        Partial refund ({formData.refundPolicy.partialRefundPercent}%):
-                        {' '}{formData.refundPolicy.partialRefundDays}-{(formData.refundPolicy.fullRefundDays || formData.refundPolicy.partialRefundDays) - 1} days before event
-                      </li>
-                    )}
-                    <li>
-                      No refund: Less than {formData.refundPolicy.partialRefundDays || formData.refundPolicy.fullRefundDays || 0} days before event
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-
       {/* Submit Button */}
       <div className={styles.actions}>
         <button
@@ -977,16 +813,6 @@ SettingsForm.propTypes = {
       enabled: PropTypes.bool,
       gatewayDomain: PropTypes.string,
       gatewayEmail: PropTypes.string,
-    }),
-    refundPolicy: PropTypes.shape({
-      enabled: PropTypes.bool,
-      fullRefundDays: PropTypes.number,
-      partialRefundDays: PropTypes.number,
-      partialRefundPercent: PropTypes.number,
-      noRefundMessage: PropTypes.string,
-      fullRefundMessage: PropTypes.string,
-      partialRefundMessage: PropTypes.string,
-      lateRefundMessage: PropTypes.string,
     }),
   }),
   onSave: PropTypes.func.isRequired,
