@@ -95,6 +95,22 @@ jobs:
             echo "Continuing deployment without secret update..."
           fi
 
+      # Ensure App Engine app exists (required for Cloud Functions v2 in production)
+      # This creates the gcf-admin-robot service account needed for function deployments
+      - name: Ensure App Engine app exists
+        if: github.ref_name == 'main'
+        run: |
+          PROJECT_ID="${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}"
+
+          # Check if App Engine app already exists
+          if gcloud app describe --project=$PROJECT_ID > /dev/null 2>&1; then
+            echo "✅ App Engine app already exists"
+          else
+            echo "Creating App Engine app in asia-southeast1..."
+            gcloud app create --region=asia-southeast1 --project=$PROJECT_ID || true
+            echo "✅ App Engine app created (or creation attempted)"
+          fi
+
       # Deploy Cloud Functions
       - name: Deploy Cloud Functions
         run: |
