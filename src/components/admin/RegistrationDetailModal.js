@@ -619,8 +619,8 @@ function RegistrationDetailModal({
               <div className={styles.infoItem}>
                 <span className={styles.label}>Category</span>
                 <span className={styles.value}>
-                  {REGISTRATION_CATEGORY_LABELS[registration.category] ||
-                    registration.category ||
+                  {REGISTRATION_CATEGORY_LABELS[registration.primaryAttendee?.category] ||
+                    registration.primaryAttendee?.category ||
                     '—'}
                 </span>
               </div>
