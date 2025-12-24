@@ -121,6 +121,36 @@ function getAttendeePhone(registration) {
 }
 
 /**
+ * Gets workshop display string from registration
+ *
+ * @param {Object} registration - Registration object
+ * @returns {string} Formatted workshop info
+ */
+function getWorkshopDisplay(registration) {
+  // Check for new format: primaryAttendee.workshopSelections (array)
+  const workshopSelections = registration.primaryAttendee?.workshopSelections;
+  if (workshopSelections && Array.isArray(workshopSelections) && workshopSelections.length > 0) {
+    // Display session titles joined by comma
+    const titles = workshopSelections
+      .map((selection) => selection.sessionTitle || selection.sessionId)
+      .filter(Boolean);
+    if (titles.length > 0) {
+      return titles.join(', ');
+    }
+  }
+
+  // Fallback to old format: workshopSelection (string category code)
+  if (registration.workshopSelection) {
+    return (
+      WORKSHOP_CATEGORY_LABELS[registration.workshopSelection] ||
+      registration.workshopSelection
+    );
+  }
+
+  return '—';
+}
+
+/**
  * Gets formatted church info from registration
  *
  * @param {Object} registration - Registration object
@@ -597,10 +627,7 @@ function RegistrationDetailModal({
               <div className={styles.infoItem}>
                 <span className={styles.label}>Workshop</span>
                 <span className={styles.value}>
-                  {registration.workshopSelection
-                    ? WORKSHOP_CATEGORY_LABELS[registration.workshopSelection] ||
-                      registration.workshopSelection
-                    : '—'}
+                  {getWorkshopDisplay(registration)}
                 </span>
               </div>
               <div className={styles.infoItem}>
@@ -1198,6 +1225,13 @@ RegistrationDetailModal.propTypes = {
       phone: PropTypes.string,
       church: PropTypes.string, // Legacy format
       ministryRole: PropTypes.string,
+      workshopSelections: PropTypes.arrayOf(
+        PropTypes.shape({
+          sessionId: PropTypes.string,
+          sessionTitle: PropTypes.string,
+          timeSlot: PropTypes.string,
+        })
+      ),
     }),
     firstName: PropTypes.string,
     lastName: PropTypes.string,
