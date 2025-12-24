@@ -611,7 +611,8 @@ export async function confirmPayment(registrationId, paymentDetails, adminId = n
 }
 
 /**
- * Cancels a registration
+ * Cancels a registration.
+ * Decrements workshop counts if the registration had incremented them.
  *
  * @param {string} registrationId - Registration ID
  * @param {string} reason - Cancellation reason
@@ -624,6 +625,12 @@ export async function cancelRegistration(registrationId, reason, cancelledBy, ad
   const registration = await getRegistrationById(registrationId);
   const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
 
+  // Check if this registration had workshop counts incremented
+  // Workshop counts are incremented for: regular registrations and WAITLIST_OFFERED
+  // Workshop counts are NOT incremented for: WAITLISTED (only)
+  const hadWorkshopCountsIncremented = registration &&
+    registration.status !== REGISTRATION_STATUS.WAITLISTED;
+
   await updateDoc(docRef, {
     status: REGISTRATION_STATUS.CANCELLED,
     'payment.status': REGISTRATION_STATUS.CANCELLED,
@@ -634,6 +641,24 @@ export async function cancelRegistration(registrationId, reason, cancelledBy, ad
     },
     updatedAt: serverTimestamp(),
   });
+
+  // Decrement workshop counts if they were previously incremented
+  if (hadWorkshopCountsIncremented && registration) {
+    const allWorkshopSelections = [
+      ...(registration.primaryAttendee?.workshopSelections || []),
+      ...(registration.additionalAttendees || []).flatMap((attendee) => attendee.workshopSelections || []),
+    ];
+
+    for (const selection of allWorkshopSelections) {
+      if (selection.sessionId) {
+        try {
+          await decrementWorkshopCount(selection.sessionId);
+        } catch (error) {
+          console.error(`Failed to decrement workshop count for ${selection.sessionId}:`, error);
+        }
+      }
+    }
+  }
 
   // Log the activity
   if (adminId && adminEmail) {
@@ -845,6 +870,34 @@ export async function incrementWorkshopCount(workshopId) {
       const currentCount = workshopDoc.data().registeredCount || 0;
       transaction.update(workshopRef, {
         registeredCount: currentCount + 1,
+        updatedAt: serverTimestamp(),
+      });
+    }
+  });
+}
+
+/**
+ * Decrements workshop registered count atomically.
+ * Used when a registration is cancelled or waitlist offer expires.
+ *
+ * @param {string} workshopId - Workshop session ID
+ * @returns {Promise<void>}
+ */
+export async function decrementWorkshopCount(workshopId) {
+  if (!workshopId) {
+    return;
+  }
+
+  const workshopRef = doc(db, COLLECTIONS.SESSIONS, workshopId);
+
+  await runTransaction(db, async (transaction) => {
+    const workshopDoc = await transaction.get(workshopRef);
+    if (workshopDoc.exists()) {
+      const currentCount = workshopDoc.data().registeredCount || 0;
+      // Don't go below 0
+      const newCount = Math.max(0, currentCount - 1);
+      transaction.update(workshopRef, {
+        registeredCount: newCount,
         updatedAt: serverTimestamp(),
       });
     }
@@ -1123,6 +1176,22 @@ export async function offerSlotToWaitlistedRegistration(
     updatedAt: serverTimestamp(),
   });
 
+  // Increment workshop counts for all selected workshops
+  const allWorkshopSelections = [
+    ...(registration.primaryAttendee?.workshopSelections || []),
+    ...(registration.additionalAttendees || []).flatMap((attendee) => attendee.workshopSelections || []),
+  ];
+
+  for (const selection of allWorkshopSelections) {
+    if (selection.sessionId) {
+      try {
+        await incrementWorkshopCount(selection.sessionId);
+      } catch (error) {
+        console.error(`Failed to increment workshop count for ${selection.sessionId}:`, error);
+      }
+    }
+  }
+
   // Log the activity
   if (adminId && adminEmail) {
     await logActivity({
@@ -1155,11 +1224,13 @@ export async function getNextWaitlistedRegistration() {
 
 /**
  * Marks a waitlist offer as expired and optionally promotes the next person.
+ * Decrements workshop counts that were incremented when the offer was made.
  *
  * @param {string} registrationId - Registration ID with expired offer
  * @returns {Promise<void>}
  */
 export async function expireWaitlistOffer(registrationId) {
+  const registration = await getRegistrationById(registrationId);
   const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
 
   await updateDoc(docRef, {
@@ -1167,6 +1238,24 @@ export async function expireWaitlistOffer(registrationId) {
     'payment.status': REGISTRATION_STATUS.WAITLIST_EXPIRED,
     updatedAt: serverTimestamp(),
   });
+
+  // Decrement workshop counts for all selected workshops
+  if (registration) {
+    const allWorkshopSelections = [
+      ...(registration.primaryAttendee?.workshopSelections || []),
+      ...(registration.additionalAttendees || []).flatMap((attendee) => attendee.workshopSelections || []),
+    ];
+
+    for (const selection of allWorkshopSelections) {
+      if (selection.sessionId) {
+        try {
+          await decrementWorkshopCount(selection.sessionId);
+        } catch (error) {
+          console.error(`Failed to decrement workshop count for ${selection.sessionId}:`, error);
+        }
+      }
+    }
+  }
 }
 
 /**
