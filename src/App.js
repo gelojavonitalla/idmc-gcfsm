@@ -55,6 +55,7 @@ const AdminFoodMenuPage = lazy(() => import('./pages/admin/AdminFoodMenuPage'));
 const AdminWhatToBringPage = lazy(() => import('./pages/admin/AdminWhatToBringPage'));
 const AdminChurchesPage = lazy(() => import('./pages/admin/AdminChurchesPage'));
 const AdminFeedbackPage = lazy(() => import('./pages/admin/AdminFeedbackPage'));
+const AdminFeedbackResponsesPage = lazy(() => import('./pages/admin/AdminFeedbackResponsesPage'));
 
 /**
  * App Component
@@ -318,6 +319,16 @@ function App() {
                 <AdminProtectedRoute>
                   <Suspense fallback={<AdminLoadingFallback />}>
                     <AdminFeedbackPage />
+                  </Suspense>
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path={ADMIN_ROUTES.FEEDBACK_RESPONSES}
+              element={
+                <AdminProtectedRoute requiredPermission="manageInquiries">
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminFeedbackResponsesPage />
                   </Suspense>
                 </AdminProtectedRoute>
               }

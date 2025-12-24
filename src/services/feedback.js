@@ -5,7 +5,7 @@
  * @module services/feedback
  */
 
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, doc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { COLLECTIONS } from '../constants';
 
@@ -80,4 +80,38 @@ export async function submitFeedback(feedbackData) {
   const docRef = await addDoc(feedbackRef, docData);
 
   return docRef.id;
+}
+
+/**
+ * Retrieves all feedback responses from Firestore.
+ * Ordered by creation date (newest first).
+ *
+ * @returns {Promise<Array>} Array of feedback response objects with IDs
+ * @throws {Error} If the Firestore operation fails
+ */
+export async function getFeedbackResponses() {
+  const feedbackRef = collection(db, COLLECTIONS.FEEDBACK);
+  const feedbackQuery = query(feedbackRef, orderBy('createdAt', 'desc'));
+  const snapshot = await getDocs(feedbackQuery);
+
+  return snapshot.docs.map((docSnap) => ({
+    id: docSnap.id,
+    ...docSnap.data(),
+  }));
+}
+
+/**
+ * Deletes a feedback response from Firestore.
+ *
+ * @param {string} feedbackId - The ID of the feedback to delete
+ * @returns {Promise<void>}
+ * @throws {Error} If the Firestore operation fails or feedbackId is invalid
+ */
+export async function deleteFeedbackResponse(feedbackId) {
+  if (!feedbackId || typeof feedbackId !== 'string') {
+    throw new Error('Invalid feedback ID');
+  }
+
+  const feedbackDocRef = doc(db, COLLECTIONS.FEEDBACK, feedbackId);
+  await deleteDoc(feedbackDocRef);
 }

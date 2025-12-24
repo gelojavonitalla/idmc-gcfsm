@@ -45,3 +45,5 @@ export { default as DownloadStatsCard } from './DownloadStatsCard';
 export { default as FoodStatsCard } from './FoodStatsCard';
 export { default as FeedbackSettingsManager } from './FeedbackSettingsManager';
 export { default as FormFieldEditor } from './FormFieldEditor';
+export { default as FeedbackResponsesTable } from './FeedbackResponsesTable';
+export { default as FeedbackResponseDetailModal } from './FeedbackResponseDetailModal';
