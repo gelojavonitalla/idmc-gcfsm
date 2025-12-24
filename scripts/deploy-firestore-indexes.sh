@@ -151,5 +151,20 @@ create_index "bankAccounts" \
     "field-path=displayOrder,order=ascending" \
     "field-path=__name__,order=ascending"
 
+# === WHAT TO BRING ===
+# Index 14: whatToBring (status ASC, order ASC, __name__ ASC)
+create_index "whatToBring" \
+    "field-path=status,order=ascending" \
+    "field-path=order,order=ascending" \
+    "field-path=__name__,order=ascending"
+
+# === ACTIVITY LOGS ===
+# Index 15: activityLogs (entityId ASC, entityType ASC, createdAt DESC, __name__ DESC)
+create_index "activityLogs" \
+    "field-path=entityId,order=ascending" \
+    "field-path=entityType,order=ascending" \
+    "field-path=createdAt,order=descending" \
+    "field-path=__name__,order=descending"
+
 echo "✅ Firestore index deployment complete!"
 echo "   Note: Indexes are created asynchronously. Check the Firebase console for status."
