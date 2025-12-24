@@ -19,8 +19,9 @@ import {
   ENTITY_TYPES,
   ACTIVITY_TYPES,
   ACTIVITY_TYPE_LABELS,
+  offerSlotToWaitlistedRegistration,
 } from '../../services';
-import { useAdminAuth } from '../../context';
+import { useAdminAuth, useSettings } from '../../context';
 import styles from './RegistrationDetailModal.module.css';
 
 /**
@@ -32,6 +33,9 @@ const STATUS_OPTIONS = [
   { value: REGISTRATION_STATUS.CONFIRMED, label: 'Confirmed' },
   { value: REGISTRATION_STATUS.CANCELLED, label: 'Cancelled' },
   { value: REGISTRATION_STATUS.REFUNDED, label: 'Refunded' },
+  { value: REGISTRATION_STATUS.WAITLISTED, label: 'Waitlisted' },
+  { value: REGISTRATION_STATUS.WAITLIST_OFFERED, label: 'Waitlist - Slot Offered' },
+  { value: REGISTRATION_STATUS.WAITLIST_EXPIRED, label: 'Waitlist - Expired' },
 ];
 
 /**
@@ -168,6 +172,7 @@ function RegistrationDetailModal({
   isUpdating,
 }) {
   const { admin } = useAdminAuth();
+  const { settings } = useSettings();
 
   const [selectedStatus, setSelectedStatus] = useState(
     registration?.status || REGISTRATION_STATUS.PENDING_PAYMENT
@@ -188,6 +193,11 @@ function RegistrationDetailModal({
   const [activityLogs, setActivityLogs] = useState([]);
   const [isLoadingActivity, setIsLoadingActivity] = useState(false);
 
+  // Waitlist notification states
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
+  const [notificationError, setNotificationError] = useState(null);
+  const [notificationSuccess, setNotificationSuccess] = useState(false);
+
   /**
    * Sync state when registration changes
    */
@@ -203,6 +213,9 @@ function RegistrationDetailModal({
       setReferenceNumber(registration.payment?.referenceNumber || '');
       setRejectionReason('');
       setShowRejectionInput(false);
+      // Reset waitlist notification states
+      setNotificationError(null);
+      setNotificationSuccess(false);
     }
   }, [registration]);
 
@@ -265,6 +278,47 @@ function RegistrationDetailModal({
   const handleCancelNotesEdit = () => {
     setNotes(registration.notes || '');
     setIsEditingNotes(false);
+  };
+
+  /**
+   * Handles sending waitlist slot notification to a waitlisted registrant.
+   * This updates their status to WAITLIST_OFFERED and triggers an email.
+   */
+  const handleSendWaitlistNotification = async () => {
+    if (!registration || registration.status !== REGISTRATION_STATUS.WAITLISTED) {
+      return;
+    }
+
+    setIsSendingNotification(true);
+    setNotificationError(null);
+    setNotificationSuccess(false);
+
+    try {
+      // Get conference start date from settings
+      const conferenceStartDate = settings?.startDate || new Date().toISOString();
+
+      await offerSlotToWaitlistedRegistration(
+        registration.id,
+        conferenceStartDate,
+        admin?.uid,
+        admin?.email
+      );
+
+      setNotificationSuccess(true);
+
+      // Refresh the registration data
+      if (onRefresh) {
+        onRefresh();
+      }
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setNotificationSuccess(false), 5000);
+    } catch (error) {
+      console.error('Failed to send waitlist notification:', error);
+      setNotificationError(error.message || 'Failed to send notification. Please try again.');
+    } finally {
+      setIsSendingNotification(false);
+    }
   };
 
   /**
@@ -841,6 +895,115 @@ function RegistrationDetailModal({
                     </>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Waitlist Notification Section - Only shown for WAITLISTED status */}
+          {registration.status === REGISTRATION_STATUS.WAITLISTED && (
+            <div className={styles.section}>
+              <h3 className={styles.sectionTitle}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                </svg>
+                Waitlist Actions
+              </h3>
+
+              <div style={{
+                backgroundColor: '#f3e8ff',
+                borderRadius: '8px',
+                padding: '1rem',
+                marginBottom: '1rem',
+              }}>
+                <p style={{ margin: '0 0 0.5rem 0', color: '#6b7280' }}>
+                  This registration is on the waitlist. You can manually send a payment notification
+                  to offer them a slot, skipping the queue order.
+                </p>
+                <p style={{ margin: 0, color: '#7c3aed', fontWeight: '500' }}>
+                  Waitlist Position: #{registration.waitlistPosition || 'N/A'}
+                </p>
+              </div>
+
+              {notificationError && (
+                <div style={{
+                  backgroundColor: '#fee2e2',
+                  border: '1px solid #ef4444',
+                  borderRadius: '6px',
+                  padding: '0.75rem',
+                  marginBottom: '1rem',
+                  color: '#991b1b',
+                }}>
+                  {notificationError}
+                </div>
+              )}
+
+              {notificationSuccess && (
+                <div style={{
+                  backgroundColor: '#dcfce7',
+                  border: '1px solid #22c55e',
+                  borderRadius: '6px',
+                  padding: '0.75rem',
+                  marginBottom: '1rem',
+                  color: '#166534',
+                }}>
+                  Payment notification sent successfully! The registrant will receive an email with payment instructions.
+                </div>
+              )}
+
+              <button
+                onClick={handleSendWaitlistNotification}
+                disabled={isSendingNotification || notificationSuccess}
+                style={{
+                  backgroundColor: isSendingNotification || notificationSuccess ? '#9ca3af' : '#7c3aed',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: isSendingNotification || notificationSuccess ? 'not-allowed' : 'pointer',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '18px', height: '18px' }}>
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+                {isSendingNotification ? 'Sending...' : 'Send Payment Notification'}
+              </button>
+            </div>
+          )}
+
+          {/* Waitlist Offered Info Section - Show deadline and status */}
+          {registration.status === REGISTRATION_STATUS.WAITLIST_OFFERED && (
+            <div className={styles.section}>
+              <h3 className={styles.sectionTitle}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                Waitlist Offer Status
+              </h3>
+
+              <div style={{
+                backgroundColor: '#dbeafe',
+                borderRadius: '8px',
+                padding: '1rem',
+              }}>
+                <p style={{ margin: '0 0 0.5rem 0', color: '#1e40af', fontWeight: '500' }}>
+                  Slot Offered - Awaiting Payment
+                </p>
+                {registration.waitlistOfferExpiresAt && (
+                  <p style={{ margin: '0 0 0.5rem 0', color: '#6b7280' }}>
+                    <strong>Payment Deadline:</strong> {formatDate(registration.waitlistOfferExpiresAt)}
+                  </p>
+                )}
+                {registration.waitlistOfferSentAt && (
+                  <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem' }}>
+                    Notification sent: {formatDate(registration.waitlistOfferSentAt)}
+                  </p>
+                )}
               </div>
             </div>
           )}

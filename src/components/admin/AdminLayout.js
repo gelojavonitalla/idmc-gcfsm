@@ -27,7 +27,7 @@ function getMenuCategory(pathname) {
       }
     }
   }
-  return 'Main';
+  return 'Dashboard';
 }
 
 /**

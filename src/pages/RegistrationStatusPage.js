@@ -15,6 +15,9 @@ import {
   getCheckedInAttendeeCount,
   uploadPaymentProof,
   updatePaymentProof,
+  cancelWaitlistRegistration,
+  getWaitlistPosition,
+  uploadWaitlistPayment,
 } from '../services';
 import styles from './RegistrationStatusPage.module.css';
 
@@ -40,6 +43,18 @@ const STATUS_CONFIG = {
   },
   [REGISTRATION_STATUS.REFUNDED]: {
     label: 'Refunded',
+    className: 'statusCancelled',
+  },
+  [REGISTRATION_STATUS.WAITLISTED]: {
+    label: 'On Waitlist',
+    className: 'statusWaitlisted',
+  },
+  [REGISTRATION_STATUS.WAITLIST_OFFERED]: {
+    label: 'Slot Available - Pay Now!',
+    className: 'statusOffered',
+  },
+  [REGISTRATION_STATUS.WAITLIST_EXPIRED]: {
+    label: 'Offer Expired',
     className: 'statusCancelled',
   },
 };
@@ -75,6 +90,13 @@ function RegistrationStatusPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+
+  // Waitlist-specific states
+  const [waitlistPosition, setWaitlistPosition] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
 
   /**
    * Performs the registration lookup
@@ -191,6 +213,106 @@ function RegistrationStatusPage() {
       setUploadProgress(0);
     }
   }, [paymentFile, registration]);
+
+  /**
+   * Handles waitlist payment upload (for WAITLIST_OFFERED status)
+   */
+  const handleWaitlistPaymentUpload = useCallback(async () => {
+    if (!paymentFile || !registration || !selectedPaymentMethod) {
+      setUploadError('Please select a payment method and upload a proof of payment');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+    setUploadProgress(0);
+
+    try {
+      // Upload file to storage
+      const downloadUrl = await uploadPaymentProof(
+        paymentFile,
+        registration.id,
+        (progress) => setUploadProgress(progress)
+      );
+
+      // Update registration with payment info
+      await uploadWaitlistPayment(registration.id, downloadUrl, selectedPaymentMethod);
+
+      // Update local registration state
+      setRegistration((prev) => ({
+        ...prev,
+        status: REGISTRATION_STATUS.PENDING_VERIFICATION,
+        payment: {
+          ...prev.payment,
+          proofUrl: downloadUrl,
+          method: selectedPaymentMethod,
+          uploadedAt: new Date().toISOString(),
+        },
+      }));
+
+      setUploadSuccess(true);
+      setPaymentFile(null);
+      setSelectedPaymentMethod('');
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setUploadSuccess(false), 5000);
+    } catch (err) {
+      console.error('Waitlist payment upload error:', err);
+      setUploadError(err.message || 'Failed to upload payment proof. Please try again.');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  }, [paymentFile, registration, selectedPaymentMethod]);
+
+  /**
+   * Handles waitlist cancellation
+   */
+  const handleCancelWaitlist = useCallback(async () => {
+    if (!registration) return;
+
+    setIsCancelling(true);
+    setCancelError(null);
+
+    try {
+      await cancelWaitlistRegistration(registration.id, 'User cancelled from status page');
+
+      // Update local state
+      setRegistration((prev) => ({
+        ...prev,
+        status: REGISTRATION_STATUS.CANCELLED,
+      }));
+
+      setShowCancelConfirm(false);
+    } catch (err) {
+      console.error('Cancel error:', err);
+      setCancelError(err.message || 'Failed to cancel waitlist registration. Please try again.');
+    } finally {
+      setIsCancelling(false);
+    }
+  }, [registration]);
+
+  /**
+   * Fetches waitlist position when registration is loaded
+   */
+  useEffect(() => {
+    const fetchWaitlistPosition = async () => {
+      if (registration &&
+          (registration.status === REGISTRATION_STATUS.WAITLISTED ||
+           registration.status === REGISTRATION_STATUS.WAITLIST_OFFERED)) {
+        try {
+          const position = await getWaitlistPosition(registration.id);
+          setWaitlistPosition(position);
+        } catch (err) {
+          console.error('Failed to fetch waitlist position:', err);
+        }
+      } else {
+        setWaitlistPosition(null);
+      }
+    };
+
+    fetchWaitlistPosition();
+  }, [registration]);
 
   /**
    * Auto-search if ID is provided in URL params
@@ -354,6 +476,263 @@ function RegistrationStatusPage() {
                       ? 'All Attendees Checked In'
                       : `${checkedInCount} of ${totalAttendees} Checked In`}
                   </span>
+                </div>
+              )}
+
+              {/* Waitlist Info Section */}
+              {registration.status === REGISTRATION_STATUS.WAITLISTED && (
+                <div className={styles.waitlistInfoSection} style={{
+                  backgroundColor: '#f3e8ff',
+                  borderRadius: '8px',
+                  padding: '1.5rem',
+                  marginBottom: '1.5rem',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                    <span style={{ fontSize: '2rem' }}>⏳</span>
+                    <div>
+                      <h3 style={{ color: '#7c3aed', margin: '0 0 0.25rem 0' }}>On Waitlist</h3>
+                      {waitlistPosition && (
+                        <p style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'bold', color: '#6b21a8' }}>
+                          Position #{waitlistPosition}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <p style={{ margin: '0 0 1rem 0', color: '#6b7280' }}>
+                    You are on the waitlist. If a slot becomes available, we will email you immediately
+                    with payment instructions. No payment is required at this time.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowCancelConfirm(true)}
+                    className={styles.cancelButton}
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: '1px solid #dc2626',
+                      color: '#dc2626',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel Waitlist Registration
+                  </button>
+                </div>
+              )}
+
+              {/* Waitlist Slot Offered Section */}
+              {registration.status === REGISTRATION_STATUS.WAITLIST_OFFERED && (
+                <div className={styles.waitlistOfferedSection} style={{
+                  backgroundColor: '#dbeafe',
+                  border: '2px solid #3b82f6',
+                  borderRadius: '8px',
+                  padding: '1.5rem',
+                  marginBottom: '1.5rem',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                    <span style={{ fontSize: '2rem' }}>🎉</span>
+                    <div>
+                      <h3 style={{ color: '#1e40af', margin: '0 0 0.25rem 0' }}>A Slot is Available!</h3>
+                      <p style={{ margin: 0, color: '#1e3a8a', fontWeight: '500' }}>
+                        Complete your payment to confirm your registration
+                      </p>
+                    </div>
+                  </div>
+
+                  {registration.waitlistOfferExpiresAt && (
+                    <div style={{
+                      backgroundColor: '#fef3c7',
+                      border: '1px solid #f59e0b',
+                      borderRadius: '6px',
+                      padding: '0.75rem',
+                      marginBottom: '1rem',
+                    }}>
+                      <p style={{ margin: 0, color: '#92400e', fontWeight: '500' }}>
+                        ⚠️ Payment Deadline: {formatDate(registration.waitlistOfferExpiresAt)}
+                      </p>
+                      <p style={{ margin: '0.25rem 0 0 0', color: '#92400e', fontSize: '0.875rem' }}>
+                        If payment is not received by this time, your slot will be offered to the next person.
+                      </p>
+                    </div>
+                  )}
+
+                  <div style={{ marginBottom: '1rem' }}>
+                    <p style={{ margin: '0 0 0.5rem 0', fontWeight: '500' }}>
+                      Amount to Pay: <strong style={{ fontSize: '1.25rem' }}>{formatPrice(registration.totalAmount || 0)}</strong>
+                    </p>
+                  </div>
+
+                  {/* Payment Method Selection */}
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                      Select Payment Method:
+                    </label>
+                    <select
+                      value={selectedPaymentMethod}
+                      onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        borderRadius: '6px',
+                        border: '1px solid #d1d5db',
+                        fontSize: '1rem',
+                      }}
+                    >
+                      <option value="">-- Select payment method --</option>
+                      <option value="gcash">GCash</option>
+                      <option value="paymaya">Maya</option>
+                      <option value="bank_transfer">Bank Transfer</option>
+                    </select>
+                  </div>
+
+                  {/* File Upload */}
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                      Upload Payment Proof:
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      disabled={isUploading}
+                      style={{ marginBottom: '0.5rem' }}
+                    />
+                    {paymentFile && (
+                      <p style={{ margin: 0, color: '#059669', fontSize: '0.875rem' }}>
+                        Selected: {paymentFile.name}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Upload Progress */}
+                  {isUploading && (
+                    <div style={{ marginBottom: '1rem' }}>
+                      <div style={{
+                        backgroundColor: '#e5e7eb',
+                        borderRadius: '4px',
+                        height: '8px',
+                        overflow: 'hidden',
+                      }}>
+                        <div style={{
+                          backgroundColor: '#3b82f6',
+                          height: '100%',
+                          width: `${uploadProgress}%`,
+                          transition: 'width 0.3s ease',
+                        }} />
+                      </div>
+                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: '#6b7280' }}>
+                        Uploading... {uploadProgress}%
+                      </p>
+                    </div>
+                  )}
+
+                  {uploadError && (
+                    <p style={{ color: '#dc2626', margin: '0 0 1rem 0' }}>{uploadError}</p>
+                  )}
+
+                  {uploadSuccess && (
+                    <p style={{ color: '#059669', margin: '0 0 1rem 0' }}>
+                      ✓ Payment proof uploaded! Your payment is being reviewed.
+                    </p>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleWaitlistPaymentUpload}
+                    disabled={isUploading || !paymentFile || !selectedPaymentMethod}
+                    style={{
+                      backgroundColor: isUploading || !paymentFile || !selectedPaymentMethod ? '#9ca3af' : '#3b82f6',
+                      color: 'white',
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: '6px',
+                      border: 'none',
+                      cursor: isUploading || !paymentFile || !selectedPaymentMethod ? 'not-allowed' : 'pointer',
+                      fontWeight: '500',
+                      width: '100%',
+                    }}
+                  >
+                    {isUploading ? 'Uploading...' : 'Submit Payment'}
+                  </button>
+                </div>
+              )}
+
+              {/* Waitlist Expired Notice */}
+              {registration.status === REGISTRATION_STATUS.WAITLIST_EXPIRED && (
+                <div style={{
+                  backgroundColor: '#fee2e2',
+                  border: '1px solid #ef4444',
+                  borderRadius: '8px',
+                  padding: '1.5rem',
+                  marginBottom: '1.5rem',
+                }}>
+                  <h3 style={{ color: '#991b1b', margin: '0 0 0.5rem 0' }}>Offer Expired</h3>
+                  <p style={{ margin: 0, color: '#7f1d1d' }}>
+                    The payment deadline for your waitlist offer has passed. The slot has been offered to the next person in line.
+                    If you are still interested, please register again.
+                  </p>
+                </div>
+              )}
+
+              {/* Cancel Confirmation Modal */}
+              {showCancelConfirm && (
+                <div style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1000,
+                }}>
+                  <div style={{
+                    backgroundColor: 'white',
+                    borderRadius: '12px',
+                    padding: '2rem',
+                    maxWidth: '400px',
+                    width: '90%',
+                  }}>
+                    <h3 style={{ margin: '0 0 1rem 0' }}>Cancel Waitlist Registration?</h3>
+                    <p style={{ margin: '0 0 1.5rem 0', color: '#6b7280' }}>
+                      Are you sure you want to cancel your waitlist registration? This action cannot be undone.
+                    </p>
+                    {cancelError && (
+                      <p style={{ color: '#dc2626', margin: '0 0 1rem 0' }}>{cancelError}</p>
+                    )}
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowCancelConfirm(false)}
+                        disabled={isCancelling}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          borderRadius: '6px',
+                          border: '1px solid #d1d5db',
+                          backgroundColor: 'white',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Keep Registration
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelWaitlist}
+                        disabled={isCancelling}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          borderRadius: '6px',
+                          border: 'none',
+                          backgroundColor: '#dc2626',
+                          color: 'white',
+                          cursor: isCancelling ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        {isCancelling ? 'Cancelling...' : 'Yes, Cancel'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
 

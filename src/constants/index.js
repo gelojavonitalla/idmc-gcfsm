@@ -4,6 +4,11 @@
  */
 
 /**
+ * Application version
+ */
+export const APP_VERSION = '1.0.0';
+
+/**
  * Route paths for the application
  */
 export const ROUTES = {
@@ -21,6 +26,7 @@ export const ROUTES = {
   TERMS: '/terms',
   IDMC_2025: '/idmc-2025',
   MAINTENANCE: '/maintenance',
+  FEEDBACK: '/feedback',
 };
 
 /**
@@ -52,6 +58,8 @@ export const ADMIN_ROUTES = {
   FOOD_MENU: '/admin/food-menu',
   WHAT_TO_BRING: '/admin/what-to-bring',
   CHURCHES_BREAKDOWN: '/admin/churches',
+  FEEDBACK: '/admin/feedback',
+  FEEDBACK_RESPONSES: '/admin/feedback-responses',
 };
 
 /**
@@ -82,7 +90,7 @@ export const ADMIN_ROLE_LABELS = {
 export const ADMIN_ROLE_DESCRIPTIONS = {
   [ADMIN_ROLES.SUPERADMIN]: 'Full access to all features and user management.',
   [ADMIN_ROLES.ADMIN]: 'Can manage conference content, registrations, and view analytics.',
-  [ADMIN_ROLES.FINANCE]: 'Can verify payments, send official receipts, and view registrations.',
+  [ADMIN_ROLES.FINANCE]: 'Can verify payments, send official receipts, view registrations, and perform check-in duties.',
   [ADMIN_ROLES.MEDIA]: 'Can update content, upload hero images and videos.',
   [ADMIN_ROLES.VOLUNTEER]: 'Limited access for check-in duties only.',
 };
@@ -170,7 +178,7 @@ export const ADMIN_ROLE_PERMISSIONS = {
 export const ADMIN_NAV_GROUPS = [
   {
     id: 'main',
-    label: 'Main',
+    label: 'Dashboard',
     items: [
       { label: 'Dashboard', path: ADMIN_ROUTES.DASHBOARD, icon: 'dashboard' },
     ],
@@ -187,6 +195,7 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Downloads', path: ADMIN_ROUTES.DOWNLOADS, icon: 'download', requiresPermission: 'manageContent' },
       { label: 'About', path: ADMIN_ROUTES.ABOUT_CONTENT, icon: 'church', requiresPermission: 'manageContent' },
       { label: 'Legal', path: ADMIN_ROUTES.LEGAL, icon: 'document', requiresPermission: 'manageContent' },
+      { label: 'Feedback', path: ADMIN_ROUTES.FEEDBACK, icon: 'feedback', requiresPermission: 'manageContent' },
     ],
   },
   {
@@ -198,6 +207,7 @@ export const ADMIN_NAV_GROUPS = [
       { label: 'Check-In', path: ADMIN_ROUTES.CHECKIN, icon: 'checkin', requiresPermission: 'manageCheckIn' },
       { label: 'Check-In Monitor', path: ADMIN_ROUTES.CHECKIN_MONITOR, icon: 'monitor', requiresPermission: 'manageCheckIn' },
       { label: 'Inquiries', path: ADMIN_ROUTES.INQUIRIES, icon: 'mail', requiresPermission: 'manageInquiries' },
+      { label: 'Feedback Responses', path: ADMIN_ROUTES.FEEDBACK_RESPONSES, icon: 'feedback', requiresPermission: 'manageInquiries' },
     ],
   },
   {
@@ -246,6 +256,7 @@ export const COLLECTIONS = {
   FOOD_MENU: 'foodMenu',
   WHAT_TO_BRING: 'whatToBring',
   STATS: 'stats',
+  FEEDBACK: 'feedback',
 };
 
 /**
@@ -543,6 +554,88 @@ export const REGISTRATION_STATUS = {
   CONFIRMED: 'confirmed',
   CANCELLED: 'cancelled',
   REFUNDED: 'refunded',
+  WAITLISTED: 'waitlisted',
+  WAITLIST_OFFERED: 'waitlist_offered',
+  WAITLIST_EXPIRED: 'waitlist_expired',
+};
+
+/**
+ * Registration status labels for display
+ */
+export const REGISTRATION_STATUS_LABELS = {
+  [REGISTRATION_STATUS.PENDING_PAYMENT]: 'Pending Payment',
+  [REGISTRATION_STATUS.PENDING_VERIFICATION]: 'Pending Verification',
+  [REGISTRATION_STATUS.CONFIRMED]: 'Confirmed',
+  [REGISTRATION_STATUS.CANCELLED]: 'Cancelled',
+  [REGISTRATION_STATUS.REFUNDED]: 'Refunded',
+  [REGISTRATION_STATUS.WAITLISTED]: 'Waitlisted',
+  [REGISTRATION_STATUS.WAITLIST_OFFERED]: 'Slot Available',
+  [REGISTRATION_STATUS.WAITLIST_EXPIRED]: 'Offer Expired',
+};
+
+/**
+ * Registration status colors for styling
+ */
+export const REGISTRATION_STATUS_COLORS = {
+  [REGISTRATION_STATUS.PENDING_PAYMENT]: {
+    background: '#fef3c7',
+    border: '#f59e0b',
+    text: '#92400e',
+    badge: 'bg-yellow-100 text-yellow-800',
+  },
+  [REGISTRATION_STATUS.PENDING_VERIFICATION]: {
+    background: '#e0f2fe',
+    border: '#0ea5e9',
+    text: '#0369a1',
+    badge: 'bg-blue-100 text-blue-800',
+  },
+  [REGISTRATION_STATUS.CONFIRMED]: {
+    background: '#dcfce7',
+    border: '#22c55e',
+    text: '#166534',
+    badge: 'bg-green-100 text-green-800',
+  },
+  [REGISTRATION_STATUS.CANCELLED]: {
+    background: '#fee2e2',
+    border: '#ef4444',
+    text: '#991b1b',
+    badge: 'bg-red-100 text-red-800',
+  },
+  [REGISTRATION_STATUS.REFUNDED]: {
+    background: '#f3f4f6',
+    border: '#6b7280',
+    text: '#374151',
+    badge: 'bg-gray-100 text-gray-800',
+  },
+  [REGISTRATION_STATUS.WAITLISTED]: {
+    background: '#f3e8ff',
+    border: '#a855f7',
+    text: '#7c3aed',
+    badge: 'bg-purple-100 text-purple-800',
+  },
+  [REGISTRATION_STATUS.WAITLIST_OFFERED]: {
+    background: '#dbeafe',
+    border: '#3b82f6',
+    text: '#1e40af',
+    badge: 'bg-blue-100 text-blue-800',
+  },
+  [REGISTRATION_STATUS.WAITLIST_EXPIRED]: {
+    background: '#f3f4f6',
+    border: '#9ca3af',
+    text: '#4b5563',
+    badge: 'bg-gray-100 text-gray-600',
+  },
+};
+
+/**
+ * Waitlist payment deadline hours based on time until conference
+ * Used to calculate dynamic payment deadlines for waitlist offers
+ */
+export const WAITLIST_DEADLINE_HOURS = {
+  DEFAULT: 48,           // > 48 hours until conference
+  LESS_THAN_48H: 24,     // 24-48 hours until conference
+  LESS_THAN_24H: 12,     // 12-24 hours until conference
+  LESS_THAN_12H: 6,      // < 12 hours until conference
 };
 
 /**

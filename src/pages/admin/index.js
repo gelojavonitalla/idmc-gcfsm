@@ -24,3 +24,4 @@ export { default as AdminInquiriesPage } from './AdminInquiriesPage';
 export { default as AdminBankAccountsPage } from './AdminBankAccountsPage';
 export { default as AdminFoodMenuPage } from './AdminFoodMenuPage';
 export { default as AdminChurchesPage } from './AdminChurchesPage';
+export { default as AdminFeedbackPage } from './AdminFeedbackPage';

@@ -17,3 +17,4 @@ export { default as PrivacyPolicyPage } from './PrivacyPolicyPage';
 export { default as TermsOfServicePage } from './TermsOfServicePage';
 export { default as IDMC2025Page } from './IDMC2025Page';
 export { default as MaintenancePage } from './MaintenancePage';
+export { default as FeedbackPage } from './FeedbackPage';

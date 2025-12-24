@@ -20,6 +20,7 @@ import {
   TermsOfServicePage,
   IDMC2025Page,
   MaintenancePage,
+  FeedbackPage,
 } from './pages';
 import { ROUTES, ADMIN_ROUTES, IDMC_TEAM_ROLES } from './constants';
 import './index.css';
@@ -53,6 +54,8 @@ const AdminWorkshopsPage = lazy(() => import('./pages/admin/AdminWorkshopsPage')
 const AdminFoodMenuPage = lazy(() => import('./pages/admin/AdminFoodMenuPage'));
 const AdminWhatToBringPage = lazy(() => import('./pages/admin/AdminWhatToBringPage'));
 const AdminChurchesPage = lazy(() => import('./pages/admin/AdminChurchesPage'));
+const AdminFeedbackPage = lazy(() => import('./pages/admin/AdminFeedbackPage'));
+const AdminFeedbackResponsesPage = lazy(() => import('./pages/admin/AdminFeedbackResponsesPage'));
 
 /**
  * App Component
@@ -64,11 +67,12 @@ function App() {
   return (
     <AuthProvider>
       <AdminAuthProvider>
-        <ToastProvider>
-          <BrowserRouter>
-            <ScrollToTop />
-            <ToastContainer />
-            <Routes>
+        <SettingsProvider>
+          <ToastProvider>
+            <BrowserRouter>
+              <ScrollToTop />
+              <ToastContainer />
+              <Routes>
             {/* Admin Routes - Lazy loaded for code splitting */}
             <Route
               path={ADMIN_ROUTES.LOGIN}
@@ -93,7 +97,7 @@ function App() {
             <Route
               path={ADMIN_ROUTES.DASHBOARD}
               element={
-                <AdminProtectedRoute>
+                <AdminProtectedRoute volunteerRedirect={ADMIN_ROUTES.CHECKIN}>
                   <Suspense fallback={<AdminLoadingFallback />}>
                     <AdminDashboardPage />
                   </Suspense>
@@ -310,11 +314,31 @@ function App() {
                 </AdminProtectedRoute>
               }
             />
+            <Route
+              path={ADMIN_ROUTES.FEEDBACK}
+              element={
+                <AdminProtectedRoute>
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminFeedbackPage />
+                  </Suspense>
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path={ADMIN_ROUTES.FEEDBACK_RESPONSES}
+              element={
+                <AdminProtectedRoute requiredPermission="manageInquiries">
+                  <Suspense fallback={<AdminLoadingFallback />}>
+                    <AdminFeedbackResponsesPage />
+                  </Suspense>
+                </AdminProtectedRoute>
+              }
+            />
             {/* Fallback admin route */}
             <Route
               path={`${ADMIN_ROUTES.ROOT}/*`}
               element={
-                <AdminProtectedRoute>
+                <AdminProtectedRoute volunteerRedirect={ADMIN_ROUTES.CHECKIN}>
                   <Suspense fallback={<AdminLoadingFallback />}>
                     <AdminDashboardPage />
                   </Suspense>
@@ -326,9 +350,8 @@ function App() {
             <Route
               path="*"
               element={
-                <SettingsProvider>
-                  <Layout>
-                    <Routes>
+                <Layout>
+                  <Routes>
                     <Route path={ROUTES.HOME} element={<HomePage />} />
                     <Route path={ROUTES.SPEAKERS} element={<SpeakersPage />} />
                     <Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
@@ -342,6 +365,7 @@ function App() {
                     <Route path={ROUTES.PRIVACY} element={<PrivacyPolicyPage />} />
                     <Route path={ROUTES.TERMS} element={<TermsOfServicePage />} />
                     <Route path={ROUTES.IDMC_2025} element={<IDMC2025Page />} />
+                    <Route path={ROUTES.FEEDBACK} element={<FeedbackPage />} />
                     <Route
                       path={ROUTES.MAINTENANCE}
                       element={
@@ -351,16 +375,16 @@ function App() {
                       }
                     />
                     <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
-                    </Routes>
-                  </Layout>
-                </SettingsProvider>
+                  </Routes>
+                </Layout>
               }
             />
             </Routes>
           </BrowserRouter>
         </ToastProvider>
-      </AdminAuthProvider>
-    </AuthProvider>
+      </SettingsProvider>
+    </AdminAuthProvider>
+  </AuthProvider>
   );
 }
 

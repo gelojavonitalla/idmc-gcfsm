@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useSettings, DEFAULT_SETTINGS } from '../../context';
-import { ROUTES, CONTACT } from '../../constants';
+import { ROUTES, CONTACT, APP_VERSION } from '../../constants';
 import styles from './Footer.module.css';
 
 /**
@@ -13,7 +13,7 @@ function Footer() {
   const { settings: dbSettings, isLoading } = useSettings();
   // Use DEFAULT_SETTINGS as fallback only after Firebase has loaded
   const settings = isLoading ? null : (dbSettings || DEFAULT_SETTINGS);
-  const currentYear = new Date().getFullYear();
+  const currentYear = 2026;
 
   // Don't render dynamic content until Firebase has loaded
   if (!settings) {
@@ -174,6 +174,7 @@ function Footer() {
               Terms of Service
             </Link>
           </div>
+          <span className={styles.version}>v{APP_VERSION}</span>
         </div>
       </div>
     </footer>
