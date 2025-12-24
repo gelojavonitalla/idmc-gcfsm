@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { AdminLayout } from '../../components/admin';
+import { AdminLayout, WorkshopAttendeesModal } from '../../components/admin';
 import { getPublishedWorkshops } from '../../services/workshops';
 import { getVenueRooms } from '../../services/venue';
 import { getConferenceSettings } from '../../services/settings';
@@ -24,6 +24,8 @@ function AdminWorkshopsPage() {
   const [conferenceCapacity, setConferenceCapacity] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedWorkshop, setSelectedWorkshop] = useState(null);
+  const [isAttendeesModalOpen, setIsAttendeesModalOpen] = useState(false);
 
   /**
    * Gets capacity for a workshop from its linked venue room.
@@ -135,6 +137,24 @@ function AdminWorkshopsPage() {
 
   const stats = getCapacityStats();
 
+  /**
+   * Opens the attendees modal for a workshop
+   *
+   * @param {Object} workshop - Workshop to view attendees for
+   */
+  const handleViewAttendees = (workshop) => {
+    setSelectedWorkshop(workshop);
+    setIsAttendeesModalOpen(true);
+  };
+
+  /**
+   * Closes the attendees modal
+   */
+  const handleCloseAttendeesModal = () => {
+    setIsAttendeesModalOpen(false);
+    setSelectedWorkshop(null);
+  };
+
   return (
     <AdminLayout>
       {/* Header Section */}
@@ -223,6 +243,7 @@ function AdminWorkshopsPage() {
                 <th>Registered</th>
                 <th>Available</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -271,6 +292,21 @@ function AdminWorkshopsPage() {
                         )}
                       </div>
                     </td>
+                    <td>
+                      <button
+                        className={styles.viewAttendeesButton}
+                        onClick={() => handleViewAttendees(workshop)}
+                        title="View attendees"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                          <circle cx="9" cy="7" r="4" />
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        View Attendees
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -292,6 +328,13 @@ function AdminWorkshopsPage() {
           <p>There are no published workshops at this time.</p>
         </div>
       )}
+
+      {/* Workshop Attendees Modal */}
+      <WorkshopAttendeesModal
+        isOpen={isAttendeesModalOpen}
+        onClose={handleCloseAttendeesModal}
+        workshop={selectedWorkshop}
+      />
     </AdminLayout>
   );
 }
