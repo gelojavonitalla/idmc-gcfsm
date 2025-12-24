@@ -7,7 +7,6 @@
 
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getConferenceStats } from '../../services/stats';
 import styles from './SettingsForm.module.css';
 
@@ -45,9 +44,6 @@ function CapacitySettingsForm({ settings, onSave, isLoading }) {
 
   // Stats from stats collection
   const [registeredAttendeeCount, setRegisteredAttendeeCount] = useState(0);
-  const [isSyncingStats, setIsSyncingStats] = useState(false);
-  const [syncError, setSyncError] = useState(null);
-  const [syncSuccess, setSyncSuccess] = useState(false);
 
   /**
    * Syncs form data when settings prop changes (e.g., after initial load from DB)
@@ -78,33 +74,6 @@ function CapacitySettingsForm({ settings, onSave, isLoading }) {
     };
     fetchStats();
   }, []);
-
-  /**
-   * Triggers manual stats sync via Cloud Function
-   */
-  const handleSyncStats = async () => {
-    setIsSyncingStats(true);
-    setSyncError(null);
-    setSyncSuccess(false);
-
-    try {
-      const functions = getFunctions(undefined, 'asia-southeast1');
-      const triggerSync = httpsCallable(functions, 'triggerStatsSync');
-      await triggerSync();
-
-      // Refresh stats after sync
-      const stats = await getConferenceStats();
-      setRegisteredAttendeeCount(stats?.registeredAttendeeCount ?? 0);
-
-      setSyncSuccess(true);
-      setTimeout(() => setSyncSuccess(false), 3000);
-    } catch (error) {
-      console.error('Failed to sync stats:', error);
-      setSyncError('Failed to sync stats. Please try again.');
-    } finally {
-      setIsSyncingStats(false);
-    }
-  };
 
   /**
    * Handles form submission
@@ -202,21 +171,8 @@ function CapacitySettingsForm({ settings, onSave, isLoading }) {
             </div>
             <p className={styles.fieldHint}>
               This count is stored in the stats collection and maintained by Cloud Functions.
+              Use the Sync Stats button in Operations → Registrations to manually recalculate.
             </p>
-            <button
-              type="button"
-              className={styles.syncButton}
-              onClick={handleSyncStats}
-              disabled={isSyncingStats}
-            >
-              {isSyncingStats ? 'Syncing...' : 'Sync Stats'}
-            </button>
-            {syncSuccess && (
-              <span className={styles.syncSuccess}>Stats synced successfully!</span>
-            )}
-            {syncError && (
-              <span className={styles.syncError}>{syncError}</span>
-            )}
           </div>
         </div>
       </section>

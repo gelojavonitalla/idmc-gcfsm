@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import {
   AdminLayout,
   RegistrationsTable,
@@ -70,6 +71,11 @@ function AdminRegistrationsPage() {
     waitlistOffered: 0,
     waitlistExpired: 0,
   });
+
+  // Sync Stats state
+  const [isSyncingStats, setIsSyncingStats] = useState(false);
+  const [syncSuccess, setSyncSuccess] = useState(false);
+  const [syncError, setSyncError] = useState(null);
 
   /**
    * Fetches status counts from the database
@@ -295,6 +301,35 @@ function AdminRegistrationsPage() {
       setError('Failed to export registrations. Please try again.');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  /**
+   * Triggers manual stats sync via Cloud Function
+   * Recalculates workshop counts and other stats from registrations
+   */
+  const handleSyncStats = async () => {
+    setIsSyncingStats(true);
+    setSyncError(null);
+    setSyncSuccess(false);
+
+    try {
+      const functions = getFunctions(undefined, 'asia-southeast1');
+      const triggerSync = httpsCallable(functions, 'triggerStatsSync');
+      await triggerSync();
+
+      // Refresh data after sync
+      await fetchStatusCounts();
+      await fetchRegistrations();
+
+      setSyncSuccess(true);
+      setTimeout(() => setSyncSuccess(false), 3000);
+    } catch (err) {
+      console.error('Failed to sync stats:', err);
+      setSyncError('Failed to sync stats. Please try again.');
+      setTimeout(() => setSyncError(null), 5000);
+    } finally {
+      setIsSyncingStats(false);
     }
   };
 
@@ -529,8 +564,29 @@ function AdminRegistrationsPage() {
             </svg>
             {isLoading ? 'Loading...' : 'Refresh'}
           </button>
+          <button
+            className={`${styles.syncButton} ${syncSuccess ? styles.syncSuccess : ''}`}
+            onClick={handleSyncStats}
+            disabled={isSyncingStats || isLoading}
+            title="Recalculate workshop counts and other stats"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+            </svg>
+            {isSyncingStats ? 'Syncing...' : syncSuccess ? 'Synced!' : 'Sync Stats'}
+          </button>
         </div>
       </div>
+
+      {/* Sync Error Banner */}
+      {syncError && (
+        <div className={styles.errorBanner} role="alert">
+          {syncError}
+          <button onClick={() => setSyncError(null)} aria-label="Dismiss error">
+            &times;
+          </button>
+        </div>
+      )}
 
       {/* Error Banner */}
       {error && (
