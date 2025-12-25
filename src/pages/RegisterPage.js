@@ -715,6 +715,11 @@ function RegisterPage() {
    *
    * @returns {number} Total price
    */
+  // Derive pricing-relevant data from additional attendees to ensure recalculation when category/isStudent changes
+  const additionalAttendeesPricingData = useMemo(() => {
+    return (formData.additionalAttendees || []).map(a => ({ category: a.category, isStudent: a.isStudent }));
+  }, [formData.additionalAttendees]);
+
   const calculateTotalPrice = useCallback(() => {
     // Primary attendee price (with student pricing if applicable)
     const primaryPrice = getCategoryPrice(
@@ -723,12 +728,12 @@ function RegisterPage() {
     );
 
     // Additional attendees price (with student pricing if applicable)
-    const additionalPrice = (formData.additionalAttendees || []).reduce((total, attendee) => {
+    const additionalPrice = additionalAttendeesPricingData.reduce((total, attendee) => {
       return total + getCategoryPrice(attendee.category, attendee.isStudent);
     }, 0);
 
     return primaryPrice + additionalPrice;
-  }, [formData.primaryAttendee.category, formData.primaryAttendee.isStudent, formData.additionalAttendees, getCategoryPrice]);
+  }, [formData.primaryAttendee.category, formData.primaryAttendee.isStudent, additionalAttendeesPricingData, getCategoryPrice]);
 
   /**
    * Checks if payment is required based on total amount
