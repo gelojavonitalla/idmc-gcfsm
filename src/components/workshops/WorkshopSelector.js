@@ -166,7 +166,7 @@ function WorkshopSelector({ workshops, selections, onSelectionChange, disabled =
                               !isAvailable ? styles.full : remaining <= 10 ? styles.limited : ''
                             }`}
                           >
-                            {!isAvailable ? '0 spots left' : `${remaining} spots left`}
+                            {!isAvailable ? '0 slots left' : `${remaining} slots left`}
                           </span>
                         )}
                       </div>

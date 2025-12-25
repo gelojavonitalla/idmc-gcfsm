@@ -5,12 +5,12 @@ import styles from './CapacityBadge.module.css';
  * CapacityBadge Component
  * Displays workshop capacity status with visual indicators.
  * Shows "Open" for unlimited capacity, "Closed" when at capacity,
- * or "X spots left" for limited capacity workshops.
+ * or "X slots left" for limited capacity workshops.
  *
  * @param {Object} props - Component props
  * @param {number|null} props.capacity - Maximum capacity (null for unlimited)
  * @param {number} props.registeredCount - Current number of registered attendees
- * @param {boolean} [props.showRemaining=true] - Whether to show remaining spots or fraction
+ * @param {boolean} [props.showRemaining=true] - Whether to show remaining slots or fraction
  * @param {boolean} [props.compact=false] - Whether to show compact display (just Open/Closed)
  * @returns {JSX.Element} The capacity badge component
  */
@@ -47,13 +47,13 @@ function CapacityBadge({ capacity, registeredCount = 0, showRemaining = true, co
       return 'Open';
     }
     if (isClosed) {
-      return '0 spots left';
+      return '0 slots left';
     }
     if (compact) {
       return 'Open';
     }
     if (showRemaining) {
-      return `${remaining} spots left`;
+      return `${remaining} slots left`;
     }
     return `${registeredCount}/${capacity}`;
   };
