@@ -527,21 +527,20 @@ function RegistrationStatusPage() {
    * Checks if user cancellation is enabled and allowed
    */
   const canUserCancel = useMemo(() => {
-    if (!settings?.refundPolicy) return false;
-    // Default to true if userCancellationEnabled is not set (backwards compatibility)
-    return settings.refundPolicy.userCancellationEnabled !== false;
+    // Default to true if refundPolicy or userCancellationEnabled is not set (backwards compatibility)
+    return settings?.refundPolicy?.userCancellationEnabled !== false;
   }, [settings]);
 
   /**
    * Checks if transfer is enabled and within deadline
    */
   const canTransfer = useMemo(() => {
-    if (!settings?.refundPolicy) return false;
-    if (!settings.refundPolicy.transferEnabled) return false;
+    // Default to true if refundPolicy or transferEnabled is not set (backwards compatibility)
+    if (settings?.refundPolicy?.transferEnabled === false) return false;
 
-    // Check transfer deadline
-    const transferDeadlineDays = settings.refundPolicy.transferDeadlineDays ?? 3;
-    if (transferDeadlineDays > 0 && settings.startDate) {
+    // Check transfer deadline (default to 3 days if not configured)
+    const transferDeadlineDays = settings?.refundPolicy?.transferDeadlineDays ?? 3;
+    if (transferDeadlineDays > 0 && settings?.startDate) {
       const now = new Date();
       const eventDate = new Date(settings.startDate);
       const daysUntilEvent = Math.ceil((eventDate - now) / (1000 * 60 * 60 * 24));
@@ -999,7 +998,9 @@ function RegistrationStatusPage() {
 
               {/* User Cancel Registration Modal */}
               {showUserCancelModal && (
-                <div style={{
+                <div
+                  onClick={() => setShowUserCancelModal(false)}
+                  style={{
                   position: 'fixed',
                   top: 0,
                   left: 0,
@@ -1012,7 +1013,9 @@ function RegistrationStatusPage() {
                   zIndex: 1000,
                   padding: '1rem',
                 }}>
-                  <div style={{
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
                     backgroundColor: 'white',
                     borderRadius: '12px',
                     padding: '2rem',
@@ -1273,7 +1276,9 @@ function RegistrationStatusPage() {
 
               {/* Transfer Registration Modal */}
               {showTransferModal && (
-                <div style={{
+                <div
+                  onClick={() => setShowTransferModal(false)}
+                  style={{
                   position: 'fixed',
                   top: 0,
                   left: 0,
@@ -1286,7 +1291,9 @@ function RegistrationStatusPage() {
                   zIndex: 1000,
                   padding: '1rem',
                 }}>
-                  <div style={{
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
                     backgroundColor: 'white',
                     borderRadius: '12px',
                     padding: '2rem',

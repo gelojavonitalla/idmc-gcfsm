@@ -33,6 +33,15 @@ export const DEFAULT_SETTINGS = {
   startTime: '07:00',
   endTime: '17:30',
   timezone: 'Asia/Manila',
+  refundPolicy: {
+    enabled: true,
+    fullRefundDays: 14,
+    partialRefundDays: 7,
+    partialRefundPercent: 50,
+    userCancellationEnabled: true,
+    transferEnabled: true,
+    transferDeadlineDays: 3,
+  },
   venue: {
     name: 'GCF South Metro',
     address: 'Daang Hari Road, Versailles, Almanza Dos, Las Piñas City 1750 Philippines',
