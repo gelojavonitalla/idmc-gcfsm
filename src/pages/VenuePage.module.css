@@ -136,6 +136,8 @@
 }
 
 .transportIcon {
+  display: flex;
+  justify-content: center;
   color: var(--color-primary);
   margin-bottom: var(--spacing-4);
 }
