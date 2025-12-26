@@ -491,12 +491,14 @@ export async function verifyPayment(registrationId, verificationDetails, adminId
   const amountPaid = verificationDetails.amountPaid || 0;
   const balance = totalAmount - amountPaid;
 
-  // Determine if payment is fully paid
+  // Determine if payment is fully paid and if there's an overpayment
   const isFullyPaid = balance <= 0;
+  const overpaymentAmount = amountPaid > totalAmount ? amountPaid - totalAmount : 0;
 
   let updateData = {
     'payment.amountPaid': amountPaid,
     'payment.balance': Math.max(0, balance),
+    'payment.overpayment': overpaymentAmount,
     'payment.method': verificationDetails.method,
     'payment.referenceNumber': verificationDetails.referenceNumber,
     'payment.verifiedBy': verificationDetails.verifiedBy,
