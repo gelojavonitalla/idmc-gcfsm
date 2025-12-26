@@ -1038,6 +1038,19 @@ function RegistrationDetailModal({
                   </div>
                 )}
 
+                {/* Validation hint for required fields */}
+                {registration.totalAmount > 0 &&
+                  !showRejectionInput &&
+                  (!amountPaid || !paymentMethod) && (
+                    <p className={styles.validationHint}>
+                      {!amountPaid && !paymentMethod
+                        ? 'Please enter amount received and select payment method'
+                        : !amountPaid
+                        ? 'Please enter amount received'
+                        : 'Please select a payment method'}
+                    </p>
+                  )}
+
                 {/* Action Buttons */}
                 <div className={styles.verificationActions}>
                   {showRejectionInput ? (
