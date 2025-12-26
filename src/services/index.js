@@ -129,6 +129,7 @@ export {
   sendVerificationCode,
   verifyCode,
   sendTransferNotification,
+  sendTransferConfirmation,
 } from './registration';
 
 export {
