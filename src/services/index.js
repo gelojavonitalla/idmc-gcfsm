@@ -120,6 +120,8 @@ export {
   getNextWaitlistedRegistration,
   expireWaitlistOffer,
   cancelWaitlistRegistration,
+  cancelUserRegistration,
+  transferUserRegistration,
   uploadWaitlistPayment,
   checkRegistrationAvailability,
 } from './registration';

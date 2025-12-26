@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSettings, DEFAULT_SETTINGS } from '../context';
@@ -7,7 +7,7 @@ import {
   REGISTRATION_CATEGORY_LABELS,
   ROUTES,
 } from '../constants';
-import { formatPrice, maskEmail, maskName, maskPhone } from '../utils';
+import { formatPrice, maskEmail, maskName, maskPhone, calculateRefundEligibility } from '../utils';
 import {
   lookupRegistration,
   getAttendeeCheckInStatus,
@@ -16,6 +16,8 @@ import {
   uploadPaymentProof,
   updatePaymentProof,
   cancelWaitlistRegistration,
+  cancelUserRegistration,
+  transferUserRegistration,
   getWaitlistPosition,
   uploadWaitlistPayment,
 } from '../services';
@@ -97,6 +99,27 @@ function RegistrationStatusPage() {
   const [cancelError, setCancelError] = useState(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
+
+  // User cancellation states (for confirmed/pending registrations)
+  const [showUserCancelModal, setShowUserCancelModal] = useState(false);
+  const [userCancelReason, setUserCancelReason] = useState('');
+  const [userCancelAcknowledged, setUserCancelAcknowledged] = useState(false);
+  const [isUserCancelling, setIsUserCancelling] = useState(false);
+  const [userCancelError, setUserCancelError] = useState(null);
+
+  // Transfer registration states
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferData, setTransferData] = useState({
+    firstName: '',
+    lastName: '',
+    middleName: '',
+    email: '',
+    cellphone: '',
+    ministryRole: '',
+  });
+  const [transferReason, setTransferReason] = useState('');
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [transferError, setTransferError] = useState(null);
 
   /**
    * Performs the registration lookup
@@ -291,6 +314,131 @@ function RegistrationStatusPage() {
       setIsCancelling(false);
     }
   }, [registration]);
+
+  /**
+   * Handles user registration cancellation (for confirmed/pending registrations)
+   */
+  const handleUserCancel = useCallback(async () => {
+    if (!registration || !userCancelReason.trim()) return;
+
+    setIsUserCancelling(true);
+    setUserCancelError(null);
+
+    try {
+      // Calculate refund eligibility at time of cancellation
+      const refundEligibility = settings?.refundPolicy && settings?.startDate
+        ? calculateRefundEligibility(settings.refundPolicy, settings.startDate)
+        : null;
+
+      await cancelUserRegistration(
+        registration.id,
+        userCancelReason.trim(),
+        refundEligibility
+      );
+
+      // Update local state
+      setRegistration((prev) => ({
+        ...prev,
+        status: REGISTRATION_STATUS.CANCELLED,
+      }));
+
+      setShowUserCancelModal(false);
+      setUserCancelReason('');
+      setUserCancelAcknowledged(false);
+    } catch (err) {
+      console.error('User cancel error:', err);
+      setUserCancelError(err.message || 'Failed to cancel registration. Please try again.');
+    } finally {
+      setIsUserCancelling(false);
+    }
+  }, [registration, userCancelReason, settings]);
+
+  /**
+   * Computes refund eligibility based on current settings and event date
+   */
+  const refundEligibility = useMemo(() => {
+    if (!settings?.refundPolicy || !settings?.startDate) {
+      return null;
+    }
+    return calculateRefundEligibility(settings.refundPolicy, settings.startDate);
+  }, [settings]);
+
+  /**
+   * Handles registration transfer
+   */
+  const handleTransfer = useCallback(async () => {
+    if (!registration || !transferData.firstName || !transferData.lastName ||
+        !transferData.email || !transferData.cellphone) {
+      return;
+    }
+
+    setIsTransferring(true);
+    setTransferError(null);
+
+    try {
+      await transferUserRegistration(
+        registration.id,
+        transferData,
+        transferReason.trim() || 'User initiated transfer'
+      );
+
+      // Update local state with new attendee info
+      setRegistration((prev) => ({
+        ...prev,
+        primaryAttendee: {
+          ...prev.primaryAttendee,
+          ...transferData,
+          email: transferData.email.trim().toLowerCase(),
+        },
+      }));
+
+      setShowTransferModal(false);
+      setTransferData({
+        firstName: '',
+        lastName: '',
+        middleName: '',
+        email: '',
+        cellphone: '',
+        ministryRole: '',
+      });
+      setTransferReason('');
+    } catch (err) {
+      console.error('Transfer error:', err);
+      setTransferError(err.message || 'Failed to transfer registration. Please try again.');
+    } finally {
+      setIsTransferring(false);
+    }
+  }, [registration, transferData, transferReason]);
+
+  /**
+   * Checks if user cancellation is enabled and allowed
+   */
+  const canUserCancel = useMemo(() => {
+    if (!settings?.refundPolicy) return false;
+    // Default to true if userCancellationEnabled is not set (backwards compatibility)
+    return settings.refundPolicy.userCancellationEnabled !== false;
+  }, [settings]);
+
+  /**
+   * Checks if transfer is enabled and within deadline
+   */
+  const canTransfer = useMemo(() => {
+    if (!settings?.refundPolicy) return false;
+    if (!settings.refundPolicy.transferEnabled) return false;
+
+    // Check transfer deadline
+    const transferDeadlineDays = settings.refundPolicy.transferDeadlineDays ?? 3;
+    if (transferDeadlineDays > 0 && settings.startDate) {
+      const now = new Date();
+      const eventDate = new Date(settings.startDate);
+      const daysUntilEvent = Math.ceil((eventDate - now) / (1000 * 60 * 60 * 24));
+      if (daysUntilEvent < transferDeadlineDays) {
+        return false;
+      }
+    }
+
+    return true;
+  }, [settings]);
 
   /**
    * Fetches waitlist position when registration is loaded
@@ -736,6 +884,397 @@ function RegistrationStatusPage() {
                 </div>
               )}
 
+              {/* User Cancel Registration Modal */}
+              {showUserCancelModal && (
+                <div style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1000,
+                  padding: '1rem',
+                }}>
+                  <div style={{
+                    backgroundColor: 'white',
+                    borderRadius: '12px',
+                    padding: '2rem',
+                    maxWidth: '500px',
+                    width: '100%',
+                    maxHeight: '90vh',
+                    overflowY: 'auto',
+                  }}>
+                    <h3 style={{ margin: '0 0 1rem 0', color: '#dc2626' }}>Cancel Registration</h3>
+                    <p style={{ margin: '0 0 1rem 0', color: '#6b7280' }}>
+                      Are you sure you want to cancel your registration? This action cannot be undone.
+                    </p>
+
+                    {/* Refund Eligibility Info */}
+                    {refundEligibility && (
+                      <div style={{
+                        backgroundColor: refundEligibility.type === 'full' ? '#dcfce7' :
+                          refundEligibility.type === 'partial' ? '#fef3c7' : '#fee2e2',
+                        border: `1px solid ${refundEligibility.type === 'full' ? '#22c55e' :
+                          refundEligibility.type === 'partial' ? '#f59e0b' : '#ef4444'}`,
+                        borderRadius: '8px',
+                        padding: '1rem',
+                        marginBottom: '1rem',
+                      }}>
+                        <p style={{
+                          margin: '0 0 0.5rem 0',
+                          fontWeight: '600',
+                          color: refundEligibility.type === 'full' ? '#166534' :
+                            refundEligibility.type === 'partial' ? '#92400e' : '#991b1b',
+                        }}>
+                          {refundEligibility.type === 'full' && 'Full Refund Eligible (100%)'}
+                          {refundEligibility.type === 'partial' && `Partial Refund Eligible (${refundEligibility.percent}%)`}
+                          {refundEligibility.type === 'none' && 'Not Eligible for Refund'}
+                        </p>
+                        <p style={{
+                          margin: 0,
+                          fontSize: '0.875rem',
+                          color: refundEligibility.type === 'full' ? '#166534' :
+                            refundEligibility.type === 'partial' ? '#92400e' : '#991b1b',
+                        }}>
+                          {refundEligibility.message}
+                        </p>
+                        {refundEligibility.type !== 'none' && registration.payment?.amountPaid > 0 && (
+                          <p style={{
+                            margin: '0.5rem 0 0 0',
+                            fontSize: '0.875rem',
+                            fontWeight: '500',
+                            color: refundEligibility.type === 'full' ? '#166534' : '#92400e',
+                          }}>
+                            Refund Amount: {formatPrice(Math.round((registration.payment.amountPaid || 0) * (refundEligibility.percent / 100)))}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Cancellation Reason */}
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                        Reason for cancellation: <span style={{ color: '#dc2626' }}>*</span>
+                      </label>
+                      <textarea
+                        value={userCancelReason}
+                        onChange={(e) => setUserCancelReason(e.target.value)}
+                        placeholder="Please tell us why you are cancelling..."
+                        style={{
+                          width: '100%',
+                          minHeight: '80px',
+                          padding: '0.75rem',
+                          borderRadius: '6px',
+                          border: '1px solid #d1d5db',
+                          fontSize: '1rem',
+                          resize: 'vertical',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+
+                    {/* Acknowledgment Checkbox */}
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '0.5rem',
+                        cursor: 'pointer',
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={userCancelAcknowledged}
+                          onChange={(e) => setUserCancelAcknowledged(e.target.checked)}
+                          style={{ marginTop: '0.25rem' }}
+                        />
+                        <span style={{ fontSize: '0.875rem', color: '#4b5563' }}>
+                          I understand that this cancellation is final and I have reviewed my refund eligibility above.
+                          {refundEligibility?.type === 'none' && ' I understand that I am not eligible for a refund.'}
+                        </span>
+                      </label>
+                    </div>
+
+                    {userCancelError && (
+                      <p style={{ color: '#dc2626', margin: '0 0 1rem 0' }}>{userCancelError}</p>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowUserCancelModal(false);
+                          setUserCancelReason('');
+                          setUserCancelAcknowledged(false);
+                          setUserCancelError(null);
+                        }}
+                        disabled={isUserCancelling}
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          borderRadius: '6px',
+                          border: '1px solid #d1d5db',
+                          backgroundColor: 'white',
+                          cursor: 'pointer',
+                          fontWeight: '500',
+                        }}
+                      >
+                        Keep Registration
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleUserCancel}
+                        disabled={isUserCancelling || !userCancelReason.trim() || !userCancelAcknowledged}
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          borderRadius: '6px',
+                          border: 'none',
+                          backgroundColor: (isUserCancelling || !userCancelReason.trim() || !userCancelAcknowledged) ? '#9ca3af' : '#dc2626',
+                          color: 'white',
+                          cursor: (isUserCancelling || !userCancelReason.trim() || !userCancelAcknowledged) ? 'not-allowed' : 'pointer',
+                          fontWeight: '500',
+                        }}
+                      >
+                        {isUserCancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Transfer Registration Modal */}
+              {showTransferModal && (
+                <div style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1000,
+                  padding: '1rem',
+                }}>
+                  <div style={{
+                    backgroundColor: 'white',
+                    borderRadius: '12px',
+                    padding: '2rem',
+                    maxWidth: '500px',
+                    width: '100%',
+                    maxHeight: '90vh',
+                    overflowY: 'auto',
+                  }}>
+                    <h3 style={{ margin: '0 0 1rem 0', color: '#3b82f6' }}>Transfer Registration</h3>
+                    <p style={{ margin: '0 0 1rem 0', color: '#6b7280' }}>
+                      Enter the details of the person you want to transfer this registration to.
+                      They will receive your spot, payment status, and workshop selections.
+                    </p>
+
+                    {/* Transfer Form */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '500', fontSize: '0.875rem' }}>
+                            First Name <span style={{ color: '#dc2626' }}>*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={transferData.firstName}
+                            onChange={(e) => setTransferData((prev) => ({ ...prev, firstName: e.target.value }))}
+                            placeholder="First name"
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem',
+                              borderRadius: '6px',
+                              border: '1px solid #d1d5db',
+                              fontSize: '0.875rem',
+                              boxSizing: 'border-box',
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '500', fontSize: '0.875rem' }}>
+                            Last Name <span style={{ color: '#dc2626' }}>*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={transferData.lastName}
+                            onChange={(e) => setTransferData((prev) => ({ ...prev, lastName: e.target.value }))}
+                            placeholder="Last name"
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem',
+                              borderRadius: '6px',
+                              border: '1px solid #d1d5db',
+                              fontSize: '0.875rem',
+                              boxSizing: 'border-box',
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '500', fontSize: '0.875rem' }}>
+                          Middle Name
+                        </label>
+                        <input
+                          type="text"
+                          value={transferData.middleName}
+                          onChange={(e) => setTransferData((prev) => ({ ...prev, middleName: e.target.value }))}
+                          placeholder="Middle name (optional)"
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem',
+                            borderRadius: '6px',
+                            border: '1px solid #d1d5db',
+                            fontSize: '0.875rem',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '500', fontSize: '0.875rem' }}>
+                          Email <span style={{ color: '#dc2626' }}>*</span>
+                        </label>
+                        <input
+                          type="email"
+                          value={transferData.email}
+                          onChange={(e) => setTransferData((prev) => ({ ...prev, email: e.target.value }))}
+                          placeholder="email@example.com"
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem',
+                            borderRadius: '6px',
+                            border: '1px solid #d1d5db',
+                            fontSize: '0.875rem',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '500', fontSize: '0.875rem' }}>
+                          Cellphone <span style={{ color: '#dc2626' }}>*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          value={transferData.cellphone}
+                          onChange={(e) => setTransferData((prev) => ({ ...prev, cellphone: e.target.value }))}
+                          placeholder="09XX XXX XXXX"
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem',
+                            borderRadius: '6px',
+                            border: '1px solid #d1d5db',
+                            fontSize: '0.875rem',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '500', fontSize: '0.875rem' }}>
+                          Ministry Role
+                        </label>
+                        <input
+                          type="text"
+                          value={transferData.ministryRole}
+                          onChange={(e) => setTransferData((prev) => ({ ...prev, ministryRole: e.target.value }))}
+                          placeholder="e.g., Pastor, Worship Leader, Youth Leader"
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem',
+                            borderRadius: '6px',
+                            border: '1px solid #d1d5db',
+                            fontSize: '0.875rem',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '500', fontSize: '0.875rem' }}>
+                          Reason for Transfer
+                        </label>
+                        <textarea
+                          value={transferReason}
+                          onChange={(e) => setTransferReason(e.target.value)}
+                          placeholder="Optional: Why are you transferring this registration?"
+                          style={{
+                            width: '100%',
+                            minHeight: '60px',
+                            padding: '0.5rem',
+                            borderRadius: '6px',
+                            border: '1px solid #d1d5db',
+                            fontSize: '0.875rem',
+                            resize: 'vertical',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {transferError && (
+                      <p style={{ color: '#dc2626', margin: '1rem 0 0 0', fontSize: '0.875rem' }}>{transferError}</p>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowTransferModal(false);
+                          setTransferData({
+                            firstName: '',
+                            lastName: '',
+                            middleName: '',
+                            email: '',
+                            cellphone: '',
+                            ministryRole: '',
+                          });
+                          setTransferReason('');
+                          setTransferError(null);
+                        }}
+                        disabled={isTransferring}
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          borderRadius: '6px',
+                          border: '1px solid #d1d5db',
+                          backgroundColor: 'white',
+                          cursor: 'pointer',
+                          fontWeight: '500',
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleTransfer}
+                        disabled={isTransferring || !transferData.firstName || !transferData.lastName ||
+                          !transferData.email || !transferData.cellphone}
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          borderRadius: '6px',
+                          border: 'none',
+                          backgroundColor: (isTransferring || !transferData.firstName || !transferData.lastName ||
+                            !transferData.email || !transferData.cellphone) ? '#9ca3af' : '#3b82f6',
+                          color: 'white',
+                          cursor: (isTransferring || !transferData.firstName || !transferData.lastName ||
+                            !transferData.email || !transferData.cellphone) ? 'not-allowed' : 'pointer',
+                          fontWeight: '500',
+                        }}
+                      >
+                        {isTransferring ? 'Transferring...' : 'Confirm Transfer'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Registration Header */}
               <div className={styles.regHeader}>
                 <div className={styles.regIdSection}>
@@ -1007,6 +1546,58 @@ function RegistrationStatusPage() {
                       We have received your payment proof and it is being verified.
                       You will receive a confirmation email once your registration is confirmed.
                     </p>
+                  </div>
+                )}
+
+                {/* User Cancel/Transfer Registration Options - for confirmed/pending statuses */}
+                {(registration.status === REGISTRATION_STATUS.PENDING_PAYMENT ||
+                  registration.status === REGISTRATION_STATUS.PENDING_VERIFICATION ||
+                  registration.status === REGISTRATION_STATUS.CONFIRMED) &&
+                  (canUserCancel || canTransfer) && (
+                  <div style={{
+                    marginTop: '1.5rem',
+                    paddingTop: '1.5rem',
+                    borderTop: '1px solid #e5e7eb',
+                  }}>
+                    <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.875rem', color: '#6b7280' }}>
+                      Need to make changes to your registration?
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      {canTransfer && (
+                        <button
+                          type="button"
+                          onClick={() => setShowTransferModal(true)}
+                          style={{
+                            backgroundColor: 'transparent',
+                            border: '1px solid #3b82f6',
+                            color: '#3b82f6',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                          }}
+                        >
+                          Transfer Registration
+                        </button>
+                      )}
+                      {canUserCancel && (
+                        <button
+                          type="button"
+                          onClick={() => setShowUserCancelModal(true)}
+                          style={{
+                            backgroundColor: 'transparent',
+                            border: '1px solid #dc2626',
+                            color: '#dc2626',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                          }}
+                        >
+                          Cancel Registration
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
