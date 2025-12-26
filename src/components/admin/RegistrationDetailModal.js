@@ -22,6 +22,7 @@ import {
   cancelRegistration,
   refundRegistration,
   promoteFromWaitlist,
+  getAllFoodMenuItems,
 } from '../../services';
 import { useAdminAuth, useSettings } from '../../context';
 import { calculateRefundEligibility } from '../../utils/registration';
@@ -269,6 +270,9 @@ function RegistrationDetailModal({
   const [promoteError, setPromoteError] = useState(null);
   const [promoteSuccess, setPromoteSuccess] = useState(false);
 
+  // Food menu items state
+  const [foodMenuItems, setFoodMenuItems] = useState([]);
+
   /**
    * Sync state when registration changes
    */
@@ -334,6 +338,25 @@ function RegistrationDetailModal({
       fetchActivityLogs();
     }
   }, [isOpen, registration?.id]);
+
+  /**
+   * Fetch food menu items when modal opens
+   */
+  useEffect(() => {
+    async function fetchFoodMenuItems() {
+      try {
+        const items = await getAllFoodMenuItems();
+        setFoodMenuItems(items);
+      } catch (error) {
+        console.error('Failed to fetch food menu items:', error);
+        setFoodMenuItems([]);
+      }
+    }
+
+    if (isOpen) {
+      fetchFoodMenuItems();
+    }
+  }, [isOpen]);
 
   if (!isOpen || !registration) {
     return null;
@@ -655,6 +678,20 @@ function RegistrationDetailModal({
   };
 
   /**
+   * Gets the food item name by ID
+   *
+   * @param {string} foodChoiceId - Food menu item ID
+   * @returns {string} Food item name or dash if not found
+   */
+  const getFoodItemName = (foodChoiceId) => {
+    if (!foodChoiceId) {
+      return '—';
+    }
+    const item = foodMenuItems.find((f) => f.id === foodChoiceId);
+    return item?.name || foodChoiceId;
+  };
+
+  /**
    * Formats activity log date
    *
    * @param {Object} timestamp - Firestore timestamp
@@ -807,6 +844,43 @@ function RegistrationDetailModal({
               )}
             </div>
           </div>
+
+          {/* Food Selection - Only show if primary or any additional attendee has food choice */}
+          {(registration.primaryAttendee?.foodChoice ||
+            registration.additionalAttendees?.some((a) => a.foodChoice)) && (
+            <div className={styles.section}>
+              <h3 className={styles.sectionTitle}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+                  <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+                  <line x1="6" y1="1" x2="6" y2="4" />
+                  <line x1="10" y1="1" x2="10" y2="4" />
+                  <line x1="14" y1="1" x2="14" y2="4" />
+                </svg>
+                Food Selection
+              </h3>
+              <div className={styles.infoGrid}>
+                <div className={styles.infoItem}>
+                  <span className={styles.label}>Primary Attendee</span>
+                  <span className={styles.value}>
+                    {getFoodItemName(registration.primaryAttendee?.foodChoice)}
+                  </span>
+                </div>
+                {registration.additionalAttendees?.map((attendee, index) => (
+                  attendee.foodChoice && (
+                    <div key={index} className={styles.infoItem}>
+                      <span className={styles.label}>
+                        {attendee.firstName} {attendee.lastName}
+                      </span>
+                      <span className={styles.value}>
+                        {getFoodItemName(attendee.foodChoice)}
+                      </span>
+                    </div>
+                  )
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Payment Information */}
           <div className={styles.section}>
@@ -1899,6 +1973,7 @@ RegistrationDetailModal.propTypes = {
           timeSlot: PropTypes.string,
         })
       ),
+      foodChoice: PropTypes.string,
     }),
     firstName: PropTypes.string,
     lastName: PropTypes.string,
@@ -1928,6 +2003,7 @@ RegistrationDetailModal.propTypes = {
         lastName: PropTypes.string,
         email: PropTypes.string,
         category: PropTypes.string,
+        foodChoice: PropTypes.string,
       })
     ),
     notes: PropTypes.string,
