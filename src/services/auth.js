@@ -39,9 +39,18 @@ export async function signInAdmin(email, password) {
 
   const adminData = adminDoc.data();
 
+  // Track the current timestamp for the return value
+  const now = new Date();
+  let updatedFields = { lastLoginAt: now };
+
   // Auto-activate pending admins on first successful login
   // (they have completed password setup via invitation link)
   if (adminData.status === 'pending') {
+    updatedFields = {
+      status: 'active',
+      lastLoginAt: now,
+      activatedAt: now,
+    };
     await updateDoc(doc(db, COLLECTIONS.ADMINS, user.uid), {
       status: 'active',
       lastLoginAt: serverTimestamp(),
@@ -77,6 +86,7 @@ export async function signInAdmin(email, password) {
       id: user.uid,
       email: user.email,
       ...adminData,
+      ...updatedFields,
       status: finalStatus,
     },
   };
