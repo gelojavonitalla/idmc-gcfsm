@@ -113,6 +113,18 @@ export function SettingsProvider({ children }) {
   }, [fetchSettings]);
 
   /**
+   * Updates the document title when settings change
+   */
+  useEffect(() => {
+    if (settings) {
+      const title = settings.title || DEFAULT_SETTINGS.title;
+      const theme = settings.theme || DEFAULT_SETTINGS.theme;
+      const venueName = settings.venue?.name || DEFAULT_SETTINGS.venue.name;
+      document.title = `${title} - ${theme} | ${venueName}`;
+    }
+  }, [settings]);
+
+  /**
    * Refreshes settings from the database
    */
   const refreshSettings = useCallback(() => {
