@@ -21,6 +21,11 @@ const DEFAULT_REFUND_POLICY = {
   fullRefundMessage: 'Full refund available until {days} days before the event.',
   partialRefundMessage: 'Partial refund ({percent}%) available until {days} days before the event.',
   lateRefundMessage: 'Cancellations within {days} days of the event are not eligible for refund.',
+  // User cancellation policy
+  userCancellationEnabled: true,
+  // Transfer policy
+  transferEnabled: true,
+  transferDeadlineDays: 3,
 };
 
 /**
@@ -43,6 +48,9 @@ function RefundPolicySettings({ settings, onSave, isLoading }) {
       fullRefundMessage: settings?.refundPolicy?.fullRefundMessage || DEFAULT_REFUND_POLICY.fullRefundMessage,
       partialRefundMessage: settings?.refundPolicy?.partialRefundMessage || DEFAULT_REFUND_POLICY.partialRefundMessage,
       lateRefundMessage: settings?.refundPolicy?.lateRefundMessage || DEFAULT_REFUND_POLICY.lateRefundMessage,
+      userCancellationEnabled: settings?.refundPolicy?.userCancellationEnabled ?? DEFAULT_REFUND_POLICY.userCancellationEnabled,
+      transferEnabled: settings?.refundPolicy?.transferEnabled ?? DEFAULT_REFUND_POLICY.transferEnabled,
+      transferDeadlineDays: settings?.refundPolicy?.transferDeadlineDays ?? DEFAULT_REFUND_POLICY.transferDeadlineDays,
     },
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -64,6 +72,9 @@ function RefundPolicySettings({ settings, onSave, isLoading }) {
           fullRefundMessage: settings.refundPolicy?.fullRefundMessage || DEFAULT_REFUND_POLICY.fullRefundMessage,
           partialRefundMessage: settings.refundPolicy?.partialRefundMessage || DEFAULT_REFUND_POLICY.partialRefundMessage,
           lateRefundMessage: settings.refundPolicy?.lateRefundMessage || DEFAULT_REFUND_POLICY.lateRefundMessage,
+          userCancellationEnabled: settings.refundPolicy?.userCancellationEnabled ?? DEFAULT_REFUND_POLICY.userCancellationEnabled,
+          transferEnabled: settings.refundPolicy?.transferEnabled ?? DEFAULT_REFUND_POLICY.transferEnabled,
+          transferDeadlineDays: settings.refundPolicy?.transferDeadlineDays ?? DEFAULT_REFUND_POLICY.transferDeadlineDays,
         },
       });
     }
@@ -254,6 +265,109 @@ function RefundPolicySettings({ settings, onSave, isLoading }) {
         </div>
       </section>
 
+      {/* User Self-Service Section */}
+      <section className={styles.section} style={{ marginTop: '2rem' }}>
+        <h3 className={styles.sectionTitle}>User Self-Service Options</h3>
+        <p className={styles.sectionDescription}>
+          Configure what actions attendees can perform themselves from the registration status page.
+        </p>
+        <div className={styles.grid}>
+          <div className={styles.fieldFull}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={formData.refundPolicy.userCancellationEnabled}
+                onChange={(e) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    refundPolicy: { ...prev.refundPolicy, userCancellationEnabled: e.target.checked },
+                  }));
+                }}
+                className={styles.checkbox}
+              />
+              <span>Allow User Cancellation</span>
+            </label>
+            <p className={styles.fieldHint}>
+              When enabled, attendees can cancel their own registration from the registration status page.
+              Refund eligibility follows the policy configured above.
+            </p>
+          </div>
+
+          <div className={styles.fieldFull}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={formData.refundPolicy.transferEnabled}
+                onChange={(e) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    refundPolicy: { ...prev.refundPolicy, transferEnabled: e.target.checked },
+                  }));
+                }}
+                className={styles.checkbox}
+              />
+              <span>Allow Registration Transfer</span>
+            </label>
+            <p className={styles.fieldHint}>
+              When enabled, attendees can transfer their registration to another person from the registration status page.
+            </p>
+          </div>
+
+          {formData.refundPolicy.transferEnabled && (
+            <div className={styles.field}>
+              <label htmlFor="refundPolicy.transferDeadlineDays" className={styles.label}>
+                Transfer Deadline (Days Before Event)
+              </label>
+              <input
+                type="number"
+                id="refundPolicy.transferDeadlineDays"
+                name="refundPolicy.transferDeadlineDays"
+                value={formData.refundPolicy.transferDeadlineDays ?? ''}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? null : parseInt(e.target.value, 10);
+                  setFormData((prev) => ({
+                    ...prev,
+                    refundPolicy: { ...prev.refundPolicy, transferDeadlineDays: value },
+                  }));
+                }}
+                className={styles.input}
+                placeholder="3"
+                min="0"
+              />
+              <p className={styles.fieldHint}>
+                Minimum days before the event that transfers are allowed. Set to 0 to allow transfers anytime.
+              </p>
+            </div>
+          )}
+
+          {/* Summary Box */}
+          <div className={styles.fieldFull} style={{ marginTop: '1rem' }}>
+            <div style={{
+              backgroundColor: '#f0f9ff',
+              border: '1px solid #0ea5e9',
+              borderRadius: '8px',
+              padding: '1rem',
+            }}>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: '#0369a1', fontWeight: '500' }}>
+                Self-Service Summary
+              </p>
+              <ul style={{ margin: '0.5rem 0 0 0', paddingLeft: '1.25rem', fontSize: '0.875rem', color: '#0c4a6e' }}>
+                <li>
+                  User cancellation: {formData.refundPolicy.userCancellationEnabled ? 'Enabled' : 'Disabled'}
+                </li>
+                <li>
+                  Registration transfer: {formData.refundPolicy.transferEnabled
+                    ? (formData.refundPolicy.transferDeadlineDays > 0
+                      ? `Enabled (until ${formData.refundPolicy.transferDeadlineDays} days before event)`
+                      : 'Enabled (anytime)')
+                    : 'Disabled'}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Submit Button */}
       <div className={styles.actions}>
         <button
@@ -293,6 +407,9 @@ RefundPolicySettings.propTypes = {
       fullRefundMessage: PropTypes.string,
       partialRefundMessage: PropTypes.string,
       lateRefundMessage: PropTypes.string,
+      userCancellationEnabled: PropTypes.bool,
+      transferEnabled: PropTypes.bool,
+      transferDeadlineDays: PropTypes.number,
     }),
   }),
   onSave: PropTypes.func.isRequired,

@@ -1452,6 +1452,140 @@ export async function cancelWaitlistRegistration(registrationId, reason = 'User 
 }
 
 /**
+ * Cancels a user registration (user-initiated from status page).
+ * Allows users to cancel their own PENDING_PAYMENT, PENDING_VERIFICATION, or CONFIRMED registrations.
+ * Decrements workshop counts if applicable.
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {string} reason - Cancellation reason provided by user
+ * @param {Object} refundEligibility - Refund eligibility info at time of cancellation
+ * @param {string} refundEligibility.type - 'full', 'partial', or 'none'
+ * @param {number} refundEligibility.percent - Refund percentage (0-100)
+ * @returns {Promise<void>}
+ */
+export async function cancelUserRegistration(registrationId, reason, refundEligibility = null) {
+  const registration = await getRegistrationById(registrationId);
+  if (!registration) {
+    throw new Error(REGISTRATION_ERROR_CODES.REGISTRATION_NOT_FOUND);
+  }
+
+  const validStatuses = [
+    REGISTRATION_STATUS.PENDING_PAYMENT,
+    REGISTRATION_STATUS.PENDING_VERIFICATION,
+    REGISTRATION_STATUS.CONFIRMED,
+  ];
+
+  if (!validStatuses.includes(registration.status)) {
+    throw new Error('This registration cannot be cancelled. Please contact support.');
+  }
+
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  // Decrement workshop counts if the registration had them incremented
+  // (all statuses except WAITLISTED have counts incremented)
+  const allWorkshopSelections = [
+    ...(registration.primaryAttendee?.workshopSelections || []),
+    ...(registration.additionalAttendees || []).flatMap((attendee) => attendee.workshopSelections || []),
+  ];
+
+  for (const selection of allWorkshopSelections) {
+    if (selection.sessionId) {
+      try {
+        await decrementWorkshopCount(selection.sessionId);
+      } catch (error) {
+        console.error(`Failed to decrement workshop count for ${selection.sessionId}:`, error);
+      }
+    }
+  }
+
+  await updateDoc(docRef, {
+    status: REGISTRATION_STATUS.CANCELLED,
+    'payment.status': REGISTRATION_STATUS.CANCELLED,
+    cancellation: {
+      reason,
+      cancelledBy: 'user',
+      cancelledAt: serverTimestamp(),
+      refundEligibility: refundEligibility ? {
+        type: refundEligibility.type,
+        percent: refundEligibility.percent,
+      } : null,
+    },
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Transfers a registration to a new attendee (user-initiated from status page).
+ * Allows users to transfer their registration to another person.
+ * The new attendee inherits the payment status and workshop selections.
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {Object} newAttendee - New attendee information
+ * @param {string} newAttendee.firstName - New attendee first name
+ * @param {string} newAttendee.lastName - New attendee last name
+ * @param {string} newAttendee.middleName - New attendee middle name
+ * @param {string} newAttendee.email - New attendee email
+ * @param {string} newAttendee.cellphone - New attendee cellphone
+ * @param {string} newAttendee.ministryRole - New attendee ministry role
+ * @param {string} transferReason - Reason for the transfer
+ * @returns {Promise<void>}
+ */
+export async function transferUserRegistration(registrationId, newAttendee, transferReason) {
+  const registration = await getRegistrationById(registrationId);
+  if (!registration) {
+    throw new Error(REGISTRATION_ERROR_CODES.REGISTRATION_NOT_FOUND);
+  }
+
+  const validStatuses = [
+    REGISTRATION_STATUS.PENDING_PAYMENT,
+    REGISTRATION_STATUS.PENDING_VERIFICATION,
+    REGISTRATION_STATUS.CONFIRMED,
+  ];
+
+  if (!validStatuses.includes(registration.status)) {
+    throw new Error('This registration cannot be transferred. Please contact support.');
+  }
+
+  // Check if the new email is already registered
+  const existingRegistration = await getRegistrationByEmail(newAttendee.email);
+  if (existingRegistration && existingRegistration.id !== registrationId) {
+    throw new Error('The new attendee email is already registered for this event.');
+  }
+
+  const docRef = doc(db, COLLECTIONS.REGISTRATIONS, registrationId);
+
+  // Store the original attendee info before transfer
+  const originalAttendee = registration.primaryAttendee;
+
+  // Create the updated primary attendee (keep workshop selections, category from original)
+  const updatedPrimaryAttendee = {
+    ...originalAttendee,
+    firstName: newAttendee.firstName.trim(),
+    lastName: newAttendee.lastName.trim(),
+    middleName: newAttendee.middleName?.trim() || '',
+    email: newAttendee.email.trim().toLowerCase(),
+    cellphone: newAttendee.cellphone.replace(/[\s-]/g, ''),
+    ministryRole: newAttendee.ministryRole || originalAttendee.ministryRole,
+  };
+
+  await updateDoc(docRef, {
+    primaryAttendee: updatedPrimaryAttendee,
+    transfer: {
+      transferredAt: serverTimestamp(),
+      transferredBy: 'user',
+      reason: transferReason,
+      originalAttendee: {
+        firstName: originalAttendee.firstName,
+        lastName: originalAttendee.lastName,
+        email: originalAttendee.email,
+        cellphone: originalAttendee.cellphone,
+      },
+    },
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
  * Updates payment proof for a waitlist-offered registration.
  * Changes status to pending_verification.
  *

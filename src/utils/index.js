@@ -20,6 +20,8 @@ export {
   maskEmail,
   maskName,
   maskPhone,
+  calculateRefundEligibility,
+  formatRefundPolicySummary,
 } from './registration';
 
 export {
