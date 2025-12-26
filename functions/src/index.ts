@@ -274,6 +274,135 @@ const DEFAULT_SMS_SETTINGS: SmsSettings = {
 };
 
 /**
+ * Email settings interface for controlling email notifications
+ */
+interface EmailSettings {
+  /** Whether email notifications from triggers are enabled */
+  triggerEmailsEnabled: boolean;
+  /** Whether to skip sending to test/seeded data */
+  skipTestData: boolean;
+}
+
+/**
+ * Default email settings - conservative defaults to prevent accidental sends
+ */
+const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
+  triggerEmailsEnabled: true,
+  skipTestData: true,
+};
+
+/**
+ * Test email domains that should never receive emails
+ * These are commonly used for testing and don't have real mailboxes
+ */
+const TEST_EMAIL_DOMAINS = [
+  "example.com",
+  "example.org",
+  "example.net",
+  "test.com",
+  "test.org",
+  "localhost",
+  "localhost.localdomain",
+  "invalid",
+  "mailinator.com",
+  "guerrillamail.com",
+  "tempmail.com",
+  "throwaway.email",
+];
+
+/**
+ * Retrieves email settings from Firestore conference settings
+ * Falls back to defaults if Firestore settings not found
+ *
+ * @return {Promise<EmailSettings>} Email configuration settings
+ */
+async function getEmailSettings(): Promise<EmailSettings> {
+  try {
+    const db = getFirestore(DATABASE_ID);
+    const settingsDoc = await db
+      .collection(COLLECTIONS.CONFERENCES)
+      .doc("conference-settings")
+      .get();
+
+    if (settingsDoc.exists) {
+      const data = settingsDoc.data();
+      if (data?.email) {
+        return {
+          triggerEmailsEnabled: data.email.triggerEmailsEnabled ??
+            DEFAULT_EMAIL_SETTINGS.triggerEmailsEnabled,
+          skipTestData: data.email.skipTestData ??
+            DEFAULT_EMAIL_SETTINGS.skipTestData,
+        };
+      }
+    }
+
+    logger.info("No email settings in Firestore, using defaults");
+    return DEFAULT_EMAIL_SETTINGS;
+  } catch (error) {
+    logger.warn("Could not fetch email settings from Firestore:", error);
+    return DEFAULT_EMAIL_SETTINGS;
+  }
+}
+
+/**
+ * Checks if an email address belongs to a test domain
+ *
+ * @param {string} email - Email address to check
+ * @return {boolean} True if email is from a test domain
+ */
+function isTestEmailDomain(email: string): boolean {
+  if (!email) return false;
+  const domain = email.toLowerCase().split("@")[1];
+  if (!domain) return false;
+  return TEST_EMAIL_DOMAINS.some(
+    (testDomain) => domain === testDomain || domain.endsWith(`.${testDomain}`)
+  );
+}
+
+/**
+ * Checks if a registration is test/seeded data that should not receive emails
+ *
+ * @param {Object} registration - Registration data
+ * @return {boolean} True if registration is test/seeded data
+ */
+function isTestOrSeededRegistration(
+  registration: {createdBy?: string}
+): boolean {
+  return registration?.createdBy === "seed-script";
+}
+
+/**
+ * Determines if email should be skipped for a registration
+ * Checks both the email domain and registration metadata
+ *
+ * @param {string} email - Recipient email address
+ * @param {Object} registration - Registration data
+ * @param {EmailSettings} emailSettings - Current email settings
+ * @return {boolean} True if email should be skipped
+ */
+function shouldSkipEmail(
+  email: string,
+  registration: {createdBy?: string},
+  emailSettings: EmailSettings
+): boolean {
+  // Always skip test email domains
+  if (isTestEmailDomain(email)) {
+    logger.info(`Skipping email to test domain: ${email}`);
+    return true;
+  }
+
+  // Skip seeded registrations if skipTestData is enabled
+  if (emailSettings.skipTestData && isTestOrSeededRegistration(registration)) {
+    logger.info(
+      `Skipping email for seeded registration (createdBy: ${registration.createdBy})`
+    );
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Retrieves SMS settings from Firestore conference settings
  * Falls back to defaults if Firestore settings not found
  *
@@ -1809,24 +1938,34 @@ export const onRegistrationCreated = onDocumentCreated(
     let emailSent = false;
     let smsSent = false;
 
+    // Get email settings to check if we should skip test data
+    const emailSettings = await getEmailSettings();
+
     // Send confirmation email if SendGrid is enabled
     if (isSendGridEnabled() && email) {
-      try {
-        await sendRegistrationConfirmationEmail(email, {
-          registrationId: registrationData.registrationId,
-          shortCode: registrationData.shortCode,
-          primaryAttendee: registrationData.primaryAttendee,
-          totalAmount: registrationData.totalAmount,
-          paymentDeadline: registrationData.paymentDeadline,
-          church: registrationData.church,
-          status: registrationData.status,
-        });
-        updateData.confirmationEmailSent = true;
-        updateData.confirmationEmailSentAt = FieldValue.serverTimestamp();
-        emailSent = true;
-        log.info("Confirmation email sent", {email});
-      } catch (error) {
-        log.error("Error sending confirmation email", error, {email});
+      // Check if we should skip this email (test data or trigger emails disabled)
+      if (!emailSettings.triggerEmailsEnabled) {
+        log.info("Trigger emails disabled in settings, skipping confirmation email");
+      } else if (shouldSkipEmail(email, registrationData, emailSettings)) {
+        log.info("Skipping confirmation email for test/seeded data", {email});
+      } else {
+        try {
+          await sendRegistrationConfirmationEmail(email, {
+            registrationId: registrationData.registrationId,
+            shortCode: registrationData.shortCode,
+            primaryAttendee: registrationData.primaryAttendee,
+            totalAmount: registrationData.totalAmount,
+            paymentDeadline: registrationData.paymentDeadline,
+            church: registrationData.church,
+            status: registrationData.status,
+          });
+          updateData.confirmationEmailSent = true;
+          updateData.confirmationEmailSentAt = FieldValue.serverTimestamp();
+          emailSent = true;
+          log.info("Confirmation email sent", {email});
+        } catch (error) {
+          log.error("Error sending confirmation email", error, {email});
+        }
       }
     } else if (!isSendGridEnabled()) {
       log.info("SendGrid not enabled, skipping confirmation email");
@@ -2116,76 +2255,101 @@ export const onPaymentConfirmed = onDocumentUpdated(
     let additionalEmailsSent = 0;
     let smsSent = false;
 
+    // Get email settings to check if we should skip test data
+    const emailSettings = await getEmailSettings();
+
     // Send ticket email if SendGrid is enabled
     if (isSendGridEnabled() && primaryEmail) {
-      try {
-        // Generate QR codes for all attendees
-        const attendeesWithQR = await generateAllAttendeeQRCodes(
-          after.registrationId,
-          after.primaryAttendee,
-          after.additionalAttendees
-        );
+      // Check if we should skip this email (test data or trigger emails disabled)
+      if (!emailSettings.triggerEmailsEnabled) {
+        log.info("Trigger emails disabled in settings, skipping ticket email");
+      } else if (shouldSkipEmail(primaryEmail, after, emailSettings)) {
+        log.info("Skipping ticket email for test/seeded data", {
+          email: primaryEmail,
+        });
+      } else {
+        try {
+          // Generate QR codes for all attendees
+          const attendeesWithQR = await generateAllAttendeeQRCodes(
+            after.registrationId,
+            after.primaryAttendee,
+            after.additionalAttendees
+          );
 
-        log.info("Generated QR codes for all attendees", {qrCodeCount: attendeesWithQR.length});
+          log.info("Generated QR codes for all attendees", {
+            qrCodeCount: attendeesWithQR.length,
+          });
 
-        // Send email to primary attendee with ALL QR codes
-        await sendTicketEmail(primaryEmail, {
-          registrationId: after.registrationId,
-          shortCode: after.shortCode,
-          qrCodeData: after.qrCodeData,
-          primaryAttendee: after.primaryAttendee,
-          totalAmount: after.totalAmount,
-          church: after.church,
-          additionalAttendees: after.additionalAttendees,
-        }, settings, attendeesWithQR, whatToBringItems);
+          // Send email to primary attendee with ALL QR codes
+          await sendTicketEmail(primaryEmail, {
+            registrationId: after.registrationId,
+            shortCode: after.shortCode,
+            qrCodeData: after.qrCodeData,
+            primaryAttendee: after.primaryAttendee,
+            totalAmount: after.totalAmount,
+            church: after.church,
+            additionalAttendees: after.additionalAttendees,
+          }, settings, attendeesWithQR, whatToBringItems);
 
-        updateData.ticketEmailSent = true;
-        updateData.ticketEmailSentAt = FieldValue.serverTimestamp();
-        ticketEmailSent = true;
-        log.info("Ticket email sent to primary attendee", {email: primaryEmail});
+          updateData.ticketEmailSent = true;
+          updateData.ticketEmailSentAt = FieldValue.serverTimestamp();
+          ticketEmailSent = true;
+          log.info("Ticket email sent to primary attendee", {email: primaryEmail});
 
-        // Send individual emails to additional attendees with emails
-        const additionalAttendees = after.additionalAttendees || [];
+          // Send individual emails to additional attendees with emails
+          const additionalAttendees = after.additionalAttendees || [];
 
-        for (let i = 0; i < additionalAttendees.length; i++) {
-          const attendee = additionalAttendees[i];
-          const attendeeEmail = attendee.email?.trim();
+          for (let i = 0; i < additionalAttendees.length; i++) {
+            const attendee = additionalAttendees[i];
+            const attendeeEmail = attendee.email?.trim();
 
-          if (attendeeEmail) {
-            try {
-              const attendeeWithQR = attendeesWithQR.find(
-                (a) => a.attendeeIndex === i + 1
-              );
-              if (attendeeWithQR) {
-                await sendIndividualTicketEmail(
+            if (attendeeEmail) {
+              // Skip test email domains for additional attendees too
+              if (isTestEmailDomain(attendeeEmail)) {
+                log.info("Skipping additional attendee email (test domain)", {
                   attendeeEmail,
-                  {
-                    registrationId: after.registrationId,
-                    shortCode: after.shortCode,
-                    church: after.church,
-                    primaryAttendee: after.primaryAttendee,
-                  },
-                  settings,
-                  attendeeWithQR,
-                  whatToBringItems
-                );
-                additionalEmailsSent++;
+                  attendeeIndex: i + 1,
+                });
+                continue;
               }
-            } catch (emailError) {
-              log.error("Failed to send individual email", emailError, {
-                attendeeEmail,
-                attendeeIndex: i + 1,
-              });
+
+              try {
+                const attendeeWithQR = attendeesWithQR.find(
+                  (a) => a.attendeeIndex === i + 1
+                );
+                if (attendeeWithQR) {
+                  await sendIndividualTicketEmail(
+                    attendeeEmail,
+                    {
+                      registrationId: after.registrationId,
+                      shortCode: after.shortCode,
+                      church: after.church,
+                      primaryAttendee: after.primaryAttendee,
+                    },
+                    settings,
+                    attendeeWithQR,
+                    whatToBringItems
+                  );
+                  additionalEmailsSent++;
+                }
+              } catch (emailError) {
+                log.error("Failed to send individual email", emailError, {
+                  attendeeEmail,
+                  attendeeIndex: i + 1,
+                });
+              }
             }
           }
-        }
 
-        updateData.additionalEmailsSent = additionalEmailsSent;
-        if (additionalEmailsSent > 0) {
-          log.info("Sent individual ticket emails to additional attendees", {count: additionalEmailsSent});
+          updateData.additionalEmailsSent = additionalEmailsSent;
+          if (additionalEmailsSent > 0) {
+            log.info("Sent individual ticket emails to additional attendees", {
+              count: additionalEmailsSent,
+            });
+          }
+        } catch (error) {
+          log.error("Error sending ticket email", error);
         }
-      } catch (error) {
-        log.error("Error sending ticket email", error);
       }
     } else if (!isSendGridEnabled()) {
       log.info("SendGrid not enabled, skipping ticket email");
@@ -2297,25 +2461,36 @@ export const onWaitlistOfferSent = onDocumentUpdated(
       log.warn("Could not fetch settings, using defaults", {error});
     }
 
+    // Get email settings to check if we should skip test data
+    const emailSettings = await getEmailSettings();
+
     // Send waitlist offer email
     if (isSendGridEnabled() && primaryEmail) {
-      try {
-        const appUrl = process.env.APP_URL || "https://idmc-gcfsm.web.app";
-        const statusPageUrl = `${appUrl}/registration-status?id=${after.registrationId}`;
+      // Check if we should skip this email (test data or trigger emails disabled)
+      if (!emailSettings.triggerEmailsEnabled) {
+        log.info("Trigger emails disabled in settings, skipping waitlist offer email");
+      } else if (shouldSkipEmail(primaryEmail, after, emailSettings)) {
+        log.info("Skipping waitlist offer email for test/seeded data", {
+          email: primaryEmail,
+        });
+      } else {
+        try {
+          const appUrl = process.env.APP_URL || "https://idmc-gcfsm.web.app";
+          const statusPageUrl = `${appUrl}/registration-status?id=${after.registrationId}`;
 
-        // Calculate hours until deadline
-        const deadline = new Date(after.waitlistOfferExpiresAt);
-        const now = new Date();
-        const msPerHour = 1000 * 60 * 60;
-        const timeDiff = deadline.getTime() - now.getTime();
-        const hoursUntilDeadline = Math.max(
-          0, Math.round(timeDiff / msPerHour));
+          // Calculate hours until deadline
+          const deadline = new Date(after.waitlistOfferExpiresAt);
+          const now = new Date();
+          const msPerHour = 1000 * 60 * 60;
+          const timeDiff = deadline.getTime() - now.getTime();
+          const hoursUntilDeadline = Math.max(
+            0, Math.round(timeDiff / msPerHour));
 
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const sgMail = require("@sendgrid/mail");
-        sgMail.setApiKey(sendgridApiKey.value());
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const sgMail = require("@sendgrid/mail");
+          sgMail.setApiKey(sendgridApiKey.value());
 
-        const emailContent = {
+          const emailContent = {
           to: primaryEmail,
           from: {
             email: process.env.SENDER_EMAIL || "noreply@gcfsm.org",
@@ -2381,12 +2556,16 @@ export const onWaitlistOfferSent = onDocumentUpdated(
           `,
         };
 
-        await sgMail.send(emailContent);
-        updateData.waitlistOfferEmailSent = true;
-        updateData.waitlistOfferEmailSentAt = FieldValue.serverTimestamp();
-        log.info("Waitlist offer email sent", {email: primaryEmail, hoursUntilDeadline});
-      } catch (error) {
-        log.error("Error sending waitlist offer email", error);
+          await sgMail.send(emailContent);
+          updateData.waitlistOfferEmailSent = true;
+          updateData.waitlistOfferEmailSentAt = FieldValue.serverTimestamp();
+          log.info("Waitlist offer email sent", {
+            email: primaryEmail,
+            hoursUntilDeadline,
+          });
+        } catch (error) {
+          log.error("Error sending waitlist offer email", error);
+        }
       }
     }
 
