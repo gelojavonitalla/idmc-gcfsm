@@ -257,6 +257,7 @@ export const COLLECTIONS = {
   WHAT_TO_BRING: 'whatToBring',
   STATS: 'stats',
   FEEDBACK: 'feedback',
+  VERIFICATION_CODES: 'verificationCodes',
 };
 
 /**

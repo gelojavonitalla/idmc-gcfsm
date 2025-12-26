@@ -248,6 +248,7 @@ const COLLECTIONS = {
   SESSIONS: "sessions",
   STATS: "stats",
   WHAT_TO_BRING: "whatToBring",
+  VERIFICATION_CODES: "verificationCodes",
 };
 
 /**
@@ -5200,6 +5201,898 @@ export const onCheckInStatsUpdate = onDocumentUpdated(
       log.error("Error updating check-in stats", error);
       log.end(false, {error: (error as Error).message});
       throw error;
+    }
+  }
+);
+
+// ============================================
+// Verification Code System
+// ============================================
+
+/**
+ * Verification code configuration
+ */
+const VERIFICATION_CODE_CONFIG = {
+  /** Length of the verification code */
+  CODE_LENGTH: 6,
+  /** Time until code expires in minutes */
+  EXPIRY_MINUTES: 15,
+  /** Maximum verification attempts before lockout */
+  MAX_ATTEMPTS: 5,
+};
+
+/**
+ * Verification code types for cancel/transfer actions
+ */
+const VERIFICATION_ACTION = {
+  CANCEL: "cancel",
+  TRANSFER: "transfer",
+} as const;
+
+type VerificationAction = typeof VERIFICATION_ACTION[keyof typeof VERIFICATION_ACTION];
+
+/**
+ * Generates a random numeric verification code
+ *
+ * @param {number} length - Length of the code
+ * @return {string} The generated code
+ */
+function generateVerificationCode(length: number = 6): string {
+  let code = "";
+  for (let i = 0; i < length; i++) {
+    code += Math.floor(Math.random() * 10).toString();
+  }
+  return code;
+}
+
+/**
+ * Generates HTML email content for verification code
+ *
+ * @param {string} code - The verification code
+ * @param {string} action - The action (cancel or transfer)
+ * @param {string} attendeeName - Name of the attendee
+ * @param {string} conferenceTitle - Conference title
+ * @param {number} expiryMinutes - Minutes until code expires
+ * @return {string} HTML email content
+ */
+function generateVerificationCodeEmailHtml(
+  code: string,
+  action: VerificationAction,
+  attendeeName: string,
+  conferenceTitle: string,
+  expiryMinutes: number
+): string {
+  const actionText = action === VERIFICATION_ACTION.CANCEL
+    ? "cancel your registration"
+    : "transfer your registration";
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Verification Code</title>
+    </head>
+    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
+      <div style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); padding: 40px 20px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">
+          Verification Code
+        </h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 14px;">
+          ${conferenceTitle}
+        </p>
+      </div>
+
+      <div style="background: white; padding: 40px 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <p style="font-size: 16px; margin: 0 0 20px;">
+          Hi ${attendeeName},
+        </p>
+
+        <p style="font-size: 14px; margin: 0 0 30px; color: #4b5563;">
+          You have requested to <strong>${actionText}</strong>.
+          Please use the verification code below to proceed:
+        </p>
+
+        <div style="background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 30px; text-align: center; margin: 0 0 30px;">
+          <p style="font-size: 40px; font-family: 'Courier New', monospace; font-weight: bold; color: #1e40af; margin: 0; letter-spacing: 8px;">
+            ${code}
+          </p>
+          <p style="font-size: 12px; color: #6b7280; margin: 15px 0 0;">
+            This code expires in ${expiryMinutes} minutes
+          </p>
+        </div>
+
+        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 0 0 30px; border-radius: 0 8px 8px 0;">
+          <p style="margin: 0; font-size: 13px; color: #92400e;">
+            <strong>Important:</strong> If you did not request this verification code,
+            please ignore this email. Your registration will remain unchanged.
+          </p>
+        </div>
+
+        <p style="font-size: 14px; margin: 0; color: #6b7280;">
+          If you need assistance, please contact us through our website.
+        </p>
+      </div>
+
+      <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+        <p style="margin: 0;">
+          © ${new Date().getFullYear()} ${CONFERENCE_NAME}. All rights reserved.
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Generates plain text email content for verification code
+ *
+ * @param {string} code - The verification code
+ * @param {string} action - The action (cancel or transfer)
+ * @param {string} attendeeName - Name of the attendee
+ * @param {number} expiryMinutes - Minutes until code expires
+ * @return {string} Plain text email content
+ */
+function generateVerificationCodeEmailText(
+  code: string,
+  action: VerificationAction,
+  attendeeName: string,
+  expiryMinutes: number
+): string {
+  const actionText = action === VERIFICATION_ACTION.CANCEL
+    ? "cancel your registration"
+    : "transfer your registration";
+
+  return `
+Hi ${attendeeName},
+
+You have requested to ${actionText}. Please use the verification code below to proceed:
+
+Verification Code: ${code}
+
+This code expires in ${expiryMinutes} minutes.
+
+IMPORTANT: If you did not request this verification code, please ignore this email. Your registration will remain unchanged.
+
+If you need assistance, please contact us through our website.
+
+- ${CONFERENCE_NAME} Team
+  `.trim();
+}
+
+/**
+ * Sends a verification code to the user's email (and optionally SMS)
+ *
+ * This function:
+ * 1. Validates the registration exists and is cancellable/transferable
+ * 2. Generates a 6-digit verification code
+ * 3. Stores the code in Firestore with expiry
+ * 4. Sends the code via email (and SMS if configured)
+ *
+ * @param {Object} data - Request data
+ * @param {string} data.registrationId - Registration ID
+ * @param {string} data.action - Action type: "cancel" or "transfer"
+ * @param {boolean} data.sendSms - Whether to also send SMS (optional)
+ * @returns {Object} Success status and expiry time
+ */
+export const sendVerificationCode = onCall(
+  {
+    region: "asia-southeast1",
+    maxInstances: 10,
+    secrets: [sendgridApiKey],
+  },
+  async (request) => {
+    const {registrationId, action, sendSms} = request.data as {
+      registrationId?: string;
+      action?: string;
+      sendSms?: boolean;
+    };
+
+    const log = cfLogger.createContext("sendVerificationCode", registrationId);
+    log.start({registrationId, action});
+
+    // Validate inputs
+    if (!registrationId) {
+      log.error("Missing registration ID");
+      log.end(false, {reason: "missing_registration_id"});
+      throw new HttpsError("invalid-argument", "Registration ID is required");
+    }
+
+    if (!action || !Object.values(VERIFICATION_ACTION).includes(
+      action as VerificationAction
+    )) {
+      log.error("Invalid action", undefined, {action});
+      log.end(false, {reason: "invalid_action"});
+      throw new HttpsError(
+        "invalid-argument",
+        "Action must be 'cancel' or 'transfer'"
+      );
+    }
+
+    // Get client IP for rate limiting
+    const clientId = request.auth?.uid ||
+                     request.rawRequest?.ip ||
+                     registrationId;
+
+    // Check rate limit for OTP requests
+    try {
+      await checkRateLimit(
+        "otp_request",
+        `${clientId}:${registrationId}`,
+        RATE_LIMIT_CONFIGS.OTP_REQUEST
+      );
+    } catch (error) {
+      await logRateLimitExceeded("otp_request", clientId, registrationId);
+      throw error;
+    }
+
+    const db = getFirestore(DATABASE_ID);
+
+    // Get registration
+    const registrationRef = db
+      .collection(COLLECTIONS.REGISTRATIONS)
+      .doc(registrationId.toUpperCase());
+    const registrationDoc = await registrationRef.get();
+
+    if (!registrationDoc.exists) {
+      log.error("Registration not found");
+      log.end(false, {reason: "registration_not_found"});
+      throw new HttpsError("not-found", "Registration not found");
+    }
+
+    const registration = registrationDoc.data();
+    if (!registration) {
+      throw new HttpsError("not-found", "Registration data is empty");
+    }
+
+    // Validate status allows cancellation/transfer
+    const validStatuses = [
+      REGISTRATION_STATUS.PENDING_PAYMENT,
+      REGISTRATION_STATUS.PENDING_VERIFICATION,
+      REGISTRATION_STATUS.CONFIRMED,
+    ];
+
+    if (!validStatuses.includes(registration.status)) {
+      log.error("Invalid registration status", undefined, {
+        status: registration.status,
+      });
+      log.end(false, {reason: "invalid_status"});
+      throw new HttpsError(
+        "failed-precondition",
+        "This registration cannot be modified"
+      );
+    }
+
+    // Generate verification code
+    const code = generateVerificationCode(VERIFICATION_CODE_CONFIG.CODE_LENGTH);
+    const expiresAt = new Date(
+      Date.now() + VERIFICATION_CODE_CONFIG.EXPIRY_MINUTES * 60 * 1000
+    );
+
+    // Store verification code in Firestore
+    const codeDocId = `${registrationId.toUpperCase()}_${action}`;
+    await db.collection(COLLECTIONS.VERIFICATION_CODES).doc(codeDocId).set({
+      registrationId: registrationId.toUpperCase(),
+      action,
+      code,
+      attempts: 0,
+      maxAttempts: VERIFICATION_CODE_CONFIG.MAX_ATTEMPTS,
+      createdAt: FieldValue.serverTimestamp(),
+      expiresAt: expiresAt.toISOString(),
+      used: false,
+    });
+
+    log.info("Verification code stored", {codeDocId, expiresAt});
+
+    // Get email settings and check if sending is enabled
+    const emailSettings = await getEmailSettings();
+    if (!emailSettings.triggerEmailsEnabled) {
+      log.warn("Email sending is disabled in settings");
+    }
+
+    // Get conference settings for title
+    let conferenceTitle = CONFERENCE_NAME;
+    try {
+      const settingsDoc = await db
+        .collection(COLLECTIONS.CONFERENCES)
+        .doc("conference-settings")
+        .get();
+      if (settingsDoc.exists) {
+        conferenceTitle = settingsDoc.data()?.title || CONFERENCE_NAME;
+      }
+    } catch (err) {
+      log.warn("Could not fetch conference title", {error: err});
+    }
+
+    // Send verification email
+    const primaryEmail = registration.primaryAttendee?.email;
+    const attendeeName = registration.primaryAttendee?.firstName || "Attendee";
+
+    if (!primaryEmail) {
+      log.error("No email address found for registration");
+      log.end(false, {reason: "no_email"});
+      throw new HttpsError(
+        "failed-precondition",
+        "No email address found for this registration"
+      );
+    }
+
+    // Check if we should skip this email (test domain)
+    if (shouldSkipEmail(primaryEmail, registration, emailSettings)) {
+      log.info("Skipping email send for test/seeded data");
+      log.end(true, {emailSent: false, reason: "test_data"});
+      return {
+        success: true,
+        expiresAt: expiresAt.toISOString(),
+        expiryMinutes: VERIFICATION_CODE_CONFIG.EXPIRY_MINUTES,
+        emailSent: false,
+      };
+    }
+
+    // Check if SendGrid is enabled
+    if (!isSendGridEnabled()) {
+      log.warn("SendGrid not enabled, cannot send verification email");
+      log.end(true, {emailSent: false, reason: "sendgrid_disabled"});
+      return {
+        success: true,
+        expiresAt: expiresAt.toISOString(),
+        expiryMinutes: VERIFICATION_CODE_CONFIG.EXPIRY_MINUTES,
+        emailSent: false,
+      };
+    }
+
+    const apiKey = getSendGridApiKey();
+    if (!apiKey) {
+      log.warn("SendGrid API key not available");
+      log.end(true, {emailSent: false, reason: "no_api_key"});
+      return {
+        success: true,
+        expiresAt: expiresAt.toISOString(),
+        expiryMinutes: VERIFICATION_CODE_CONFIG.EXPIRY_MINUTES,
+        emailSent: false,
+      };
+    }
+
+    try {
+      sgMail.setApiKey(apiKey);
+
+      const fromEmail = senderEmail.value();
+      if (!fromEmail) {
+        log.error("SENDER_EMAIL not configured");
+        throw new Error("SENDER_EMAIL not configured");
+      }
+
+      const actionLabel = action === VERIFICATION_ACTION.CANCEL
+        ? "Cancellation"
+        : "Transfer";
+
+      const msg = {
+        to: primaryEmail,
+        from: {
+          email: fromEmail,
+          name: senderName.value() || "IDMC Conference",
+        },
+        subject: `Your ${actionLabel} Verification Code - ${conferenceTitle}`,
+        text: generateVerificationCodeEmailText(
+          code,
+          action as VerificationAction,
+          attendeeName,
+          VERIFICATION_CODE_CONFIG.EXPIRY_MINUTES
+        ),
+        html: generateVerificationCodeEmailHtml(
+          code,
+          action as VerificationAction,
+          attendeeName,
+          conferenceTitle,
+          VERIFICATION_CODE_CONFIG.EXPIRY_MINUTES
+        ),
+      };
+
+      await sgMail.send(msg);
+      log.info("Verification code email sent", {to: primaryEmail});
+
+      // Optionally send SMS
+      let smsSent = false;
+      if (sendSms && registration.primaryAttendee?.cellphone) {
+        const smsSettings = await getSmsSettings();
+        if (smsSettings.enabled) {
+          const smsMessage = `Your ${conferenceTitle} verification code is: ${code}. This code expires in ${VERIFICATION_CODE_CONFIG.EXPIRY_MINUTES} minutes.`;
+
+          smsSent = await sendSmsViaOneWaySms(
+            registration.primaryAttendee.cellphone,
+            smsMessage
+          );
+
+          if (smsSent) {
+            log.info("Verification code SMS sent");
+          }
+        }
+      }
+
+      // Log the verification request
+      await logAuditEvent({
+        action: "registration.verification_sent",
+        severity: AUDIT_SEVERITY.INFO,
+        actorId: request.auth?.uid || null,
+        entityType: "registration",
+        entityId: registrationId.toUpperCase(),
+        description: `Verification code sent for ${action} request`,
+        ipAddress: clientId,
+      });
+
+      log.end(true, {emailSent: true, smsSent});
+      return {
+        success: true,
+        expiresAt: expiresAt.toISOString(),
+        expiryMinutes: VERIFICATION_CODE_CONFIG.EXPIRY_MINUTES,
+        emailSent: true,
+        smsSent,
+      };
+    } catch (error) {
+      log.error("Failed to send verification email", error);
+      log.end(false, {reason: "email_send_failed"});
+      throw new HttpsError(
+        "internal",
+        "Failed to send verification code. Please try again."
+      );
+    }
+  }
+);
+
+/**
+ * Verifies a verification code for cancel/transfer actions
+ *
+ * This function:
+ * 1. Validates the code exists and hasn't expired
+ * 2. Checks attempt count to prevent brute force
+ * 3. Marks the code as used on success
+ *
+ * @param {Object} data - Request data
+ * @param {string} data.registrationId - Registration ID
+ * @param {string} data.action - Action type: "cancel" or "transfer"
+ * @param {string} data.code - The verification code to check
+ * @returns {Object} Success status
+ */
+export const verifyCode = onCall(
+  {
+    region: "asia-southeast1",
+    maxInstances: 10,
+  },
+  async (request) => {
+    const {registrationId, action, code} = request.data as {
+      registrationId?: string;
+      action?: string;
+      code?: string;
+    };
+
+    const log = cfLogger.createContext("verifyCode", registrationId);
+    log.start({registrationId, action});
+
+    // Validate inputs
+    if (!registrationId || !action || !code) {
+      log.error("Missing required parameters");
+      log.end(false, {reason: "missing_parameters"});
+      throw new HttpsError(
+        "invalid-argument",
+        "Registration ID, action, and code are required"
+      );
+    }
+
+    // Get client IP for rate limiting
+    const clientId = request.auth?.uid ||
+                     request.rawRequest?.ip ||
+                     registrationId;
+
+    // Check rate limit for verification attempts
+    try {
+      await checkRateLimit(
+        "otp_verify",
+        `${clientId}:${registrationId}`,
+        RATE_LIMIT_CONFIGS.OTP_VERIFY
+      );
+    } catch (error) {
+      await logRateLimitExceeded("otp_verify", clientId, registrationId);
+      throw error;
+    }
+
+    const db = getFirestore(DATABASE_ID);
+    const codeDocId = `${registrationId.toUpperCase()}_${action}`;
+    const codeRef = db.collection(COLLECTIONS.VERIFICATION_CODES).doc(codeDocId);
+
+    const codeDoc = await codeRef.get();
+
+    if (!codeDoc.exists) {
+      log.error("Verification code not found");
+      log.end(false, {reason: "code_not_found"});
+      throw new HttpsError(
+        "not-found",
+        "No verification code found. Please request a new code."
+      );
+    }
+
+    const codeData = codeDoc.data();
+    if (!codeData) {
+      throw new HttpsError("not-found", "Verification data is empty");
+    }
+
+    // Check if code is already used
+    if (codeData.used) {
+      log.error("Code already used");
+      log.end(false, {reason: "code_already_used"});
+      throw new HttpsError(
+        "failed-precondition",
+        "This code has already been used. Please request a new code."
+      );
+    }
+
+    // Check if code has expired
+    const expiresAt = new Date(codeData.expiresAt);
+    if (expiresAt < new Date()) {
+      log.error("Code expired", undefined, {expiresAt: codeData.expiresAt});
+      log.end(false, {reason: "code_expired"});
+
+      // Delete expired code
+      await codeRef.delete();
+
+      throw new HttpsError(
+        "failed-precondition",
+        "This code has expired. Please request a new code."
+      );
+    }
+
+    // Check attempt count
+    if (codeData.attempts >= codeData.maxAttempts) {
+      log.error("Max attempts exceeded", undefined, {
+        attempts: codeData.attempts,
+      });
+      log.end(false, {reason: "max_attempts_exceeded"});
+
+      // Delete the code to force new request
+      await codeRef.delete();
+
+      throw new HttpsError(
+        "resource-exhausted",
+        "Too many incorrect attempts. Please request a new code."
+      );
+    }
+
+    // Verify the code
+    if (codeData.code !== code) {
+      // Increment attempt counter
+      await codeRef.update({
+        attempts: FieldValue.increment(1),
+        lastAttemptAt: FieldValue.serverTimestamp(),
+      });
+
+      const remainingAttempts = codeData.maxAttempts - codeData.attempts - 1;
+      log.warn("Invalid code attempt", {remainingAttempts});
+      log.end(false, {reason: "invalid_code"});
+
+      throw new HttpsError(
+        "permission-denied",
+        `Invalid code. ${remainingAttempts} attempt${remainingAttempts === 1 ? "" : "s"} remaining.`
+      );
+    }
+
+    // Code is valid - mark as used
+    await codeRef.update({
+      used: true,
+      usedAt: FieldValue.serverTimestamp(),
+    });
+
+    // Log successful verification
+    await logAuditEvent({
+      action: "registration.verification_confirmed",
+      severity: AUDIT_SEVERITY.INFO,
+      actorId: request.auth?.uid || null,
+      entityType: "registration",
+      entityId: registrationId.toUpperCase(),
+      description: `Verification code confirmed for ${action}`,
+      ipAddress: clientId,
+    });
+
+    log.end(true, {verified: true});
+    return {
+      success: true,
+      verified: true,
+    };
+  }
+);
+
+/**
+ * Generates HTML email content for transfer notification to new attendee
+ *
+ * @param {string} newAttendeeName - Name of the new attendee
+ * @param {string} originalAttendeeName - Name of the original attendee
+ * @param {string} registrationId - Registration ID
+ * @param {string} conferenceTitle - Conference title
+ * @param {Object} conferenceDetails - Conference details (date, venue)
+ * @return {string} HTML email content
+ */
+function generateTransferNotificationHtml(
+  newAttendeeName: string,
+  originalAttendeeName: string,
+  registrationId: string,
+  conferenceTitle: string,
+  conferenceDetails: {date?: string; venue?: string}
+): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Registration Transfer Notification</title>
+    </head>
+    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
+      <div style="background: linear-gradient(135deg, #10b981 0%, #047857 100%); padding: 40px 20px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">
+          🎉 Registration Transferred to You!
+        </h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 14px;">
+          ${conferenceTitle}
+        </p>
+      </div>
+
+      <div style="background: white; padding: 40px 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <p style="font-size: 16px; margin: 0 0 20px;">
+          Hi ${newAttendeeName},
+        </p>
+
+        <p style="font-size: 14px; margin: 0 0 20px; color: #4b5563;">
+          Great news! <strong>${originalAttendeeName}</strong> has transferred their
+          conference registration to you. You are now registered to attend the
+          <strong>${conferenceTitle}</strong>!
+        </p>
+
+        <div style="background: #f0fdf4; border: 2px solid #10b981; border-radius: 12px; padding: 20px; margin: 0 0 30px;">
+          <h3 style="color: #166534; margin: 0 0 15px; font-size: 16px;">Your Registration Details:</h3>
+          <p style="margin: 0 0 8px; font-size: 14px;">
+            <strong>Registration ID:</strong> ${registrationId}
+          </p>
+          ${conferenceDetails.date ? `
+          <p style="margin: 0 0 8px; font-size: 14px;">
+            <strong>Date:</strong> ${conferenceDetails.date}
+          </p>
+          ` : ""}
+          ${conferenceDetails.venue ? `
+          <p style="margin: 0; font-size: 14px;">
+            <strong>Venue:</strong> ${conferenceDetails.venue}
+          </p>
+          ` : ""}
+        </div>
+
+        <div style="background: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 0 0 30px; border-radius: 0 8px 8px 0;">
+          <p style="margin: 0; font-size: 13px; color: #1e40af;">
+            <strong>What's next?</strong> You can check your registration status
+            and download your ticket on our website using your email address or
+            registration ID.
+          </p>
+        </div>
+
+        <p style="font-size: 14px; margin: 0; color: #6b7280;">
+          We look forward to seeing you at the conference! If you have any questions,
+          please contact us through our website.
+        </p>
+      </div>
+
+      <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+        <p style="margin: 0;">
+          © ${new Date().getFullYear()} ${CONFERENCE_NAME}. All rights reserved.
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Generates plain text email content for transfer notification
+ *
+ * @param {string} newAttendeeName - Name of the new attendee
+ * @param {string} originalAttendeeName - Name of the original attendee
+ * @param {string} registrationId - Registration ID
+ * @param {string} conferenceTitle - Conference title
+ * @param {Object} conferenceDetails - Conference details (date, venue)
+ * @return {string} Plain text email content
+ */
+function generateTransferNotificationText(
+  newAttendeeName: string,
+  originalAttendeeName: string,
+  registrationId: string,
+  conferenceTitle: string,
+  conferenceDetails: {date?: string; venue?: string}
+): string {
+  let details = `Registration ID: ${registrationId}`;
+  if (conferenceDetails.date) {
+    details += `\nDate: ${conferenceDetails.date}`;
+  }
+  if (conferenceDetails.venue) {
+    details += `\nVenue: ${conferenceDetails.venue}`;
+  }
+
+  return `
+Hi ${newAttendeeName},
+
+Great news! ${originalAttendeeName} has transferred their conference registration to you. You are now registered to attend the ${conferenceTitle}!
+
+Your Registration Details:
+${details}
+
+What's next?
+You can check your registration status and download your ticket on our website using your email address or registration ID.
+
+We look forward to seeing you at the conference! If you have any questions, please contact us through our website.
+
+- ${CONFERENCE_NAME} Team
+  `.trim();
+}
+
+/**
+ * Sends a notification email to the new attendee after a transfer
+ *
+ * This function should be called after a successful transfer operation.
+ * It notifies the new attendee about the transferred registration.
+ *
+ * @param {Object} data - Request data
+ * @param {string} data.registrationId - Registration ID
+ * @param {string} data.newAttendeeEmail - New attendee's email
+ * @param {string} data.newAttendeeName - New attendee's name
+ * @param {string} data.originalAttendeeName - Original attendee's name
+ * @returns {Object} Success status
+ */
+export const sendTransferNotification = onCall(
+  {
+    region: "asia-southeast1",
+    maxInstances: 10,
+    secrets: [sendgridApiKey],
+  },
+  async (request) => {
+    const {
+      registrationId,
+      newAttendeeEmail,
+      newAttendeeName,
+      originalAttendeeName,
+    } = request.data as {
+      registrationId?: string;
+      newAttendeeEmail?: string;
+      newAttendeeName?: string;
+      originalAttendeeName?: string;
+    };
+
+    const log = cfLogger.createContext(
+      "sendTransferNotification",
+      registrationId
+    );
+    log.start({registrationId, newAttendeeEmail});
+
+    // Validate inputs
+    if (!registrationId || !newAttendeeEmail || !newAttendeeName) {
+      log.error("Missing required parameters");
+      log.end(false, {reason: "missing_parameters"});
+      throw new HttpsError(
+        "invalid-argument",
+        "Registration ID, new attendee email, and name are required"
+      );
+    }
+
+    // Get email settings
+    const emailSettings = await getEmailSettings();
+    if (!emailSettings.triggerEmailsEnabled) {
+      log.warn("Email sending is disabled");
+      log.end(true, {emailSent: false, reason: "emails_disabled"});
+      return {success: true, emailSent: false};
+    }
+
+    // Check if we should skip this email (test domain)
+    if (isTestEmailDomain(newAttendeeEmail)) {
+      log.info("Skipping email to test domain");
+      log.end(true, {emailSent: false, reason: "test_domain"});
+      return {success: true, emailSent: false};
+    }
+
+    // Check if SendGrid is enabled
+    if (!isSendGridEnabled()) {
+      log.warn("SendGrid not enabled");
+      log.end(true, {emailSent: false, reason: "sendgrid_disabled"});
+      return {success: true, emailSent: false};
+    }
+
+    const apiKey = getSendGridApiKey();
+    if (!apiKey) {
+      log.warn("SendGrid API key not available");
+      log.end(true, {emailSent: false, reason: "no_api_key"});
+      return {success: true, emailSent: false};
+    }
+
+    const db = getFirestore(DATABASE_ID);
+
+    // Get conference settings
+    let conferenceTitle = CONFERENCE_NAME;
+    let conferenceDate = "";
+    let conferenceVenue = "";
+
+    try {
+      const settingsDoc = await db
+        .collection(COLLECTIONS.CONFERENCES)
+        .doc("conference-settings")
+        .get();
+      if (settingsDoc.exists) {
+        const data = settingsDoc.data();
+        conferenceTitle = data?.title || CONFERENCE_NAME;
+        if (data?.startDate) {
+          const date = new Date(data.startDate);
+          conferenceDate = date.toLocaleDateString("en-PH", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+        }
+        conferenceVenue = data?.venue?.name || "";
+      }
+    } catch (err) {
+      log.warn("Could not fetch conference settings", {error: err});
+    }
+
+    try {
+      sgMail.setApiKey(apiKey);
+
+      const fromEmail = senderEmail.value();
+      if (!fromEmail) {
+        log.error("SENDER_EMAIL not configured");
+        throw new Error("SENDER_EMAIL not configured");
+      }
+
+      const msg = {
+        to: newAttendeeEmail,
+        from: {
+          email: fromEmail,
+          name: senderName.value() || "IDMC Conference",
+        },
+        subject: `Registration Transferred to You - ${conferenceTitle}`,
+        text: generateTransferNotificationText(
+          newAttendeeName,
+          originalAttendeeName || "Another attendee",
+          registrationId.toUpperCase(),
+          conferenceTitle,
+          {date: conferenceDate, venue: conferenceVenue}
+        ),
+        html: generateTransferNotificationHtml(
+          newAttendeeName,
+          originalAttendeeName || "Another attendee",
+          registrationId.toUpperCase(),
+          conferenceTitle,
+          {date: conferenceDate, venue: conferenceVenue}
+        ),
+      };
+
+      await sgMail.send(msg);
+      log.info("Transfer notification email sent", {to: newAttendeeEmail});
+
+      // Log the notification
+      await logAuditEvent({
+        action: "registration.transfer_notification_sent",
+        severity: AUDIT_SEVERITY.INFO,
+        actorId: request.auth?.uid || null,
+        entityType: "registration",
+        entityId: registrationId.toUpperCase(),
+        description: `Transfer notification sent to ${newAttendeeEmail}`,
+        metadata: {
+          newAttendeeEmail,
+          newAttendeeName,
+          originalAttendeeName,
+        },
+      });
+
+      log.end(true, {emailSent: true});
+      return {success: true, emailSent: true};
+    } catch (error) {
+      log.error("Failed to send transfer notification", error);
+      log.end(false, {reason: "email_send_failed"});
+      // Don't throw - transfer notification is not critical
+      return {success: false, emailSent: false, error: "Failed to send email"};
     }
   }
 );
