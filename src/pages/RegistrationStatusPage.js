@@ -527,22 +527,20 @@ function RegistrationStatusPage() {
    * Checks if user cancellation is enabled and allowed
    */
   const canUserCancel = useMemo(() => {
-    if (!settings?.refundPolicy) return false;
-    // Default to true if userCancellationEnabled is not set (backwards compatibility)
-    return settings.refundPolicy.userCancellationEnabled !== false;
+    // Default to true if refundPolicy or userCancellationEnabled is not set (backwards compatibility)
+    return settings?.refundPolicy?.userCancellationEnabled !== false;
   }, [settings]);
 
   /**
    * Checks if transfer is enabled and within deadline
    */
   const canTransfer = useMemo(() => {
-    if (!settings?.refundPolicy) return false;
-    // Default to true if transferEnabled is not set (backwards compatibility)
-    if (settings.refundPolicy.transferEnabled === false) return false;
+    // Default to true if refundPolicy or transferEnabled is not set (backwards compatibility)
+    if (settings?.refundPolicy?.transferEnabled === false) return false;
 
-    // Check transfer deadline
-    const transferDeadlineDays = settings.refundPolicy.transferDeadlineDays ?? 3;
-    if (transferDeadlineDays > 0 && settings.startDate) {
+    // Check transfer deadline (default to 3 days if not configured)
+    const transferDeadlineDays = settings?.refundPolicy?.transferDeadlineDays ?? 3;
+    if (transferDeadlineDays > 0 && settings?.startDate) {
       const now = new Date();
       const eventDate = new Date(settings.startDate);
       const daysUntilEvent = Math.ceil((eventDate - now) / (1000 * 60 * 60 * 24));
