@@ -838,6 +838,22 @@ function RegistrationDetailModal({
                   {registration.payment?.referenceNumber || '—'}
                 </span>
               </div>
+              {registration.payment?.amountPaid != null && (
+                <div className={styles.infoItem}>
+                  <span className={styles.label}>Amount Paid</span>
+                  <span className={`${styles.value} ${styles.amount}`}>
+                    {formatCurrency(registration.payment.amountPaid)}
+                  </span>
+                </div>
+              )}
+              {registration.payment?.balance > 0 && (
+                <div className={styles.infoItem}>
+                  <span className={styles.label}>Remaining Balance</span>
+                  <span className={`${styles.value} ${styles.balanceValue}`}>
+                    {formatCurrency(registration.payment.balance)}
+                  </span>
+                </div>
+              )}
               {registration.payment?.overpayment > 0 && (
                 <div className={styles.infoItem}>
                   <span className={styles.label}>Overpayment</span>
@@ -865,6 +881,16 @@ function RegistrationDetailModal({
                   </svg>
                   View Payment Proof
                 </a>
+              </div>
+            )}
+
+            {/* Rejection/Partial Payment Reason */}
+            {registration.payment?.rejectionReason && (
+              <div className={styles.rejectionReasonBox}>
+                <span className={styles.label}>Admin Note</span>
+                <p className={styles.rejectionReasonText}>
+                  {registration.payment.rejectionReason}
+                </p>
               </div>
             )}
           </div>
