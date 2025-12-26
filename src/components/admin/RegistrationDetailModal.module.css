@@ -238,6 +238,30 @@
   border-radius: var(--radius-sm);
 }
 
+.balanceValue {
+  font-weight: 600;
+  color: var(--color-error-600, #dc2626);
+  background-color: var(--color-error-50, #fef2f2);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+}
+
+/* Rejection/Partial Payment Reason */
+.rejectionReasonBox {
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-warning-50, #fffbeb);
+  border: 1px solid var(--color-warning-200, #fde68a);
+  border-radius: var(--radius-md);
+}
+
+.rejectionReasonText {
+  margin: var(--spacing-2) 0 0 0;
+  color: var(--color-warning-800, #92400e);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
 /* Payment Proof */
 .paymentProof {
   margin-top: var(--spacing-4);
