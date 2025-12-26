@@ -5237,7 +5237,7 @@ type VerificationAction = typeof VERIFICATION_ACTION[keyof typeof VERIFICATION_A
  * @param {number} length - Length of the code
  * @return {string} The generated code
  */
-function generateVerificationCode(length: number = 6): string {
+function generateVerificationCode(length = 6): string {
   let code = "";
   for (let i = 0; i < length; i++) {
     code += Math.floor(Math.random() * 10).toString();
@@ -5262,9 +5262,9 @@ function generateVerificationCodeEmailHtml(
   conferenceTitle: string,
   expiryMinutes: number
 ): string {
-  const actionText = action === VERIFICATION_ACTION.CANCEL
-    ? "cancel your registration"
-    : "transfer your registration";
+  const actionText = action === VERIFICATION_ACTION.CANCEL ?
+    "cancel your registration" :
+    "transfer your registration";
 
   return `
     <!DOCTYPE html>
@@ -5340,9 +5340,9 @@ function generateVerificationCodeEmailText(
   attendeeName: string,
   expiryMinutes: number
 ): string {
-  const actionText = action === VERIFICATION_ACTION.CANCEL
-    ? "cancel your registration"
-    : "transfer your registration";
+  const actionText = action === VERIFICATION_ACTION.CANCEL ?
+    "cancel your registration" :
+    "transfer your registration";
 
   return `
 Hi ${attendeeName},
@@ -5563,9 +5563,9 @@ export const sendVerificationCode = onCall(
         throw new Error("SENDER_EMAIL not configured");
       }
 
-      const actionLabel = action === VERIFICATION_ACTION.CANCEL
-        ? "Cancellation"
-        : "Transfer";
+      const actionLabel = action === VERIFICATION_ACTION.CANCEL ?
+        "Cancellation" :
+        "Transfer";
 
       const msg = {
         to: primaryEmail,
