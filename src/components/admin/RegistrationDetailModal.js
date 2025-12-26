@@ -1790,6 +1790,7 @@ function RegistrationDetailModal({
                 <polyline points="10 9 9 9 8 9" />
               </svg>
               Internal Notes
+              <span className={styles.notVisibleHint}>(not seen by user)</span>
               {!isEditingNotes && (
                 <button
                   className={styles.editNotesButton}

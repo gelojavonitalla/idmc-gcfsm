@@ -200,6 +200,13 @@
   color: var(--color-primary);
 }
 
+.notVisibleHint {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  color: var(--color-text-tertiary, #9ca3af);
+  margin-left: var(--spacing-1);
+}
+
 .infoGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
