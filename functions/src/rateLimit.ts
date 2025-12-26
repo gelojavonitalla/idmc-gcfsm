@@ -67,6 +67,18 @@ export const RATE_LIMIT_CONFIGS = {
     maxRequests: 10,
     message: "Too many payment uploads. Please try again later.",
   },
+  /** OTP/verification code requests - stricter limit to prevent abuse */
+  OTP_REQUEST: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxRequests: 5,
+    message: "Too many verification code requests. Please try again in 15 minutes.",
+  },
+  /** OTP verification attempts - very strict to prevent brute force */
+  OTP_VERIFY: {
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    maxRequests: 5,
+    message: "Too many verification attempts. Please request a new code.",
+  },
 } as const;
 
 /**

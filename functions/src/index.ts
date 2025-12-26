@@ -5203,3 +5203,896 @@ export const onCheckInStatsUpdate = onDocumentUpdated(
     }
   }
 );
+
+// =============================================================================
+// Verification Code System for User Self-Service Actions
+// =============================================================================
+
+/**
+ * Collection name for verification codes
+ */
+const VERIFICATION_CODES_COLLECTION = "verificationCodes";
+
+/**
+ * Verification code expiry time (10 minutes)
+ */
+const VERIFICATION_CODE_EXPIRY_MS = 10 * 60 * 1000;
+
+/**
+ * Verification code purposes
+ */
+const VERIFICATION_PURPOSES = {
+  CANCEL: "cancel",
+  TRANSFER: "transfer",
+} as const;
+
+type VerificationPurpose = typeof VERIFICATION_PURPOSES[keyof typeof VERIFICATION_PURPOSES];
+
+/**
+ * Generates a 6-digit verification code
+ *
+ * @return {string} 6-digit code
+ */
+function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+/**
+ * Generates HTML email template for verification code
+ *
+ * @param {Object} params - Template parameters
+ * @param {string} params.firstName - Recipient's first name
+ * @param {string} params.code - Verification code
+ * @param {string} params.purpose - Purpose of verification (cancel/transfer)
+ * @param {number} params.expiryMinutes - Code expiry in minutes
+ * @return {string} HTML email content
+ */
+function generateVerificationEmailHtml(params: {
+  firstName: string;
+  code: string;
+  purpose: VerificationPurpose;
+  expiryMinutes: number;
+}): string {
+  const {firstName, code, purpose, expiryMinutes} = params;
+  const purposeText = purpose === VERIFICATION_PURPOSES.CANCEL ?
+    "cancel your registration" :
+    "transfer your registration";
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Verification Code - ${CONFERENCE_NAME}</title>
+    </head>
+    <body style="
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f4f4f5;
+    ">
+      <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <div style="
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+          overflow: hidden;
+        ">
+          <!-- Header -->
+          <div style="
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+            padding: 30px;
+            text-align: center;
+          ">
+            <h1 style="
+              color: white;
+              margin: 0;
+              font-size: 24px;
+              font-weight: 600;
+            ">${CONFERENCE_NAME}</h1>
+          </div>
+
+          <!-- Content -->
+          <div style="padding: 30px;">
+            <p style="
+              color: #1f2937;
+              font-size: 16px;
+              margin: 0 0 20px 0;
+              line-height: 1.6;
+            ">
+              Hi ${firstName},
+            </p>
+
+            <p style="
+              color: #4b5563;
+              font-size: 16px;
+              margin: 0 0 20px 0;
+              line-height: 1.6;
+            ">
+              You requested to <strong>${purposeText}</strong>. Please use the verification code below to confirm this action:
+            </p>
+
+            <!-- Code Box -->
+            <div style="
+              background: #f0f9ff;
+              border: 2px solid #0ea5e9;
+              border-radius: 8px;
+              padding: 20px;
+              text-align: center;
+              margin: 24px 0;
+            ">
+              <p style="
+                color: #0369a1;
+                font-size: 14px;
+                margin: 0 0 8px 0;
+              ">Your Verification Code</p>
+              <p style="
+                color: #1e3a5f;
+                font-size: 32px;
+                font-weight: 700;
+                letter-spacing: 8px;
+                margin: 0;
+                font-family: monospace;
+              ">${code}</p>
+            </div>
+
+            <p style="
+              color: #6b7280;
+              font-size: 14px;
+              margin: 0 0 20px 0;
+              line-height: 1.6;
+            ">
+              This code will expire in <strong>${expiryMinutes} minutes</strong>.
+            </p>
+
+            <p style="
+              color: #ef4444;
+              font-size: 14px;
+              margin: 0;
+              line-height: 1.6;
+            ">
+              If you did not request this, please ignore this email. Do not share this code with anyone.
+            </p>
+          </div>
+
+          <!-- Footer -->
+          <div style="
+            background: #f9fafb;
+            padding: 20px 30px;
+            border-top: 1px solid #e5e7eb;
+          ">
+            <p style="
+              color: #9ca3af;
+              font-size: 12px;
+              margin: 0;
+              text-align: center;
+            ">
+              ${CONFERENCE_NAME} | ${VENUE.NAME}
+            </p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Generates SMS template for verification code
+ *
+ * @param {string} code - Verification code
+ * @param {string} purpose - Purpose of verification (cancel/transfer)
+ * @return {string} SMS message text
+ */
+function generateVerificationSms(code: string, purpose: VerificationPurpose): string {
+  const purposeText = purpose === VERIFICATION_PURPOSES.CANCEL ?
+    "cancel" :
+    "transfer";
+  return `Your IDMC 2026 code to ${purposeText} your registration: ${code}. ` +
+    `Valid for 10 mins. Do not share this code.`;
+}
+
+/**
+ * Sends verification code via email
+ *
+ * @param {string} to - Recipient email address
+ * @param {string} firstName - Recipient's first name
+ * @param {string} code - Verification code
+ * @param {string} purpose - Purpose of verification
+ * @return {Promise<boolean>} True if email was sent
+ */
+async function sendVerificationEmail(
+  to: string,
+  firstName: string,
+  code: string,
+  purpose: VerificationPurpose
+): Promise<boolean> {
+  const apiKey = getSendGridApiKey();
+  if (!apiKey) {
+    logger.warn("SendGrid API key not configured, cannot send verification email");
+    return false;
+  }
+
+  const fromEmail = senderEmail.value();
+  if (!fromEmail) {
+    logger.warn("SENDER_EMAIL not configured, cannot send verification email");
+    return false;
+  }
+
+  sgMail.setApiKey(apiKey);
+
+  const msg = {
+    to,
+    from: {
+      email: fromEmail,
+      name: senderName.value() || "IDMC Registration",
+    },
+    subject: `Verification Code - ${CONFERENCE_NAME}`,
+    html: generateVerificationEmailHtml({
+      firstName,
+      code,
+      purpose,
+      expiryMinutes: 10,
+    }),
+  };
+
+  try {
+    await sgMail.send(msg);
+    logger.info(`Verification email sent to ${to} for ${purpose}`);
+    return true;
+  } catch (error) {
+    logger.error(`Failed to send verification email to ${to}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Callable Cloud Function to send a verification code for cancel/transfer actions
+ *
+ * @param {Object} data - Request data
+ * @param {string} data.registrationId - Registration ID
+ * @param {string} data.purpose - Purpose: "cancel" or "transfer"
+ * @param {string} data.method - Delivery method: "email" or "sms"
+ * @return {Object} Result with masked contact info
+ */
+export const sendActionVerificationCode = onCall(
+  {
+    region: "asia-southeast1",
+    maxInstances: 10,
+    secrets: [sendgridApiKey],
+  },
+  async (request) => {
+    const log = cfLogger.createContext("sendActionVerificationCode");
+    const {registrationId, purpose, method} = request.data as {
+      registrationId?: string;
+      purpose?: string;
+      method?: string;
+    };
+
+    log.start({registrationId, purpose, method});
+
+    // Validate inputs
+    if (!registrationId) {
+      log.error("Missing registration ID");
+      log.end(false, {reason: "missing_registration_id"});
+      throw new HttpsError("invalid-argument", "Registration ID is required");
+    }
+
+    if (!purpose || !["cancel", "transfer"].includes(purpose)) {
+      log.error("Invalid purpose", {purpose});
+      log.end(false, {reason: "invalid_purpose"});
+      throw new HttpsError("invalid-argument", "Purpose must be 'cancel' or 'transfer'");
+    }
+
+    const deliveryMethod = method || "email";
+    if (!["email", "sms"].includes(deliveryMethod)) {
+      log.error("Invalid delivery method", {method: deliveryMethod});
+      log.end(false, {reason: "invalid_method"});
+      throw new HttpsError("invalid-argument", "Method must be 'email' or 'sms'");
+    }
+
+    // Get client ID for rate limiting
+    const clientId = request.auth?.uid ||
+                     request.rawRequest?.ip ||
+                     registrationId;
+
+    // Check rate limit
+    try {
+      await checkRateLimit(
+        "otp_request",
+        clientId,
+        RATE_LIMIT_CONFIGS.OTP_REQUEST
+      );
+    } catch (error) {
+      await logRateLimitExceeded("otp_request", clientId, clientId);
+      throw error;
+    }
+
+    const db = getFirestore();
+
+    // Get registration
+    const regDoc = await db
+      .collection(COLLECTIONS.REGISTRATIONS)
+      .doc(registrationId)
+      .get();
+
+    if (!regDoc.exists) {
+      log.error("Registration not found", {registrationId});
+      log.end(false, {reason: "registration_not_found"});
+      throw new HttpsError("not-found", "Registration not found");
+    }
+
+    const registration = regDoc.data()!;
+    const primaryAttendee = registration.primaryAttendee;
+
+    if (!primaryAttendee) {
+      log.error("No primary attendee found", {registrationId});
+      log.end(false, {reason: "no_primary_attendee"});
+      throw new HttpsError("failed-precondition", "Registration data is incomplete");
+    }
+
+    // Validate registration status - must be cancellable/transferable
+    const validStatuses = [
+      REGISTRATION_STATUS.PENDING_PAYMENT,
+      REGISTRATION_STATUS.PENDING_VERIFICATION,
+      REGISTRATION_STATUS.CONFIRMED,
+    ];
+    if (!validStatuses.includes(registration.status)) {
+      log.error("Invalid registration status for action", {
+        registrationId,
+        status: registration.status,
+        purpose,
+      });
+      log.end(false, {reason: "invalid_status"});
+      throw new HttpsError(
+        "failed-precondition",
+        "This registration cannot be modified. Please contact support."
+      );
+    }
+
+    // Generate verification code
+    const code = generateVerificationCode();
+    const expiresAt = new Date(Date.now() + VERIFICATION_CODE_EXPIRY_MS);
+
+    // Store code in Firestore
+    const codeDocRef = db.collection(VERIFICATION_CODES_COLLECTION).doc();
+    await codeDocRef.set({
+      registrationId,
+      code,
+      purpose,
+      createdAt: FieldValue.serverTimestamp(),
+      expiresAt,
+      used: false,
+      attempts: 0,
+    });
+
+    // Send code via selected method
+    let sent = false;
+    let maskedContact = "";
+
+    if (deliveryMethod === "email" && primaryAttendee.email) {
+      sent = await sendVerificationEmail(
+        primaryAttendee.email,
+        primaryAttendee.firstName,
+        code,
+        purpose as VerificationPurpose
+      );
+      maskedContact = maskEmail(primaryAttendee.email);
+    } else if (deliveryMethod === "sms" && primaryAttendee.cellphone) {
+      sent = await sendSmsViaOneWaySms(
+        primaryAttendee.cellphone,
+        generateVerificationSms(code, purpose as VerificationPurpose)
+      );
+      maskedContact = maskPhone(primaryAttendee.cellphone);
+    } else {
+      log.error("No valid contact method available", {
+        method: deliveryMethod,
+        hasEmail: !!primaryAttendee.email,
+        hasPhone: !!primaryAttendee.cellphone,
+      });
+      log.end(false, {reason: "no_contact_available"});
+      throw new HttpsError(
+        "failed-precondition",
+        `No ${deliveryMethod === "email" ? "email address" : "phone number"} on file`
+      );
+    }
+
+    if (!sent) {
+      log.error("Failed to send verification code", {method: deliveryMethod});
+      log.end(false, {reason: "send_failed"});
+      throw new HttpsError(
+        "internal",
+        "Failed to send verification code. Please try again."
+      );
+    }
+
+    log.info("Verification code sent successfully", {
+      method: deliveryMethod,
+      purpose,
+    });
+    log.end(true, {method: deliveryMethod, purpose});
+
+    return {
+      success: true,
+      method: deliveryMethod,
+      maskedContact,
+      expiresInMinutes: 10,
+    };
+  }
+);
+
+/**
+ * Callable Cloud Function to verify a code for cancel/transfer actions
+ *
+ * @param {Object} data - Request data
+ * @param {string} data.registrationId - Registration ID
+ * @param {string} data.code - Verification code to check
+ * @param {string} data.purpose - Purpose: "cancel" or "transfer"
+ * @return {Object} Verification result
+ */
+export const verifyActionCode = onCall(
+  {
+    region: "asia-southeast1",
+    maxInstances: 10,
+  },
+  async (request) => {
+    const log = cfLogger.createContext("verifyActionCode");
+    const {registrationId, code, purpose} = request.data as {
+      registrationId?: string;
+      code?: string;
+      purpose?: string;
+    };
+
+    log.start({registrationId, purpose, codeLength: code?.length});
+
+    // Validate inputs
+    if (!registrationId || !code || !purpose) {
+      log.error("Missing required fields");
+      log.end(false, {reason: "missing_fields"});
+      throw new HttpsError(
+        "invalid-argument",
+        "Registration ID, code, and purpose are required"
+      );
+    }
+
+    if (!["cancel", "transfer"].includes(purpose)) {
+      log.error("Invalid purpose", {purpose});
+      log.end(false, {reason: "invalid_purpose"});
+      throw new HttpsError("invalid-argument", "Invalid purpose");
+    }
+
+    // Get client ID for rate limiting
+    const clientId = request.auth?.uid ||
+                     request.rawRequest?.ip ||
+                     registrationId;
+
+    // Check rate limit for verification attempts
+    try {
+      await checkRateLimit(
+        "otp_verify",
+        clientId,
+        RATE_LIMIT_CONFIGS.OTP_VERIFY
+      );
+    } catch (error) {
+      await logRateLimitExceeded("otp_verify", clientId, clientId);
+      throw error;
+    }
+
+    const db = getFirestore();
+
+    // Find the verification code
+    const codesQuery = await db
+      .collection(VERIFICATION_CODES_COLLECTION)
+      .where("registrationId", "==", registrationId)
+      .where("purpose", "==", purpose)
+      .where("used", "==", false)
+      .orderBy("createdAt", "desc")
+      .limit(1)
+      .get();
+
+    if (codesQuery.empty) {
+      log.warn("No valid verification code found", {registrationId, purpose});
+      log.end(false, {reason: "no_code_found"});
+      throw new HttpsError(
+        "not-found",
+        "No verification code found. Please request a new one."
+      );
+    }
+
+    const codeDoc = codesQuery.docs[0];
+    const codeData = codeDoc.data();
+
+    // Check if expired
+    const expiresAt = codeData.expiresAt.toDate ?
+      codeData.expiresAt.toDate() :
+      new Date(codeData.expiresAt);
+
+    if (new Date() > expiresAt) {
+      log.warn("Verification code expired", {registrationId, purpose});
+      log.end(false, {reason: "code_expired"});
+      throw new HttpsError(
+        "deadline-exceeded",
+        "Verification code has expired. Please request a new one."
+      );
+    }
+
+    // Increment attempt count
+    await codeDoc.ref.update({
+      attempts: FieldValue.increment(1),
+    });
+
+    // Check if code matches
+    if (codeData.code !== code) {
+      log.warn("Invalid verification code", {
+        registrationId,
+        purpose,
+        attempts: codeData.attempts + 1,
+      });
+      log.end(false, {reason: "invalid_code"});
+      throw new HttpsError(
+        "permission-denied",
+        "Invalid verification code. Please check and try again."
+      );
+    }
+
+    // Mark code as used
+    await codeDoc.ref.update({
+      used: true,
+      usedAt: FieldValue.serverTimestamp(),
+    });
+
+    log.info("Verification code validated successfully", {
+      registrationId,
+      purpose,
+    });
+    log.end(true, {purpose});
+
+    return {
+      success: true,
+      verified: true,
+      purpose,
+    };
+  }
+);
+
+/**
+ * Generates HTML email template for transfer notification to new attendee
+ *
+ * @param {Object} params - Template parameters
+ * @return {string} HTML email content
+ */
+function generateTransferNotificationHtml(params: {
+  newAttendeeName: string;
+  originalAttendeeName: string;
+  registrationId: string;
+  shortCode: string;
+  churchName: string;
+  conferenceDate: string;
+  statusUrl: string;
+}): string {
+  const {
+    newAttendeeName,
+    originalAttendeeName,
+    registrationId,
+    shortCode,
+    churchName,
+    conferenceDate,
+    statusUrl,
+  } = params;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Registration Transferred - ${CONFERENCE_NAME}</title>
+    </head>
+    <body style="
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f4f4f5;
+    ">
+      <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <div style="
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+          overflow: hidden;
+        ">
+          <!-- Header -->
+          <div style="
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+            padding: 30px;
+            text-align: center;
+          ">
+            <h1 style="
+              color: white;
+              margin: 0;
+              font-size: 24px;
+              font-weight: 600;
+            ">${CONFERENCE_NAME}</h1>
+          </div>
+
+          <!-- Content -->
+          <div style="padding: 30px;">
+            <p style="
+              color: #1f2937;
+              font-size: 16px;
+              margin: 0 0 20px 0;
+              line-height: 1.6;
+            ">
+              Hi ${newAttendeeName},
+            </p>
+
+            <p style="
+              color: #4b5563;
+              font-size: 16px;
+              margin: 0 0 20px 0;
+              line-height: 1.6;
+            ">
+              Great news! <strong>${originalAttendeeName}</strong> has transferred their ${CONFERENCE_NAME} registration to you.
+            </p>
+
+            <!-- Registration Details Box -->
+            <div style="
+              background: #dcfce7;
+              border: 1px solid #22c55e;
+              border-radius: 8px;
+              padding: 20px;
+              margin: 24px 0;
+            ">
+              <h3 style="
+                color: #166534;
+                font-size: 16px;
+                margin: 0 0 12px 0;
+              ">Your Registration Details</h3>
+              <table style="width: 100%;">
+                <tr>
+                  <td style="color: #4b5563; padding: 4px 0;">Registration ID:</td>
+                  <td style="color: #1f2937; font-weight: 600; padding: 4px 0;">${registrationId}</td>
+                </tr>
+                <tr>
+                  <td style="color: #4b5563; padding: 4px 0;">Short Code:</td>
+                  <td style="color: #1f2937; font-weight: 600; padding: 4px 0;">${shortCode}</td>
+                </tr>
+                <tr>
+                  <td style="color: #4b5563; padding: 4px 0;">Church:</td>
+                  <td style="color: #1f2937; padding: 4px 0;">${churchName}</td>
+                </tr>
+                <tr>
+                  <td style="color: #4b5563; padding: 4px 0;">Conference Date:</td>
+                  <td style="color: #1f2937; padding: 4px 0;">${conferenceDate}</td>
+                </tr>
+              </table>
+            </div>
+
+            <p style="
+              color: #4b5563;
+              font-size: 16px;
+              margin: 0 0 20px 0;
+              line-height: 1.6;
+            ">
+              You can view your registration status and access your QR code ticket by clicking the button below:
+            </p>
+
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${statusUrl}" style="
+                display: inline-block;
+                background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+                color: white;
+                text-decoration: none;
+                padding: 14px 32px;
+                border-radius: 8px;
+                font-weight: 600;
+                font-size: 16px;
+              ">View My Registration</a>
+            </div>
+
+            <p style="
+              color: #6b7280;
+              font-size: 14px;
+              margin: 20px 0 0 0;
+              line-height: 1.6;
+            ">
+              We look forward to seeing you at ${VENUE.NAME}!
+            </p>
+          </div>
+
+          <!-- Footer -->
+          <div style="
+            background: #f9fafb;
+            padding: 20px 30px;
+            border-top: 1px solid #e5e7eb;
+          ">
+            <p style="
+              color: #9ca3af;
+              font-size: 12px;
+              margin: 0;
+              text-align: center;
+            ">
+              ${CONFERENCE_NAME} | ${VENUE.NAME}
+            </p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Callable Cloud Function to send transfer notification to new attendee
+ *
+ * @param {Object} data - Request data
+ * @param {string} data.registrationId - Registration ID
+ * @param {Object} data.newAttendee - New attendee info
+ * @param {string} data.originalAttendeeName - Original attendee's name
+ * @return {Object} Result
+ */
+export const sendTransferNotification = onCall(
+  {
+    region: "asia-southeast1",
+    maxInstances: 10,
+    secrets: [sendgridApiKey],
+  },
+  async (request) => {
+    const log = cfLogger.createContext("sendTransferNotification");
+    const {registrationId, newAttendee, originalAttendeeName} = request.data as {
+      registrationId?: string;
+      newAttendee?: {
+        firstName: string;
+        lastName: string;
+        email: string;
+      };
+      originalAttendeeName?: string;
+    };
+
+    log.start({registrationId, hasNewAttendee: !!newAttendee});
+
+    // Validate inputs
+    if (!registrationId || !newAttendee || !originalAttendeeName) {
+      log.error("Missing required fields");
+      log.end(false, {reason: "missing_fields"});
+      throw new HttpsError(
+        "invalid-argument",
+        "Registration ID, new attendee info, and original attendee name are required"
+      );
+    }
+
+    if (!newAttendee.email) {
+      log.error("New attendee email is required");
+      log.end(false, {reason: "missing_email"});
+      throw new HttpsError("invalid-argument", "New attendee email is required");
+    }
+
+    const db = getFirestore();
+
+    // Get registration
+    const regDoc = await db
+      .collection(COLLECTIONS.REGISTRATIONS)
+      .doc(registrationId)
+      .get();
+
+    if (!regDoc.exists) {
+      log.error("Registration not found", {registrationId});
+      log.end(false, {reason: "registration_not_found"});
+      throw new HttpsError("not-found", "Registration not found");
+    }
+
+    const registration = regDoc.data()!;
+
+    const apiKey = getSendGridApiKey();
+    if (!apiKey) {
+      log.warn("SendGrid API key not configured, skipping email");
+      log.end(false, {reason: "sendgrid_not_configured"});
+      return {success: false, reason: "email_not_configured"};
+    }
+
+    const fromEmail = senderEmail.value();
+    if (!fromEmail) {
+      log.warn("SENDER_EMAIL not configured, skipping email");
+      log.end(false, {reason: "sender_not_configured"});
+      return {success: false, reason: "email_not_configured"};
+    }
+
+    sgMail.setApiKey(apiKey);
+
+    // Get conference settings for date
+    const settingsDoc = await db
+      .collection(COLLECTIONS.CONFERENCES)
+      .doc("main")
+      .get();
+    const settings = settingsDoc.data() || {};
+    const conferenceDate = settings.eventDate ?
+      new Date(settings.eventDate).toLocaleDateString("en-PH", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }) :
+      "March 28, 2026";
+
+    const statusUrl = `${appUrl.value()}/registration/status?id=${registrationId}`;
+
+    const msg = {
+      to: newAttendee.email,
+      from: {
+        email: fromEmail,
+        name: senderName.value() || "IDMC Registration",
+      },
+      subject: `Registration Transferred to You - ${CONFERENCE_NAME}`,
+      html: generateTransferNotificationHtml({
+        newAttendeeName: `${newAttendee.firstName} ${newAttendee.lastName}`,
+        originalAttendeeName,
+        registrationId: registration.registrationId,
+        shortCode: registration.shortCode,
+        churchName: registration.church?.name || "N/A",
+        conferenceDate,
+        statusUrl,
+      }),
+    };
+
+    try {
+      await sgMail.send(msg);
+      log.info("Transfer notification email sent", {
+        to: newAttendee.email,
+        registrationId,
+      });
+      log.end(true, {emailSent: true});
+      return {success: true, emailSent: true};
+    } catch (error) {
+      log.error("Failed to send transfer notification", error);
+      log.end(false, {error: (error as Error).message});
+      return {success: false, reason: "email_send_failed"};
+    }
+  }
+);
+
+/**
+ * Scheduled function to clean up expired verification codes
+ * Runs every hour
+ */
+export const cleanupExpiredVerificationCodes = onSchedule(
+  {
+    schedule: "every 1 hours",
+    region: "asia-southeast1",
+    timeoutSeconds: 120,
+  },
+  async () => {
+    const log = cfLogger.createContext("cleanupExpiredVerificationCodes");
+    log.start({});
+
+    const db = getFirestore();
+    const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
+
+    try {
+      const snapshot = await db
+        .collection(VERIFICATION_CODES_COLLECTION)
+        .where("createdAt", "<", cutoffTime)
+        .limit(500)
+        .get();
+
+      if (snapshot.empty) {
+        log.info("No expired verification codes to clean up");
+        log.end(true, {deleted: 0});
+        return;
+      }
+
+      const batch = db.batch();
+      snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit();
+      log.info(`Cleaned up ${snapshot.size} expired verification codes`);
+      log.end(true, {deleted: snapshot.size});
+    } catch (error) {
+      log.error("Error cleaning up verification codes", error);
+      log.end(false, {error: (error as Error).message});
+    }
+  }
+);
