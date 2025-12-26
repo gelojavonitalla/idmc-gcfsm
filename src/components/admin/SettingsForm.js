@@ -61,6 +61,10 @@ const DEFAULT_SETTINGS = {
     gatewayDomain: '1.onewaysms.asia',
     gatewayEmail: '',
   },
+  email: {
+    triggerEmailsEnabled: true,
+    skipTestData: true,
+  },
 };
 
 function SettingsForm({ settings, onSave, isLoading }) {
@@ -101,6 +105,10 @@ function SettingsForm({ settings, onSave, isLoading }) {
       enabled: settings?.sms?.enabled ?? DEFAULT_SETTINGS.sms.enabled,
       gatewayDomain: settings?.sms?.gatewayDomain || DEFAULT_SETTINGS.sms.gatewayDomain,
       gatewayEmail: settings?.sms?.gatewayEmail || DEFAULT_SETTINGS.sms.gatewayEmail,
+    },
+    email: {
+      triggerEmailsEnabled: settings?.email?.triggerEmailsEnabled ?? DEFAULT_SETTINGS.email.triggerEmailsEnabled,
+      skipTestData: settings?.email?.skipTestData ?? DEFAULT_SETTINGS.email.skipTestData,
     },
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -146,6 +154,10 @@ function SettingsForm({ settings, onSave, isLoading }) {
           enabled: settings.sms?.enabled ?? DEFAULT_SETTINGS.sms.enabled,
           gatewayDomain: settings.sms?.gatewayDomain || DEFAULT_SETTINGS.sms.gatewayDomain,
           gatewayEmail: settings.sms?.gatewayEmail || DEFAULT_SETTINGS.sms.gatewayEmail,
+        },
+        email: {
+          triggerEmailsEnabled: settings.email?.triggerEmailsEnabled ?? DEFAULT_SETTINGS.email.triggerEmailsEnabled,
+          skipTestData: settings.email?.skipTestData ?? DEFAULT_SETTINGS.email.skipTestData,
         },
       });
     }
@@ -685,6 +697,52 @@ function SettingsForm({ settings, onSave, isLoading }) {
           </div>
         </div>
       </section>
+
+      {/* Email Notifications Section - SuperAdmin only */}
+      {isSuperAdmin && (
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>Email Notifications</h3>
+          <p className={styles.sectionDescription}>
+            Control email notifications sent by scheduled functions and triggers. Use these settings
+            to prevent emails from being sent to test/seeded data.
+          </p>
+          <div className={styles.grid}>
+            <div className={styles.fieldFull}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  name="email.triggerEmailsEnabled"
+                  checked={formData.email.triggerEmailsEnabled}
+                  onChange={handleChange}
+                  className={styles.checkbox}
+                />
+                <span>Enable Trigger Emails</span>
+              </label>
+              <p className={styles.fieldHint}>
+                When enabled, automatic emails will be sent for registration confirmations,
+                payment confirmations, and waitlist offers. Disable this during seeding or testing.
+              </p>
+            </div>
+            <div className={styles.fieldFull}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  name="email.skipTestData"
+                  checked={formData.email.skipTestData}
+                  onChange={handleChange}
+                  className={styles.checkbox}
+                />
+                <span>Skip Test/Seeded Data</span>
+              </label>
+              <p className={styles.fieldHint}>
+                When enabled, emails will not be sent to registrations created by seed scripts
+                (createdBy: &quot;seed-script&quot;) or to test email domains (e.g., example.com).
+                This helps prevent bounces from fake email addresses.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* SMS Notifications Section - SuperAdmin only */}
       {isSuperAdmin && (
