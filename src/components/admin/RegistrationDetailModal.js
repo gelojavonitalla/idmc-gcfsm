@@ -845,7 +845,7 @@ function RegistrationDetailModal({
             </div>
           </div>
 
-          {/* Food Selection - Only show if primary or any additional attendee has food choice */}
+          {/* Food Preference - Only show if primary or any additional attendee has food choice */}
           {(registration.primaryAttendee?.foodChoice ||
             registration.additionalAttendees?.some((a) => a.foodChoice)) && (
             <div className={styles.section}>
@@ -857,7 +857,7 @@ function RegistrationDetailModal({
                   <line x1="10" y1="1" x2="10" y2="4" />
                   <line x1="14" y1="1" x2="14" y2="4" />
                 </svg>
-                Food Selection
+                Food Preference
               </h3>
               <div className={styles.infoGrid}>
                 <div className={styles.infoItem}>
