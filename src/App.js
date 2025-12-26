@@ -22,7 +22,7 @@ import {
   MaintenancePage,
   FeedbackPage,
 } from './pages';
-import { ROUTES, ADMIN_ROUTES, IDMC_TEAM_ROLES } from './constants';
+import { ROUTES, ADMIN_ROUTES, IDMC_TEAM_ROLES, ADMIN_ROLES } from './constants';
 import './index.css';
 
 /**
@@ -117,7 +117,7 @@ function App() {
             <Route
               path={ADMIN_ROUTES.USERS}
               element={
-                <AdminProtectedRoute requiredRole="superadmin">
+                <AdminProtectedRoute requiredRole={[ADMIN_ROLES.ADMIN, ADMIN_ROLES.SUPERADMIN]}>
                   <Suspense fallback={<AdminLoadingFallback />}>
                     <AdminUsersPage />
                   </Suspense>
