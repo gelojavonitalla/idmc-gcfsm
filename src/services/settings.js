@@ -54,6 +54,9 @@ const DEFAULT_SETTINGS = {
     fullRefundMessage: 'Full refund available until {days} days before the event.',
     partialRefundMessage: 'Partial refund ({percent}%) available until {days} days before the event.',
     lateRefundMessage: 'Cancellations within {days} days of the event are not eligible for refund.',
+    userCancellationEnabled: true, // Whether users can cancel their own registration
+    transferEnabled: true,         // Whether users can transfer their registration
+    transferDeadlineDays: 3,       // Minimum days before event that transfers are allowed
   },
   venue: {
     name: 'GCF South Metro',

@@ -537,7 +537,8 @@ function RegistrationStatusPage() {
    */
   const canTransfer = useMemo(() => {
     if (!settings?.refundPolicy) return false;
-    if (!settings.refundPolicy.transferEnabled) return false;
+    // Default to true if transferEnabled is not set (backwards compatibility)
+    if (settings.refundPolicy.transferEnabled === false) return false;
 
     // Check transfer deadline
     const transferDeadlineDays = settings.refundPolicy.transferDeadlineDays ?? 3;
