@@ -837,6 +837,14 @@ function RegistrationDetailModal({
                   {registration.payment?.referenceNumber || '—'}
                 </span>
               </div>
+              {registration.payment?.overpayment > 0 && (
+                <div className={styles.infoItem}>
+                  <span className={styles.label}>Overpayment</span>
+                  <span className={`${styles.value} ${styles.overpaymentValue}`}>
+                    +{formatCurrency(registration.payment.overpayment)}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Payment Proof */}
@@ -951,6 +959,11 @@ function RegistrationDetailModal({
                       {amountPaid < registration.totalAmount && (
                         <p className={styles.warningText}>
                           ⚠️ Partial payment - user will need to upload additional proof
+                        </p>
+                      )}
+                      {amountPaid > registration.totalAmount && (
+                        <p className={styles.overpaymentText}>
+                          ⚠️ Overpayment of {formatCurrency(amountPaid - registration.totalAmount)} - this will be noted in finance
                         </p>
                       )}
                     </div>

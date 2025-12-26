@@ -117,10 +117,13 @@ function AdminFinanceDashboardPage() {
       totalPayments: 0,
       confirmedPayments: 0,
       pendingPayments: 0,
+      totalOverpayments: 0,
+      overpaymentCount: 0,
     };
 
     registrations.forEach((reg) => {
       const amount = reg.payment?.amountPaid || 0;
+      const overpayment = reg.payment?.overpayment || 0;
 
       if (reg.status === REGISTRATION_STATUS.CONFIRMED) {
         stats.confirmedTransactions += 1;
@@ -131,6 +134,11 @@ function AdminFinanceDashboardPage() {
       }
 
       stats.totalPayments += amount;
+
+      if (overpayment > 0) {
+        stats.totalOverpayments += overpayment;
+        stats.overpaymentCount += 1;
+      }
     });
 
     return stats;
@@ -334,6 +342,15 @@ function AdminFinanceDashboardPage() {
                 )}
               </div>
             </div>
+            {statistics.totalOverpayments > 0 && (
+              <div className={`${styles.statCard} ${styles.statCardWarning}`}>
+                <div className={styles.statLabel}>Overpayments</div>
+                <div className={styles.statValue}>{statistics.overpaymentCount}</div>
+                <div className={styles.statSubvalue}>
+                  {formatPrice(statistics.totalOverpayments)}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -475,6 +492,7 @@ function AdminFinanceDashboardPage() {
                       <th>Name</th>
                       <th>Church</th>
                       <th>Amount</th>
+                      <th>Overpayment</th>
                       <th>Reference Number</th>
                       <th>Payment Date/Time</th>
                       <th>Status</th>
@@ -489,6 +507,15 @@ function AdminFinanceDashboardPage() {
                         </td>
                         <td>{reg.church?.name}</td>
                         <td>{formatPrice(reg.payment?.amountPaid || 0)}</td>
+                        <td>
+                          {reg.payment?.overpayment > 0 ? (
+                            <span className={styles.overpaymentBadge}>
+                              +{formatPrice(reg.payment.overpayment)}
+                            </span>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
                         <td>{reg.payment?.referenceNumber || 'N/A'}</td>
                         <td>
                           {reg.payment?.paymentDate

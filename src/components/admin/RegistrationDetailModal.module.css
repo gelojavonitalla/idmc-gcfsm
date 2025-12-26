@@ -230,6 +230,14 @@
   color: var(--color-primary);
 }
 
+.overpaymentValue {
+  font-weight: 600;
+  color: var(--color-warning-600, #d97706);
+  background-color: var(--color-warning-50, #fffbeb);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+}
+
 /* Payment Proof */
 .paymentProof {
   margin-top: var(--spacing-4);
@@ -523,6 +531,16 @@
   color: var(--color-warning-700, #c2410c);
   font-size: var(--font-size-sm);
   margin: var(--spacing-1) 0 0;
+}
+
+.overpaymentText {
+  color: var(--color-warning-600, #d97706);
+  font-size: var(--font-size-sm);
+  margin: var(--spacing-1) 0 0;
+  background-color: var(--color-warning-50, #fffbeb);
+  padding: var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-warning-200, #fde68a);
 }
 
 .verificationActions {
