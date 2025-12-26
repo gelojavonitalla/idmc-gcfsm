@@ -5,7 +5,9 @@
  * @module pages/IDMC2025Page
  */
 
+import { Link } from 'react-router-dom';
 import { YouTubeEmbed } from '../components/ui';
+import { ROUTES, CONFERENCE } from '../constants';
 import { useSettings } from '../context/SettingsContext';
 import styles from './IDMC2025Page.module.css';
 
@@ -50,6 +52,25 @@ function IDMC2025Page() {
               videoId={videoId}
               title={`${title} Conference Highlights`}
             />
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className={styles.ctaSection}>
+        <div className="container">
+          <h2 className={styles.ctaTitle}>Ready to Join Us?</h2>
+          <p className={styles.ctaText}>
+            Register now for IDMC {CONFERENCE.YEAR} and be part of this
+            transformational conference.
+          </p>
+          <div className={styles.ctaButtons}>
+            <Link to={ROUTES.REGISTER} className={styles.ctaButtonPrimary}>
+              Register Now
+            </Link>
+            <Link to={ROUTES.FAQ} className={styles.ctaButtonSecondary}>
+              View FAQ
+            </Link>
           </div>
         </div>
       </section>
