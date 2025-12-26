@@ -120,7 +120,7 @@ function getAttendeeEmail(registration) {
  * @returns {string} Attendee phone
  */
 function getAttendeePhone(registration) {
-  return registration.primaryAttendee?.phone || registration.phone || '—';
+  return registration.primaryAttendee?.cellphone || registration.primaryAttendee?.phone || registration.phone || '—';
 }
 
 /**
