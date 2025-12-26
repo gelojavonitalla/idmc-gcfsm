@@ -399,8 +399,8 @@ export function formatRefundPolicySummary(refundPolicy) {
     parts.push(`Full refund: ${refundPolicy.fullRefundDays}+ days before event`);
   }
 
-  if (refundPolicy.partialRefundDays !== null && refundPolicy.partialRefundDays !== refundPolicy.fullRefundDays) {
-    parts.push(`${refundPolicy.partialRefundPercent || 50}% refund: ${refundPolicy.partialRefundDays}-${(refundPolicy.fullRefundDays || refundPolicy.partialRefundDays) - 1} days before event`);
+  if (refundPolicy.partialRefundDays !== null && refundPolicy.fullRefundDays !== null && refundPolicy.partialRefundDays !== refundPolicy.fullRefundDays) {
+    parts.push(`${refundPolicy.partialRefundPercent || 50}% refund: ${refundPolicy.partialRefundDays}-${refundPolicy.fullRefundDays - 1} days before event`);
   }
 
   const cutoffDays = refundPolicy.partialRefundDays || refundPolicy.fullRefundDays || 0;

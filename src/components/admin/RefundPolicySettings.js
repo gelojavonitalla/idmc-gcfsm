@@ -248,10 +248,10 @@ function RefundPolicySettings({ settings, onSave, isLoading }) {
                     {formData.refundPolicy.fullRefundDays !== null && (
                       <li>Full refund (100%): {formData.refundPolicy.fullRefundDays}+ days before event</li>
                     )}
-                    {formData.refundPolicy.partialRefundDays !== null && formData.refundPolicy.partialRefundDays !== formData.refundPolicy.fullRefundDays && (
+                    {formData.refundPolicy.partialRefundDays !== null && formData.refundPolicy.fullRefundDays !== null && formData.refundPolicy.partialRefundDays !== formData.refundPolicy.fullRefundDays && (
                       <li>
                         Partial refund ({formData.refundPolicy.partialRefundPercent}%):
-                        {' '}{formData.refundPolicy.partialRefundDays}-{(formData.refundPolicy.fullRefundDays || formData.refundPolicy.partialRefundDays) - 1} days before event
+                        {' '}{formData.refundPolicy.partialRefundDays}-{formData.refundPolicy.fullRefundDays - 1} days before event
                       </li>
                     )}
                     <li>
