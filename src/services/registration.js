@@ -23,7 +23,8 @@ import {
   uploadBytesResumable,
   getDownloadURL,
 } from 'firebase/storage';
-import { db, storage } from '../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, storage, functions } from '../lib/firebase';
 import {
   COLLECTIONS,
   STORAGE_PATHS,
@@ -1766,4 +1767,135 @@ export async function getWorkshopAttendees(workshopId) {
   });
 
   return attendees;
+}
+
+// ============================================
+// Verification Code Functions
+// ============================================
+
+/**
+ * Verification action types for cancel/transfer
+ */
+export const VERIFICATION_ACTION = {
+  CANCEL: 'cancel',
+  TRANSFER: 'transfer',
+};
+
+/**
+ * Sends a verification code for cancel/transfer operations.
+ * The code will be sent to the registered email (and optionally SMS).
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {string} action - Action type: 'cancel' or 'transfer'
+ * @param {boolean} sendSms - Whether to also send SMS (optional)
+ * @returns {Promise<Object>} Result with success status and expiry info
+ */
+export async function sendVerificationCode(registrationId, action, sendSms = false) {
+  if (!registrationId) {
+    throw new Error('Registration ID is required');
+  }
+
+  if (!action || !Object.values(VERIFICATION_ACTION).includes(action)) {
+    throw new Error('Invalid action type. Must be "cancel" or "transfer"');
+  }
+
+  try {
+    const sendVerificationCodeFn = httpsCallable(functions, 'sendVerificationCode');
+    const result = await sendVerificationCodeFn({
+      registrationId,
+      action,
+      sendSms,
+    });
+
+    return result.data;
+  } catch (error) {
+    // Handle Firebase function errors
+    if (error.code === 'functions/resource-exhausted') {
+      throw new Error('Too many verification code requests. Please try again later.');
+    }
+    if (error.code === 'functions/not-found') {
+      throw new Error('Registration not found');
+    }
+    if (error.code === 'functions/failed-precondition') {
+      throw new Error(error.message || 'Unable to send verification code');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Verifies a verification code for cancel/transfer operations.
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {string} action - Action type: 'cancel' or 'transfer'
+ * @param {string} code - The verification code to verify
+ * @returns {Promise<Object>} Result with success and verified status
+ */
+export async function verifyCode(registrationId, action, code) {
+  if (!registrationId || !action || !code) {
+    throw new Error('Registration ID, action, and code are required');
+  }
+
+  try {
+    const verifyCodeFn = httpsCallable(functions, 'verifyCode');
+    const result = await verifyCodeFn({
+      registrationId,
+      action,
+      code: code.trim(),
+    });
+
+    return result.data;
+  } catch (error) {
+    // Handle Firebase function errors
+    if (error.code === 'functions/resource-exhausted') {
+      throw new Error('Too many verification attempts. Please request a new code.');
+    }
+    if (error.code === 'functions/not-found') {
+      throw new Error('No verification code found. Please request a new code.');
+    }
+    if (error.code === 'functions/permission-denied') {
+      throw new Error(error.message || 'Invalid verification code');
+    }
+    if (error.code === 'functions/failed-precondition') {
+      throw new Error(error.message || 'Code expired or already used');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Sends a notification email to the new attendee after a transfer.
+ * This should be called after a successful transfer operation.
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {string} newAttendeeEmail - New attendee's email
+ * @param {string} newAttendeeName - New attendee's name (first + last)
+ * @param {string} originalAttendeeName - Original attendee's name (first + last)
+ * @returns {Promise<Object>} Result with success status
+ */
+export async function sendTransferNotification(
+  registrationId,
+  newAttendeeEmail,
+  newAttendeeName,
+  originalAttendeeName
+) {
+  if (!registrationId || !newAttendeeEmail || !newAttendeeName) {
+    throw new Error('Registration ID, new attendee email, and name are required');
+  }
+
+  try {
+    const sendTransferNotificationFn = httpsCallable(functions, 'sendTransferNotification');
+    const result = await sendTransferNotificationFn({
+      registrationId,
+      newAttendeeEmail,
+      newAttendeeName,
+      originalAttendeeName,
+    });
+
+    return result.data;
+  } catch (error) {
+    // Transfer notification failure is not critical - don't throw
+    console.error('Failed to send transfer notification:', error);
+    return { success: false, emailSent: false, error: error.message };
+  }
 }

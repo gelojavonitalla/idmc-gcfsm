@@ -124,6 +124,11 @@ export {
   transferUserRegistration,
   uploadWaitlistPayment,
   checkRegistrationAvailability,
+  // Verification code functions
+  VERIFICATION_ACTION,
+  sendVerificationCode,
+  verifyCode,
+  sendTransferNotification,
 } from './registration';
 
 export {
