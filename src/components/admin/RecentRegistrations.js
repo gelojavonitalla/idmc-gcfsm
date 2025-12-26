@@ -7,7 +7,11 @@
 
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
-import { ADMIN_ROUTES, REGISTRATION_STATUS } from '../../constants';
+import {
+  ADMIN_ROUTES,
+  REGISTRATION_STATUS,
+  REGISTRATION_STATUS_LABELS,
+} from '../../constants';
 import styles from './RecentRegistrations.module.css';
 
 /**
@@ -17,27 +21,27 @@ const STATUS_STYLES = {
   [REGISTRATION_STATUS.CONFIRMED]: {
     background: 'rgba(16, 185, 129, 0.1)',
     color: '#10b981',
-    label: 'Confirmed',
+    label: REGISTRATION_STATUS_LABELS[REGISTRATION_STATUS.CONFIRMED],
   },
   [REGISTRATION_STATUS.PENDING_VERIFICATION]: {
     background: 'rgba(245, 158, 11, 0.1)',
     color: '#f59e0b',
-    label: 'Pending',
+    label: REGISTRATION_STATUS_LABELS[REGISTRATION_STATUS.PENDING_VERIFICATION],
   },
   [REGISTRATION_STATUS.PENDING_PAYMENT]: {
     background: 'rgba(239, 68, 68, 0.1)',
     color: '#ef4444',
-    label: 'Unpaid',
+    label: REGISTRATION_STATUS_LABELS[REGISTRATION_STATUS.PENDING_PAYMENT],
   },
   [REGISTRATION_STATUS.CANCELLED]: {
     background: 'rgba(107, 114, 128, 0.1)',
     color: '#6b7280',
-    label: 'Cancelled',
+    label: REGISTRATION_STATUS_LABELS[REGISTRATION_STATUS.CANCELLED],
   },
   [REGISTRATION_STATUS.REFUNDED]: {
     background: 'rgba(139, 92, 246, 0.1)',
     color: '#8b5cf6',
-    label: 'Refunded',
+    label: REGISTRATION_STATUS_LABELS[REGISTRATION_STATUS.REFUNDED],
   },
 };
 
