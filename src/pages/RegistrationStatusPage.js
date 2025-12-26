@@ -6,6 +6,7 @@ import {
   REGISTRATION_STATUS,
   REGISTRATION_CATEGORY_LABELS,
   ROUTES,
+  MINISTRY_ROLES,
 } from '../constants';
 import { formatPrice, maskEmail, maskName, maskPhone, calculateRefundEligibility } from '../utils';
 import {
@@ -1419,11 +1420,9 @@ function RegistrationStatusPage() {
                             <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '500', fontSize: '0.875rem' }}>
                               Ministry Role
                             </label>
-                            <input
-                              type="text"
+                            <select
                               value={transferData.ministryRole}
                               onChange={(e) => setTransferData((prev) => ({ ...prev, ministryRole: e.target.value }))}
-                              placeholder="e.g., Pastor, Worship Leader, Youth Leader"
                               style={{
                                 width: '100%',
                                 padding: '0.5rem',
@@ -1431,8 +1430,14 @@ function RegistrationStatusPage() {
                                 border: '1px solid #d1d5db',
                                 fontSize: '0.875rem',
                                 boxSizing: 'border-box',
+                                backgroundColor: '#fff',
                               }}
-                            />
+                            >
+                              <option value="">Select role</option>
+                              {MINISTRY_ROLES.map((role) => (
+                                <option key={role} value={role}>{role}</option>
+                              ))}
+                            </select>
                           </div>
 
                           <div>
