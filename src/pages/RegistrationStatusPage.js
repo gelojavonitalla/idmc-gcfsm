@@ -998,7 +998,9 @@ function RegistrationStatusPage() {
 
               {/* User Cancel Registration Modal */}
               {showUserCancelModal && (
-                <div style={{
+                <div
+                  onClick={() => setShowUserCancelModal(false)}
+                  style={{
                   position: 'fixed',
                   top: 0,
                   left: 0,
@@ -1011,7 +1013,9 @@ function RegistrationStatusPage() {
                   zIndex: 1000,
                   padding: '1rem',
                 }}>
-                  <div style={{
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
                     backgroundColor: 'white',
                     borderRadius: '12px',
                     padding: '2rem',
@@ -1272,7 +1276,9 @@ function RegistrationStatusPage() {
 
               {/* Transfer Registration Modal */}
               {showTransferModal && (
-                <div style={{
+                <div
+                  onClick={() => setShowTransferModal(false)}
+                  style={{
                   position: 'fixed',
                   top: 0,
                   left: 0,
@@ -1285,7 +1291,9 @@ function RegistrationStatusPage() {
                   zIndex: 1000,
                   padding: '1rem',
                 }}>
-                  <div style={{
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
                     backgroundColor: 'white',
                     borderRadius: '12px',
                     padding: '2rem',
