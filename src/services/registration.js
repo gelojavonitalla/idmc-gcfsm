@@ -1899,3 +1899,40 @@ export async function sendTransferNotification(
     return { success: false, emailSent: false, error: error.message };
   }
 }
+
+/**
+ * Sends a confirmation email to the original attendee after a successful transfer.
+ * This notifies the original attendee that their registration has been transferred.
+ *
+ * @param {string} registrationId - Registration ID
+ * @param {string} originalAttendeeEmail - Original attendee's email
+ * @param {string} originalAttendeeName - Original attendee's name (first + last)
+ * @param {string} newAttendeeName - New attendee's name (first + last)
+ * @returns {Promise<Object>} Result with success status
+ */
+export async function sendTransferConfirmation(
+  registrationId,
+  originalAttendeeEmail,
+  originalAttendeeName,
+  newAttendeeName
+) {
+  if (!registrationId || !originalAttendeeEmail || !originalAttendeeName) {
+    throw new Error('Registration ID, original attendee email, and name are required');
+  }
+
+  try {
+    const sendTransferConfirmationFn = httpsCallable(functions, 'sendTransferConfirmation');
+    const result = await sendTransferConfirmationFn({
+      registrationId,
+      originalAttendeeEmail,
+      originalAttendeeName,
+      newAttendeeName,
+    });
+
+    return result.data;
+  } catch (error) {
+    // Transfer confirmation failure is not critical - don't throw
+    console.error('Failed to send transfer confirmation:', error);
+    return { success: false, emailSent: false, error: error.message };
+  }
+}

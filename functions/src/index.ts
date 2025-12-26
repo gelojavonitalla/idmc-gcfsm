@@ -6096,3 +6096,264 @@ export const sendTransferNotification = onCall(
     }
   }
 );
+
+/**
+ * Generates HTML email content for transfer confirmation to original attendee
+ *
+ * @param {string} originalAttendeeName - Name of the original attendee
+ * @param {string} newAttendeeName - Name of the new attendee
+ * @param {string} registrationId - Registration ID
+ * @param {string} conferenceTitle - Conference title
+ * @return {string} HTML email content
+ */
+function generateTransferConfirmationHtml(
+  originalAttendeeName: string,
+  newAttendeeName: string,
+  registrationId: string,
+  conferenceTitle: string
+): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Registration Transfer Confirmation</title>
+    </head>
+    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
+      <div style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); padding: 40px 20px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">
+          Registration Transfer Confirmed
+        </h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 14px;">
+          ${conferenceTitle}
+        </p>
+      </div>
+
+      <div style="background: white; padding: 40px 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <p style="font-size: 16px; margin: 0 0 20px;">
+          Hi ${originalAttendeeName},
+        </p>
+
+        <p style="font-size: 14px; margin: 0 0 20px; color: #4b5563;">
+          This email confirms that your registration for <strong>${conferenceTitle}</strong>
+          has been successfully transferred.
+        </p>
+
+        <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; margin: 0 0 30px;">
+          <h3 style="color: #1e40af; margin: 0 0 15px; font-size: 16px;">Transfer Details:</h3>
+          <p style="margin: 0 0 8px; font-size: 14px;">
+            <strong>Registration ID:</strong> ${registrationId}
+          </p>
+          <p style="margin: 0; font-size: 14px;">
+            <strong>Transferred to:</strong> ${newAttendeeName}
+          </p>
+        </div>
+
+        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 0 0 30px; border-radius: 0 8px 8px 0;">
+          <p style="margin: 0; font-size: 13px; color: #92400e;">
+            <strong>Please note:</strong> This registration is no longer associated with
+            your account. If you did not authorize this transfer, please contact us immediately.
+          </p>
+        </div>
+
+        <p style="font-size: 14px; margin: 0; color: #6b7280;">
+          If you have any questions or concerns, please reach out to us through our website.
+        </p>
+      </div>
+
+      <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+        <p style="margin: 0;">
+          © ${new Date().getFullYear()} ${CONFERENCE_NAME}. All rights reserved.
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Generates plain text email content for transfer confirmation
+ *
+ * @param {string} originalAttendeeName - Name of the original attendee
+ * @param {string} newAttendeeName - Name of the new attendee
+ * @param {string} registrationId - Registration ID
+ * @param {string} conferenceTitle - Conference title
+ * @return {string} Plain text email content
+ */
+function generateTransferConfirmationText(
+  originalAttendeeName: string,
+  newAttendeeName: string,
+  registrationId: string,
+  conferenceTitle: string
+): string {
+  return `
+Hi ${originalAttendeeName},
+
+This email confirms that your registration for ${conferenceTitle} has been successfully transferred.
+
+Transfer Details:
+Registration ID: ${registrationId}
+Transferred to: ${newAttendeeName}
+
+Please note: This registration is no longer associated with your account. If you did not authorize this transfer, please contact us immediately.
+
+If you have any questions or concerns, please reach out to us through our website.
+
+- ${CONFERENCE_NAME} Team
+  `.trim();
+}
+
+/**
+ * Sends a confirmation email to the original attendee after a transfer
+ *
+ * This function should be called after a successful transfer operation.
+ * It notifies the original attendee that their registration has been transferred.
+ *
+ * @param {Object} data - Request data
+ * @param {string} data.registrationId - Registration ID
+ * @param {string} data.originalAttendeeEmail - Original attendee's email
+ * @param {string} data.originalAttendeeName - Original attendee's name
+ * @param {string} data.newAttendeeName - New attendee's name
+ * @returns {Object} Success status
+ */
+export const sendTransferConfirmation = onCall(
+  {
+    region: "asia-southeast1",
+    maxInstances: 10,
+    secrets: [sendgridApiKey],
+  },
+  async (request) => {
+    const {
+      registrationId,
+      originalAttendeeEmail,
+      originalAttendeeName,
+      newAttendeeName,
+    } = request.data as {
+      registrationId?: string;
+      originalAttendeeEmail?: string;
+      originalAttendeeName?: string;
+      newAttendeeName?: string;
+    };
+
+    const log = cfLogger.createContext(
+      "sendTransferConfirmation",
+      registrationId
+    );
+    log.start({registrationId, originalAttendeeEmail});
+
+    // Validate inputs
+    if (!registrationId || !originalAttendeeEmail || !originalAttendeeName) {
+      log.error("Missing required parameters");
+      log.end(false, {reason: "missing_parameters"});
+      throw new HttpsError(
+        "invalid-argument",
+        "Registration ID, original attendee email, and name are required"
+      );
+    }
+
+    // Get email settings
+    const emailSettings = await getEmailSettings();
+    if (!emailSettings.triggerEmailsEnabled) {
+      log.warn("Email sending is disabled");
+      log.end(true, {emailSent: false, reason: "emails_disabled"});
+      return {success: true, emailSent: false};
+    }
+
+    // Check if we should skip this email (test domain)
+    if (isTestEmailDomain(originalAttendeeEmail)) {
+      log.info("Skipping email to test domain");
+      log.end(true, {emailSent: false, reason: "test_domain"});
+      return {success: true, emailSent: false};
+    }
+
+    // Check if SendGrid is enabled
+    if (!isSendGridEnabled()) {
+      log.warn("SendGrid not enabled");
+      log.end(true, {emailSent: false, reason: "sendgrid_disabled"});
+      return {success: true, emailSent: false};
+    }
+
+    const apiKey = getSendGridApiKey();
+    if (!apiKey) {
+      log.warn("SendGrid API key not available");
+      log.end(true, {emailSent: false, reason: "no_api_key"});
+      return {success: true, emailSent: false};
+    }
+
+    const db = getFirestore(DATABASE_ID);
+
+    // Get conference settings
+    let conferenceTitle = CONFERENCE_NAME;
+
+    try {
+      const settingsDoc = await db
+        .collection(COLLECTIONS.CONFERENCES)
+        .doc("conference-settings")
+        .get();
+      if (settingsDoc.exists) {
+        const data = settingsDoc.data();
+        conferenceTitle = data?.title || CONFERENCE_NAME;
+      }
+    } catch (err) {
+      log.warn("Could not fetch conference settings", {error: err});
+    }
+
+    try {
+      sgMail.setApiKey(apiKey);
+
+      const fromEmail = senderEmail.value();
+      if (!fromEmail) {
+        log.error("SENDER_EMAIL not configured");
+        throw new Error("SENDER_EMAIL not configured");
+      }
+
+      const msg = {
+        to: originalAttendeeEmail,
+        from: {
+          email: fromEmail,
+          name: senderName.value() || "IDMC Conference",
+        },
+        subject: `Registration Transfer Confirmed - ${conferenceTitle}`,
+        text: generateTransferConfirmationText(
+          originalAttendeeName,
+          newAttendeeName || "Another attendee",
+          registrationId.toUpperCase(),
+          conferenceTitle
+        ),
+        html: generateTransferConfirmationHtml(
+          originalAttendeeName,
+          newAttendeeName || "Another attendee",
+          registrationId.toUpperCase(),
+          conferenceTitle
+        ),
+      };
+
+      await sgMail.send(msg);
+      log.info("Transfer confirmation email sent", {to: originalAttendeeEmail});
+
+      // Log the confirmation
+      await logAuditEvent({
+        action: "registration.transfer_confirmation_sent",
+        severity: AUDIT_SEVERITY.INFO,
+        actorId: request.auth?.uid || null,
+        entityType: "registration",
+        entityId: registrationId.toUpperCase(),
+        description: `Transfer confirmation sent to ${originalAttendeeEmail}`,
+        metadata: {
+          originalAttendeeEmail,
+          originalAttendeeName,
+          newAttendeeName,
+        },
+      });
+
+      log.end(true, {emailSent: true});
+      return {success: true, emailSent: true};
+    } catch (error) {
+      log.error("Failed to send transfer confirmation", error);
+      log.end(false, {reason: "email_send_failed"});
+      // Don't throw - transfer confirmation is not critical
+      return {success: false, emailSent: false, error: "Failed to send email"};
+    }
+  }
+);

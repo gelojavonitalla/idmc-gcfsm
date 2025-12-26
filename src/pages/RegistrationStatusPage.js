@@ -23,6 +23,7 @@ import {
   sendVerificationCode,
   verifyCode,
   sendTransferNotification,
+  sendTransferConfirmation,
   VERIFICATION_ACTION,
 } from '../services';
 import styles from './RegistrationStatusPage.module.css';
@@ -469,10 +470,11 @@ function RegistrationStatusPage() {
         setTransferError(null);
 
         try {
-          // Store original attendee name for notification
+          // Store original attendee info for notifications
           const originalName = registration.primaryAttendee
             ? `${registration.primaryAttendee.firstName} ${registration.primaryAttendee.lastName}`
             : 'Previous attendee';
+          const originalEmail = registration.primaryAttendee?.email;
 
           await transferUserRegistration(
             registration.id,
@@ -490,6 +492,18 @@ function RegistrationStatusPage() {
           ).catch((err) => {
             console.warn('Failed to send transfer notification:', err);
           });
+
+          // Send confirmation to original attendee (non-blocking)
+          if (originalEmail) {
+            sendTransferConfirmation(
+              registration.id,
+              originalEmail,
+              originalName,
+              newAttendeeName
+            ).catch((err) => {
+              console.warn('Failed to send transfer confirmation:', err);
+            });
+          }
 
           // Update local state with new attendee info
           setRegistration((prev) => ({
