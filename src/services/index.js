@@ -201,3 +201,9 @@ export {
   getConferenceStats,
   subscribeToConferenceStats,
 } from './stats';
+
+export {
+  getAllFoodMenuItems,
+  getFoodMenuItem,
+  getFoodMenuSettings,
+} from './foodMenu';
