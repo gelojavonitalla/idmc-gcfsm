@@ -4717,21 +4717,41 @@ export const syncConferenceStats = onSchedule(
       const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
       const batch = db.batch();
       let updateCount = 0;
+      const skippedSessions: string[] = [];
 
-      for (const [sessionId, count] of Object.entries(workshopCounts)) {
-        const sessionRef = sessionsCollection.doc(sessionId);
-        batch.update(sessionRef, {
-          registeredCount: count,
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-        updateCount++;
-      }
-
-      // Also reset workshops not in counts (handle cancelled registrations)
+      // Get all existing workshop sessions first
       const allWorkshops = await sessionsCollection
         .where("sessionType", "==", "workshop")
         .get();
 
+      const existingWorkshopIds = new Set<string>();
+      allWorkshops.forEach((workshopDoc) => {
+        existingWorkshopIds.add(workshopDoc.id);
+      });
+
+      // Update counts only for sessions that exist
+      for (const [sessionId, count] of Object.entries(workshopCounts)) {
+        if (existingWorkshopIds.has(sessionId)) {
+          const sessionRef = sessionsCollection.doc(sessionId);
+          batch.update(sessionRef, {
+            registeredCount: count,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+          updateCount++;
+        } else {
+          // Session referenced in registration doesn't exist
+          skippedSessions.push(sessionId);
+        }
+      }
+
+      if (skippedSessions.length > 0) {
+        log.warn("Skipped non-existent sessions", {
+          skippedSessions,
+          count: skippedSessions.length,
+        });
+      }
+
+      // Reset workshops not in counts (handle cancelled registrations)
       allWorkshops.forEach((workshopDoc) => {
         const workshopId = workshopDoc.id;
         if (!(workshopId in workshopCounts)) {
@@ -4755,6 +4775,7 @@ export const syncConferenceStats = onSchedule(
         totalAttendees,
         checkedInAttendeeCount,
         workshopUpdates: updateCount,
+        skippedSessions: skippedSessions.length,
         totalChurches: Object.keys(churchStats).length,
         totalWithFoodChoice,
         totalWithoutFoodChoice,
