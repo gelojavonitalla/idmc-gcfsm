@@ -2379,10 +2379,158 @@ export const onPaymentConfirmed = onDocumentUpdated(
       await event.data?.after?.ref.update(updateData);
     }
 
+    // Update conference stats for newly confirmed registration
+    let statsUpdated = false;
+    let workshopsUpdated = 0;
+
+    try {
+      const additionalAttendees = after.additionalAttendees;
+      const attendeeCount = 1 + (additionalAttendees?.length || 0);
+
+      // Prepare stats update
+      const statsUpdate: Record<string, unknown> = {
+        confirmedRegistrationCount: FieldValue.increment(1),
+        lastUpdatedAt: FieldValue.serverTimestamp(),
+      };
+
+      // Adjust counts based on previous status
+      if (before.status === REGISTRATION_STATUS.PENDING_VERIFICATION) {
+        // Registration was already counted in pending verification
+        statsUpdate.pendingVerificationCount = FieldValue.increment(-1);
+      } else {
+        // Registration not yet counted - add to attendee count
+        statsUpdate.registeredAttendeeCount = FieldValue.increment(attendeeCount);
+      }
+
+      // Track finance stats if payment exists
+      if (after.payment?.amountPaid) {
+        const amount = after.payment.amountPaid;
+        statsUpdate.totalConfirmedPayments = FieldValue.increment(amount);
+
+        // If was pending verification, move from pending to confirmed
+        if (before.status === REGISTRATION_STATUS.PENDING_VERIFICATION) {
+          statsUpdate.totalPendingPayments = FieldValue.increment(-amount);
+        }
+
+        // Track per-bank-account stats
+        if (after.payment.bankAccountId) {
+          const bankId = after.payment.bankAccountId;
+          statsUpdate[`bankAccountStats.${bankId}.confirmed`] =
+            FieldValue.increment(amount);
+          if (before.status === REGISTRATION_STATUS.PENDING_VERIFICATION) {
+            statsUpdate[`bankAccountStats.${bankId}.pending`] =
+              FieldValue.increment(-amount);
+          }
+          // Only increment count if not already counted in pending verification
+          if (before.status !== REGISTRATION_STATUS.PENDING_VERIFICATION) {
+            statsUpdate[`bankAccountStats.${bankId}.count`] =
+              FieldValue.increment(1);
+          }
+        }
+      }
+
+      // Track church stats (only if not already counted in pending verification)
+      if (before.status !== REGISTRATION_STATUS.PENDING_VERIFICATION) {
+        const churchName = after.church?.name || "Unknown Church";
+        const churchCity = after.church?.city || "";
+        const churchKey = `${churchName}|${churchCity}`
+          .replace(/\./g, "_")
+          .replace(/\//g, "_");
+        statsUpdate[`churchStats.${churchKey}.name`] = churchName;
+        statsUpdate[`churchStats.${churchKey}.city`] = churchCity;
+        statsUpdate[`churchStats.${churchKey}.delegateCount`] =
+          FieldValue.increment(attendeeCount);
+        statsUpdate[`churchStats.${churchKey}.registrationCount`] =
+          FieldValue.increment(1);
+      }
+
+      // Track food stats for primary attendee
+      // (only if not already counted in pending verification)
+      if (before.status !== REGISTRATION_STATUS.PENDING_VERIFICATION) {
+        const primaryFood = after.primaryAttendee?.foodChoice;
+        if (primaryFood) {
+          statsUpdate[`foodStats.${primaryFood}`] = FieldValue.increment(1);
+          statsUpdate.totalWithFoodChoice = FieldValue.increment(1);
+        } else {
+          statsUpdate.totalWithoutFoodChoice = FieldValue.increment(1);
+        }
+
+        // Track food stats for additional attendees
+        if (additionalAttendees) {
+          additionalAttendees.forEach(
+            (attendee: {foodChoice?: string}) => {
+              if (attendee.foodChoice) {
+                statsUpdate[`foodStats.${attendee.foodChoice}`] =
+                  FieldValue.increment(1);
+                statsUpdate.totalWithFoodChoice = FieldValue.increment(1);
+              } else {
+                statsUpdate.totalWithoutFoodChoice = FieldValue.increment(1);
+              }
+            }
+          );
+        }
+      }
+
+      // Update stats document
+      const statsRef = db.collection(COLLECTIONS.STATS).doc(STATS_DOC_ID);
+      await statsRef.set(statsUpdate, {merge: true});
+      statsUpdated = true;
+
+      log.info("Updated stats for confirmed registration", {attendeeCount});
+
+      // Update workshop counts (only if not already counted)
+      if (before.status !== REGISTRATION_STATUS.PENDING_VERIFICATION) {
+        const allWorkshopSelections: string[] = [];
+
+        if (after.primaryAttendee?.workshopSelections) {
+          after.primaryAttendee.workshopSelections.forEach(
+            (selection: {sessionId?: string}) => {
+              if (selection.sessionId) {
+                allWorkshopSelections.push(selection.sessionId);
+              }
+            }
+          );
+        }
+
+        if (additionalAttendees) {
+          additionalAttendees.forEach(
+            (attendee: {workshopSelections?: Array<{sessionId?: string}>}) => {
+              if (attendee.workshopSelections) {
+                attendee.workshopSelections.forEach(
+                  (selection: {sessionId?: string}) => {
+                    if (selection.sessionId) {
+                      allWorkshopSelections.push(selection.sessionId);
+                    }
+                  }
+                );
+              }
+            }
+          );
+        }
+
+        if (allWorkshopSelections.length > 0) {
+          const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
+          for (const sessionId of allWorkshopSelections) {
+            await sessionsCollection.doc(sessionId).update({
+              registeredCount: FieldValue.increment(1),
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+          }
+          workshopsUpdated = allWorkshopSelections.length;
+          log.info("Updated workshop counts", {workshopCount: workshopsUpdated});
+        }
+      }
+    } catch (statsError) {
+      log.error("Error updating stats for confirmed registration", statsError);
+      // Don't throw - stats update failure shouldn't fail the confirmation
+    }
+
     log.end(true, {
       ticketEmailSent,
       additionalEmailsSent,
       smsSent,
+      statsUpdated,
+      workshopsUpdated,
     });
   }
 );
