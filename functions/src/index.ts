@@ -186,6 +186,14 @@ const storageBucketName = defineString("STORAGE_BUCKET", {default: "idmc-2026"})
 // SendGrid API key (stored in Secret Manager, accessed via defineSecret)
 const sendgridApiKey = defineSecret("SENDGRID_API_KEY");
 
+// Semaphore SMS API key (stored in Secret Manager)
+const semaphoreApiKey = defineSecret("SEMAPHORE_API_KEY");
+
+// Semaphore sender name (must be pre-approved in Semaphore dashboard)
+const semaphoreSenderName = defineString("SEMAPHORE_SENDER_NAME", {
+  default: "SEMAPHORE",
+});
+
 // Conference configuration constants
 const CONFERENCE_YEAR = 2026;
 const CONFERENCE_NAME = `IDMC GCFSM ${CONFERENCE_YEAR}`;
@@ -257,19 +265,30 @@ const COLLECTIONS = {
 const STATS_DOC_ID = "conference-stats";
 
 /**
+ * SMS provider type
+ */
+type SmsProvider = "semaphore" | "onewaysms";
+
+/**
  * SMS settings interface
  */
 interface SmsSettings {
+  /** Whether SMS notifications are enabled */
   enabled: boolean;
+  /** SMS provider to use: "semaphore" or "onewaysms" */
+  provider: SmsProvider;
+  /** OneWaySMS gateway domain (e.g., "1.onewaysms.asia") */
   gatewayDomain: string;
+  /** OneWaySMS direct gateway email (optional) */
   gatewayEmail: string;
 }
 
 /**
- * Default SMS settings
+ * Default SMS settings - uses Semaphore as default provider
  */
 const DEFAULT_SMS_SETTINGS: SmsSettings = {
   enabled: false,
+  provider: "semaphore",
   gatewayDomain: "1.onewaysms.asia",
   gatewayEmail: "",
 };
@@ -422,6 +441,7 @@ async function getSmsSettings(): Promise<SmsSettings> {
       if (data?.sms) {
         return {
           enabled: data.sms.enabled ?? DEFAULT_SMS_SETTINGS.enabled,
+          provider: data.sms.provider || DEFAULT_SMS_SETTINGS.provider,
           gatewayDomain: data.sms.gatewayDomain ||
             DEFAULT_SMS_SETTINGS.gatewayDomain,
           gatewayEmail: data.sms.gatewayEmail ||
@@ -855,6 +875,140 @@ async function sendSmsViaOneWaySms(
   } catch (error) {
     logger.error(`Failed to send SMS to ${formattedPhone}:`, error);
     return false;
+  }
+}
+
+/**
+ * Semaphore API endpoint
+ */
+const SEMAPHORE_API_URL = "https://api.semaphore.co/api/v4/messages";
+
+/**
+ * Retrieves Semaphore API key from Secret Manager
+ *
+ * @return {string | null} The Semaphore API key or null if not available
+ */
+function getSemaphoreApiKey(): string | null {
+  try {
+    const apiKey = semaphoreApiKey.value();
+    return apiKey || null;
+  } catch (error) {
+    logger.warn("Could not access SEMAPHORE_API_KEY:", error);
+    return null;
+  }
+}
+
+/**
+ * Sends SMS via Semaphore API
+ *
+ * Semaphore is a Philippine SMS gateway that provides direct API access.
+ * API Documentation: https://semaphore.co/docs
+ *
+ * @param {string} phoneNumber - Recipient phone number (any Philippine format)
+ * @param {string} message - SMS message content
+ * @return {Promise<boolean>} True if SMS was sent successfully
+ */
+async function sendSmsViaSemaphore(
+  phoneNumber: string,
+  message: string
+): Promise<boolean> {
+  // Get Semaphore API key
+  const apiKey = getSemaphoreApiKey();
+  if (!apiKey) {
+    logger.warn("Semaphore API key not configured, cannot send SMS");
+    return false;
+  }
+
+  // Validate phone number
+  if (!isValidPhilippinePhone(phoneNumber)) {
+    logger.warn(`Invalid phone number for SMS: ${phoneNumber}`);
+    return false;
+  }
+
+  const formattedPhone = formatPhoneNumber(phoneNumber);
+
+  // Get sender name from config
+  const senderNameValue = semaphoreSenderName.value();
+
+  try {
+    // Build form data for Semaphore API
+    const formData = new URLSearchParams();
+    formData.append("apikey", apiKey);
+    formData.append("number", formattedPhone);
+    formData.append("message", message);
+    if (senderNameValue) {
+      formData.append("sendername", senderNameValue);
+    }
+
+    const response = await fetch(SEMAPHORE_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: formData.toString(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error(
+        `Semaphore API error: ${response.status} - ${errorText}`
+      );
+      return false;
+    }
+
+    const result = await response.json();
+
+    // Semaphore returns an array of message objects on success
+    if (Array.isArray(result) && result.length > 0) {
+      const messageResult = result[0];
+      if (messageResult.status === "Pending" || messageResult.status === "Sent") {
+        logger.info(
+          `SMS sent successfully via Semaphore to ${formattedPhone}, ` +
+          `message_id: ${messageResult.message_id}`
+        );
+        return true;
+      }
+    }
+
+    logger.warn("Unexpected Semaphore response:", result);
+    return false;
+  } catch (error) {
+    logger.error(`Failed to send SMS via Semaphore to ${formattedPhone}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Unified SMS sending function that routes to the configured provider
+ *
+ * This function checks the SMS settings and routes the message to either
+ * Semaphore or OneWaySMS based on the configured provider.
+ *
+ * @param {string} phoneNumber - Recipient phone number (any Philippine format)
+ * @param {string} message - SMS message content
+ * @return {Promise<boolean>} True if SMS was sent successfully
+ */
+async function sendSmsMessage(
+  phoneNumber: string,
+  message: string
+): Promise<boolean> {
+  // Get SMS settings
+  const smsSettings = await getSmsSettings();
+
+  if (!smsSettings.enabled) {
+    logger.info("SMS notifications disabled, skipping SMS");
+    return false;
+  }
+
+  // Route to the configured provider
+  switch (smsSettings.provider) {
+  case "semaphore":
+    return sendSmsViaSemaphore(phoneNumber, message);
+  case "onewaysms":
+    return sendSmsViaOneWaySms(phoneNumber, message);
+  default:
+    logger.warn(`Unknown SMS provider: ${smsSettings.provider}, using Semaphore`);
+    return sendSmsViaSemaphore(phoneNumber, message);
   }
 }
 
@@ -1907,7 +2061,7 @@ export const onRegistrationCreated = onDocumentCreated(
   {
     document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
     database: DATABASE_ID,
-    secrets: [sendgridApiKey],
+    secrets: [sendgridApiKey, semaphoreApiKey],
   },
   async (event) => {
     const registrationId = event.params.registrationId;
@@ -1982,7 +2136,7 @@ export const onRegistrationCreated = onDocumentCreated(
           registrationData.totalAmount,
           registrationData.paymentDeadline
         );
-        smsSent = await sendSmsViaOneWaySms(phone, smsMessage);
+        smsSent = await sendSmsMessage(phone, smsMessage);
         if (smsSent) {
           updateData.confirmationSmsSent = true;
           updateData.confirmationSmsSentAt = FieldValue.serverTimestamp();
@@ -2162,7 +2316,7 @@ export const onPaymentConfirmed = onDocumentUpdated(
   {
     document: `${COLLECTIONS.REGISTRATIONS}/{registrationId}`,
     database: DATABASE_ID,
-    secrets: [sendgridApiKey],
+    secrets: [sendgridApiKey, semaphoreApiKey],
   },
   async (event) => {
     const registrationId = event.params.registrationId;
@@ -2363,7 +2517,7 @@ export const onPaymentConfirmed = onDocumentUpdated(
           after.primaryAttendee.firstName,
           after.shortCode
         );
-        smsSent = await sendSmsViaOneWaySms(primaryPhone, smsMessage);
+        smsSent = await sendSmsMessage(primaryPhone, smsMessage);
         if (smsSent) {
           updateData.ticketSmsSent = true;
           updateData.ticketSmsSentAt = FieldValue.serverTimestamp();
@@ -5549,7 +5703,7 @@ export const sendVerificationCode = onCall(
   {
     region: "asia-southeast1",
     maxInstances: 10,
-    secrets: [sendgridApiKey],
+    secrets: [sendgridApiKey, semaphoreApiKey],
   },
   async (request) => {
     const {registrationId, action, sendSms} = request.data as {
@@ -5761,21 +5915,18 @@ export const sendVerificationCode = onCall(
       await sgMail.send(msg);
       log.info("Verification code email sent", {to: primaryEmail});
 
-      // Optionally send SMS
+      // Optionally send SMS (sendSmsMessage handles the enabled check internally)
       let smsSent = false;
       if (sendSms && registration.primaryAttendee?.cellphone) {
-        const smsSettings = await getSmsSettings();
-        if (smsSettings.enabled) {
-          const smsMessage = `Your ${conferenceTitle} verification code is: ${code}. This code expires in ${VERIFICATION_CODE_CONFIG.EXPIRY_MINUTES} minutes.`;
+        const smsContent = `Your ${conferenceTitle} verification code is: ${code}. This code expires in ${VERIFICATION_CODE_CONFIG.EXPIRY_MINUTES} minutes.`;
 
-          smsSent = await sendSmsViaOneWaySms(
-            registration.primaryAttendee.cellphone,
-            smsMessage
-          );
+        smsSent = await sendSmsMessage(
+          registration.primaryAttendee.cellphone,
+          smsContent
+        );
 
-          if (smsSent) {
-            log.info("Verification code SMS sent");
-          }
+        if (smsSent) {
+          log.info("Verification code SMS sent");
         }
       }
 
