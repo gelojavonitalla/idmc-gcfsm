@@ -17,7 +17,7 @@ import {getAuth} from "firebase-admin/auth";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import sgMail from "@sendgrid/mail";
 import * as QRCode from "qrcode";
-import {verifyFinanceAdmin} from "./auth";
+import {verifyFinanceAdmin, isAuthenticatedAdmin} from "./auth";
 import {
   checkRateLimit,
   cleanupExpiredRateLimits,
@@ -4066,22 +4066,28 @@ export const lookupRegistrationSecure = onCall(
       );
     }
 
-    // Get client IP for rate limiting (use UID if authenticated)
-    const clientId = request.auth?.uid ||
-                     request.rawRequest?.ip ||
-                     "unknown";
+    // Get client IP for rate limiting
+    const clientIp = request.rawRequest?.ip || "unknown";
 
-    // Check rate limit using persistent Firestore-based limiter
-    try {
-      await checkRateLimit(
-        "registration_lookup",
-        clientId,
-        RATE_LIMIT_CONFIGS.REGISTRATION_LOOKUP
-      );
-    } catch (error) {
-      // Log rate limit exceeded event
-      await logRateLimitExceeded("registration_lookup", clientId, clientId);
-      throw error;
+    // Check if user is an authenticated admin (volunteer, admin, etc.)
+    // Admins performing check-in operations should not be rate limited
+    const isAdmin = await isAuthenticatedAdmin(request.auth?.uid);
+
+    // Only apply rate limiting to public/unauthenticated users
+    // Authenticated admins (including volunteers) are exempt for check-in operations
+    if (!isAdmin) {
+      const clientId = request.auth?.uid || clientIp;
+      try {
+        await checkRateLimit(
+          "registration_lookup",
+          clientId,
+          RATE_LIMIT_CONFIGS.REGISTRATION_LOOKUP
+        );
+      } catch (error) {
+        // Log rate limit exceeded event
+        await logRateLimitExceeded("registration_lookup", clientId, clientIp);
+        throw error;
+      }
     }
 
     const db = getFirestore();
@@ -4179,7 +4185,7 @@ export const lookupRegistrationSecure = onCall(
       "lookup",
       request.auth?.uid || null,
       undefined,
-      clientId
+      clientIp
     );
 
     // Calculate attendee count

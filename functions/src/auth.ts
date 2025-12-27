@@ -201,3 +201,43 @@ export function requirePermission(admin: AdminData, permission: string): void {
     );
   }
 }
+
+/**
+ * Checks if a user is an authenticated admin (any role, active status)
+ *
+ * This is a non-throwing version of verifyAdminRole that simply returns
+ * a boolean. Useful for conditional logic like skipping rate limits
+ * for authenticated admins during check-in operations.
+ *
+ * @param {string | undefined} uid - The Firebase Auth UID from request.auth
+ * @return {Promise<boolean>} True if the user is an active admin
+ *
+ * @example
+ * // Skip rate limiting for authenticated admins
+ * const isAdmin = await isAuthenticatedAdmin(request.auth?.uid);
+ * if (!isAdmin) {
+ *   await checkRateLimit(...);
+ * }
+ */
+export async function isAuthenticatedAdmin(
+  uid: string | undefined
+): Promise<boolean> {
+  if (!uid) {
+    return false;
+  }
+
+  try {
+    const db = getFirestore();
+    const adminDoc = await db.collection("admins").doc(uid).get();
+
+    if (!adminDoc.exists) {
+      return false;
+    }
+
+    const adminData = adminDoc.data() as AdminData;
+    return adminData.status === ADMIN_STATUS.ACTIVE;
+  } catch (error) {
+    logger.warn(`Error checking admin status for ${uid}:`, error);
+    return false;
+  }
+}
