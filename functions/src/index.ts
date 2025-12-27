@@ -4680,7 +4680,37 @@ export const syncConferenceStats = onSchedule(
         totalWithoutFoodChoice,
       });
 
-      // Update stats document with all counts
+      // Fetch all existing workshop sessions to filter out invalid session IDs
+      const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
+      const allWorkshops = await sessionsCollection
+        .where("sessionType", "==", "workshop")
+        .get();
+
+      const existingWorkshopIds = new Set<string>();
+      allWorkshops.forEach((workshopDoc) => {
+        existingWorkshopIds.add(workshopDoc.id);
+      });
+
+      // Filter out orphaned session IDs from workshopCounts
+      const skippedSessions: string[] = [];
+      const filteredWorkshopCounts: Record<string, number> = {};
+
+      for (const [sessionId, count] of Object.entries(workshopCounts)) {
+        if (existingWorkshopIds.has(sessionId)) {
+          filteredWorkshopCounts[sessionId] = count;
+        } else {
+          skippedSessions.push(sessionId);
+        }
+      }
+
+      if (skippedSessions.length > 0) {
+        log.warn("Found registrations with non-existent session IDs", {
+          skippedSessions,
+          count: skippedSessions.length,
+        });
+      }
+
+      // Update stats document with filtered workshop counts
       const statsRef = db
         .collection(COLLECTIONS.STATS)
         .doc(STATS_DOC_ID);
@@ -4690,7 +4720,7 @@ export const syncConferenceStats = onSchedule(
         registeredAttendeeCount: totalAttendees,
         confirmedRegistrationCount,
         pendingVerificationCount,
-        workshopCounts,
+        workshopCounts: filteredWorkshopCounts,
         // Check-in stats
         checkedInRegistrationCount,
         checkedInAttendeeCount,
@@ -4714,47 +4744,22 @@ export const syncConferenceStats = onSchedule(
       log.info("Updated conference stats document");
 
       // Update workshop registered counts in sessions collection
-      const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
       const batch = db.batch();
       let updateCount = 0;
-      const skippedSessions: string[] = [];
 
-      // Get all existing workshop sessions first
-      const allWorkshops = await sessionsCollection
-        .where("sessionType", "==", "workshop")
-        .get();
-
-      const existingWorkshopIds = new Set<string>();
-      allWorkshops.forEach((workshopDoc) => {
-        existingWorkshopIds.add(workshopDoc.id);
-      });
-
-      // Update counts only for sessions that exist
-      for (const [sessionId, count] of Object.entries(workshopCounts)) {
-        if (existingWorkshopIds.has(sessionId)) {
-          const sessionRef = sessionsCollection.doc(sessionId);
-          batch.update(sessionRef, {
-            registeredCount: count,
-            updatedAt: FieldValue.serverTimestamp(),
-          });
-          updateCount++;
-        } else {
-          // Session referenced in registration doesn't exist
-          skippedSessions.push(sessionId);
-        }
-      }
-
-      if (skippedSessions.length > 0) {
-        log.warn("Skipped non-existent sessions", {
-          skippedSessions,
-          count: skippedSessions.length,
+      for (const [sessionId, count] of Object.entries(filteredWorkshopCounts)) {
+        const sessionRef = sessionsCollection.doc(sessionId);
+        batch.update(sessionRef, {
+          registeredCount: count,
+          updatedAt: FieldValue.serverTimestamp(),
         });
+        updateCount++;
       }
 
       // Reset workshops not in counts (handle cancelled registrations)
       allWorkshops.forEach((workshopDoc) => {
         const workshopId = workshopDoc.id;
-        if (!(workshopId in workshopCounts)) {
+        if (!(workshopId in filteredWorkshopCounts)) {
           // Workshop has no registrations, reset to 0
           batch.update(workshopDoc.ref, {
             registeredCount: 0,
@@ -5151,14 +5156,45 @@ export const triggerStatsSync = onCall(
         }
       });
 
-      // Update stats document
+      // Fetch all existing workshop sessions to filter out invalid session IDs
+      const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
+      const allWorkshops = await sessionsCollection
+        .where("sessionType", "==", "workshop")
+        .get();
+
+      const existingSessionIds = new Set<string>();
+      allWorkshops.forEach((workshopDoc) => {
+        existingSessionIds.add(workshopDoc.id);
+      });
+
+      // Filter out orphaned session IDs from workshopCounts
+      const orphanedSessionIds: string[] = [];
+      const filteredWorkshopCounts: Record<string, number> = {};
+
+      for (const [sessionId, count] of Object.entries(workshopCounts)) {
+        if (existingSessionIds.has(sessionId)) {
+          filteredWorkshopCounts[sessionId] = count;
+        } else {
+          orphanedSessionIds.push(sessionId);
+        }
+      }
+
+      // Log warning for orphaned session IDs
+      if (orphanedSessionIds.length > 0) {
+        log.warn("Found registrations with non-existent session IDs", {
+          orphanedSessionIds,
+          count: orphanedSessionIds.length,
+        });
+      }
+
+      // Update stats document with filtered workshop counts
       const statsRef = db.collection(COLLECTIONS.STATS).doc(STATS_DOC_ID);
       await statsRef.set({
         // Registration stats
         registeredAttendeeCount: totalAttendees,
         confirmedRegistrationCount,
         pendingVerificationCount,
-        workshopCounts,
+        workshopCounts: filteredWorkshopCounts,
         // Check-in stats
         checkedInRegistrationCount,
         checkedInAttendeeCount,
@@ -5179,47 +5215,20 @@ export const triggerStatsSync = onCall(
         lastUpdatedAt: FieldValue.serverTimestamp(),
       }, {merge: true});
 
-      // Update workshop counts
-      const sessionsCollection = db.collection(COLLECTIONS.SESSIONS);
+      // Update workshop registered counts in sessions collection
       const batch = db.batch();
 
-      // First fetch all existing workshop sessions to avoid updating
-      // non-existent documents
-      const allWorkshops = await sessionsCollection
-        .where("sessionType", "==", "workshop")
-        .get();
-
-      const existingSessionIds = new Set<string>();
-      allWorkshops.forEach((workshopDoc) => {
-        existingSessionIds.add(workshopDoc.id);
-      });
-
-      // Track orphaned session IDs for logging
-      const orphanedSessionIds: string[] = [];
-
-      for (const [sessionId, count] of Object.entries(workshopCounts)) {
-        if (existingSessionIds.has(sessionId)) {
-          const sessionRef = sessionsCollection.doc(sessionId);
-          batch.update(sessionRef, {
-            registeredCount: count,
-            updatedAt: FieldValue.serverTimestamp(),
-          });
-        } else {
-          orphanedSessionIds.push(sessionId);
-        }
-      }
-
-      // Log warning for orphaned session IDs
-      if (orphanedSessionIds.length > 0) {
-        log.warn("Found registrations with non-existent session IDs", {
-          orphanedSessionIds,
-          count: orphanedSessionIds.length,
+      for (const [sessionId, count] of Object.entries(filteredWorkshopCounts)) {
+        const sessionRef = sessionsCollection.doc(sessionId);
+        batch.update(sessionRef, {
+          registeredCount: count,
+          updatedAt: FieldValue.serverTimestamp(),
         });
       }
 
       // Reset count for workshops that have no registrations
       allWorkshops.forEach((workshopDoc) => {
-        if (!(workshopDoc.id in workshopCounts)) {
+        if (!(workshopDoc.id in filteredWorkshopCounts)) {
           batch.update(workshopDoc.ref, {
             registeredCount: 0,
             updatedAt: FieldValue.serverTimestamp(),
@@ -5234,7 +5243,8 @@ export const triggerStatsSync = onCall(
         confirmedRegistrationCount,
         pendingVerificationCount,
         checkedInAttendeeCount,
-        workshopCount: Object.keys(workshopCounts).length,
+        workshopCount: Object.keys(filteredWorkshopCounts).length,
+        orphanedSessionIds: orphanedSessionIds.length,
         totalChurches: Object.keys(churchStats).length,
         totalWithFoodChoice,
         totalWithoutFoodChoice,
@@ -5246,6 +5256,7 @@ export const triggerStatsSync = onCall(
         checkedInAttendeeCount,
         totalChurches: Object.keys(churchStats).length,
         totalWithFoodChoice,
+        orphanedSessionIds: orphanedSessionIds.length,
       });
 
       return {
@@ -5260,6 +5271,8 @@ export const triggerStatsSync = onCall(
           totalWithFoodChoice,
           totalWithoutFoodChoice,
         },
+        orphanedSessionIds: orphanedSessionIds.length > 0 ?
+          orphanedSessionIds : undefined,
       };
     } catch (error) {
       log.error("Error in manual stats sync", error);
