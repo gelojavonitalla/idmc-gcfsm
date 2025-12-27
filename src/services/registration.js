@@ -931,6 +931,48 @@ export async function lookupRegistration(identifier) {
 }
 
 /**
+ * Looks up a registration using the rate-limited Cloud Function.
+ * This function calls the server-side lookupRegistrationSecure function which:
+ * - Rate limits requests to prevent abuse (10 requests/minute for public users)
+ * - Exempts authenticated admins/volunteers from rate limiting
+ * - Returns masked data (partial email, masked names) for privacy
+ * - Logs access for audit purposes
+ *
+ * Use this for public-facing status pages where rate limiting is needed.
+ * For admin operations, use lookupRegistration() instead.
+ *
+ * @param {string} identifier - Registration ID, short code (4 or 6 chars), email, or phone
+ * @returns {Promise<Object|null>} Masked registration data or null
+ * @throws {Error} If rate limit exceeded or other server error
+ */
+export async function secureLookupRegistration(identifier) {
+  if (!identifier) {
+    return null;
+  }
+
+  try {
+    const lookupRegistrationSecureFn = httpsCallable(functions, 'lookupRegistrationSecure');
+    const result = await lookupRegistrationSecureFn({
+      identifier: identifier.trim(),
+    });
+
+    return result.data;
+  } catch (error) {
+    // Handle Firebase function errors
+    if (error.code === 'functions/resource-exhausted') {
+      throw new Error('Too many lookup requests. Please wait a minute and try again.');
+    }
+    if (error.code === 'functions/not-found') {
+      return null;
+    }
+    if (error.code === 'functions/invalid-argument') {
+      throw new Error(error.message || 'Please provide a valid registration ID, email, or phone number');
+    }
+    throw error;
+  }
+}
+
+/**
  * Fallback search for registrations by partial short code match.
  * Searches through registrations to find ones where the shortCode ends with or equals the search term.
  * Used when direct field queries don't find a match.

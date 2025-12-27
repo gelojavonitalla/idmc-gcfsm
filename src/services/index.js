@@ -108,6 +108,7 @@ export {
   promoteFromWaitlist,
   markEmailSent,
   lookupRegistration,
+  secureLookupRegistration,
   incrementWorkshopCount,
   getTotalConfirmedAttendeeCount,
   // Waitlist functions

@@ -10,7 +10,8 @@ import {
 } from '../constants';
 import { formatPrice, maskEmail, maskName, maskPhone, calculateRefundEligibility } from '../utils';
 import {
-  lookupRegistration,
+  secureLookupRegistration,
+  getRegistrationById,
   getAttendeeCheckInStatus,
   areAllAttendeesCheckedIn,
   getCheckedInAttendeeCount,
@@ -136,7 +137,9 @@ function RegistrationStatusPage() {
   const [codeExpiryMinutes, setCodeExpiryMinutes] = useState(null);
 
   /**
-   * Performs the registration lookup
+   * Performs the registration lookup using the rate-limited Cloud Function.
+   * First does a secure lookup (rate-limited) to get the registration ID,
+   * then fetches full data for display.
    */
   const handleSearch = useCallback(async (value) => {
     const searchTerm = value || searchValue;
@@ -150,17 +153,30 @@ function RegistrationStatusPage() {
     setHasSearched(true);
 
     try {
-      const result = await lookupRegistration(searchTerm.trim());
+      // Step 1: Use rate-limited secure lookup to find the registration
+      // This prevents brute-force attacks on identifiers
+      const secureResult = await secureLookupRegistration(searchTerm.trim());
 
-      if (result) {
-        setRegistration(result);
+      if (secureResult && secureResult.registrationId) {
+        // Step 2: Fetch full registration data for detailed display
+        const fullResult = await getRegistrationById(secureResult.registrationId);
+
+        if (fullResult) {
+          setRegistration(fullResult);
+        } else {
+          // Rare case: secure lookup found it but full fetch failed
+          setRegistration(null);
+          setError('Registration not found. Please check your information and try again.');
+        }
       } else {
         setRegistration(null);
         setError('Registration not found. Please check your information and try again.');
       }
     } catch (err) {
       console.error('Lookup error:', err);
-      setError('An error occurred while looking up your registration. Please try again.');
+      // Show user-friendly error message from the service
+      const errorMessage = err.message || 'An error occurred while looking up your registration. Please try again.';
+      setError(errorMessage);
       setRegistration(null);
     } finally {
       setIsLoading(false);
